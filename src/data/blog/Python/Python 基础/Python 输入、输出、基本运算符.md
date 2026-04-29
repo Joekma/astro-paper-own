@@ -1,7 +1,7 @@
 ---
 title: Python 输入、输出、基本运算符
 author: 程序员
-pubDatetime: 2024-08-13T00:00:00.000+08:00
+pubDatetime: 2018-08-13T00:00:00.000+08:00
 updated: 2026-04-22T00:00:00.000+08:00
 slug: python-input-output-basic-operators
 description: '深入理解 Python 的输入输出、基本数据类型和常用运算符'

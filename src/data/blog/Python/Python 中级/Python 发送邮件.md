@@ -16,7 +16,6 @@ description: Python 发送邮件，涵盖smtplib模块、SMTP配置、附件发�
 
 ##  使用smtplib模块发送邮件
 ```python
-
 import smtplib
 from email.mime.text import MIMEText
 from email.header import Header
@@ -50,7 +49,6 @@ except s.SMTPException as e:
     print(e)
 finally:
     s.quit()
-
 ```
 ## 发送html格式邮件
 ```python
@@ -58,10 +56,10 @@ import smtplib
 from email.mime.text import MIMEText
 from email.header import Header
 
-msg_from = '306334678@qq.com'  # 发送方邮箱
+msg_from = '123456@qq.com'  # 发送方邮箱
 passwd = 'ldoetnwqdjqqbjjj'  # 填入发送方邮箱的授权码(填入自己的授权码，相当于邮箱密码)
-msg_to = ['616564099@qq.com']  # 收件人邮箱
-# msg_to = '616564099@qq.com'  # 收件人邮箱
+msg_to = ['654321@qq.com']  # 收件人邮箱
+# msg_to = '654321@qq.com'  # 收件人邮箱
 
 subject = "邮件标题"  # 主题
 # *************发送html的邮件**********
@@ -167,14 +165,14 @@ finally:
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.qq.com'  # 如果是 163 改成 smtp.163.com
 EMAIL_PORT = 465
-EMAIL_HOST_USER = '306334678@qq.com'  # 帐号
+EMAIL_HOST_USER = '123456@qq.com'  # 帐号
 EMAIL_HOST_PASSWORD = '***'  # 密码
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-[[这样收到的邮件，收件人处就会这样显示]]
-[[DEFAULT_FROM_EMAIL]] = 'lqz<'306334678@qq.com>'
-EMAIL_USE_SSL = True   [[使用ssl]]
-[[EMAIL_USE_TLS]] = False # 使用tls
-[[EMAIL_USE_SSL]] 和 EMAIL_USE_TLS 是互斥的，即只能有一个为 True
+# 这样收到的邮件，收件人处就会这样显示
+DEFAULT_FROM_EMAIL = 'abc<'123456@qq.com>'
+EMAIL_USE_SSL = True   # 使用ssl
+# EMAIL_USE_TLS = False # 使用tls
+EMAIL_USE_SSL 和 EMAIL_USE_TLS 是互斥的，即只能有一个为 True
 
 ```
 #### view视图函数
@@ -237,18 +235,6 @@ yahoo邮箱smtp服务器
 126邮箱smtp服务器
 pop： pop.126.com
 smtp： smtp.126.com
-新浪免费邮箱
-POP3：pop.sina.com
-SMTP：smtp.sina.com
-SMTP端口号：25
-新浪VIP邮箱
-POP3：pop3.vip.sina.com
-SMTP：smtp.vip.sina.com
-SMTP端口号：25
-新浪企业邮箱
-POP3：pop.sina.com
-SMTP：smtp.sina.com
-SMTP端口号：25
 雅虎邮箱
 POP3：pop.mail.yahoo.cn
 SMTP：smtp.mail.yahoo.cn
@@ -269,58 +255,6 @@ QQ邮箱
 POP3：pop.exmail.qq.com
 SMTP：smtp.exmail.qq.com
 SMTP端口号：25
-263邮箱
-域名：263.net
-POP3：263.net
-SMTP：smtp.263.net
-SMTP端口号：25
-域名：x263.net
-POP3：pop.x263.net
-SMTP：smtp.x263.net
-SMTP端口号：25
-域名：263.net.cn
-POP3：263.net.cn
-SMTP：263.net.cn
-SMTP端口号：25
-域名：炫我型
-POP3：pop.263xmail.com
-SMTP：smtp.263xmail.com
-SMTP端口号：25
-21CN 免费邮箱
-POP3：pop.21cn.com
-SMTP：smtp.21cn.com
-IMAP：imap.21cn.com
-SMTP端口号：25
-21CN 经济邮邮箱
-POP3：pop.21cn.com
-SMTP：smtp.21cn.com
-SMTP端口号：25
-21CN 商务邮邮箱
-POP3：pop.21cn.net
-SMTP：smtp.21cn.net
-SMTP端口号：25
-21CN 快感邮箱
-POP3：vip.21cn.com
-SMTP：vip.21cn.com
-SMTP端口号：25
-21CN Y邮箱
-POP3：pop.y.vip.21cn.com
-SMTP：smtp.y.vip.21cn.com
-SMTP端口号：25
-中华网任我邮邮箱
-POP3：rwpop.china.com
-SMTP：rwsmtp.china.com
-SMTP端口号：25
-中华网时尚、商务邮箱
-POP3：pop.china.com
-SMTP：smtp.china.com
-SMTP端口号：25
 ```
-##  qq邮箱配置smtp
-
-登录qq邮箱：
-![image](https://img2018.cnblogs.com/blog/1350514/201812/1350514-20181205204002077-1331890127.png)
-![image](https://img2018.cnblogs.com/blog/1350514/201812/1350514-20181205204032102-555867720.png)
-开启smtp服务，生成授权码
 
 ---

@@ -1,7 +1,7 @@
 ---
 title: Python 函数进阶：命名关键字参数与闭包
 author: 程序员
-pubDatetime: 2024-08-13T00:00:00.000+08:00
+pubDatetime: 2018-08-13T00:00:00.000+08:00
 updated: 2026-04-22T00:00:00.000+08:00
 slug: python-advanced-functions-closure
 description: '深入理解 Python 的命名关键字参数、函数对象、嵌套、名称空间与作用域、闭包'
@@ -520,10 +520,8 @@ alist = range(1, 101)
 
 def wrapper():
     alist = range(1, 101)
-
     def lazy_sum():
         return reduce(lambda x, y: x + y, alist)
-
     return lazy_sum
 
 lazy_sum = wrapper()

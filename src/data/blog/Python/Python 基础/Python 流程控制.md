@@ -1,7 +1,7 @@
 ---
 title: Python 流程控制：if、while、for
 author: 程序员
-pubDatetime: 2024-08-13T00:00:00.000+08:00
+pubDatetime: 2018-08-13T00:00:00.000+08:00
 updated: 2026-04-22T00:00:00.000+08:00
 slug: python-control-flow-if-while-for
 description: '深入理解 Python 的流程控制语句：条件判断 if、循环 while 和 for'
@@ -161,7 +161,7 @@ print('start....')
 while True:
     name = input('please your name>>: ')
     pwd = input('please your password>>: ')
-    if name == 'egon' and pwd == '123':
+    if name == 'Mark' and pwd == '123':
         print('login successful')
     else:
         print('user or password err')
@@ -178,7 +178,7 @@ tag = True
 while tag:
     name = input('please your name>>: ')
     pwd = input('please your password>>: ')
-    if name == 'egon' and pwd == '123':
+    if name == 'Mark' and pwd == '123':
         print('login successful')
         tag = False
     else:
@@ -207,7 +207,7 @@ print('start....')
 while True:
     name = input('please your name>>: ')
     pwd = input('please your password>>: ')
-    if name == 'egon' and pwd == '123':
+    if name == 'Mark' and pwd == '123':
         print('login successful')
         break
     else:
@@ -226,7 +226,7 @@ count = 0
 while count <= 2:
     name = input('please your name>>: ')
     pwd = input('please your password>>: ')
-    if name == 'egon' and pwd == '123':
+    if name == 'Mark' and pwd == '123':
         print('login successful')
         break
     else:
@@ -243,7 +243,7 @@ count = 0
 while count < 3:
     name = input('please your name>>: ')
     pwd = input('please your password>>: ')
-    if name == 'egon' and pwd == '123':
+    if name == 'Mark' and pwd == '123':
         print('login successful')
         break
     else:
@@ -299,7 +299,7 @@ else:
 ### while 循环的嵌套
 
 ```python
-name_of_db = 'egon'
+name_of_db = 'Mark'
 pwd_of_db = '123'
 print('start....')
 count = 0
@@ -339,7 +339,7 @@ print('end...')
 使用 `tag` 控制所有 while 循环（相当于一个 while 循环的开关）。
 
 ```python
-name_of_db = 'egon'
+name_of_db = 'Mark'
 pwd_of_db = '123'
 tag = True
 print('start....')
@@ -380,7 +380,7 @@ print('end...')
 ### for 循环主要用于循环取值
 
 ```python
-student = ['egon', '虎老师', 'lxxdsb', 'alexdsb', 'wupeiqisb']
+student = ['Mark', '虎老师', 'lxxdsb', 'alexdsb', 'wupeiqisb']
 
 # while 循环
 i = 0

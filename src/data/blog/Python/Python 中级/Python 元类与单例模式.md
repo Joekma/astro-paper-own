@@ -1,5 +1,5 @@
 ---
-title: 元类与单例模式
+title: Python 元类与单例模式
 author: FjellOverflow
 pubDatetime: 2018-11-19T00:00:00Z
 modDatetime: 2026-04-22T00:00:00Z
@@ -9,10 +9,10 @@ tags:
   - Python
   - 面向对象
   - docs
-description: 元类与单例模式，涵盖元类创建、自定义元类、单例模式实现等核心概念。
+description: Python 元类与单例模式，涵盖元类创建、自定义元类、单例模式实现等核心概念。
 ---
 
-# 元类与单例模式
+# Python 元类与单例模式
 
 ## 什么是元类
 
@@ -30,19 +30,15 @@ class Teather(object):
 
 ```
 所有的对象都是实例化或者说调用类而得到的（调用类的过程称为类的实例化），比如对象te1是调用类Teacher得到的
-```
-
+```python
 te1=Teather('shahuhu',35)
 print(type(te1))    [[查看对象的类是]]<class '__main__.Teather'>
-
 ```
 如果一切皆为对象，那么类Teacher本质也是一个对象，既然所有的对象都是调用类得到的，那么Teacher必然也是调用了一个类得到的，这个类称为元类
 
 **于是我们可以推导出=== >产生Teacher的过程一定发生了：Teacher=元类(...)**
-```
-
+```python
 print(type(Teacher)) # 结果为<class 'type'>，证明是调用了type这个元类而产生的Teacher，即默认的元类为type　
-
 ```
 ## class关键字创建类的流程分析
 
@@ -51,31 +47,22 @@ print(type(Teacher)) # 结果为<class 'type'>，证明是调用了type这个元
 class关键字在帮我们创建类时，必然帮我们调用了元类Teacher=type(...)，那调用type时传入的参数是什么呢？必然是类的关键组成部分，一个类有三大组成部分，分别是
 
 1、类名class_name='Teacher'
-
 2、基类们class_bases=(object,)
-
 3、类的名称空间class_dic，**类的名称空间是执行类体代码而得到的**
 
 调用type时会依次传入以上三个参数
 
 综上，class关键字帮我们创建一个类应该细分为以下四个过程
 ```
-
 1拿到类名    2拿到类的基类们   3执行类体代码   4调用元类得到类
-
 ```
 理解第三部要补充exec的用法
-```
-
-[[exec：三个参数]]
-
-[[参数一：包含一系列python代码的字符串]]    依然要保持原有python的代码规范，不然会出错
-
-[[参数二：全局作用域（字典形式），如果不指定，默认为globals]]()
-
-[[参数三：局部作用域（字典形式），如果不指定，默认为locals]]()
-
-[[可以把exec命令的执行当成是一个函数的执行，会将执行期间产生的名字存放于局部名称空间中]]
+```python
+# exec：三个参数
+# 参数一：包含一系列python代码的字符串  依然要保持原有python的代码规范，不然会出错
+# 参数二：全局作用域（字典形式），如果不指定，默认为globals()
+# 参数三：局部作用域（字典形式），如果不指定，默认为locals()
+# 可以把exec命令的执行当成是一个函数的执行，会将执行期间产生的名字存放于局部名称空间中
 g={
     'x':1,
     'y':2
@@ -97,8 +84,7 @@ print(l) #{'m': 300}
 ## 自定义元类控制类Teacher的创建
 
 一个类没有声明自己的元类，默认他的元类就是type，除了使用内置元类type，我们也可以通过继承type来自定义元类，然后使用metaclass关键字参数为一个类指定元类
-```
-
+```python
 class Mymeta(type):
     pass
 
@@ -111,11 +97,9 @@ class Teacther(object,metaclass=Mymeta):
 
     def say(self):
         print('%s says welcome to the xindongfang to learn cook'%self.name)
-
-```css
+```
 自定义元类可以控制类的产生过程，类的产生过程其实就是元类的调用过程,即Teacher=Mymeta('Teacher',(object),{...})，调用Mymeta会先产生一个空对象Teacher，然后连同调用Mymeta括号内的参数一同传给Mymeta下的__init__方法，完成初始化，于是我们可以
 ```python
-
 class Mymeta(type):
     def __init__(self,class_name,class_bases,class_dic):
         # print(self)           #<class '__main__.Teacher'>
@@ -123,12 +107,9 @@ class Mymeta(type):
         # print(class_dic)       #{'__module__': '__main__', '__qualname__': 'Teacher', '__doc__':
         #  '\n    类Teacher的中文注释\n    ', 'school': 'xindongfnag', '__init__': <function Teacher.__init__ at 0x00000274DF108AE8>,
         #  'say': <function Teacher.say at 0x00000274DF108B70>}
-
-        super(Mymeta,self).__init__(class_name,class_bases,class_dic)  [[子类重用父类的方法]]
-
+        super(Mymeta,self).__init__(class_name,class_bases,class_dic)  #子类重用父类的方法
         if class_name.islower():
             raise TypeError('类名%s请修改为驼峰体'%class_name)
-
         if '__doc__' not in class_dic or len(class_dic['__doc__'].strip('\n')) == 0:
             raise TypeError('类中必须要有中文注释，并且文档注释不能为空')
 
@@ -144,14 +125,12 @@ class Teacher(object,metaclass=Mymeta):
 
     def say(self):
         print('%s says welcome to the xindongfang to learn cook' % self.name)
-
 ```
 ## 自定义元类控制类Teacher的调用
 
 ### __call__
 
 ```python
-
 class Foo:
     def __call__(self, *args, **kwargs):
         print(self)
@@ -159,17 +138,15 @@ class Foo:
         print(kwargs)
 
 obj=Foo()
-[[1、要想让obj这个对象变成一个可调用的对象，需要在该对象的类中定义一个方法__call__方法，该方法会在调用对象时自动触发]]
-[[2、调用obj的返回值就是__call__方法的返回值]]
+# 1、要想让obj这个对象变成一个可调用的对象，需要在该对象的类中定义一个方法__call__方法，该方法会在调用对象时自动触发
+# 2、调用obj的返回值就是__call__方法的返回值
 res=obj(1,2,3,x=1,y=2) 
-
+print(res)
 ```
-View Code
 
 由上例得知，调用一个对象，就是触发对象所在类中的__call__方法的执行，如果把Teacher也当做一个对象，那么在Teacher这个对象的类中也必然存在一个__call__方法
 ```python
-
-class Mymeta(type): [[只有继承了type类才能称之为一个元类，否则就是一个普通的自定义类]]
+class Mymeta(type): #只有继承了type类才能称之为一个元类，否则就是一个普通的自定义类
     def __call__(self, *args, **kwargs):
         print(self)      #<class '__main__.Teacher'>
         print(args)      #('shahuhu', 35)
@@ -178,11 +155,9 @@ class Mymeta(type): [[只有继承了type类才能称之为一个元类，否则
 
 class Teacher(object,metaclass=Mymeta):
     school='xindongfang'
-
     def __init__(self,name,age):
         self.name=name
         self.age=age
-
     def say(self):
         print('%s says welcome to the xindongfang to learn cook' %self.name)
 
@@ -197,24 +172,21 @@ print(te1) #123
 默认地，调用te1=Teacher('shahuhu',35)会做三件事
 
 1、产生一个空对象obj
-
 2、调用__init__方法初始化对象obj
-
 3、返回初始化好的obj
 
 对应着，Teacher类中的__call__方法也应该做这三件事
 ```python
-
-class Mymeta(type): [[只有继承了type类才能称之为一个元类，否则就是一个普通的自定义类]]
-    def __call__(self, *args, **kwargs): [[self]]=<class '__main__.OldboyTeacher'>
-        [[1、调用__new__产生一个空对象obj]]
+class Mymeta(type): #只有继承了type类才能称之为一个元类，否则就是一个普通的自定义类
+    def __call__(self, *args, **kwargs): # [self]=<class '__main__.OldboyTeacher'>
+        # 1、调用__new__产生一个空对象obj
         obj=self.__new__(self) # 此处的self是类OldoyTeacher，必须传参，代表创建一个OldboyTeacher的对象obj
 
-        [[2、调用__init__初始化空对象obj]]
+        # 2、调用__init__初始化空对象obj
         # self.__init__(obj,*args,**kwargs)   [[类调用__init__]]  要传第一个参数类实例出的对象
         obj.__init__(*args,**kwargs)      [[对象调用]]
 
-        [[3、返回初始化好的对象obj]]
+        # 3、返回初始化好的对象obj
         return obj
 
 class Teacher(object,metaclass=Mymeta):
@@ -230,7 +202,6 @@ class Teacher(object,metaclass=Mymeta):
 t1=Teacher('shahuhu',35)
 print(t1)
 print(t1.__dict__) #{'name': 'shahuhu', 'age': 35}
-
 '''
 <__main__.Teacher object at 0x0000019EB12B7E48>
 {'name': 'shahuhu', 'age': 35}
@@ -245,11 +216,9 @@ print(t1.__dict__) #{'name': 'shahuhu', 'age': 35}
 在学习完元类后，其实我们用class自定义的类也全都是对象（包括object类本身也是元类type的 一个实例，可以用type(object)查看），我们学习过继承的实现原理，如果把类当成对象去看，将下述继承应该说成是：对象OldboyTeacher继承对象Foo，对象Foo继承对象Bar，对象Bar继承对象object
 
 ```python
-
-class Mymeta(type): [[只有继承了type类才能称之为一个元类，否则就是一个普通的自定义类]]
+class Mymeta(type): #只有继承了type类才能称之为一个元类，否则就是一个普通的自定义类
     n=444
-
-    def __call__(self, *args, **kwargs): [[self]]=<class '__main__.OldboyTeacher'>
+    def __call__(self, *args, **kwargs): # [self]=<class '__main__.OldboyTeacher'>
         obj=self.__new__(self)
         self.__init__(obj,*args,**kwargs)
         return obj
@@ -272,49 +241,40 @@ class OldboyTeacher(Foo,metaclass=Mymeta):
     def say(self):
         print('%s says welcome to the oldboy to learn Python' %self.name)
 
-print(OldboyTeacher.n) [[自下而上依次注释各个类中的n]]=xxx，然后重新运行程序，发现n的查找顺序为OldboyTeacher->Foo->Bar->object->Mymeta->type
-
+print(OldboyTeacher.n) #111
+# 自下而上依次注释各个类中的n=xxx，然后重新运行程序，发现n的查找顺序为OldboyTeacher->Foo->Bar->object->Mymeta->type
 ```
-View Code
+
 
 于是属性查找应该分成两层，一层是对象层（基于c3算法的MRO）的查找，另外一个层则是类层（即元类层）的查找
 
-![image](https://img2018.cnblogs.com/blog/1330620/201811/1330620-20181119192028105-246769047.png)
 ```
-
 查找顺序：
 1、先对象层：OldoyTeacher->Foo->Bar->object
 2、然后元类层：Mymeta->type
-
 ```
 依据上述总结，我们来分析下元类Mymeta中__call__里的self.__new__的查找
 
 ```python
-
-class Mymeta(type): 
+class Mymeta(type): #只有继承了type类才能称之为一个元类，否则就是一个普通的自定义类
     n=444
-
-    def __call__(self, *args, **kwargs): [[self]]=<class '__main__.OldboyTeacher'>
+    def __call__(self, *args, **kwargs): # [self]=<class '__main__.OldboyTeacher'>
         obj=self.__new__(self)
-        print(self.__new__ is object.__new__) [[True]]
+        print(self.__new__ is object.__new__) #True
 
 class Bar(object):
     n=333
-
     # def __new__(cls, *args, **kwargs):
     #     print('Bar.__new__')
 
 class Foo(Bar):
     n=222
-
     # def __new__(cls, *args, **kwargs):
     #     print('Foo.__new__')
 
 class OldboyTeacher(Foo,metaclass=Mymeta):
     n=111
-
     school='oldboy'
-
     def __init__(self,name,age):
         self.name=name
         self.age=age
@@ -328,7 +288,6 @@ class OldboyTeacher(Foo,metaclass=Mymeta):
 OldboyTeacher('egon',18) [[触发OldboyTeacher的类中的__call__方法的执行，进而执行self]].__new__开始查找
 
 ```
-View Code
 
 总结，Mymeta下的__call__里的self.__new__在OldboyTeacher、Foo、Bar里都没有找到__new__的情况下，会去找object里的__new__，而object下默认就有一个__new__，所以即便是之前的类均未实现__new__,也一定会在object中找到一个，根本不会、也根本没必要再去找元类Mymeta->type中查找__new__
 
@@ -339,8 +298,7 @@ View Code
 最后说明一点
 
 ```python
-
-class Mymeta(type): [[只有继承了type类才能称之为一个元类，否则就是一个普通的自定义类]]
+class Mymeta(type): #只有继承了type类才能称之为一个元类，否则就是一个普通的自定义类
     n=444
 
     def __new__(cls, *args, **kwargs):
@@ -374,18 +332,16 @@ print(type(Mymeta)) #<class 'type'>
 #         return obj
 
 ```
-View Code
 
 ## **基于元类实现单例模式**
 ```python
-
 # 单例：即单个实例，指的是同一个类实例化多次的结果指向同一个对象，用于节省内存空间
 # 如果我们从配置文件中读取配置来进行实例化，在配置相同的情况下，就没必要重复产生对象浪费内存了
-[[settings]].py文件内容如下
+# settings.py文件内容如下
 HOST='1.1.1.1'
 PORT=3306
 
-[[方式一]]:定义一个类方法实现单例模式
+# 方式一:定义一个类方法实现单例模式
 import settings
 
 class Mysql:
@@ -408,10 +364,10 @@ obj3=Mysql.singleton()
 obj4=Mysql.singleton()
 print(obj3 is obj4) [[True]]
 
-[[方式二]]:定义一个装饰器实现单例模式
+# 方式二:定义一个装饰器实现单例模式
 import settings   [[在此之前写过的一个配置文件]]
 
-def singleton(cls): [[cls]]=Mysql
+def singleton(cls): # cls=Mysql
     _instance=cls(settings.HOST,settings.PORT)
 
     def wrapper(*args,**kwargs):
@@ -436,7 +392,7 @@ obj4=Mysql('1.1.1.3',3307)
 obj5=Mysql('1.1.1.4',3308)
 print(obj3 is obj4) [[False]]
 
-[[实现方式三，元类的方式]]
+# 方式三:基于元类的方式
 class Mymeta(type):
     def __init__(self,class_name,class_bases,class_dic):
         if not class_name.istitle():
@@ -470,7 +426,7 @@ print(obj1 is obj2 is obj3)
 
 # 单例模式实现方式四:利用模块导入的知识，模块第一次导才会造名称空间，才会执行模块体代码
 
-[[singleton]].py
+# singleton.py
 import settings
 
 class MySQL:
@@ -481,14 +437,13 @@ class MySQL:
 
 instance=MySQL(settings.IP,settings.PORT)
 
-[[单例模式]].py
+# 单例模式.py
 def f1():
     from singleton import instance
     print(instance)
 
 def f2():
-    from singleton import instance,My
-    SQL
+    from singleton import instance,MySQL
     print(instance)
     obj=MySQL('1.1.1.3',3302)
     print(obj)
@@ -496,7 +451,7 @@ def f2():
 f1()
 f2()
 
-[[第五种单例实现]]
+# 单例实现
 import threading
 
 class SingletonType(type):
@@ -522,8 +477,7 @@ print(obj2)
 <__main__.Foo object at 0x000001A7C4B97B70>
 '''
 
-[[方式六]]
-# 如果想使得某个类从始至终最多只有一个实例，使用__new__方法会很简单。Python中类是通过__new__来创建实例的
+# 方式六:基于__new__方法。Python中类是通过__new__来创建实例的   
 class Singleton(object):
     def __new__(cls,*args,**kwargs):
         if not hasattr(cls,'_inst'):
@@ -545,7 +499,7 @@ if __name__=='__main__':
 # 通过__new__方法，将类的实例在创建的时候绑定到类属性_inst上。如果cls._inst为None，说明类还未实例化
 # 实例化并将实例绑定到cls._inst，以后每次实例化的时候都返回第一次实例化创建的实例。注意从Singleton派生子类的时候，不要重载__new__
 
-[[最简单的方法：]]
+# 最简单的方法
 
 class singleton(object):
      pass
@@ -598,7 +552,6 @@ singleton=singleton()
 ### **在元类中控制把自定义类的数据属性都变成大写**
 
 ```python
-
 class Mymetaclass(type):
     def __new__(cls,name,bases,attrs):
         update_attrs={}
@@ -625,9 +578,7 @@ print(Chinese.__dict__)
  '__weakref__': <attribute '__weakref__' of 'Chinese' objects>,
  '__doc__': None}
 '''
-
 ```
-View Code
 
 ### ****在元类中控制自定义的类无需__init__方法****
 
@@ -638,7 +589,6 @@ View Code
 3.key作为用户自定义类产生对象的属性，且所有属性变成大写
 
 ```python
-
 class Mymetaclass(type):
     # def __new__(cls,name,bases,attrs):
     #     update_attrs={}
@@ -666,25 +616,21 @@ class Chinese(metaclass=Mymetaclass):
 
 p=Chinese(name='egon',age=18,sex='male')
 print(p.__dict__)
-
 ```
-View Code
 
 ### **在元类中控制自定义的类产生的对象相关的属性全部为隐藏属性**
 
 ```python
-
 class Mymeta(type):
     def __init__(self,class_name,class_bases,class_dic):
-        [[控制类Foo的创建]]
+        # 控制类Foo的创建过程
         super(Mymeta,self).__init__(class_name,class_bases,class_dic)
 
     def __call__(self, *args, **kwargs):
-        [[控制Foo的调用过程，即Foo对象的产生过程]]
+        # 控制Foo的调用过程，即Foo对象的产生过程
         obj = self.__new__(self)
         self.__init__(obj, *args, **kwargs)
         obj.__dict__={'_%s__%s' %(self.__name__,k):v for k,v in obj.__dict__.items()}
-
         return obj
 
 class Foo(object,metaclass=Mymeta):  # Foo=Mymeta(...)
@@ -695,8 +641,7 @@ class Foo(object,metaclass=Mymeta):  # Foo=Mymeta(...)
 
 obj=Foo('egon',18,'male')
 print(obj.__dict__)
-
 ```
-View Code
+
 
 ---

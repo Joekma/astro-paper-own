@@ -1,5 +1,5 @@
 ---
-title: Python切片实现原理剖析
+title: Python 切片实现原理剖析
 author: FjellOverflow
 pubDatetime: 2024-08-13T00:00:00Z
 modDatetime: 2026-04-22T00:00:00Z
@@ -9,7 +9,7 @@ tags:
   - Python
   - 切片
   - docs
-description: Python切片实现原理剖析，涵盖序列切片、切片操作、底层实现等核心概念。
+description: Python 切片实现原理剖析，涵盖序列切片、切片操作、底层实现等核心概念。
 ---
 
 # Python 切片实现原理剖析
@@ -31,14 +31,12 @@ alist = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 print(alist[0])
 print(alist[0:1])
 ```
-
 输出结果：
 
-```
+```python
 0
 [0]
-```yaml
-
+```
 也就是说：
 
 - `alist[0]` 返回元素 `0`
@@ -47,11 +45,9 @@ print(alist[0:1])
 ##  切片语法规则
 
 切片的完整形式如下：
-
-```
+```python
 sequence[start_index:stop_index:step]
 ```
-
 其中：
 
 - `start_index`：起始位置
@@ -89,9 +85,7 @@ print(alist[1:5])
 print(alist[1:-1])
 print(alist[-8:6])
 ```
-
 输出结果：
-
 ```
 [1, 2, 3, 4]
 [1, 2, 3, 4, 5, 6, 7, 8]
@@ -138,7 +132,7 @@ print(alist[11:-11:-1])
 [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
 ```
 
-## 🧪 切片与 `slice` 对象
+## 切片与 `slice` 对象
 
 Python 中，切片本质上并不是语法糖那么简单。底层上，解释器最终会调用对象的 `__getitem__()` 方法。
 

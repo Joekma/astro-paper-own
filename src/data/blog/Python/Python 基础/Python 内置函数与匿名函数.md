@@ -1,36 +1,46 @@
 ---
-title: Python 内置函数与匿名函数
+title: Python 内置函数、匿名函数
 author: 程序员
-pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+pubDatetime: 2018-08-13T00:00:00.000+08:00
+updated: 2026-04-29T00:00:00.000+08:00
 slug: python-built-in-functions-lambda
-description: '全面介绍 Python 的内置函数和匿名函数 lambda 的使用方法'
+description: '全面介绍 Python 的内置函数和匿名函数 lambda 的使用方法，涵盖 Python 3.12 新特性'
 tags:
   - Python
   - 内置函数
   - lambda
   - 匿名函数
+  - Python 3.12
 category: Python
 draft: false
 language: zh-CN
 ---
 
-> Python 为我们提供了 68 个内置函数，它们可以直接使用。本文将详细介绍常用的内置函数和匿名函数 lambda 的使用方法。
+> Python 为我们提供了 71 个内置函数，它们可以直接使用。本文将详细介绍常用的内置函数和匿名函数 lambda 的使用方法，并涵盖 Python 3.12 的新特性。
 
 ## 内置函数一览
 
-截止到 Python 3.6.2，Python 一共为我们提供了 **68 个内置函数**。
+截止到 Python 3.12，Python 一共为我们提供了 **71 个内置函数**。
 
 | 函数 | 说明 |
 |------|------|
 | **abs()** | 返回绝对值 |
+| **aiter()** | 返回异步迭代器 (Python 3.10+) |
 | **all()** | 判断可迭代对象是否全部为 True |
+| **anext()** | 获取异步迭代器的下一个元素 (Python 3.10+) |
 | **any()** | 判断可迭代对象是否有任意一个为 True |
+| **ascii()** | 返回对象的可打印表示 |
 | **bin()** | 转换为二进制 |
 | **bool()** | 转换为布尔值 |
+| **breakpoint()** | 进入调试器 (Python 3.7+) |
+| **bytearray()** | 创建字节数组 |
 | **bytes()** | 转换为字节串 |
 | **callable()** | 判断对象是否可调用 |
 | **chr()** | 数字转字符 |
+| **classmethod()** | 类方法装饰器 |
+| **compile()** | 编译代码为代码对象 |
+| **complex()** | 创建复数 |
+| **delattr()** | 删除对象属性 |
 | **dict()** | 创建字典 |
 | **dir()** | 返回对象的属性列表 |
 | **divmod()** | 返回商和余数的元组 |
@@ -43,7 +53,9 @@ language: zh-CN
 | **frozenset()** | 创建不可变集合 |
 | **getattr()** | 获取对象属性 |
 | **globals()** | 返回全局变量字典 |
+| **hasattr()** | 判断对象是否有属性 |
 | **hash()** | 返回哈希值 |
+| **help()** | 显示帮助信息 |
 | **hex()** | 转换为十六进制 |
 | **id()** | 返回对象标识 |
 | **input()** | 获取用户输入 |
@@ -56,8 +68,10 @@ language: zh-CN
 | **locals()** | 返回局部变量字典 |
 | **map()** | 映射函数 |
 | **max()** | 返回最大值 |
+| **memoryview()** | 返回内存查看对象 |
 | **min()** | 返回最小值 |
 | **next()** | 获取下一个元素 |
+| **object()** | 创建对象 |
 | **oct()** | 转换为八进制 |
 | **open()** | 打开文件 |
 | **ord()** | 字符转数字 |
@@ -72,6 +86,7 @@ language: zh-CN
 | **setattr()** | 设置对象属性 |
 | **slice()** | 切片对象 |
 | **sorted()** | 排序 |
+| **staticmethod()** | 静态方法装饰器 |
 | **str()** | 转换为字符串 |
 | **sum()** | 求和 |
 | **super()** | 调用父类方法 |
@@ -493,6 +508,38 @@ result = reduce(lambda x, y: x * y, nums)
 print(result)  # 120
 ```
 
+
+### 异步迭代器增强（aiter/anext）
+
+Python 3.10 引入的 `aiter()` 和 `anext()` 函数在 Python 3.12 中得到进一步完善：
+
+```python
+import asyncio
+
+async def async_generator():
+    for i in range(5):
+        yield i
+        await asyncio.sleep(0.1)
+
+async def main():
+    ag = async_generator()
+    
+    # aiter() - 获取异步迭代器
+    async_iter = aiter(ag)
+    
+    # anext() - 获取下一个异步元素
+    try:
+        value = await anext(async_iter)
+        print(f"Received: {value}")  # 0
+        
+        # 带默认值
+        value = await anext(async_iter, "default")
+        print(f"Received: {value}")  # 1
+    except StopAsyncIteration:
+        print("迭代完成")
+
+asyncio.run(main())
+```
 ## 匿名函数 lambda
 
 ### 基本语法
@@ -565,16 +612,20 @@ print(sorted(salaries, key=lambda k: salaries[k], reverse=True))
 
 | 类别 | 函数 |
 |------|------|
-| **类型转换** | int, float, str, bool, list, dict, set, tuple, bytes |
+| **类型转换** | int, float, str, bool, list, dict, set, tuple, bytes, bytearray, complex |
 | **进制转换** | bin, oct, hex |
 | **数学运算** | abs, pow, divmod, round, sum, min, max |
 | **序列操作** | len, sorted, reversed, enumerate, zip, slice |
-| **对象属性** | type, id, hash, dir, getattr, setattr, hasattr, delattr |
+| **对象属性** | type, id, hash, dir, getattr, setattr, hasattr, delattr, vars |
 | **作用域** | globals, locals |
 | **可调用性** | callable |
 | **执行代码** | eval, exec, compile |
 | **输入输出** | input, print, open |
 | **函数式编程** | filter, map, reduce |
+| **异步迭代** | aiter, anext (Python 3.10+) |
+| **调试** | breakpoint (Python 3.7+), help |
+| **内存视图** | memoryview, ascii |
+| **装饰器** | classmethod, staticmethod, property |
 
 ### lambda 函数的适用场景
 
@@ -584,4 +635,6 @@ print(sorted(salaries, key=lambda k: salaries[k], reverse=True))
 
 > **注意**：虽然 lambda 函数简洁，但复杂的逻辑还是应该使用普通函数来保持代码可读性。
 
+
 掌握这些内置函数和 lambda 表达式的使用，可以让你的 Python 代码更加简洁和优雅。
+

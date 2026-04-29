@@ -337,12 +337,12 @@ info_copy = info.copy()
 ### 多级字典嵌套
 
 ```python
-av_catalog = {
+tv_catalog = {
     "欧美": {
-        "www.youporn.com": ["很多免费的", "质量一般"],
+        "www.omtv.com": ["没有免费的", "充值会员"],
     },
     "日韩": {
-        "tokyo-hot": ["质量怎样不清楚"],
+        "www.rhtv.com": ["质量怎样不清楚"],
     },
     "大陆": {
         "1024": ["全部免费", "好人一生平安"],
@@ -402,51 +402,6 @@ print(s1.issubset(s2))      # s1 是否是 s2 的子集
 print(s1.issuperset(s2))    # s1 是否是 s2 的超集
 print(s1.isdisjoint(s2))    # s1 和 s2 是否无交集
 ```
-
-## 深拷贝和浅拷贝
-
-### 概念解析
-
-- **浅拷贝**：只拷贝最外层，是对于一个对象的顶层拷贝。通俗的理解是：拷贝了引用，并没有拷贝内容。
-- **深拷贝**：有多少层都拷贝，是对于一个对象所有层次的拷贝（递归）。
-
-### 复习：可变类型和不可变类型
-
-| 类型 | 包含内容 |
-|------|---------|
-| **不可变类型** | 整型、浮点数、布尔、字符串、元组 |
-| **可变类型** | 列表、字典 |
-
-### 深浅拷贝的区别
-
-1. 如果用 `copy.copy` 或 `copy.deepcopy` 对一个全部都是不可变类型的数据进行拷贝，那么它们结果相同，都是引用指向。
-2. 如果拷贝的是一个拥有不可变类型的数据，即使元组是最顶层，那么 deepcopy 依然是深拷贝，而 copy.copy 还是指向。
-3. 基本上只要不是我们自已手动调用的 deepcopy 方法都是浅拷贝，切片拷贝、字典拷贝都是浅拷贝。
-4. 有些内置函数可以生成拷贝，属于深拷贝，例如：
-
-```python
-a = list(range(10))
-b = list(a)  # 深拷贝
-```
-
-### 实际应用示例
-
-```python
-import copy
-
-# 示例 1：浅拷贝
-list1 = [1, 2, 3]
-list2 = copy.copy(list1)
-print(list1 is list2)  # False
-
-# 示例 2：深拷贝
-list3 = [[1, 2], [3, 4]]
-list4 = copy.deepcopy(list3)
-print(list3 is list4)  # False
-print(list3[0] is list4[0])  # False，深拷贝会递归拷贝所有层级
-```
-
-> 更详细的深浅拷贝分析请参考：[Python 深浅拷贝详解](https://www.cnblogs.com/Eva-J/p/5534037.html)
 
 ## 小结
 
