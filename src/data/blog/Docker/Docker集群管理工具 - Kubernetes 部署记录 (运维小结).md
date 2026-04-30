@@ -1,0 +1,106 @@
+---
+title: Docker 集群管理工具 - Kubernetes 部署记录
+author: 程序员
+pubDatetime: 2024-08-13T00:00:00.000+08:00
+updated: 2026-04-22T00:00:00.000+08:00
+slug: kubernetes-deployment-guide
+description: 'Kubernetes 集群管理工具介绍，包括架构、组件和部署记录'
+tags:
+  - Docker
+  - Kubernetes
+category: Docker
+draft: false
+language: zh-CN
+---
+
+## Kubernetes 简介
+
+Kubernetes（K8S）是 Google 于 2014 年开源的容器集群管理系统，使用 Go 语言开发。它基于 Google 内部的 Borg 系统，用于自动化部署、扩展和管理容器应用。
+
+### 核心功能
+
+| 功能 | 说明 |
+|------|------|
+| **数据卷** | Pod 中容器之间共享数据 |
+| **健康检查** | 监控检查策略保证应用健壮性 |
+| **副本控制** | 维护 Pod 副本数量 |
+| **弹性伸缩** | 根据指标自动缩放 Pod 副本数 |
+| **服务发现** | 环境变量或 DNS 服务 |
+| **负载均衡** | 一组 Pod 副本分配集群 IP |
+| **滚动更新** | 逐个更新 Pod，不中断服务 |
+| **资源监控** | 集成 cAdvisor 资源收集 |
+
+## 架构与组件
+
+### Master 组件
+
+| 组件 | 说明 |
+|------|------|
+| `kube-apiserver` | 资源操作的唯一入口 |
+| `kube-controller-manager` | 维护集群状态 |
+| `kube-scheduler` | 资源调度，分配 Pod 到节点 |
+| `etcd` | 分布式键值存储，保存集群状态 |
+
+### Node 组件
+
+| 组件 | 说明 |
+|------|------|
+| `kubelet` | 管理 Pod 和容器生命周期 |
+| `kube-proxy` | 提供服务发现和负载均衡 |
+| `docker/rkt` | 运行容器 |
+
+### 插件
+
+| 插件 | 说明 |
+|------|------|
+| `kube-dns` | 为集群提供 DNS 服务 |
+| `Ingress Controller` | 提供外网入口 |
+| `Heapster` | 资源监控 |
+| `Dashboard` | GUI 管理界面 |
+
+## 基本对象概念
+
+### 核心对象
+
+| 对象 | 说明 |
+|------|------|
+| **Pod** | 最小部署单元，包含一个或多个容器 |
+| **Service** | 应用服务抽象，定义 Pod 逻辑集合 |
+| **Volume** | 数据卷，共享容器数据 |
+| **Namespace** | 命名空间，多租户隔离 |
+| **Label** | 标签，用于区分对象 |
+
+### 高级对象
+
+| 对象 | 说明 |
+|------|------|
+| **Deployment** | 管理 ReplicaSets 和 Pod |
+| **StatefulSet** | 持久化应用，有唯一网络标识 |
+| **DaemonSet** | 所有节点运行同一个 Pod |
+| **Job** | 一次性任务 |
+
+## 重要概念
+
+### Cluster
+
+Cluster 是计算、存储和网络资源的集合，Kubernetes 利用这些资源运行基于容器的应用。
+
+### Master
+
+集群管理节点，负责管理集群，提供资源数据访问入口。
+
+### Node
+
+工作节点，运行 Pod 的服务节点，运行关键进程：
+- `kubelet`：创建和管理 Pod
+- `kube-proxy`：Service 通信与负载均衡
+- `Docker`：容器创建和管理
+
+### Pod
+
+Pod 是 Kubernetes 调度的最小单位，可以包含一个或多个共享网络和存储的容器。
+
+**Pod 特点：**
+- 共享同一网络命名空间（相同 IP 和端口）
+- 可以共享存储
+- 紧密耦合的容器组合

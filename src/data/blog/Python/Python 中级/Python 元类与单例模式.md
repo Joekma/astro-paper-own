@@ -1,15 +1,18 @@
 ---
 title: Python 元类与单例模式
-author: FjellOverflow
-pubDatetime: 2018-11-19T00:00:00Z
-modDatetime: 2026-04-22T00:00:00Z
-featured: false
-draft: false
+author: 程序员
+pubDatetime: 2018-11-19T00:00:00.000+08:00
+updated: 2026-04-22T00:00:00.000+08:00
+slug: python-metaclass-singleton
+description: '深入理解 Python 元类与单例模式：元类创建、自定义元类、单例模式实现'
 tags:
   - Python
   - 面向对象
-  - docs
-description: Python 元类与单例模式，涵盖元类创建、自定义元类、单例模式实现等核心概念。
+  - 元类
+  - 单例模式
+category: Python中级
+draft: false
+language: zh-CN
 ---
 
 # Python 元类与单例模式

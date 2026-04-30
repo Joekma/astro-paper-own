@@ -1,15 +1,17 @@
 ---
 title: Base64原理解析
-author: FjellOverflow
-pubDatetime: 2024-08-13T00:00:00Z
-modDatetime: 2026-04-22T00:00:00Z
-featured: false
-draft: false
+author: 程序员
+pubDatetime: 2024-08-13T00:00:00.000+08:00
+updated: 2026-04-22T00:00:00.000+08:00
+slug: base64-encoding-principle
+description: '深入理解 Base64 编码原理：编码原理、Python实现、实际应用场景'
 tags:
   - Python
   - 编码
-  - docs
-description: Base64原理解析，涵盖Base64编码原理、Python实现、使用场景等核心概念。
+  - Base64
+category: Python中级
+draft: false
+language: zh-CN
 ---
 
 # Base64 原理解析与 Python 使用指南

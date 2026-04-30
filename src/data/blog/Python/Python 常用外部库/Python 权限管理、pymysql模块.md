@@ -273,9 +273,7 @@ if res:
 else:
     print('登录失败')
 ```
-
 执行结果：
-
 ```
 用户名: xuxu
 密码: 123456
@@ -328,7 +326,6 @@ sql = "SELECT * FROM userinfo WHERE name=%s AND password=%s"
 res = cursor.execute(sql, [user, pwd])
 # pymysql模块自动帮我们解决sql注入的问题，只要我们按照pymysql的规矩来
 ```
-
 ### 增、删、改：conn.commit()
 
 ```python
@@ -396,9 +393,7 @@ conn.commit()  # 提交后才发现表中插入记录成功
 cursor.close()
 conn.close()
 ```
-
 输出结果：
-
 ```
 (1, 'root', '123456')
 (2, 'root', '123456')

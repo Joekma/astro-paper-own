@@ -271,10 +271,10 @@ print(soup.a.next_sibling)
 print(soup.a.previous_sibling)
 
 # 获取后面的所有兄弟节点
-print(list(soup.a.next_siblings)
+print(list(soup.a.next_siblings))
 
 # 获取前面的所有兄弟节点
-print(list(soup.a.previous_siblings)
+print(list(soup.a.previous_siblings))
 ```
 
 ## 搜索文档树

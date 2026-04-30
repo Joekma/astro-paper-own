@@ -1,15 +1,18 @@
 ---
 title: Python StringIO与BytesIO
-author: FjellOverflow
-pubDatetime: 2024-08-13T00:00:00Z
-modDatetime: 2026-04-22T00:00:00Z
-featured: false
-draft: false
+author: 程序员
+pubDatetime: 2024-08-13T00:00:00.000+08:00
+updated: 2026-04-22T00:00:00.000+08:00
+slug: python-stringio-bytesio
+description: '深入理解 Python StringIO与BytesIO：内存读写、缓冲区操作'
 tags:
   - Python
   - IO
-  - docs
-description: Python StringIO与BytesIO，涵盖内存读写、缓冲区操作等核心概念。
+  - StringIO
+  - BytesIO
+category: Python中级
+draft: false
+language: zh-CN
 ---
 
 # Python StringIO与BytesIO

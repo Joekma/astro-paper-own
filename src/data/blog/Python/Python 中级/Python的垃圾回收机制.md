@@ -1,15 +1,18 @@
 ---
 title: Python 垃圾回收机制
-author: FjellOverflow
-pubDatetime: 2024-08-11T00:00:00Z
-modDatetime: 2026-04-22T00:00:00Z
-featured: false
-draft: false
+author: 程序员
+pubDatetime: 2024-08-11T00:00:00.000+08:00
+updated: 2026-04-22T00:00:00.000+08:00
+slug: python-garbage-collection
+description: '深入理解 Python 垃圾回收机制：引用计数、分代回收、循环垃圾回收'
 tags:
   - Python
   - 内存管理
-  - docs
-description: Python 垃圾回收机制，涵盖GC算法、引用计数、循环垃圾回收等核心概念。
+  - GC
+  - 垃圾回收
+category: Python中级
+draft: false
+language: zh-CN
 ---
 
 # Python 垃圾回收机制

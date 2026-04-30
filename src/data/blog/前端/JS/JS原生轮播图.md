@@ -1,0 +1,65 @@
+---
+title: JavaScript原生轮播图
+author: 程序员
+pubDatetime: 2024-08-13T00:00:00.000+08:00
+updated: 2026-04-22T00:00:00.000+08:00
+slug: javascript-carousel-tutorial
+description: '原生JavaScript实现轮播图，包括基础版和完整版代码示例'
+tags:
+  - JavaScript
+  - 前端
+  - 轮播图
+  - Web
+category: 前端
+draft: false
+language: zh-CN
+---
+
+> 原生 JavaScript 实现轮播图效果。
+
+## 基础版
+
+```html
+<div class="carousel">
+    <div class="carousel-inner">
+        <img src="1.jpg" class="active">
+        <img src="2.jpg">
+        <img src="3.jpg">
+    </div>
+    <button class="prev">←</button>
+    <button class="next">→</button>
+</div>
+```
+
+```javascript
+const images = document.querySelectorAll('.carousel-inner img')
+let current = 0
+
+function showImage(index) {
+    images.forEach(img => img.classList.remove('active'))
+    images[index].classList.add('active')
+}
+
+document.querySelector('.prev').onclick = () => {
+    current = (current - 1 + images.length) % images.length
+    showImage(current)
+}
+
+document.querySelector('.next').onclick = () => {
+    current = (current + 1) % images.length
+    showImage(current)
+}
+
+// 自动播放
+setInterval(() => {
+    current = (current + 1) % images.length
+    showImage(current)
+}, 3000)
+```
+
+## 小结
+
+- **索引控制**：当前图片索引
+- **切换逻辑**：prev/next 按钮
+- **自动播放**：setInterval
+- **CSS 动画**：active 类控制显示

@@ -1,18 +1,17 @@
 ---
 title: Python 面向对象三大特性之封装与多态
-author: FjellOverflow
-pubDatetime: 2024-08-13T00:00:00Z
-updated: 2026-04-29T00:00:00Z
+author: 程序员
+pubDatetime: 2024-08-13T00:00:00.000+08:00
+updated: 2026-04-29T00:00:00.000+08:00
 slug: python-oop-encapsulation-polymorphism
-featured: false
-draft: false
+description: '深入理解 Python 面向对象三大特性中的封装与多态，掌握属性隐藏、property 装饰器、接口设计、鸭子类型等核心概念'
 tags:
   - Python
   - 面向对象
   - 封装
   - 多态
-  - docs
-description: 深入理解 Python 面向对象三大特性中的封装与多态，掌握属性隐藏、property 装饰器、接口设计、鸭子类型等核心概念。
+category: Python中级
+draft: false
 language: zh-CN
 ---
 
