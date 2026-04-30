@@ -2,16 +2,15 @@
 title: SQL查询语句执行顺序
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: sql-query-execution-order
-description: 'MySQL SQL查询语句的执行顺序详解'
+featured: false
+draft: false
 tags:
   - MySQL
   - 数据库
   - SQL
-category: 数据库
-draft: false
-language: zh-CN
+description: 'SQL查询语句的执行顺序详解'
 ---
 
 > SQL 查询语句有其固定的执行顺序。

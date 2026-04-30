@@ -4,15 +4,14 @@ author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 updated: 2026-04-22T00:00:00.000+08:00
 slug: javascript-advanced-syntax
-description: 'JavaScript高级语法，包括原型链、闭包、作用域链和DOM选择器'
+featured: false
+draft: false
 tags:
   - JavaScript
   - 前端
   - Web
   - 高级
-category: 前端
-draft: false
-language: zh-CN
+description: 'JavaScript高级语法，包括原型链、闭包、作用域链和DOM选择器'
 ---
 
 > JavaScript 高级特性包括原型链、闭包、作用域等。

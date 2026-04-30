@@ -2,17 +2,16 @@
 title: MySQL索引管理及执行计划
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: mysql-index-management
-description: 'MySQL索引管理和查询执行计划分析'
+featured: false
+draft: false
 tags:
   - MySQL
   - 数据库
   - 索引
   - EXPLAIN
-category: 数据库
-draft: false
-language: zh-CN
+description: 'MySQL索引管理和查询执行计划分析'
 ---
 
 > 索引管理和查询分析是性能优化的基础。

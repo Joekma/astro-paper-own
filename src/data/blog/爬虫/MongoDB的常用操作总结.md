@@ -1,18 +1,17 @@
 ---
-title: MongoDB常用操作总结
+title: MongoDB 常用操作总结
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: mongodb-operations-summary
-description: 'MongoDB基础知识和常用操作，包括文档、集合、数据库概念和CRUD操作'
+featured: false
+draft: false
 tags:
   - Python
   - 爬虫
   - MongoDB
   - 数据库
-category: 爬虫
-draft: false
-language: zh-CN
+description: 'MongoDB基础知识和常用操作，包括文档、集合、数据库概念和CRUD操作'
 ---
 
 > MongoDB 是一款强大、灵活、易于扩展的通用型数据库，采用文档存储模式。

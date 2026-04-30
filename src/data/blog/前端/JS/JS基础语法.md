@@ -4,103 +4,63 @@ author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 updated: 2026-04-22T00:00:00.000+08:00
 slug: javascript-basics
-description: 'JavaScript基础语法，包括变量、数据类型、运算符、控制结构等核心概念'
+description: 'JavaScript基础语法和数据类型'
 tags:
   - JavaScript
   - 前端
-  - Web
+  - 基础
+  - 语法
 category: 前端
 draft: false
 language: zh-CN
 ---
 
-> JavaScript 是一种运行在浏览器端的脚本语言，用于实现网页的交互效果。
+> JavaScript 是网页开发的核心语言，掌握基础语法是前端开发的必经之路。
 
-## JavaScript 引入方式
-
-### 1. 行内式（不推荐）
-
-```html
-<button onclick="alert('点击')">按钮</button>
-```
-
-### 2. 内联式
-
-```html
-<script>
-    alert('页面加载完成');
-</script>
-```
-
-### 3. 外部文件（推荐）
-
-```html
-<script src="main.js"></script>
-```
-
-## 变量
+## 基础语法
 
 ### 变量声明
 
-| 关键字 | 作用域 | 可重新赋值 | 可重新声明 |
-|--------|--------|-----------|-----------|
-| `var` | 函数作用域 | ✅ | ✅ |
-| `let` | 块级作用域 | ✅ | ❌ |
-| `const` | 块级作用域 | ❌ | ❌ |
-
 ```javascript
-var name = '张三';      // 函数作用域
-let age = 25;           // 块级作用域
-const PI = 3.14159;     // 常量，不能修改
+// var：函数作用域，可重复声明
+var name = "Alice";
+
+// let：块级作用域，不可重复声明
+let age = 25;
+
+// const：常量，不可重新赋值
+const PI = 3.14159;
 ```
 
-### 命名规范
-
-- 字母、数字、下划线、`$` 组成
-- 不能以数字开头
-- 区分大小写
-- 建议使用小驼峰命名
-
-## 数据类型
-
-### 基本类型
-
-| 类型 | 示例 | 说明 |
-|------|------|------|
-| **String** | `'hello'`、`"world"` | 字符串 |
-| **Number** | `123`、`3.14` | 数字 |
-| **Boolean** | `true`、`false` | 布尔值 |
-| **Undefined** | `undefined` | 未定义 |
-| **Null** | `null` | 空值 |
-| **Symbol** | `Symbol('id')` | 唯一标识 |
-| **BigInt** | `9007199254740991n` | 大整数 |
-
-### 引用类型
+### 数据类型
 
 ```javascript
-// 对象
-let obj = { name: '张三', age: 25 };
+// 原始类型
+let str = "Hello";           // 字符串
+let num = 123;               // 数字
+let bool = true;             // 布尔值
+let empty = null;            // null
+let undef = undefined;       // undefined
+let sym = Symbol("id");       // Symbol
+let bigInt = 9007199254740991n; // BigInt
 
-// 数组
-let arr = [1, 2, 3, 4, 5];
-
-// 函数
-function sayHello() {
-    console.log('Hello');
-}
+// 引用类型
+let arr = [1, 2, 3];         // 数组
+let obj = { name: "Alice" };  // 对象
+let func = function() {};    // 函数
 ```
 
-### 类型检测
+### 类型判断
 
 ```javascript
-typeof 'hello'     // "string"
-typeof 123         // "number"
-typeof true        // "boolean"
-typeof undefined   // "undefined"
-typeof null        // "object"  // 历史遗留问题
-typeof {}          // "object"
-typeof []          // "object"
-Array.isArray([])  // true
+typeof "hello"      // "string"
+typeof 123          // "number"
+typeof true         // "boolean"
+typeof undefined    // "undefined"
+typeof null         // "object" (历史遗留)
+typeof {}           // "object"
+typeof []           // "object"
+Array.isArray([])   // true
 ```
 
 ## 运算符
@@ -112,64 +72,60 @@ let a = 10, b = 3;
 console.log(a + b);   // 13 加
 console.log(a - b);   // 7  减
 console.log(a * b);   // 30 乘
-console.log(a / b);   // 3.333... 除
+console.log(a / b);   // 3.333 除
 console.log(a % b);   // 1  取余
-console.log(a ** b);   // 1000 幂
-console.log(++a);     // 11 自增
-console.log(--b);     // 2  自减
+console.log(a ** b);  // 1000 幂
+console.log(++a);      // 11 自增
+console.log(--a);      // 10 自减
 ```
 
 ### 比较运算符
 
 ```javascript
-console.log(10 == '10');    // true  松散相等
-console.log(10 === '10');   // false 严格相等
-console.log(10 != '10');    // false
-console.log(10 !== '10');   // true
-console.log(5 > 3);         // true
-console.log(5 >= 5);       // true
+console.log(1 == "1");    // true (弱相等)
+console.log(1 === "1");   // false (强相等)
+console.log(1 != "1");    // false
+console.log(1 !== "1");   // true
+console.log(3 > 2);       // true
+console.log(3 >= 3);      // true
 ```
 
 ### 逻辑运算符
 
 ```javascript
-console.log(true && false);  // false 逻辑与
-console.log(true || false);  // true  逻辑或
-console.log(!true);          // false 取反
+console.log(true && false);  // false
+console.log(true || false);  // true
+console.log(!true);          // false
+console.log(0 || "default"); // "default" (短路求值)
 ```
 
-## 控制结构
+## 流程控制
 
 ### 条件语句
 
 ```javascript
 // if-else
-if (age >= 18) {
-    console.log('成年');
-} else if (age >= 12) {
-    console.log('青少年');
+if (score >= 90) {
+    console.log("优秀");
+} else if (score >= 60) {
+    console.log("及格");
 } else {
-    console.log('儿童');
+    console.log("不及格");
 }
 
 // 三元运算符
-let result = age >= 18 ? '成年' : '未成年';
+let result = score >= 60 ? "及格" : "不及格";
 
 // switch
-switch (day) {
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-        console.log('工作日');
+switch (grade) {
+    case "A":
+        console.log("90-100");
         break;
-    case 6:
-    case 7:
-        console.log('周末');
+    case "B":
+        console.log("80-90");
         break;
     default:
-        console.log('无效日期');
+        console.log("其他");
 }
 ```
 
@@ -181,28 +137,28 @@ for (let i = 0; i < 5; i++) {
     console.log(i);
 }
 
-// while 循环
-let count = 0;
-while (count < 5) {
-    console.log(count);
-    count++;
+// for...in (遍历键)
+for (let key in obj) {
+    console.log(key);
 }
 
-// do-while 循环
-do {
-    console.log(count);
-    count--;
-} while (count > 0);
-
-// for...of（遍历数组）
-for (let item of [1, 2, 3]) {
+// for...of (遍历值)
+for (let item of arr) {
     console.log(item);
 }
 
-// for...in（遍历对象）
-for (let key in {a: 1, b: 2}) {
-    console.log(key);
+// while 循环
+let i = 0;
+while (i < 5) {
+    console.log(i);
+    i++;
 }
+
+// do...while
+do {
+    console.log(i);
+    i++;
+} while (i < 5);
 ```
 
 ## 函数
@@ -212,7 +168,7 @@ for (let key in {a: 1, b: 2}) {
 ```javascript
 // 函数声明
 function greet(name) {
-    return `Hello, ${name}`;
+    return `Hello, ${name}!`;
 }
 
 // 函数表达式
@@ -224,169 +180,82 @@ const add = function(a, b) {
 const multiply = (a, b) => a * b;
 
 // 默认参数
-function greet(name = 'World') {
-    return `Hello, ${name}`;
+function greet(name = "World") {
+    return `Hello, ${name}!`;
 }
 ```
 
-### 函数参数
+### 参数传递
 
 ```javascript
 // 剩余参数
 function sum(...numbers) {
     return numbers.reduce((a, b) => a + b, 0);
 }
-sum(1, 2, 3, 4);  // 10
 
 // 解构参数
-function printUser({ name, age }) {
-    console.log(`${name}, ${age}`);
+function greet({ name, age }) {
+    return `${name} is ${age} years old`;
 }
-printUser({ name: '张三', age: 25 });
 ```
 
-## 数组
-
-### 基本操作
+## 数组操作
 
 ```javascript
 let arr = [1, 2, 3, 4, 5];
 
-// 添加元素
-arr.push(6);           // 末尾添加
-arr.unshift(0);       // 开头添加
-
-// 删除元素
-arr.pop();             // 末尾删除
-arr.shift();           // 开头删除
-
-// 切片
-arr.slice(1, 3);      // [2, 3]
-
-// 合并
-arr.concat([7, 8]);
+// 遍历
+arr.forEach(item => console.log(item));
+arr.map(item => item * 2);
+arr.filter(item => item > 2);
+arr.reduce((sum, item) => sum + item, 0);
 
 // 查找
-arr.indexOf(3);        // 2
-arr.includes(3);      // true
+arr.find(item => item > 2);
+arr.findIndex(item => item > 2);
+arr.includes(3);
+
+// 新增删除
+arr.push(6);
+arr.pop();
+arr.unshift(0);
+arr.shift();
+arr.splice(1, 2);
+arr.slice(1, 3);
+
+// 其他
+arr.sort((a, b) => a - b);
+arr.reverse();
+arr.concat([6, 7]);
 ```
 
-### 高阶方法
+## 对象操作
 
 ```javascript
-// map - 映射
-[1, 2, 3].map(x => x * 2);  // [2, 4, 6]
+let obj = { name: "Alice", age: 25 };
 
-// filter - 过滤
-[1, 2, 3, 4].filter(x => x > 2);  // [3, 4]
+// 访问
+obj.name;
+obj["name"];
 
-// reduce - 累计
-[1, 2, 3].reduce((sum, x) => sum + x, 0);  // 6
+// 添加删除
+obj.gender = "female";
+delete obj.age;
 
-// find - 查找
-[1, 2, 3].find(x => x > 1);  // 2
+// 遍历
+Object.keys(obj);
+Object.values(obj);
+Object.entries(obj);
 
-// some/every - 判断
-[1, 2, 3].some(x => x > 2);   // true
-[1, 2, 3].every(x => x > 0);  // true
+// 解构
+const { name, age } = obj;
+const { name: userName } = obj;
 ```
-
-## 对象
-
-### 基本操作
-
-```javascript
-let user = {
-    name: '张三',
-    age: 25,
-    sayHi: function() {
-        console.log('Hi');
-    }
-};
-
-// 访问属性
-user.name;          // 张三
-user['name'];       // 张三
-
-// 添加属性
-user.gender = '男';
-
-// 删除属性
-delete user.age;
-
-// 方法简写
-let user = {
-    name: '张三',
-    sayHi() {
-        console.log('Hi');
-    }
-};
-```
-
-### 解构赋值
-
-```javascript
-let { name, age } = { name: '张三', age: 25 };
-
-// 重命名
-let { name: userName } = { name: '张三' };
-
-// 默认值
-let { gender = '未知' } = { name: '张三' };
-```
-
-## 字符串
-
-### 常用方法
-
-```javascript
-let str = 'Hello World';
-
-// 长度
-str.length;  // 11
-
-// 查找
-str.indexOf('World');     // 6
-str.includes('Hello');    // true
-str.startsWith('Hello'); // true
-str.endsWith('World');   // true
-
-// 提取
-str.slice(0, 5);      // Hello
-str.substring(0, 5);  // Hello
-str.substr(0, 5);    // Hello（已废弃）
-
-// 替换
-str.replace('World', 'JavaScript');
-
-// 分割
-str.split(' ');  // ['Hello', 'World']
-
-// 大小写
-str.toUpperCase();  // HELLO WORLD
-str.toLowerCase();  // hello world
-
-// 去除空白
-'  Hello  '.trim();  // Hello
-```
-
-## 调试方法
-
-| 方法 | 说明 |
-|------|------|
-| `console.log()` | 控制台输出 |
-| `console.warn()` | 警告信息 |
-| `console.error()` | 错误信息 |
-| `alert()` | 弹出框 |
-| `prompt()` | 输入框 |
-| `debugger` | 断点调试 |
 
 ## 小结
 
-- **变量**：`var`、`let`、`const`
-- **数据类型**：基本类型 + 引用类型
-- **运算符**：算术、比较、逻辑
-- **控制结构**：条件、循环
+- **变量**：let、const 优先
+- **类型**：原始类型和引用类型
 - **函数**：声明、表达式、箭头函数
-- **数组**：push、pop、map、filter、reduce
-- **对象**：属性、方法、解构
+- **数组**：map、filter、reduce
+- **对象**：解构、属性操作

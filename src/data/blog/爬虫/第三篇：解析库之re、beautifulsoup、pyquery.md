@@ -1,17 +1,16 @@
 ---
-title: 第三篇：解析库之re、beautifulsoup、pyquery
+title: 解析库之re、beautifulsoup、pyquery
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: python-html-parsing-libraries
-description: 'Python解析库re、BeautifulSoup和pyquery的详细使用教程'
+featured: false
+draft: false
 tags:
   - Python
   - 爬虫
   - 解析库
-category: 爬虫
-draft: false
-language: zh-CN
+description: 'Python解析库re、BeautifulSoup和pyquery的详细使用教程'
 ---
 
 > 在爬虫程序中，获取到网页源代码后，需要从海量 HTML 代码中提取出有用的数据。常用的解析库有三种：re、BeautifulSoup、pyquery。

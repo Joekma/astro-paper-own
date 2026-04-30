@@ -1,10 +1,11 @@
 ---
-title: 第四篇：存储库之MongoDB、Redis、MySQL
+title: 存储库之MongoDB、Redis、MySQL
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: python-scraping-data-storage
-description: '爬虫数据存储方案，包括MongoDB、Redis和MySQL的使用'
+featured: false
+draft: false
 tags:
   - Python
   - 爬虫
@@ -12,9 +13,7 @@ tags:
   - MongoDB
   - Redis
   - MySQL
-category: 爬虫
-draft: false
-language: zh-CN
+description: '爬虫数据存储方案，包括MongoDB、Redis和MySQL的使用'
 ---
 
 > 在爬虫程序中，获取到数据后需要将数据存储起来。根据数据类型和访问频率选择合适的存储方案。

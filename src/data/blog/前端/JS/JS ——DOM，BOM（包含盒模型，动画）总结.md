@@ -2,18 +2,17 @@
 title: JavaScript DOM与BOM总结
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: javascript-dom-bom-summary
-description: 'JavaScript DOM和BOM核心知识，包括DOM操作、BOM对象和盒模型'
+featured: false
+draft: false
 tags:
   - JavaScript
   - DOM
   - BOM
   - 前端
   - Web
-category: 前端
-draft: false
-language: zh-CN
+description: 'JavaScript DOM和BOM核心知识，包括DOM操作、BOM对象和盒模型'
 ---
 
 > JavaScript 通过 DOM 和 BOM 两大对象模型与浏览器进行交互。

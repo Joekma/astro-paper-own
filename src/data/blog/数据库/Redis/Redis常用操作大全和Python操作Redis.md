@@ -2,16 +2,15 @@
 title: Redis常用操作和Python操作
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: redis-python-operations
-description: 'Redis常用命令和Python操作Redis的方法'
+featured: false
+draft: false
 tags:
   - Redis
   - 数据库
   - Python
-category: 数据库
-draft: false
-language: zh-CN
+description: 'Redis常用命令和Python操作Redis的方法'
 ---
 
 > Redis 操作包括命令和 Python 接口。

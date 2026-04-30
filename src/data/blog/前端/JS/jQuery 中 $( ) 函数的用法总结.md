@@ -2,17 +2,16 @@
 title: jQuery $( ) 函数用法总结
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: jquery-basics-tutorial
-description: 'jQuery基础教程，包括选择器、DOM操作、事件处理和动画效果'
+featured: false
+draft: false
 tags:
   - jQuery
   - JavaScript
   - 前端
   - Web
-category: 前端
-draft: false
-language: zh-CN
+description: 'jQuery基础教程，包括选择器、DOM操作、事件处理和动画效果'
 ---
 
 > jQuery 是一个快速、简洁的 JavaScript 库，简化了 HTML 文档遍历、事件处理和动画等操作。

@@ -2,17 +2,16 @@
 title: Redis高可用Sentinel
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: redis-sentinel-tutorial
-description: 'Redis Sentinel高可用方案，包括主从切换和故障转移'
+featured: false
+draft: false
 tags:
   - Redis
   - 数据库
   - 高可用
   - Sentinel
-category: 数据库
-draft: false
-language: zh-CN
+description: 'Redis Sentinel高可用方案，包括主从切换和故障转移'
 ---
 
 > Sentinel 实现 Redis 高可用。

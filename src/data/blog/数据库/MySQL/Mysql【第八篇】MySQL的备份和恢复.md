@@ -2,17 +2,16 @@
 title: MySQL备份和恢复
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: mysql-backup-restore
-description: 'MySQL备份和恢复方法详解'
+featured: false
+draft: false
 tags:
   - MySQL
   - 数据库
   - 备份
   - 恢复
-category: 数据库
-draft: false
-language: zh-CN
+description: 'MySQL备份和恢复方法详解'
 ---
 
 > 数据库备份是数据安全的重要保障。

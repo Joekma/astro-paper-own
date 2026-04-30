@@ -2,18 +2,17 @@
 title: MongoDB 创建索引及其他
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: mongodb-indexes-and-deduplication
-description: 'MongoDB索引创建、数据库对比以及爬虫数据去重方法'
+featured: false
+draft: false
 tags:
   - Python
   - 爬虫
   - MongoDB
   - Redis
   - 数据库
-category: 爬虫
-draft: false
-language: zh-CN
+description: 'MongoDB索引创建、数据库对比以及爬虫数据去重方法'
 ---
 
 > MongoDB 是爬虫项目中常用的数据存储方案，本文介绍索引创建和爬虫数据去重方法。

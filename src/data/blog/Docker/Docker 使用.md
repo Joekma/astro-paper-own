@@ -12,21 +12,26 @@ draft: false
 language: zh-CN
 ---
 
+## 概述
+
+Docker 允许在容器内运行应用程序，本教程介绍容器的基本操作和管理。
+
 ## Hello World
 
-Docker 允许在容器内运行应用程序，使用 `docker run` 命令在容器内运行应用程序。
+使用 `docker run` 命令在容器内运行应用程序：
 
 ```bash
 docker run ubuntu:15.10 /bin/echo "Hello world"
 ```
 
-> **参数说明：**
-> - `docker`：Docker 的二进制执行文件
-> - `run`：运行一个容器
-> - `ubuntu:15.10`：指定要运行的镜像
-> - `/bin/echo`：在容器里执行的命令
+| 参数 | 说明 |
+|------|------|
+| `docker` | Docker 的二进制执行文件 |
+| `run` | 运行一个容器 |
+| `ubuntu:15.10` | 指定要运行的镜像 |
+| `/bin/echo` | 在容器里执行的命令 |
 
-## 运行交互式容器
+## 交互式容器
 
 通过 `-i -t` 参数，让容器实现"对话"能力：
 
@@ -43,45 +48,45 @@ docker run -i -t ubuntu:15.10 /bin/bash
 
 ## 后台运行容器
 
-创建以进程方式运行的容器：
+创建以后台进程方式运行的容器：
 
 ```bash
 docker run -d ubuntu:15.10 /bin/sh -c "while true; do echo hello world; sleep 1; done"
 ```
 
-查看运行中的容器：
+| 参数 | 说明 |
+|------|------|
+| `-d` | 后台运行 |
+
+### 查看容器
 
 ```bash
+# 查看运行中的容器
 docker ps
-```
 
-查看容器日志：
-
-```bash
+# 查看容器日志
 docker logs <容器ID/名称>
+
+# 实时查看日志
+docker logs -f <容器ID/名称>
 ```
 
-## 停止容器
+## 停止与启动容器
 
 ```bash
+# 停止容器
 docker stop <容器ID/名称>
+
+# 启动已停止的容器
+docker start <容器ID/名称>
+
+# 重启容器
+docker restart <容器ID/名称>
 ```
 
-## Docker 客户端
+## Web 应用
 
-直接输入 `docker` 查看所有命令选项：
-
-```bash
-docker
-```
-
-查看具体命令帮助：
-
-```bash
-docker stats --help
-```
-
-## 运行 Web 应用
+### 运行 Web 应用
 
 拉取镜像并运行 Python Flask 应用：
 
@@ -95,13 +100,15 @@ docker run -d -P training/webapp python app.py
 | `-d` | 后台运行 |
 | `-P` | 将容器内部端口映射到主机 |
 
-## 查看 Web 应用容器
+### 查看端口映射
 
 ```bash
+# 查看运行中的容器
 docker ps
-```
 
-### 端口映射
+# 查看具体端口映射
+docker port <容器ID/名称>
+```
 
 `PORTS` 显示格式：`0.0.0.0:32769->5000/tcp`
 
@@ -111,41 +118,25 @@ docker ps
 docker run -d -p 5000:5000 training/webapp python app.py
 ```
 
-## 网络端口快捷方式
-
-使用 `docker port` 查看端口映射：
+## 容器管理
 
 ```bash
-docker port <容器ID/名称>
-```
-
-## 查看应用日志
-
-```bash
-docker logs -f <容器ID/名称>
-```
-
-| 参数 | 说明 |
-|------|------|
-| `-f` | 像 `tail -f` 一样输出日志 |
-
-## 查看容器进程
-
-```bash
+# 查看容器进程
 docker top <容器名称>
-```
 
-## 检查容器底层信息
-
-```bash
+# 查看容器详细信息
 docker inspect <容器名称>
+
+# 进入容器
+docker exec -it <容器名称> /bin/bash
 ```
 
-返回 JSON 格式的配置和状态信息。
-
-## 重启 Web 应用
+## Docker 帮助
 
 ```bash
-docker start <容器名称>
-docker restart <容器名称>
+# 查看所有命令
+docker
+
+# 查看具体命令帮助
+docker <command> --help
 ```

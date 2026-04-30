@@ -4,15 +4,14 @@ author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 updated: 2026-04-22T00:00:00.000+08:00
 slug: javascript-dom-manipulation
-description: 'JavaScript DOM操作，包括元素选择、属性控制、内容操作和事件处理'
+featured: false
+draft: false
 tags:
   - JavaScript
   - DOM
   - 前端
   - Web
-category: 前端
-draft: false
-language: zh-CN
+description: 'JavaScript DOM操作，包括元素选择、属性控制、内容操作和事件处理'
 ---
 
 > DOM（文档对象模型）是 JavaScript 操作网页内容的主要接口。

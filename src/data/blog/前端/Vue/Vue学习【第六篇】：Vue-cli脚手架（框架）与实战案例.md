@@ -4,15 +4,14 @@ author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 updated: 2026-04-22T00:00:00.000+08:00
 slug: vue-cli-scaffolding-tutorial
-description: 'Vue CLI脚手架使用，包括项目创建、组件开发、路由配置和实战案例'
+featured: false
+draft: false
 tags:
   - Vue
   - Vue CLI
   - 前端
   - 脚手架
-category: 前端
-draft: false
-language: zh-CN
+description: 'Vue CLI脚手架使用，包括项目创建、组件开发、路由配置和实战案例'
 ---
 
 > Vue CLI 是 Vue.js 官方提供的脚手架工具，用于快速搭建 Vue 项目。

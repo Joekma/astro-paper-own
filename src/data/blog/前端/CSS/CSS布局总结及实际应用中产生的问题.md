@@ -2,17 +2,16 @@
 title: CSS布局总结及实际问题
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: css-layout-summary-and-problems
-description: 'CSS布局技术总结，包括浮动、定位、BFC等及实际应用中的常见问题'
+featured: false
+draft: false
 tags:
   - CSS
   - 前端
   - 布局
   - Web
-category: 前端
-draft: false
-language: zh-CN
+description: 'CSS布局技术总结，包括浮动、定位、BFC等及实际应用中的常见问题'
 ---
 
 > CSS 布局是将网页内容放到合适位置的技术。

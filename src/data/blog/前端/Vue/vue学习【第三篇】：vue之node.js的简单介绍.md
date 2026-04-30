@@ -2,17 +2,16 @@
 title: Node.js简单介绍
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: nodejs-basics-tutorial
-description: 'Node.js基础教程，包括安装、npm包管理、模块系统和Express框架'
+featured: false
+draft: false
 tags:
   - Node.js
   - JavaScript
   - 后端
   - 前端
-category: 前端
-draft: false
-language: zh-CN
+description: 'Node.js基础教程，包括安装、npm包管理、模块系统和Express框架'
 ---
 
 > Node.js 是基于 Chrome V8 引擎的 JavaScript 运行环境。

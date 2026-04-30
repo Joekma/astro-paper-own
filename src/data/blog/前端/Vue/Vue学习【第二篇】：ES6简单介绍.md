@@ -2,17 +2,16 @@
 title: ES6简单介绍
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: es6-javascript-tutorial
-description: 'ES6新特性介绍，包括let、const、箭头函数、模板字符串、解构、Promise等'
+featured: false
+draft: false
 tags:
   - JavaScript
   - ES6
   - 前端
   - Web
-category: 前端
-draft: false
-language: zh-CN
+description: 'ES6新特性介绍，包括let、const、箭头函数、模板字符串、解构、Promise等'
 ---
 
 > ES6（ECMAScript 2015）是 JavaScript 的重要更新，引入许多新语法和特性。

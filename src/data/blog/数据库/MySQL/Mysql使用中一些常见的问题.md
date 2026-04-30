@@ -2,16 +2,15 @@
 title: MySQL常见问题
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: mysql-common-problems
-description: 'MySQL使用中的常见问题及解决方案'
+featured: false
+draft: false
 tags:
   - MySQL
   - 数据库
   - 问题解决
-category: 数据库
-draft: false
-language: zh-CN
+description: 'MySQL使用中的常见问题及解决方案'
 ---
 
 > MySQL 使用中的常见问题汇总。

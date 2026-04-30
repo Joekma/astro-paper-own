@@ -2,16 +2,15 @@
 title: Redis缓存使用
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: redis-caching-tutorial
-description: 'Redis作为缓存的使用方法和最佳实践'
+featured: false
+draft: false
 tags:
   - Redis
   - 数据库
   - 缓存
-category: 数据库
-draft: false
-language: zh-CN
+description: 'Redis作为缓存的使用方法和最佳实践'
 ---
 
 > Redis 常用于缓存加速应用。

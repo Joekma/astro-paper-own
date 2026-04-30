@@ -2,17 +2,16 @@
 title: JavaScript原生轮播图
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: javascript-carousel-tutorial
-description: '原生JavaScript实现轮播图，包括基础版和完整版代码示例'
+featured: false
+draft: false
 tags:
   - JavaScript
   - 前端
   - 轮播图
   - Web
-category: 前端
-draft: false
-language: zh-CN
+description: '原生JavaScript实现轮播图，包括基础版和完整版代码示例'
 ---
 
 > 原生 JavaScript 实现轮播图效果。

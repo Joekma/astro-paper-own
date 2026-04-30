@@ -2,17 +2,16 @@
 title: JavaScript简单介绍
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: javascript-introduction
-description: 'JavaScript入门介绍，包括变量、数据类型、运算符和基本语法'
+featured: false
+draft: false
 tags:
   - JavaScript
   - 前端
   - Web
   - 入门
-category: 前端
-draft: false
-language: zh-CN
+description: 'JavaScript入门介绍，包括变量、数据类型、运算符和基本语法'
 ---
 
 > JavaScript 是 Web 开发的核心语言。

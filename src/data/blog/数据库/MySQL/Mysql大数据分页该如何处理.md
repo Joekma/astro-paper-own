@@ -2,17 +2,16 @@
 title: MySQL大数据分页处理
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: mysql-large-data-pagination
-description: 'MySQL大数据分页优化方案，包括深度分页问题和优化技巧'
+featured: false
+draft: false
 tags:
   - MySQL
   - 数据库
   - 分页
   - 优化
-category: 数据库
-draft: false
-language: zh-CN
+description: 'MySQL大数据分页优化方案'
 ---
 
 > 大数据量分页需要优化。

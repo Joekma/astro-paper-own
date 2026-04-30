@@ -2,17 +2,16 @@
 title: MySQL高可用与读写分离
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: mysql-high-availability
-description: 'MySQL高可用架构MHA及读写分离方案'
+featured: false
+draft: false
 tags:
   - MySQL
   - 数据库
   - 高可用
   - 读写分离
-category: 数据库
-draft: false
-language: zh-CN
+description: 'MySQL高可用架构MHA及读写分离方案'
 ---
 
 > MySQL 高可用架构保障服务稳定性。

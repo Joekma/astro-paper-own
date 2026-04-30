@@ -1,17 +1,16 @@
 ---
-title: 第六篇：Scrapy框架
+title: Scrapy框架
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: scrapy-framework-tutorial
-description: 'Scrapy爬虫框架完整教程，包括安装、项目创建、Spider编写和数据处理'
+featured: false
+draft: false
 tags:
   - Python
   - 爬虫
   - Scrapy
-category: 爬虫
-draft: false
-language: zh-CN
+description: 'Scrapy爬虫框架完整教程，包括安装、项目创建、Spider编写和数据处理'
 ---
 
 > Scrapy 是一个基于 Python 的高级爬虫框架，提供了完整的爬虫解决方案，包括请求调度、数据提取、数据存储等功能。

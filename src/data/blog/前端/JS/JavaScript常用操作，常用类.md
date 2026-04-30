@@ -4,15 +4,14 @@ author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 updated: 2026-04-22T00:00:00.000+08:00
 slug: javascript-common-operations
-description: 'JavaScript常用操作，包括字符串、数组、日期、正则等核心API'
+featured: false
+draft: false
 tags:
   - JavaScript
   - 前端
   - Web
   - 编程
-category: 前端
-draft: false
-language: zh-CN
+description: 'JavaScript常用操作，包括字符串、数组、日期、正则等核心API'
 ---
 
 > JavaScript 提供了丰富的内置对象和 API，用于处理各种数据类型和操作。

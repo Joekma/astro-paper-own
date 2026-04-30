@@ -2,16 +2,15 @@
 title: MySQL数据库基础知识
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: mysql-database-basics
-description: 'MySQL数据库基础知识，包括安装、数据类型和基本操作'
+featured: false
+draft: false
 tags:
   - MySQL
   - 数据库
   - 基础知识
-category: 数据库
-draft: false
-language: zh-CN
+description: 'MySQL数据库基础知识，包括数据类型和基本操作'
 ---
 
 > MySQL 是最流行的开源关系型数据库。

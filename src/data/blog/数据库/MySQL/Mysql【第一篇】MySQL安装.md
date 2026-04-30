@@ -2,16 +2,15 @@
 title: MySQL安装教程
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: mysql-installation-guide
-description: 'MySQL数据库安装教程，包括Windows、Linux系统的安装和配置'
+featured: false
+draft: false
 tags:
   - MySQL
   - 数据库
-  - 后端
-category: 数据库
-draft: false
-language: zh-CN
+  - 安装
+description: 'MySQL数据库安装教程，包括Windows、Linux系统'
 ---
 
 > MySQL 是全球最流行的开源关系型数据库管理系统。

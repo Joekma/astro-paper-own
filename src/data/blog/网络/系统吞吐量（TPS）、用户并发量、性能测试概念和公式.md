@@ -2,7 +2,7 @@
 title: 性能测试概念和公式
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: performance-testing-concepts
 description: 'QPS、TPS、并发量等性能指标详解'
 tags:
@@ -15,27 +15,252 @@ draft: false
 language: zh-CN
 ---
 
-> 性能测试衡量系统处理能力。
+## 概述
 
-## 关键指标
+性能测试是评估系统处理能力的重要手段，涉及多个关键指标和计算公式。
 
-| 指标 | 说明 |
-|------|------|
-| **QPS** | 每秒查询数 |
-| **TPS** | 每秒事务数 |
-| **并发量** | 同时处理的请求数 |
-| **响应时间** | RT |
-| **吞吐量** | 系统处理能力 |
+## 核心指标
 
-## 计算公式
+### QPS（Queries Per Second）
 
-| 公式 | 说明 |
-|------|------|
-| QPS = 并发数 / 平均响应时间 |
-| 并发数 = QPS * 响应时间 |
+每秒查询数，用于衡量系统查询处理能力：
+
+```python
+# QPS 计算
+QPS = 总请求数 / 总时间（秒）
+
+def calculate_qps(total_requests, duration_seconds):
+    return total_requests / duration_seconds
+```
+
+### TPS（Transactions Per Second）
+
+每秒事务数，衡量系统业务处理能力：
+
+```python
+# TPS 计算
+TPS = 成功事务数 / 总时间（秒）
+
+def calculate_tps(success_count, duration_seconds):
+    return success_count / duration_seconds
+```
+
+### 并发量
+
+同时处理的请求数量：
+
+```python
+# 并发量计算
+并发量 = QPS × 平均响应时间
+
+def calculate_concurrency(qps, avg_response_time):
+    return qps * avg_response_time
+```
+
+### 响应时间（RT）
+
+请求到响应的时间：
+
+```python
+import statistics
+
+response_times = [0.1, 0.2, 0.15, 0.18, 0.12]
+
+avg_rt = statistics.mean(response_times)
+p50_rt = statistics.median(response_times)
+p90_rt = statistics.quantiles(response_times, n=10)[8]
+p99_rt = statistics.quantiles(response_times, n=100)[98]
+```
+
+## 常用公式
+
+### 公式一：QPS 与并发关系
+
+```
+并发数 = QPS × 平均响应时间
+```
+
+```python
+def qps_to_concurrency(qps, avg_response_time_ms):
+    return qps * (avg_response_time_ms / 1000)
+```
+
+### 公式二：并发与 QPS 关系
+
+```
+QPS = 并发数 / 平均响应时间
+```
+
+```python
+def concurrency_to_qps(concurrency, avg_response_time_ms):
+    return concurrency / (avg_response_time_ms / 1000)
+```
+
+### 公式三：吞吐量计算
+
+```
+吞吐量 = QPS × 平均数据大小
+```
+
+```python
+def calculate_throughput(qps, avg_data_size_kb):
+    return qps * avg_data_size_kb / 1024  # MB/s
+```
+
+### 公式四：系统容量估算
+
+```
+最大 QPS = 并发线程数 / 平均响应时间
+```
+
+```python
+def estimate_max_qps(max_threads, avg_response_time_ms):
+    return max_threads / (avg_response_time_ms / 1000)
+```
+
+## 性能测试类型
+
+### 基准测试
+
+```python
+import time
+
+def benchmark(func, iterations=1000):
+    start = time.time()
+
+    for _ in range(iterations):
+        func()
+
+    duration = time.time() - start
+    qps = iterations / duration
+
+    return {
+        'iterations': iterations,
+        'duration': duration,
+        'qps': qps,
+        'avg_time': duration / iterations
+    }
+```
+
+### 负载测试
+
+```python
+import concurrent.futures
+
+def load_test(func, concurrency=100, duration_seconds=60):
+    results = []
+    start_time = time.time()
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as executor:
+        futures = []
+
+        while time.time() - start_time < duration_seconds:
+            future = executor.submit(func)
+            futures.append(future)
+
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                result = future.result()
+                results.append(result)
+            except Exception as e:
+                print(f'请求失败: {e}')
+
+    return analyze_results(results)
+```
+
+### 压力测试
+
+```python
+def stress_test(func, start_concurrency=100, step=50, max_concurrency=1000):
+    results = {}
+
+    for concurrency in range(start_concurrency, max_concurrency + 1, step):
+        print(f'测试并发: {concurrency}')
+        result = load_test(func, concurrency, duration_seconds=30)
+
+        results[concurrency] = result
+
+        if result['error_rate'] > 0.1:
+            print(f'错误率超过 10%，停止测试')
+            break
+
+    return results
+```
+
+## 性能监控
+
+### 监控指标
+
+```python
+import psutil
+
+def get_system_metrics():
+    cpu_percent = psutil.cpu_percent(interval=1)
+    memory = psutil.virtual_memory()
+    disk = psutil.disk_usage('/')
+    network = psutil.net_io_counters()
+
+    return {
+        'cpu_percent': cpu_percent,
+        'memory_percent': memory.percent,
+        'memory_available_gb': memory.available / (1024**3),
+        'disk_percent': disk.percent,
+        'network_sent_mb': network.bytes_sent / (1024**2),
+        'network_recv_mb': network.bytes_recv / (1024**2)
+    }
+```
+
+### 持续监控
+
+```python
+import time
+
+def continuous_monitor(interval_seconds=5):
+    while True:
+        metrics = get_system_metrics()
+
+        print(f'''
+CPU: {metrics['cpu_percent']:.1f}%
+Memory: {metrics['memory_percent']:.1f}%
+Disk: {metrics['disk_percent']:.1f}%
+        ''')
+
+        time.sleep(interval_seconds)
+```
+
+## 性能优化
+
+### 瓶颈分析
+
+```python
+def analyze_bottleneck(metrics):
+    if metrics['cpu_percent'] > 80:
+        return 'CPU 瓶颈'
+
+    if metrics['memory_percent'] > 85:
+        return '内存瓶颈'
+
+    if metrics['disk_percent'] > 90:
+        return '磁盘瓶颈'
+
+    return '网络瓶颈'
+```
+
+### 优化策略
+
+| 瓶颈 | 优化方法 |
+|------|----------|
+| **CPU** | 算法优化、缓存、异步处理 |
+| **内存** | 减少内存分配、对象池、GC 调优 |
+| **磁盘** | SSD、索引优化、减少 IO |
+| **网络** | 连接池、压缩、CDN |
 
 ## 小结
 
-- **QPS**：每秒查询数
-- **并发**：同时连接数
-- **响应时间**：处理速度
+性能测试核心要点：
+
+- **QPS**：每秒请求数，衡量系统处理能力
+- **TPS**：每秒事务数，衡量业务处理能力
+- **并发量**：同时处理的请求数
+- **响应时间**：请求到响应的时间
+- **错误率**：失败请求的占比

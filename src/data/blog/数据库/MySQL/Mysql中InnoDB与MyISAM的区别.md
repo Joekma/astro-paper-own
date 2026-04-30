@@ -2,18 +2,17 @@
 title: InnoDB与MyISAM的区别
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: mysql-innodb-myisam-comparison
-description: 'MySQL InnoDB与MyISAM存储引擎的区别对比'
+featured: false
+draft: false
 tags:
   - MySQL
   - 数据库
   - 存储引擎
   - InnoDB
   - MyISAM
-category: 数据库
-draft: false
-language: zh-CN
+description: 'MySQL InnoDB与MyISAM存储引擎的区别对比'
 ---
 
 > InnoDB 和 MyISAM 是 MySQL 最常用的存储引擎。

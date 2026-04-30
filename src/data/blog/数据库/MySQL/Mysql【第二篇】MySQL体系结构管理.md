@@ -2,16 +2,15 @@
 title: MySQL体系结构管理
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: mysql-architecture
-description: 'MySQL体系结构，包括连接层、服务层、存储引擎层等'
+featured: false
+draft: false
 tags:
   - MySQL
   - 数据库
   - 架构
-category: 数据库
-draft: false
-language: zh-CN
+description: 'MySQL体系结构，包括连接层、服务层、存储引擎层等'
 ---
 
 > MySQL 体系结构决定了数据库的工作方式。

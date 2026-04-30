@@ -1,8 +1,8 @@
 ---
-title: Docker Compose
+title: Docker Compose 使用教程
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: docker-compose-tutorial
 description: 'Docker Compose 使用教程，定义和运行多容器 Docker 应用'
 tags:
@@ -13,7 +13,7 @@ draft: false
 language: zh-CN
 ---
 
-## 简介
+## 概述
 
 `Compose` 允许通过 `docker-compose.yml` 模板文件定义一组相关联的应用容器为一个项目。
 
@@ -70,41 +70,6 @@ services:
 docker-compose up
 ```
 
-### 常用命令
-
-| 命令 | 说明 |
-|------|------|
-| `up` | 创建并启动容器 |
-| `ps` | 查看运行中的容器 |
-| `build` | 构建服务镜像 |
-| `start` | 启动服务 |
-| `stop` | 停止服务 |
-| `restart` | 重启服务 |
-| `down` | 停止并移除容器 |
-| `logs` | 查看日志 |
-| `exec` | 进入容器 |
-
-### 命令选项
-
-| 选项 | 说明 |
-|------|------|
-| `-f, --file` | 指定 Compose 模板文件 |
-| `-p, --project-name` | 指定项目名称 |
-| `--verbose` | 输出调试信息 |
-| `-v, --version` | 打印版本 |
-
-### build 选项
-
-```bash
-docker-compose build [options] [SERVICE...]
-```
-
-| 选项 | 说明 |
-|------|------|
-| `--force-rm` | 删除构建过程中的临时容器 |
-| `--no-cache` | 不使用缓存 |
-| `--pull` | 始终拉取最新镜像 |
-
 ### 完整示例
 
 ```yaml
@@ -122,9 +87,84 @@ services:
     image: redis:alpine
 ```
 
-运行：
+运行服务：
 
 ```bash
 docker-compose up -d      # 后台运行
 docker-compose logs -f    # 查看日志
 docker-compose down       # 停止服务
+```
+
+## 常用命令
+
+| 命令 | 说明 |
+|------|------|
+| `docker-compose up` | 创建并启动容器 |
+| `docker-compose ps` | 查看运行中的容器 |
+| `docker-compose build` | 构建服务镜像 |
+| `docker-compose start` | 启动服务 |
+| `docker-compose stop` | 停止服务 |
+| `docker-compose restart` | 重启服务 |
+| `docker-compose down` | 停止并移除容器 |
+| `docker-compose logs` | 查看日志 |
+| `docker-compose exec` | 进入容器 |
+
+### 命令选项
+
+| 选项 | 说明 |
+|------|------|
+| `-f, --file` | 指定 Compose 模板文件 |
+| `-p, --project-name` | 指定项目名称 |
+| `--verbose` | 输出调试信息 |
+| `-v, --version` | 打印版本 |
+
+### build 选项
+
+| 选项 | 说明 |
+|------|------|
+| `--force-rm` | 删除构建过程中的临时容器 |
+| `--no-cache` | 不使用缓存 |
+| `--pull` | 始终拉取最新镜像 |
+
+## 常用配置
+
+### 端口映射
+
+```yaml
+ports:
+  - "8000:8000"
+  - "9000:80"
+```
+
+### 环境变量
+
+```yaml
+environment:
+  - DEBUG=1
+  - DB_HOST=db
+```
+
+### 数据卷
+
+```yaml
+volumes:
+  - ./data:/var/lib/mysql
+  - ./config:/etc/mysql
+```
+
+### 依赖关系
+
+```yaml
+depends_on:
+  - db
+  - redis
+```
+
+## 小结
+
+Docker Compose 的优势：
+
+- **简化多容器管理**：通过单一文件定义整个应用
+- **环境一致性**：确保不同环境配置统一
+- **快速部署**：一条命令启动所有服务
+- **开发友好**：适合本地开发和测试环境

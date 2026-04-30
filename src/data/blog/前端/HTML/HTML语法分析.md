@@ -2,16 +2,15 @@
 title: HTML语法分析
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: html-syntax-basics
-description: 'HTML基础语法，包括标签、属性、文档结构等核心概念'
+featured: false
+draft: false
 tags:
   - HTML
   - 前端
   - Web
-category: 前端
-draft: false
-language: zh-CN
+description: 'HTML基础语法，包括标签、属性、文档结构等核心概念'
 ---
 
 > HTML（超文本标记语言）是构建网页的基础。
