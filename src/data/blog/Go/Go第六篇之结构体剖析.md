@@ -1,13 +1,18 @@
 ---
-title: Go 第六篇之结构体剖析
+title: Go语言结构体完全教程（2024）：定义、实例化、内存布局、继承与组合
 author: 程序员
 pubDatetime: 2019-01-17T00:00:00.000+08:00
 updated: 2026-04-22T00:00:00.000+08:00
 slug: go-structs
-description: 'Go 语言结构体详解，包括定义、实例化和初始化'
+description: 'Go语言结构体完整教程，深入讲解结构体定义、实例化方法、内存布局、构造函数、方法集、继承与组合、标签使用和JSON序列化，包含完整代码示例。'
 tags:
   - Go
-category: Go
+  - Golang
+  - 结构体
+  - struct
+  - 面向对象
+  - 方法
+  - 组合
 draft: false
 language: zh-CN
 ---

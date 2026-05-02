@@ -1,13 +1,18 @@
 ---
-title: Go 第七篇之规范的接口
+title: Go语言接口完全教程（2024）：接口定义、多态、接口组合、空接口详解
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 updated: 2026-04-22T00:00:00.000+08:00
 slug: go-interfaces
-description: 'Go 语言接口详解，包括接口声明、实现和类型关系'
+description: 'Go语言接口完整教程，深入讲解接口声明、隐式实现、多态特性、接口组合、空接口、类型断言和接口查询，包含完整代码示例和最佳实践。'
 tags:
   - Go
-category: Go
+  - Golang
+  - 接口
+  - interface
+  - 多态
+  - 面向对象
+  - 类型断言
 draft: false
 language: zh-CN
 ---

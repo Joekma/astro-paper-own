@@ -1,13 +1,19 @@
 ---
-title: Go 第十一篇之编译与工具
+title: Go语言编译与工具完全指南（2024）：go build、go run、go test、性能分析
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 updated: 2026-04-22T00:00:00.000+08:00
 slug: go-build-tools
-description: 'Go 语言编译工具详解，包括 go build、go run、go install 等'
+description: 'Go语言编译和工具完整教程，详细讲解go build、go run、go install、go test、go fmt、go vet、pprof性能分析和cgo集成，包含完整命令行参数说明和最佳实践。'
 tags:
   - Go
-category: Go
+  - Golang
+  - 编译工具
+  - go build
+  - 性能优化
+  - go test
+  - pprof
+  - 开发工具
 draft: false
 language: zh-CN
 ---

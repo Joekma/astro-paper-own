@@ -1,13 +1,18 @@
 ---
-title: Go 第二篇之基本语法总结
+title: Go语言基本语法完全指南（2024）：变量、数据类型、运算符详解
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 updated: 2026-04-22T00:00:00.000+08:00
 slug: go-basic-syntax
-description: 'Go 语言基本语法总结，包含变量、数据类型和基本操作'
+description: 'Go语言基本语法完整教程，深入讲解标识符、变量声明、数据类型转换、运算符、优先级等核心概念，包含大量代码示例和最佳实践。'
 tags:
   - Go
-category: Go
+  - Golang
+  - 基本语法
+  - 变量
+  - 数据类型
+  - 运算符
+  - 类型转换
 draft: false
 language: zh-CN
 ---

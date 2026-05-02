@@ -1,13 +1,19 @@
 ---
-title: Go 第三篇之大话容器
+title: Go语言数组和切片完全教程（2024）：底层原理、扩容机制、内存优化
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 updated: 2026-04-22T00:00:00.000+08:00
 slug: go-slice-array
-description: 'Go 语言数组和切片详解，包含声明、初始化和常用操作'
+description: 'Go语言数组和切片完整教程，深入讲解声明、初始化、遍历、切片操作、append扩容机制、底层数组原理、内存优化技巧，包含完整代码示例。'
 tags:
   - Go
-category: Go
+  - Golang
+  - 数组
+  - 切片
+  - Slice
+  - Array
+  - 容器
+  - 内存管理
 draft: false
 language: zh-CN
 ---

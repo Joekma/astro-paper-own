@@ -1,13 +1,18 @@
 ---
-title: Go 第十二篇之避坑指南
+title: Go语言常见坑点完全总结（2024）：并发安全、内存泄漏、性能优化实战指南
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 updated: 2026-04-22T00:00:00.000+08:00
 slug: go-common-pitfalls
-description: 'Go 语言常见坑点总结，包括并发、通道和性能优化'
+description: 'Go语言常见坑点和最佳实践总结，深入讲解goroutine泄漏、channel死锁、切片扩容、map并发、defer执行时机、切片传参、性能优化技巧，包含大量实战案例和解决方案。'
 tags:
   - Go
-category: Go
+  - Golang
+  - 避坑指南
+  - 常见错误
+  - 性能优化
+  - 并发安全
+  - 最佳实践
 draft: false
 language: zh-CN
 ---

@@ -1,13 +1,18 @@
 ---
-title: Go 第八篇之包的使用
+title: Go语言包管理完全指南（2024）：GOPATH、Modules、import、导出规则详解
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 updated: 2026-04-22T00:00:00.000+08:00
 slug: go-packages
-description: 'Go 语言包管理详解，包括 GOPATH、package、import 和导出规则'
+description: 'Go语言包管理完整教程，详细讲解GOPATH、Go Modules（go.mod）、package、import、导出规则、循环导入和内部包，包含完整代码示例和项目结构建议。'
 tags:
   - Go
-category: Go
+  - Golang
+  - 包管理
+  - Modules
+  - import
+  - go.mod
+  - GOPATH
 draft: false
 language: zh-CN
 ---

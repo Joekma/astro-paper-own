@@ -1,13 +1,19 @@
 ---
-title: Go 第九篇之并发大攻略
+title: Go语言并发编程完全指南（2024）：goroutine、channel、协程同步、并发安全
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 updated: 2026-04-22T00:00:00.000+08:00
 slug: go-concurrency
-description: 'Go 语言并发编程详解，包括 goroutine、channel 和并发控制'
+description: 'Go语言并发编程完整教程，深入讲解goroutine、channel通道、缓冲channel、select多路复用、协程同步（WaitGroup、Mutex、RWMutex）、并发安全和死锁避免，包含完整代码示例。'
 tags:
   - Go
-category: Go
+  - Golang
+  - 并发编程
+  - goroutine
+  - channel
+  - 协程
+  - 并发安全
+  - 同步机制
 draft: false
 language: zh-CN
 ---

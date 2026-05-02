@@ -1,13 +1,19 @@
 ---
-title: Go 第四篇之流程控制
+title: Go语言流程控制完全指南（2024）：if、for、switch、goto语句详解
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 updated: 2026-04-22T00:00:00.000+08:00
 slug: go-control-flow
-description: 'Go 语言流程控制语句，包括条件判断、循环和跳转'
+description: 'Go语言流程控制完整教程，详细讲解if条件语句、for循环、switch多路分支、goto跳转、break和continue控制关键字，包含完整代码示例和实战应用。'
 tags:
   - Go
-category: Go
+  - Golang
+  - 流程控制
+  - if语句
+  - for循环
+  - switch
+  - goto
+  - 控制结构
 draft: false
 language: zh-CN
 ---

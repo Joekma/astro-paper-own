@@ -1,13 +1,18 @@
 ---
-title: Go 第十篇之反射
+title: Go语言反射完全教程（2024）：reflect包、TypeOf、ValueOf、动态调用与JSON解析
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 updated: 2026-04-22T00:00:00.000+08:00
 slug: go-reflection
-description: 'Go 语言反射详解，包括反射获取类型信息和动态操作'
+description: 'Go语言反射完整教程，深入讲解reflect.TypeOf、reflect.ValueOf、类型断言、动态调用、字段操作、方法调用和JSON编解码，包含完整代码示例和性能注意事项。'
 tags:
   - Go
-category: Go
+  - Golang
+  - 反射
+  - reflect
+  - 动态编程
+  - JSON
+  - 序列化
 draft: false
 language: zh-CN
 ---

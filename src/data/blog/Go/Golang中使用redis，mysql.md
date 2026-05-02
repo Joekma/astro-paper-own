@@ -1,15 +1,19 @@
 ---
-title: Golang 中使用 Redis 和 MySQL
+title: Go语言Redis和MySQL数据库完整教程（2024）：连接池、事务、ORM实战
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 updated: 2026-04-22T00:00:00.000+08:00
 slug: golang-use-redis-mysql
-description: 'Go 语言中使用 Redis 和 MySQL 数据库的教程'
+description: 'Go语言集成Redis和MySQL完整教程，详细讲解Redis连接、缓存、分布式锁、MySQL连接池、事务处理、预处理语句、GORM和XORM ORM框架使用，包含完整项目代码示例。'
 tags:
   - Go
+  - Golang
   - Redis
   - MySQL
-category: Go
+  - 数据库
+  - ORM
+  - 缓存
+  - 连接池
 draft: false
 language: zh-CN
 ---

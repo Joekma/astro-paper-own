@@ -1,15 +1,19 @@
 ---
-title: gRPC Gateway：gRPC 转换为 HTTP
+title: gRPC-Gateway完整教程（2024）：gRPC转HTTP/JSON、OpenAPI文档、自动生成SDK
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 updated: 2026-04-22T00:00:00.000+08:00
 slug: grpc-gateway-http
-description: '使用 grpc-gateway 将 gRPC 服务转换为 HTTP/JSON 对外提供服务'
+description: 'gRPC-Gateway完整教程，详细讲解将gRPC服务转换为HTTP/JSON API、自动生成Swagger/OpenAPI文档、proto文件注解、认证和中间件集成，包含完整项目配置和部署实战。'
 tags:
   - Go
+  - Golang
   - gRPC
   - HTTP
-category: Go
+  - gRPC-Gateway
+  - RESTful API
+  - OpenAPI
+  - Swagger
 draft: false
 language: zh-CN
 ---
