@@ -1,5 +1,5 @@
 ---
-title: MongoDB 常用操作总结
+title: MongoDB完整教程：从基础操作到高级查询
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
@@ -7,11 +7,14 @@ slug: mongodb-operations-summary
 featured: false
 draft: false
 tags:
-  - Python
-  - 爬虫
   - MongoDB
-  - 数据库
-description: 'MongoDB基础知识和常用操作，包括文档、集合、数据库概念和CRUD操作'
+  - NoSQL数据库
+  - 数据库操作
+  - CRUD操作
+  - 聚合查询
+  - Python数据库
+  - 数据库设计
+description: 'MongoDB最全面的使用教程，涵盖基础知识、CRUD操作、聚合管道、索引优化和Python实战代码示例，从入门到精通的完整指南。'
 ---
 
 > MongoDB 是一款强大、灵活、易于扩展的通用型数据库，采用文档存储模式。
@@ -218,6 +221,186 @@ db.posts.getIndexes()
 db.posts.dropIndex("title_1")
 ```
 
+## 聚合管道进阶
+
+### 常用管道操作符
+
+```javascript
+// $match - 筛选阶段
+db.orders.aggregate([
+    { $match: { status: "completed", amount: { $gt: 100 } } }
+])
+
+// $group - 分组阶段
+db.sales.aggregate([
+    { $group: {
+        _id: "$product",
+        total_amount: { $sum: "$amount" },
+        count: { $sum: 1 },
+        avg_price: { $avg: "$price" }
+    }}
+])
+
+// $sort - 排序阶段
+db.articles.aggregate([
+    { $group: { _id: "$author", count: { $sum: 1 } } },
+    { $sort: { count: -1 } }  // 降序
+])
+
+// $limit - 限制数量
+db.articles.aggregate([
+    { $sort: { views: -1 } },
+    { $limit: 10 }  // 前10篇
+])
+
+// $skip - 跳过数量（分页）
+db.articles.aggregate([
+    { $skip: 20 },  // 跳过前20条
+    { $limit: 10 }  // 返回10条
+])
+```
+
+### 复杂聚合示例
+
+```javascript
+// 完整统计示例
+db.orders.aggregate([
+    // 第一阶段：筛选已支付订单
+    { $match: { status: "paid" } },
+    
+    // 第二阶段：按月份和产品分组
+    { $group: {
+        _id: {
+            month: { $substr: ["$date", 0, 7] },
+            product: "$product"
+        },
+        total_amount: { $sum: "$amount" },
+        count: { $sum: 1 },
+        max_amount: { $max: "$amount" },
+        min_amount: { $min: "$amount" },
+        avg_amount: { $avg: "$amount" }
+    }},
+    
+    // 第三阶段：计算利润率
+    { $project: {
+        _id: 0,
+        month: "$_id.month",
+        product: "$_id.product",
+        total_amount: 1,
+        count: 1,
+        max_amount: 1,
+        min_amount: 1,
+        avg_amount: { $round: ["$avg_amount", 2] }
+    }},
+    
+    // 第四阶段：排序
+    { $sort: { total_amount: -1 } },
+    
+    // 第五阶段：限制结果
+    { $limit: 20 }
+])
+```
+
+### 数组操作
+
+```javascript
+// $push - 添加到数组
+db.students.updateOne(
+    { _id: 1 },
+    { $push: { scores: 95 } }
+)
+
+// $push + $each - 批量添加
+db.students.updateOne(
+    { _id: 1 },
+    { $push: { scores: { $each: [90, 85, 88] } } }
+)
+
+// $addToSet - 不重复添加
+db.students.updateOne(
+    { _id: 1 },
+    { $addToSet: { courses: "Python" } }
+)
+
+// $pull - 删除数组元素
+db.students.updateOne(
+    { _id: 1 },
+    { $pull: { scores: { $lt: 60 } } }  // 删除小于60分的成绩
+)
+
+// $pop - 删除数组首尾元素
+db.students.updateOne(
+    { _id: 1 },
+    { $pop: { scores: 1 } }  // 1删除末尾，-1删除开头
+)
+
+// $size - 数组长度
+db.students.aggregate([
+    { $project: {
+        name: 1,
+        score_count: { $size: "$scores" }
+    }}
+])
+
+// $filter - 过滤数组
+db.students.aggregate([
+    { $project: {
+        name: 1,
+        passing_scores: {
+            $filter: {
+                input: "$scores",
+                as: "score",
+                cond: { $gte: ["$$score", 60] }
+            }
+        }
+    }}
+])
+```
+
+### 条件运算符进阶
+
+```javascript
+// $cond - 条件表达式
+db.sales.aggregate([
+    { $project: {
+        product: 1,
+        amount: 1,
+        discount: {
+            $cond: [
+                { $gte: ["$amount", 1000] },
+                { $multiply: ["$amount", 0.1] },  // 1000以上打9折
+                { $multiply: ["$amount", 0.05] }   // 其他打95折
+            ]
+        }
+    }}
+])
+
+// $ifNull - 空值处理
+db.items.aggregate([
+    { $project: {
+        name: 1,
+        description: { $ifNull: ["$description", "暂无描述"] }
+    }}
+])
+
+// $switch - 多条件分支
+db.products.aggregate([
+    { $project: {
+        name: 1,
+        price: 1,
+        category: {
+            $switch: {
+                branches: [
+                    { case: { $gte: ["$price", 1000] }, then: "高端" },
+                    { case: { $gte: ["$price", 500] }, then: "中端" }
+                ],
+                default: "入门"
+            }
+        }
+    }}
+])
+```
+
 ## Python 操作 MongoDB
 
 ```python
@@ -251,4 +434,7 @@ collection.delete_one({"title": "MongoDB"})
 - **集合**：文档的集合，相当于表
 - **数据库**：集合的容器
 - **CRUD**：insert、find、update、delete
+- **聚合管道**：多阶段数据处理，支持复杂统计分析
+- **数组操作**：$push、$pull、$filter 等数组操作符
+- **条件表达式**：$cond、$ifNull、$switch 处理复杂逻辑
 - **索引**：提升查询性能

@@ -1,5 +1,5 @@
 ---
-title: MongoDB 创建索引及其他
+title: MongoDB 索引优化与爬虫数据去重完整指南
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
@@ -7,12 +7,15 @@ slug: mongodb-indexes-and-deduplication
 featured: false
 draft: false
 tags:
-  - Python
-  - 爬虫
   - MongoDB
-  - Redis
   - 数据库
-description: 'MongoDB索引创建、数据库对比以及爬虫数据去重方法'
+  - 索引优化
+  - 数据去重
+  - Redis
+  - 布隆过滤器
+  - Python爬虫
+  - 性能优化
+description: 'MongoDB高级特性完整教程，深入讲解索引优化策略、爬虫数据去重技术、Redis和布隆过滤器的应用，以及数据库性能调优实战技巧。'
 ---
 
 > MongoDB 是爬虫项目中常用的数据存储方案，本文介绍索引创建和爬虫数据去重方法。
