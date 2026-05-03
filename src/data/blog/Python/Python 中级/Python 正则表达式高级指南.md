@@ -1,16 +1,15 @@
 ---
-title: Python 正则表达式高级指南
+title: Python 正则表达式：贪婪模式、勉强模式、占有模式、分组捕获
 author: FjellOverflow
 pubDatetime: 2024-08-12T00:00:00Z
-updated: 2026-04-29T00:00:00Z
+modDatetime: 2026-04-29T00:00:00.000+08:00
 slug: python-regex-advanced
 featured: false
 draft: false
 tags:
   - Python
   - 正则表达式
-  - docs
-description: 深入理解 Python 正则表达式的高级特性，包括贪婪模式、勉强模式、占有模式、分组捕获等核心概念。
+description: '深入理解Python正则表达式的高级特性，包括贪婪模式、勉强模式、占有模式、分组捕获等核心概念。'
 language: zh-CN
 ---
 

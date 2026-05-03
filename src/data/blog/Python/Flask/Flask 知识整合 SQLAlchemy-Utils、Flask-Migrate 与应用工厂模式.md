@@ -2,7 +2,7 @@
 title: Flask 知识整合 SQLAlchemy-Utils、Flask-Migrate 与应用工厂模式
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: flask-11-integration
 description: '整合 Flask 核心知识点，包括 SQLAlchemy-Utils 的 ChoiceType 使用、scoped_session 线程安全会话管理、Flask-SQLAlchemy 和 Flask-Migrate 数据库操作，以及 Flask 应用工厂模式的完整示例'
 tags:

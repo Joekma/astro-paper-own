@@ -1,15 +1,14 @@
 ---
-title: Kafka知识点整理
+title: Kafka 核心概念和原理
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: kafka-notes
-description: 'Kafka核心概念和原理'
+description: '深入讲解Kafka核心概念和原理。'
 tags:
   - Kafka
   - 消息队列
   - 大数据
-category: 消息队列
 draft: false
 language: zh-CN
 ---

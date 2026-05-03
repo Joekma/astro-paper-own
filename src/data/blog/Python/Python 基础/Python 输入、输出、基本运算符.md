@@ -1,16 +1,15 @@
 ---
-title: Python 输入、输出、基本运算符
+title: Python 输入输出与基本运算符
 author: 程序员
 pubDatetime: 2018-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: python-input-output-basic-operators
-description: '深入理解 Python 的输入输出、基本数据类型和常用运算符'
+description: '深入讲解Python的输入输出、基本数据类型和常用运算符，详解算术运算、比较运算、赋值运算（增量赋值、链式赋值、交叉赋值、解压赋值）和逻辑运算。'
 tags:
   - Python
   - 输入输出
   - 运算符
   - 数据类型
-category: Python
 draft: false
 language: zh-CN
 ---

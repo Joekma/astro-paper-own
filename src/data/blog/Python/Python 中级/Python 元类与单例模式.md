@@ -1,16 +1,16 @@
 ---
-title: Python 元类与单例模式
+title: Python 元类与单例模式：type创建类、自定义元类
 author: 程序员
 pubDatetime: 2018-11-19T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: python-metaclass-singleton
-description: '深入理解 Python 元类与单例模式：元类创建、自定义元类、单例模式实现'
+description: '深入讲解Python元类与单例模式，详解type创建类、自定义元类控制类的创建和调用、__call__方法、exec用法和ORM框架中的应用。'
 tags:
   - Python
   - 面向对象
   - 元类
   - 单例模式
-category: Python中级
+  - type
 draft: false
 language: zh-CN
 ---

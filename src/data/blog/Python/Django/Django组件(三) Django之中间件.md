@@ -1,15 +1,16 @@
 ---
-title: Django组件(三) Django之中间件
+title: Django 中间件组件详解
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-component-3-middleware
 featured: false
 draft: false
 tags:
   - Python
   - Django
-description: "Django 组件 - 中间件"
+  - 中间件
+description: "深入讲解Django中间件组件的原理、自定义方法和执行流程。"
 ---
 
 ## 中间件概述

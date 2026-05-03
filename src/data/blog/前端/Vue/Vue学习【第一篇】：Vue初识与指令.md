@@ -2,9 +2,9 @@
 title: Vue初识与指令
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: vue-introduction-and-directives
-description: 'Vue.js入门教程，介绍Vue的基本概念、实例创建和常用指令'
+description: 'Vue.js入门，介绍Vue的基本概念、实例创建和常用指令'
 tags:
   - Vue
   - 前端

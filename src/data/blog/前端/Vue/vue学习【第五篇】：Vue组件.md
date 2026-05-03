@@ -1,9 +1,9 @@
 ---
-title: Vue组件
+title: Vue组件系统
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
-slug: vue-components-tutorial
+slug: vue-components
 featured: false
 draft: false
 tags:
@@ -11,7 +11,7 @@ tags:
   - 组件
   - 前端
   - JavaScript
-description: 'Vue组件详解，包括组件注册、props、emit、slot和组件通信'
+description: 'Vue组件详解，包含注册、props、emit、slot和状态管理'
 ---
 
 > 组件是 Vue.js 最强大的功能之一，用于封装可复用的代码。

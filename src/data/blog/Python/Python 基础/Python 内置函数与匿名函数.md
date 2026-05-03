@@ -1,17 +1,17 @@
 ---
-title: Python 内置函数、匿名函数
+title: Python 内置函数与匿名函数：71个内置函数详解
 author: 程序员
 pubDatetime: 2018-08-13T00:00:00.000+08:00
-updated: 2026-04-29T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: python-built-in-functions-lambda
-description: '全面介绍 Python 的内置函数和匿名函数 lambda 的使用方法，涵盖 Python 3.12 新特性'
+description: '全面介绍Python的71个内置函数和匿名函数lambda的使用方法，涵盖作用域、类型转换、输入输出、反射等核心内容。'
 tags:
   - Python
   - 内置函数
   - lambda
   - 匿名函数
-  - Python 3.12
-category: Python
+  - eval
+  - exec
 draft: false
 language: zh-CN
 ---

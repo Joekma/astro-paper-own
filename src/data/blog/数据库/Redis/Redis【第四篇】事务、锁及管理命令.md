@@ -1,5 +1,5 @@
 ---
-title: Redis事务和锁
+title: Redis事务与分布式锁
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
@@ -11,7 +11,7 @@ tags:
   - 数据库
   - 事务
   - 锁
-description: 'Redis事务和锁机制，包括MULTI/EXEC和分布式锁'
+description: 'Redis事务和锁机制，包括MULTI/EXEC和分布式锁实现'
 ---
 
 ## 概述

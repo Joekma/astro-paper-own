@@ -1,15 +1,14 @@
 ---
-title: SSH协议及其应用
+title: SSH 协议原理和典型应用场景
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: ssh-protocol-applications
-description: 'SSH协议原理和典型应用场景'
+description: '深入讲解SSH协议原理和典型应用场景。'
 tags:
   - SSH
   - 远程登录
   - 安全
-category: 未分类
 draft: false
 language: zh-CN
 ---

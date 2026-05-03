@@ -10,7 +10,7 @@ tags:
   - Redis
   - 数据库
   - 消息队列
-description: 'Redis消息队列，包括List和Pub/Sub'
+description: 'Redis消息队列实现，包括List队列和Pub/Sub发布订阅'
 ---
 
 ## 概述

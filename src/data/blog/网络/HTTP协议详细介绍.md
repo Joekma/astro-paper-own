@@ -1,16 +1,15 @@
 ---
-title: HTTP协议详细介绍
+title: HTTP 协议：请求方法、状态码、头部字段
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: http-protocol-detailed-intro
-description: 'HTTP协议详解，包括请求方法、状态码、头部字段等'
+description: 'HTTP协议，包括请求方法、状态码、头部字段等核心概念。'
 tags:
   - HTTP
   - 网络
   - 协议
   - Web
-category: 网络
 draft: false
 language: zh-CN
 ---

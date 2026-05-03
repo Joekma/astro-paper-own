@@ -1,15 +1,16 @@
 ---
-title: Django 从入口到请求到响应
+title: Django 请求生命周期：从入口到响应
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-request-response
 featured: false
 draft: false
 tags:
   - Python
   - Django
-description: "Django 从入口到请求到响应"
+  - 请求处理
+description: "深入讲解Django从入口到请求到响应的完整生命周期。"
 ---
 
 ## 起步

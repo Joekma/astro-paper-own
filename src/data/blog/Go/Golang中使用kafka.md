@@ -1,18 +1,18 @@
 ---
-title: Go语言Kafka消息队列完整教程（2024）：生产者、消费者、分区、偏移量实战
+title: Go语言Kafka消息队列：生产者、消费者、分区、偏移量实战
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: golang-use-kafka
-description: 'Go语言集成Kafka完整教程，详细讲解Kafka生产者API、消费者API、分区策略、偏移量管理、消费者组、消息可靠性保证、并发消费和性能优化，包含完整项目代码示例。'
+description: '详细讲解Go语言集成Kafka，包括Kafka生产者API、消费者API、分区策略、偏移量管理、消费者组、消息可靠性保证（acks、retries）、并发消费和性能优化，包含完整项目代码示例。'
 tags:
   - Go
-  - Golang
   - Kafka
   - 消息队列
   - MQ
   - 分布式
   - 消息中间件
+  - 消费者组
 draft: false
 language: zh-CN
 ---

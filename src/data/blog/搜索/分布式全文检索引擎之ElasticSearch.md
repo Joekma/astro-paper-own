@@ -1,15 +1,14 @@
 ---
-title: Elasticsearch全文检索引擎
+title: Elasticsearch 全文检索引擎介绍和使用
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: elasticsearch-search-engine
-description: 'Elasticsearch全文检索引擎介绍和使用'
+description: 'Elasticsearch全文检索引擎介绍和使用方法。'
 tags:
   - Elasticsearch
   - 搜索
   - 全文检索
-category: 搜索
 draft: false
 language: zh-CN
 ---

@@ -1,17 +1,16 @@
 ---
-title: Python 模块与包
+title: Python 模块与包：import、from、循环导入、搜索路径
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: python-modules-and-packages
-description: '深入理解 Python 的模块与包组织结构'
+description: '深入理解Python的模块与包组织结构，详解import、from...import、模块搜索路径、循环导入问题和__all__控制导入，包含实战技巧。'
 tags:
   - Python
   - 模块
   - 包
   - import
   - 作用域
-category: Python
 draft: false
 language: zh-CN
 ---

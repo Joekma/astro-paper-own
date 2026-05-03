@@ -1,5 +1,5 @@
 ---
-title: Python 网络爬虫入门指南：原理、流程与实战
+title: Python 网络爬虫：原理、流程与实战
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
@@ -14,7 +14,7 @@ tags:
   - 数据采集
   - requests库
   - BeautifulSoup
-description: 'Python网络爬虫入门教程，详细讲解HTTP协议、requests请求、BeautifulSoup解析、反爬机制应对、数据存储等核心知识，包含完整的爬虫流程示例代码。'
+description: 'Python网络爬虫，详细讲解HTTP协议、requests请求、BeautifulSoup解析、反爬机制应对、数据存储等核心知识，包含完整的爬虫流程示例代码。'
 ---
 
 > 网络爬虫是通过程序自动获取网页内容的技术，是数据采集的重要手段。

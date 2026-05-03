@@ -1,13 +1,12 @@
 ---
-title: Docker 命令大全
+title: Docker 命令速查：容器、镜像、仓库常用命令
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: docker-commands-reference
-description: 'Docker 命令速查手册，包含容器、镜像、仓库等常用命令'
+description: 'Docker命令速查手册，包含容器、镜像、仓库等常用命令详解。'
 tags:
   - Docker
-category: Docker
 draft: false
 language: zh-CN
 ---

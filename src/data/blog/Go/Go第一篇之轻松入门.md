@@ -1,18 +1,17 @@
 ---
-title: Go语言入门教程（2024）：环境安装、基本语法与核心特性
+title: Go语言入门：环境安装、基本语法与核心特性
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: go-getting-started
-description: 'Go语言（Golang）完整入门教程，详细讲解环境安装、基本语法、变量常量、数据类型、控制语句等核心知识，包含完整代码示例和实战练习。'
+description: '深入讲解Go语言环境安装、基本语法、变量常量、数据类型、控制语句、函数、并发等核心知识，包含完整代码示例和实战练习。'
 tags:
   - Go
-  - Golang
-  - 编程语言
   - 后端开发
   - 环境配置
   - 基本语法
-  - 变量和数据类型
+  - goroutine
+  - 并发编程
 draft: false
 language: zh-CN
 ---

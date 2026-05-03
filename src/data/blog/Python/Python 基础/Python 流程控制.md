@@ -1,17 +1,18 @@
 ---
-title: Python 流程控制：if、while、for
+title: Python 流程控制：if、while、for、break、continue
 author: 程序员
 pubDatetime: 2018-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: python-control-flow-if-while-for
-description: '深入理解 Python 的流程控制语句：条件判断 if、循环 while 和 for'
+description: '深入理解Python的流程控制语句：条件判断if、循环while和for、break和continue控制关键字，包含大量实战示例。'
 tags:
   - Python
   - 流程控制
-  - if 语句
-  - while 循环
-  - for 循环
-category: Python
+  - if语句
+  - while循环
+  - for循环
+  - break
+  - continue
 draft: false
 language: zh-CN
 ---

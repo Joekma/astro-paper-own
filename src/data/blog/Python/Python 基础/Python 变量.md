@@ -1,14 +1,17 @@
 ---
-title: Python 变量
+title: Python 变量机制：引用计数与深拷贝浅拷贝
 author: 程序员
 pubDatetime: 2018-09-13T16:45:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: python-variables-data-types-deep-shallow-copy
-description: '深入理解 Python 变量机制'
+description: '深入理解Python变量机制，详解变量命名规范、引用计数机制、is与==区别、LEGB作用域规则、小整数对象池、深拷贝与浅拷贝概念。'
 tags:
   - Python
   - 变量
-category: Python
+  - 引用计数
+  - 深拷贝
+  - 浅拷贝
+  - LEGB
 draft: false
 language: zh-CN
 ---

@@ -1,14 +1,13 @@
 ---
-title: Docker Compose 使用教程
+title: Docker Compose：定义和运行多容器应用
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: docker-compose-tutorial
-description: 'Docker Compose 使用教程，定义和运行多容器 Docker 应用'
+description: '深入讲解Docker Compose定义和运行多容器Docker应用的方法和实践。'
 tags:
   - Docker
   - Docker Compose
-category: Docker
 draft: false
 language: zh-CN
 ---

@@ -1,13 +1,14 @@
 ---
-title: Docker 安装
+title: Docker 安装：Ubuntu 和 CentOS 系统安装步骤
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: docker-installation-guide
-description: 'Docker 安装教程，包含 Ubuntu 和 CentOS 系统安装步骤'
+description: '详细讲解在Ubuntu和CentOS系统上安装Docker的步骤。'
 tags:
   - Docker
-category: Docker
+  - Ubuntu
+  - CentOS
 draft: false
 language: zh-CN
 ---

@@ -1,9 +1,9 @@
 ---
-title: MySQL索引管理及执行计划
+title: MySQL索引与执行计划
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
-slug: mysql-index-management
+slug: mysql-index-explain
 featured: false
 draft: false
 tags:

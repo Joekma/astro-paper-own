@@ -1,5 +1,5 @@
 ---
-title: 彻底理解cookie，session，token
+title: 深入理解Cookie、Session和Token的区别与应用场景
 author: FjellOverflow
 pubDatetime: 2024-08-13T00:00:00Z
 modDatetime: 2026-04-22T00:00:00Z
@@ -8,8 +8,10 @@ draft: false
 tags:
   - Python
   - Web开发
-  - docs
-description: 彻底理解cookie、session和token的区别与应用场景，掌握Web身份认证技术的核心原理。
+  - Cookie
+  - Session
+  - Token
+description: '深入讲解cookie、session和token的区别与应用场景，掌握Web身份认证技术的核心原理。'
 ---
 
 # 彻底理解cookie，session，token

@@ -2,7 +2,7 @@
 title: Python 切片实现原理剖析
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: python-slice-implementation
 description: '深入理解 Python 切片实现原理：序列切片、切片操作、底层实现'
 tags:

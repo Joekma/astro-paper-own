@@ -1,16 +1,16 @@
 ---
-title: MySQL版本区别及管理
+title: MySQL版本选择与安装
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
-slug: mysql-version-differences
+slug: mysql-version-selection
 featured: false
 draft: false
 tags:
   - MySQL
   - 数据库
   - 版本
-description: 'MySQL各版本区别及管理'
+description: 'MySQL各版本对比及安装管理方法'
 ---
 
 > MySQL 是最流行的开源关系型数据库之一，了解各版本区别有助于选择合适的版本进行开发和部署。

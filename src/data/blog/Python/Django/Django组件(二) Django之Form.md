@@ -1,15 +1,16 @@
 ---
-title: Django组件(二) Django之Form
+title: Django Form 组件详解
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-component-2-form
 featured: false
 draft: false
 tags:
   - Python
   - Django
-description: "Django 组件 - Form"
+  - Form
+description: "深入讲解Django Form组件的数据校验和模板渲染功能。"
 ---
 
 ## Forms组件概述

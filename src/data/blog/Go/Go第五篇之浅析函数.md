@@ -1,18 +1,18 @@
 ---
-title: Go语言函数完全教程（2024）：参数、返回值、闭包、defer延迟调用
+title: Go语言函数：参数、返回值、闭包、defer延迟调用
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: go-functions
-description: 'Go语言函数完整教程，深入讲解函数声明、参数传递、返回值处理、多返回值、闭包函数、defer延迟调用、panic异常处理和recover恢复，包含完整代码示例。'
+description: '深入讲解Go语言函数声明、参数传递、返回值处理、多返回值、命名返回值、闭包函数、defer延迟调用、panic异常处理和recover恢复机制，包含完整代码示例和最佳实践。'
 tags:
   - Go
-  - Golang
   - 函数
   - 闭包
   - defer
+  - panic
+  - recover
   - 参数传递
-  - 多返回值
 draft: false
 language: zh-CN
 ---

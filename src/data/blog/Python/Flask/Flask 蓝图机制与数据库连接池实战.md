@@ -1,17 +1,16 @@
 ---
-title: Flask 蓝图机制与数据库连接池实战
+title: Flask 蓝图机制与数据库连接池
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: flask-3-blueprint-dbutils
-description: '深入讲解 Flask 蓝图（Blueprint）的使用、基于 DBUtils 实现数据库连接池（两种模式）、本地线程（threading.local）以及 Flask 上下文管理机制'
+description: '深入讲解Flask蓝图（Blueprint）的使用、基于DBUtils实现数据库连接池（两种模式）、本地线程（threading.local）以及Flask上下文管理机制。'
 tags:
   - Python
   - Flask
   - 蓝图
   - 数据库连接池
   - DBUtils
-category: Flask
 draft: false
 language: zh-CN
 ---

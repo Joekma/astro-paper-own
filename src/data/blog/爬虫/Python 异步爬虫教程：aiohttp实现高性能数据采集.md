@@ -1,5 +1,5 @@
 ---
-title: Python 异步爬虫教程：aiohttp实现高性能数据采集
+title: Python 异步爬虫：aiohttp实现高性能数据采集
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
@@ -15,7 +15,7 @@ tags:
   - 性能优化
   - 并发编程
   - 数据采集
-description: 'Python高性能异步爬虫完整教程，深入讲解asyncio异步编程、aiohttp并发HTTP请求、Semaphore并发控制、ThreadPoolExecutor多线程，以及性能优化技巧和实战案例。'
+description: 'Python高性能异步爬虫，深入讲解asyncio异步编程、aiohttp并发HTTP请求、Semaphore并发控制、ThreadPoolExecutor多线程，以及性能优化技巧和实战案例。'
 ---
 
 > 同步爬虫效率低下，使用异步编程可以大幅提升爬取效率。

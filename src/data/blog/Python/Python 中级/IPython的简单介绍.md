@@ -2,7 +2,7 @@
 title: IPython 完全指南 - 交互式 Python 开发环境
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: python-ipython-guide
 description: 'IPython 完全指南，涵盖交互式 Python 开发环境、魔术命令、Jupyter Notebook 等核心概念。'
 tags:

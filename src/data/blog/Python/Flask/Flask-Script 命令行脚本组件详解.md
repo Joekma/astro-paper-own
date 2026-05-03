@@ -2,7 +2,7 @@
 title: Flask-Script 命令行脚本组件详解
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: flask-9-script
 description: '详细讲解 Flask-Script 组件的使用，包括 Manager 实例创建、@manager.command 和 @manager.option 装饰器、Shell 命令、Server 命令、数据库迁移命令以及用户管理命令的实现'
 tags:

@@ -1,15 +1,16 @@
 ---
-title: Django与Ajax
+title: Django 与 Ajax 异步交互
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-ajax
 featured: false
 draft: false
 tags:
   - Python
   - Django
-description: "Django 与 Ajax"
+  - Ajax
+description: "深入讲解Django与Ajax异步交互的实现方法和应用场景。"
 ---
 
 ## 什么是Ajax

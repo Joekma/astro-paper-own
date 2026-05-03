@@ -1,10 +1,10 @@
 ---
-title: Python 数据类型与内置方法
+title: Python 数据类型与内置方法：字符串、列表、元组、字典、集合
 author: 程序员
 pubDatetime: 2018-09-18T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: python-data-types-built-in-methods
-description: '深入理解 Python 的数据类型和字符串、列表、元组、字典、集合的内置方法'
+description: '深入理解Python的数据类型和字符串、列表、元组、字典、集合的内置方法，详解可变类型与不可变类型、哈希类型等核心概念。'
 tags:
   - Python
   - 数据类型
@@ -13,7 +13,6 @@ tags:
   - 元组
   - 字典
   - 集合
-category: Python
 draft: false
 language: zh-CN
 ---

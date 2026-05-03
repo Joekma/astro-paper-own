@@ -1,8 +1,8 @@
 ---
-title: Redis持久化详解
+title: Redis持久化机制：RDB和AOF
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: redis-persistence
 featured: false
 draft: false

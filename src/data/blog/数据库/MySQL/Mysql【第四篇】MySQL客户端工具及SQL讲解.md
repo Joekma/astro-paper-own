@@ -1,5 +1,5 @@
 ---
-title: MySQL客户端工具
+title: MySQL客户端工具及SQL命令
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
@@ -10,7 +10,7 @@ tags:
   - MySQL
   - 数据库
   - 客户端
-description: 'MySQL客户端工具及SQL命令详解'
+description: 'MySQL客户端工具及SQL命令'
 ---
 
 ## 概述

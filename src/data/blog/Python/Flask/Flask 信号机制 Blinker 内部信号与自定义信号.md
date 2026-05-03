@@ -1,16 +1,15 @@
 ---
-title: Flask 信号机制 Blinker 内部信号与自定义信号
+title: Flask 信号机制：Blinker 内部信号与自定义信号
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: flask-6-signals
-description: '深入讲解 Flask 信号机制，基于 Blinker 实现信号订阅与发布。介绍 Flask 内置的 10 个信号、自定义信号的创建与使用，以及信号与装饰器的区别对比'
+description: '深入讲解Flask信号机制，基于Blinker实现信号订阅与发布。介绍Flask内置的10个信号、自定义信号的创建与使用，以及信号与装饰器的区别对比。'
 tags:
   - Python
   - Flask
   - 信号
   - Blinker
-category: Flask
 draft: false
 language: zh-CN
 ---

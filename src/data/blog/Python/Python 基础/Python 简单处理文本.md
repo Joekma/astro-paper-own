@@ -1,15 +1,17 @@
 ---
-title: Python 简单处理文本
+title: Python 文本处理：字符串切割、re.sub、strip
 author: FjellOverflow
 pubDatetime: 2024-08-13T00:00:00Z
-modDatetime: 2026-04-22T00:00:00Z
+modDatetime: 2026-05-03T00:00:00.000+08:00
 featured: false
 draft: false
 tags:
   - Python
   - 文本处理
-  - docs
-description: 利用Python简单处理文本，涵盖字符串切割、文本格式化、文件读写等基础操作。
+  - 字符串
+  - re模块
+  - 文件读写
+description: '利用Python简单处理文本，涵盖字符串切割、文本格式化、文件读写、正则替换（re.sub）、strip删除字符等基础操作和实战技巧。'
 ---
 
 # Python 简单处理文本

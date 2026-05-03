@@ -2,7 +2,7 @@
 title: CSS常用语法与盒模型分析
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: css-basics-and-box-model
 description: 'CSS常用语法与盒模型详解'
 tags:

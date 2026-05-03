@@ -1,13 +1,16 @@
 ---
-title: Linux 必备知识
+title: Linux 必备知识：系统结构、基础命令和网络管理
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: linux-essential-knowledge
-description: 'Linux 必备知识汇总，包括系统结构、基础命令和网络管理'
+description: '深入讲解Linux必备知识，包括系统架构、目录结构、文件操作、权限管理、用户管理、进程管理、系统服务、磁盘管理、网络管理和防火墙配置。'
 tags:
   - Linux
-category: Linux
+  - 系统管理
+  - 命令行
+  - Shell
+  - 网络管理
 draft: false
 language: zh-CN
 ---

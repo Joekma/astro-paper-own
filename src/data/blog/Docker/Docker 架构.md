@@ -1,13 +1,12 @@
 ---
-title: Docker 架构
+title: Docker 架构：核心组件和工作原理
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: docker-architecture
-description: 'Docker 架构详解，介绍 Docker 核心组件和工作原理'
+description: '深入讲解Docker架构，介绍Docker核心组件和工作原理。'
 tags:
   - Docker
-category: Docker
 draft: false
 language: zh-CN
 ---

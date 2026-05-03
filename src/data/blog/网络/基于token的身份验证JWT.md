@@ -1,9 +1,9 @@
 ---
-title: JWT 身份验证
+title: JWT身份验证
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
-slug: jwt-authentication-tutorial
+slug: jwt-authentication
 description: 'JWT（JSON Web Token）身份验证原理和使用'
 tags:
   - JWT

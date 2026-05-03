@@ -1,15 +1,17 @@
 ---
-title: 优化Django ORM
+title: Django ORM 性能优化指南
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-orm-optimization
 featured: false
 draft: false
 tags:
   - Python
   - Django
-description: "优化 Django ORM"
+  - ORM
+  - 性能优化
+description: "深入讲解Django ORM性能优化的方法和实践技巧。"
 ---
 
 ## 怎么查问题

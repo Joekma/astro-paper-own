@@ -1,10 +1,10 @@
 ---
-title: Python 函数定义、返回值、参数
+title: Python 函数：定义、返回值、参数类型与深拷贝浅拷贝
 author: 程序员
 pubDatetime: 2018-08-16T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: python-functions-definition-return-values-parameters
-description: '深入理解 Python 函数定义、返回值、各种参数类型以及深拷贝与浅拷贝'
+description: '深入理解Python函数定义、返回值、各种参数类型（位置参数、默认参数、可变参数）以及深拷贝与浅拷贝的概念和应用。'
 tags:
   - Python
   - 函数
@@ -12,7 +12,7 @@ tags:
   - 返回值
   - 深拷贝
   - 浅拷贝
-category: Python
+  - 可变参数
 draft: false
 language: zh-CN
 ---

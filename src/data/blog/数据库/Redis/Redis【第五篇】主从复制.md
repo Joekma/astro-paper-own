@@ -3,7 +3,7 @@ title: Redis主从复制
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
-slug: redis-master-slave-replication
+slug: redis-replication
 featured: false
 draft: false
 tags:

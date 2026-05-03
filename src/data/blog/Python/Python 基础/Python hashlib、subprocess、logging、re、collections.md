@@ -2,9 +2,9 @@
 title: Python 常用模块：hashlib、subprocess、logging、re、collections
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: python-common-modules-hashlib-subprocess-logging-re
-description: '深入理解 Python 常用模块：哈希算法、子进程、日志、正则表达式和特殊容器'
+description: '深入讲解Python常用模块：哈希算法、子进程、日志、正则表达式和特殊容器。'
 tags:
   - Python
   - hashlib
@@ -12,7 +12,6 @@ tags:
   - logging
   - re
   - collections
-category: Python
 draft: false
 language: zh-CN
 ---

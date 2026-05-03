@@ -1,17 +1,16 @@
 ---
-title: Python 字符编码与文件处理
+title: Python 字符编码与文件处理：UTF-8、Unicode、文件操作
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: python-character-encoding-file-handling
-description: '深入理解 Python 的字符编码原理和文件操作'
+description: '深入讲解Python的字符编码原理（ASCII、GBK、Unicode、UTF-8）和文件操作（r、w、a、b模式），详解编码与解码的三个阶段和文件指针操作。'
 tags:
   - Python
   - 字符编码
   - 文件操作
   - UTF-8
   - Unicode
-category: Python
 draft: false
 language: zh-CN
 ---

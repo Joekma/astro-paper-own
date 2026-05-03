@@ -1,14 +1,14 @@
 ---
-title: Django框架(一) 虚拟环境配置及简单使用
+title: Django框架：虚拟环境配置及简单使用
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-framework-1-virtualenv
-description: 'Django框架 (一) 虚拟环境配置及简单使用'
+description: '深入讲解Django虚拟环境配置及框架的基本使用方法。'
 tags:
   - Python
   - Django
-category: Django
+  - 虚拟环境
 draft: false
 language: zh-CN
 ---

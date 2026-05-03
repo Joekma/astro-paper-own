@@ -1,10 +1,10 @@
 ---
-title: TCPCopy使用
+title: TCPCopy流量复制工具使用
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: tcpcopy-usage
-description: 'TCPCopy流量复制工具使用教程'
+description: 'TCPCopy流量复制工具使用方法'
 tags:
   - TCPCopy
   - 网络

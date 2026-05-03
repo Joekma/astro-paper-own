@@ -11,7 +11,7 @@ tags:
   - 数据库
   - 备份
   - 恢复
-description: 'MySQL备份和恢复方法详解'
+description: 'MySQL备份和恢复方法'
 ---
 
 > 数据库备份是数据安全的重要保障。

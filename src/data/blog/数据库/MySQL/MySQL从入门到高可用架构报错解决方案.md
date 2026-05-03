@@ -1,9 +1,9 @@
 ---
-title: MySQL报错解决方案
+title: MySQL常见错误与解决
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
-slug: mysql-errors-and-solutions
+slug: mysql-error-solutions
 featured: false
 draft: false
 tags:
@@ -11,7 +11,7 @@ tags:
   - 数据库
   - 报错解决
   - 高可用
-description: 'MySQL常见错误与解决方案'
+description: 'MySQL常见错误与解决方案汇总'
 ---
 
 > MySQL 常见错误与解决方案汇总。

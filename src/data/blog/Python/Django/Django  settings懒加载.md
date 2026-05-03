@@ -1,15 +1,15 @@
 ---
-title: Django settings懒加载
+title: Django Settings 懒加载机制
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-settings-lazy-loading
 featured: false
 draft: false
 tags:
   - Python
   - Django
-description: "深入理解 Django settings 懒加载机制"
+description: "深入讲解Django settings懒加载机制的实现原理。"
 ---
 
 ## 关于动态导入模块（importlib）

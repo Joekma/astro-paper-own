@@ -1,16 +1,15 @@
 ---
-title: TCP/IP协议栈概述
+title: TCP/IP 协议栈概述
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: tcp-ip-protocol-stack
-description: 'TCP/IP协议栈各层功能和数据封装流程'
+description: 'TCP/IP协议栈各层功能和数据封装流程。'
 tags:
   - TCP/IP
   - 网络
   - 协议
   - 网络基础
-category: 网络
 draft: false
 language: zh-CN
 ---

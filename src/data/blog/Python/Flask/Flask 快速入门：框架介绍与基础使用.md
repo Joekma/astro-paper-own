@@ -1,16 +1,14 @@
 ---
-title: Flask 快速入门：框架介绍与基础使用
+title: Flask 框架介绍与基础使用
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: flask-1-introduction
-description: 'Flask 快速入门教程，介绍 Flask 框架的基本概念、与 Django 的对比、Werkzeug 原理以及 Flask 的基础使用方法'
+description: '介绍Flask框架的基本概念、与Django的对比、Werkzeug原理以及Flask的基础使用方法。'
 tags:
   - Python
   - Flask
   - Web开发
-  - 入门
-category: Flask
 draft: false
 language: zh-CN
 ---

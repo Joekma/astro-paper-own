@@ -1,5 +1,5 @@
 ---
-title: Vue导入Bootstrap
+title: Vue集成Bootstrap
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
@@ -11,7 +11,7 @@ tags:
   - Bootstrap
   - 前端
   - CSS
-description: 'Vue项目中使用Bootstrap框架，包括安装配置和组件示例'
+description: 'Vue项目中集成Bootstrap框架的方法和组件使用示例'
 ---
 
 > Bootstrap 是最流行的前端 UI 框架。

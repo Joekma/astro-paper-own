@@ -1,5 +1,5 @@
 ---
-title: Python滑块验证码破解教程：轨迹拟合与Selenium自动化实战
+title: Python滑块验证码破解：轨迹拟合与Selenium自动化
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
@@ -15,7 +15,7 @@ tags:
   - JavaScript逆向
   - 轨迹模拟
   - 反爬虫
-description: 'Python滑块验证码破解完整教程，深入讲解鼠标轨迹生成算法、贝塞尔曲线应用、Selenium自动化模拟，以及多种验证码反反爬虫策略和实战代码。'
+description: 'Python滑块验证码破解，深入讲解鼠标轨迹生成算法、贝塞尔曲线应用、Selenium自动化模拟，以及多种验证码反反爬虫策略和实战代码。'
 ---
 
 > 滑块验证码是常见的反爬手段，本文介绍如何使用轨迹拟合来破解滑块验证码。

@@ -11,7 +11,7 @@ tags:
   - 数据库
   - API
   - 开发
-description: 'Redis API开发和集成，包括Python和Go客户端'
+description: 'Redis API开发和集成，包括Python和Go客户端使用'
 ---
 
 > Redis API 用于应用程序集成。

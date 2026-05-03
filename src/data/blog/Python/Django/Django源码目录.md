@@ -1,15 +1,16 @@
 ---
-title: Django源码目录
+title: Django 源码目录结构
 author: 程序员
 pubDatetime: 2024-08-11T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-source-code-structure
 featured: false
 draft: false
 tags:
   - Python
   - Django
-description: "Django 源码目录"
+  - 源码分析
+description: "深入讲解Django源码目录结构和主要模块的功能。"
 ---
 
 ## Django源码结构概览

@@ -2,7 +2,7 @@
 title: Flask 自定义分页组件实现详解
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: flask-5-pagination
 description: '详细讲解 Flask 自定义分页组件的实现原理，包括 Pagination 类的设计、页码计算逻辑、分页 HTML 生成方法以及在 Flask 中的实际使用示例'
 tags:

@@ -1,5 +1,5 @@
 ---
-title: Python HTML解析库完整教程：re正则、BeautifulSoup、pyquery实战
+title: Python HTML解析库：re正则、BeautifulSoup、pyquery实战
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
@@ -15,7 +15,7 @@ tags:
   - HTML解析
   - 数据提取
   - lxml
-description: 'Python最全HTML解析教程，深入讲解re正则表达式、BeautifulSoup4、pyquery三大解析库的使用方法和实战技巧，包含完整代码示例和性能对比。'
+description: 'Python HTML解析库，深入讲解re正则表达式、BeautifulSoup4、pyquery三大解析库的使用方法和实战技巧，包含代码示例和性能对比。'
 ---
 
 > 在爬虫程序中，获取到网页源代码后，需要从海量 HTML 代码中提取出有用的数据。常用的解析库有三种：re、BeautifulSoup、pyquery。

@@ -1,17 +1,16 @@
 ---
-title: Flask-Session 会话存储组件实战
+title: Flask-Session 会话存储组件
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: flask-8-session
-description: '深入讲解 Flask-Session 组件的多种会话存储方式，包括 Redis、Memcached、文件系统（filesystem）、MongoDB 等配置与使用方法，以及与内置 session 的对比'
+description: '深入讲解Flask-Session组件的多种会话存储方式，包括Redis、Memcached、文件系统、MongoDB等配置与使用方法，以及与内置session的对比。'
 tags:
   - Python
   - Flask
   - Session
   - Redis
   - Flask-Session
-category: Flask
 draft: false
 language: zh-CN
 ---

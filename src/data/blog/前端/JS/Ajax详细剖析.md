@@ -1,17 +1,20 @@
 ---
-title: Ajax详细剖析
+title: Ajax技术原理与实战应用
 author: 程序员
 pubDatetime: 2019-02-18T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
-slug: ajax-detailed-analysis
+slug: ajax-deep-analysis-and-practical-applications
 featured: false
 draft: false
 tags:
   - JavaScript
-  - 前端
+  - 前端开发
   - Ajax
-  - Web
-description: 'Ajax技术详解，包括XMLHttpRequest、Fetch API、异步编程等核心概念'
+  - Fetch API
+  - HTTP请求
+  - axios
+  - Web开发
+description: '深入剖析Ajax技术原理，包含XMLHttpRequest、Fetch API、Promise封装、axios使用等，涵盖异步编程、错误处理和实际应用场景'
 ---
 
 > Ajax（异步 JavaScript 和 XML）用于在不刷新页面的情况下与服务器交换数据。

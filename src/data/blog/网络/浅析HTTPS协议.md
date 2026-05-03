@@ -1,16 +1,15 @@
 ---
-title: HTTPS 协议浅析
+title: HTTPS 协议原理与 SSL/TLS 加密机制
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: https-protocol-analysis
-description: 'HTTPS 协议原理，SSL/TLS 加密机制'
+description: 'HTTPS协议原理和SSL/TLS加密机制。'
 tags:
   - HTTPS
   - SSL
   - TLS
   - 安全
-category: 网络
 draft: false
 language: zh-CN
 ---

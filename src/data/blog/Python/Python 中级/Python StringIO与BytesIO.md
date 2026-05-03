@@ -2,7 +2,7 @@
 title: Python StringIO与BytesIO
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: python-stringio-bytesio
 description: '深入理解 Python StringIO与BytesIO：内存读写、缓冲区操作'
 tags:

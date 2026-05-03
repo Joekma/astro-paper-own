@@ -1,16 +1,15 @@
 ---
-title: Python 字符串格式化输出：%、format()、f-string
+title: Python 字符串格式化：%、format()、f-string详解
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: python-string-formatting-guide
-description: '深入理解 Python 的三种字符串格式化方式：%、format() 和 f-string'
+description: '深入讲解Python的三种字符串格式化方式：传统%格式化、format()方法和f-string，详解对齐、补位、精度控制、进制转换等实战技巧。'
 tags:
   - Python
   - 字符串格式化
   - f-string
   - format
-category: Python
 draft: false
 language: zh-CN
 ---

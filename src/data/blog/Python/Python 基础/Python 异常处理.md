@@ -1,16 +1,16 @@
 ---
-title: Python 异常处理
+title: Python 异常处理：try-except、finally、自定义异常
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: python-exception-handling
-description: '深入理解 Python 的异常处理机制'
+description: '深入理解Python的异常处理机制，详解try-except、else、finally、自定义异常、异常捕获顺序和常见异常类型，包含大量实战示例。'
 tags:
   - Python
   - 异常处理
   - try-except
   - 错误处理
-category: Python
+  - 自定义异常
 draft: false
 language: zh-CN
 ---

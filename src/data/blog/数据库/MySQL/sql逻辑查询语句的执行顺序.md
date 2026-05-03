@@ -1,5 +1,5 @@
 ---
-title: SQL查询语句执行顺序
+title: SQL查询语句的执行顺序
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
@@ -10,7 +10,7 @@ tags:
   - MySQL
   - 数据库
   - SQL
-description: 'SQL查询语句的执行顺序详解'
+description: 'SQL查询语句的执行顺序'
 ---
 
 > SQL 查询语句有其固定的执行顺序。

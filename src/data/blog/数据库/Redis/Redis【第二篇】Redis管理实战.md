@@ -3,14 +3,14 @@ title: Redis管理实战
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
-slug: redis-management-practice
+slug: redis-management
 featured: false
 draft: false
 tags:
   - Redis
   - 数据库
   - 运维
-description: 'Redis管理运维实战经验'
+description: 'Redis管理运维实战经验，包含配置优化、监控和安全'
 ---
 
 ## 概述

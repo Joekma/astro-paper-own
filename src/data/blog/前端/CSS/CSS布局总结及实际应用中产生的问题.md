@@ -1,17 +1,19 @@
 ---
-title: CSS布局总结及实际问题
+title: CSS布局技术
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
-slug: css-layout-summary-and-problems
+slug: css-layout-techniques-comprehensive-guide
 featured: false
 draft: false
 tags:
   - CSS
-  - 前端
-  - 布局
-  - Web
-description: 'CSS布局技术总结，包括浮动、定位、BFC等及实际应用中的常见问题'
+  - 前端开发
+  - 布局技术
+  - Flexbox
+  - Grid
+  - Web开发
+description: '深入解析CSS布局核心概念，涵盖文档流、浮动、定位、Flexbox布局和Grid网格布局，掌握各种布局技巧与实战应用'
 ---
 
 > CSS 布局是将网页内容放到合适位置的技术。

@@ -2,7 +2,7 @@
 title: Python 面向对象设计思想
 author: FjellOverflow
 pubDatetime: 2024-08-13T00:00:00Z
-updated: 2026-04-29T00:00:00Z
+modDatetime: 2026-04-29T00:00:00.000+08:00
 slug: python-oop-design-thinking
 featured: false
 draft: false

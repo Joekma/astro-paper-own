@@ -2,7 +2,7 @@
 title: Flask 自定义 Form 组件与 WTForms 源码解析
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: flask-10-custom-form
 description: '深入分析 WTForms 源码流程，包括 Form 实例化流程和验证流程。讲解如何自定义 Form 组件、字段、插件，以及使用 Flask-WTF 实现 CSRF 保护和文件上传表单'
 tags:

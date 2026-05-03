@@ -2,7 +2,7 @@
 title: MySQL单表查询
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: mysql-single-table-query
 featured: false
 draft: false
@@ -10,7 +10,7 @@ tags:
   - MySQL
   - 数据库
   - SQL
-description: 'MySQL单表查询详解，从基础查询到高级技巧'
+description: 'MySQL单表查询，从基础查询到高级技巧'
 ---
 
 > 单表查询是 SQL 的基础，掌握好单表查询的各种技巧能大大提高数据处理效率。

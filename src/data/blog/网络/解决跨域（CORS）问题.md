@@ -1,16 +1,15 @@
 ---
-title: CORS 跨域解决方案
+title: CORS 跨域资源共享配置方法
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: cors-cross-origin-solution
-description: 'CORS 跨域资源共享配置方法'
+description: 'CORS跨域资源共享的配置方法和实践。'
 tags:
   - CORS
   - 跨域
   - 前端
   - Web
-category: 网络
 draft: false
 language: zh-CN
 ---

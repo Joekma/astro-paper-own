@@ -1,15 +1,16 @@
 ---
-title: Django组件(五) Django之ContentType组件
+title: Django ContentType 组件详解
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-component-5-contenttype
 featured: false
 draft: false
 tags:
   - Python
   - Django
-description: "Django 组件 - ContentType 组件"
+  - ContentType
+description: "深入讲解Django ContentType组件的快速连表操作功能和实践技巧。"
 ---
 
 ## 基础使用

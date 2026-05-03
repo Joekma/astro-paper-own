@@ -2,16 +2,14 @@
 title: Flask-Login 用户认证与登录管理
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: flask-4-login-extension
-description: '使用 Flask-Login 扩展实现用户认证功能，包括用户模型创建、LoginManager 配置、登录登出视图编写、路由保护装饰器以及注册功能的完整实现'
+description: '深入讲解使用Flask-Login扩展实现用户认证功能，包括用户模型创建、LoginManager配置、登录登出视图编写、路由保护装饰器以及注册功能的完整实现。'
 tags:
   - Python
   - Flask
   - Flask-Login
   - 用户认证
-  - 登录
-category: Flask
 draft: false
 language: zh-CN
 ---

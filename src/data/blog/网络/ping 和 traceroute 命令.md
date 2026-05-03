@@ -2,7 +2,7 @@
 title: ping和traceroute命令
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: ping-traceroute-commands
 description: '网络诊断工具ping和traceroute使用方法'
 tags:

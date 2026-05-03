@@ -1,13 +1,12 @@
 ---
-title: Docker 使用
+title: Docker 使用：容器运行、生命周期管理和基本操作
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: docker-usage-tutorial
-description: 'Docker 使用教程，包括容器运行、生命周期管理和基本操作'
+description: '深入讲解Docker容器运行、生命周期管理和基本操作方法。'
 tags:
   - Docker
-category: Docker
 draft: false
 language: zh-CN
 ---

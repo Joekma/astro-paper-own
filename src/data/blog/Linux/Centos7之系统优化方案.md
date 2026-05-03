@@ -1,14 +1,18 @@
 ---
-title: CentOS 7 系统优化方案
+title: CentOS 7 系统优化：内核参数、安全配置和性能调优
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: centos7-optimization
-description: 'CentOS 7 系统优化方案，包含内核参数、安全配置和性能调优'
+description: '深入讲解CentOS 7系统优化，包含内核参数调优、安全配置（SSH、用户权限、防火墙）、性能优化（CPU、内存、磁盘IO、网络TCP BBR）和自动化脚本。'
 tags:
   - Linux
   - CentOS
-category: Linux
+  - 系统优化
+  - 性能调优
+  - 安全配置
+  - 内核参数
+  - TCP BBR
 draft: false
 language: zh-CN
 ---

@@ -1,5 +1,5 @@
 ---
-title: MySQL安装教程
+title: MySQL安装
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
@@ -10,7 +10,7 @@ tags:
   - MySQL
   - 数据库
   - 安装
-description: 'MySQL数据库安装教程，包括Windows、Linux系统'
+description: 'MySQL数据库安装，包括Windows、Linux系统'
 ---
 
 > MySQL 是全球最流行的开源关系型数据库管理系统。

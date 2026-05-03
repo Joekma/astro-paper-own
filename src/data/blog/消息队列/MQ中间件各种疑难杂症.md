@@ -1,15 +1,14 @@
 ---
-title: MQ中间件疑难杂症
+title: 消息队列常见问题与解决方案
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: mq-common-problems
-description: '消息队列常见问题和解决方案'
+description: '深入讲解消息队列常见问题和解决方案，包括顺序消费、重复消费、消息丢失、消息积压等。'
 tags:
   - 消息队列
   - MQ
-  - 疑难问题
-category: 消息队列
+  - 常见问题
 draft: false
 language: zh-CN
 ---

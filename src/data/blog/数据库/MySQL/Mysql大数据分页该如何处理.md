@@ -1,9 +1,9 @@
 ---
-title: MySQL大数据分页处理
+title: MySQL大数据分页优化
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
-slug: mysql-large-data-pagination
+slug: mysql-pagination-optimization
 featured: false
 draft: false
 tags:
@@ -11,7 +11,7 @@ tags:
   - 数据库
   - 分页
   - 优化
-description: 'MySQL大数据分页优化方案'
+description: 'MySQL大数据分页优化方案，解决深度分页性能问题'
 ---
 
 > 大数据量分页需要优化。

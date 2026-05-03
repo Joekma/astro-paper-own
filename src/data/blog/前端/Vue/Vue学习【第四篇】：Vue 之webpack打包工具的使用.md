@@ -1,9 +1,9 @@
 ---
-title: webpack打包工具使用
+title: webpack打包工具
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
-slug: webpack-bundler-tutorial
+slug: webpack-bundler
 featured: false
 draft: false
 tags:
@@ -11,7 +11,7 @@ tags:
   - 前端
   - 构建工具
   - JavaScript
-description: 'webpack打包工具详解，包括安装配置、loader、plugin和优化'
+description: 'webpack配置与使用，包括loader、plugin和优化策略'
 ---
 
 > webpack 是现代 JavaScript 应用程序的静态模块打包器。

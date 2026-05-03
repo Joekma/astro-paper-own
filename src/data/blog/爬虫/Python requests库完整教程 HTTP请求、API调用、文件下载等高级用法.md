@@ -1,5 +1,5 @@
 ---
-title: Python requests库完整教程：HTTP请求、API调用、文件下载等高级用法
+title: Python requests库：HTTP请求、API调用、文件下载
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
@@ -16,7 +16,7 @@ tags:
   - 会话管理
   - SSL证书
   - 代理设置
-description: 'Python requests库最全面的教程，深入讲解GET/POST请求、文件上传下载、SSL证书处理、代理设置、会话管理、并发请求等高级用法，包含大量实战代码示例。'
+description: 'Python requests库，深入讲解GET/POST请求、文件上传下载、SSL证书处理、代理设置、会话管理、并发请求等高级用法，包含实战代码示例。'
 ---
 
 > requests 是 Python 中最流行的 HTTP 库，简洁易用的 API 使其成为网络请求的首选工具。

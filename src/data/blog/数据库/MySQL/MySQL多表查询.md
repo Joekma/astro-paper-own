@@ -11,7 +11,7 @@ tags:
   - 数据库
   - SQL
   - 多表查询
-description: 'MySQL多表查询详解，包括连接查询、子查询和联合查询'
+description: 'MySQL多表查询，包括连接查询、子查询和联合查询'
 ---
 
 ## 概述

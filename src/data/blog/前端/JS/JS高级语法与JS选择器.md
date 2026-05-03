@@ -2,7 +2,7 @@
 title: JavaScript高级语法与选择器
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: javascript-advanced-syntax
 featured: false
 draft: false

@@ -1,13 +1,16 @@
 ---
-title: Shell 的使用
+title: Shell 脚本编程：变量、运算、条件判断、循环和函数
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: shell-scripting
-description: 'Shell 脚本编程教程，包含变量、运算、条件判断和循环'
+description: '深入讲解Shell脚本编程，包含变量、运算、条件判断、循环、函数、字符串处理、数组、输入输出和管道重定向，包含大量实战示例。'
 tags:
   - Shell
-category: Linux
+  - Bash
+  - 脚本编程
+  - Linux
+  - 自动化
 draft: false
 language: zh-CN
 ---

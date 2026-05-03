@@ -1,17 +1,21 @@
 ---
-title: CSS高级布局
+title: CSS高级布局技术
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
-slug: css-advanced-layout-techniques
+slug: css-advanced-layout-techniques-deep-dive
 featured: false
 draft: false
 tags:
   - CSS
-  - 前端
-  - 布局
-  - Web
-description: 'CSS高级布局技术，包括浮动、定位、BFC等核心概念详解'
+  - 前端开发
+  - 布局技术
+  - BFC
+  - 浮动布局
+  - 圣杯布局
+  - 双飞翼布局
+  - Web开发
+description: '深度剖析CSS高级布局技术，包括BFC块级格式化上下文、浮动布局、定位布局、圣杯布局、双飞翼布局、等高布局等核心概念与实战技巧'
 ---
 
 > CSS 高级布局涉及浮动、定位、BFC 等核心概念。

@@ -1,5 +1,5 @@
 ---
-title: Python爬虫数据存储实战：MongoDB、Redis、MySQL完整指南
+title: Python爬虫数据存储：MongoDB、Redis、MySQL
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
@@ -15,7 +15,7 @@ tags:
   - 数据库
   - NoSQL
   - 数据存储
-description: 'Python爬虫数据存储全攻略，详细讲解MongoDB、Redis、MySQL的使用方法和应用场景，包含Python连接代码、CRUD操作、数据库选择策略和性能优化建议。'
+description: 'Python爬虫数据存储，详细讲解MongoDB、Redis、MySQL的使用方法和应用场景，包含Python连接代码、CRUD操作、数据库选择策略和性能优化建议。'
 ---
 
 > 在爬虫程序中，获取到数据后需要将数据存储起来。根据数据类型和访问频率选择合适的存储方案。

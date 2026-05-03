@@ -1,15 +1,16 @@
 ---
-title: Django的信号
+title: Django 信号机制详解
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-signals
 featured: false
 draft: false
 tags:
   - Python
   - Django
-description: "Django 的信号"
+  - 信号
+description: "深入讲解Django信号机制的原理、内置信号类型和使用方法。"
 ---
 
 ## 信号简介

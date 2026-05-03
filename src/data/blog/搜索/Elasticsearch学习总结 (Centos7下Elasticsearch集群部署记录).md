@@ -1,16 +1,15 @@
 ---
-title: Elasticsearch集群部署记录
+title: Elasticsearch 集群部署
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: elasticsearch-cluster-deployment
-description: 'Elasticsearch集群部署教程'
+description: '深入讲解Elasticsearch集群部署方法和实践。'
 tags:
   - Elasticsearch
   - 搜索
   - 集群
   - 部署
-category: 搜索
 draft: false
 language: zh-CN
 ---

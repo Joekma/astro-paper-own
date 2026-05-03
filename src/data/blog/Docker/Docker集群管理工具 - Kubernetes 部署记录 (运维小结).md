@@ -1,14 +1,14 @@
 ---
-title: Docker 集群管理工具 - Kubernetes 部署记录
+title: Kubernetes 集群管理：架构、组件与部署
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: kubernetes-deployment-guide
-description: 'Kubernetes 集群管理工具介绍，包括架构、组件和部署记录'
+description: '深入讲解Kubernetes集群管理工具，包括架构、组件和部署方法。'
 tags:
   - Docker
   - Kubernetes
-category: Docker
+  - 容器编排
 draft: false
 language: zh-CN
 ---

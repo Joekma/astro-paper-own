@@ -1,15 +1,16 @@
 ---
-title: Django中自动重载机制的实现
+title: Django 自动重载机制的实现
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-autoreload-mechanism
 featured: false
 draft: false
 tags:
   - Python
   - Django
-description: "Django 中自动重载机制的实现"
+  - 自动重载
+description: "深入讲解Django自动重载机制的实现原理和工作方式。"
 ---
 
 ## 两个进程

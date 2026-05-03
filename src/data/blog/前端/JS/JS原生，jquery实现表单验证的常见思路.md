@@ -1,9 +1,9 @@
 ---
-title: 表单验证常见思路
+title: 表单验证
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
-slug: form-validation-tutorial
+slug: form-validation
 featured: false
 draft: false
 tags:
@@ -11,7 +11,7 @@ tags:
   - 前端
   - 表单验证
   - Web
-description: '表单验证的常见实现思路，包括前端验证和用户体验优化'
+description: '前端表单验证的实现思路，包括原生JS、jQuery和HTML5验证'
 ---
 
 > 表单验证是前端开发的重要部分。

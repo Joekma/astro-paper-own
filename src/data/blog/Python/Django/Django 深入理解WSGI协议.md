@@ -1,15 +1,16 @@
 ---
-title: Django 深入理解WSGI协议
+title: Django 深入理解 WSGI 协议
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-wsgi-protocol
 featured: false
 draft: false
 tags:
   - Python
   - Django
-description: "深入理解 WSGI 协议"
+  - WSGI
+description: "深入讲解WSGI协议的工作原理和在Django中的应用。"
 ---
 
 ## 起步

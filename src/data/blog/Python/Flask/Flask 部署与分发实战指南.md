@@ -1,18 +1,16 @@
 ---
-title: Flask 部署与分发实战指南
+title: Flask 部署与分发：Gunicorn、Nginx、Supervisor、Docker
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: flask-deployment
-description: 'Flask 部署与分发实战指南，详细介绍 Gunicorn、Nginx、Supervisor、Docker 等多种部署方案，以及生产环境配置和安全优化建议'
+description: '深入讲解Flask应用部署方案，包括Gunicorn、Nginx、Supervisor、Docker等多种部署方案，以及生产环境配置和安全优化建议。'
 tags:
   - Python
   - Flask
   - 部署
   - Gunicorn
   - Nginx
-  - Docker
-category: Flask
 draft: false
 language: zh-CN
 ---

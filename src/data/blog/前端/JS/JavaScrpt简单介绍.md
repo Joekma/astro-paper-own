@@ -1,17 +1,19 @@
 ---
-title: JavaScript简单介绍
+title: JavaScript入门：变量、数据类型与基础语法
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
-slug: javascript-introduction
+slug: javascript-getting-started-guide
 featured: false
 draft: false
 tags:
   - JavaScript
-  - 前端
-  - Web
-  - 入门
-description: 'JavaScript入门介绍，包括变量、数据类型、运算符和基本语法'
+  - 前端开发
+  - 编程入门
+  - 变量
+  - 数据类型
+  - Web开发
+description: 'JavaScript入门，讲解变量声明（var/let/const）、数据类型、运算符、控制结构等核心基础，快速掌握JavaScript编程基础'
 ---
 
 > JavaScript 是 Web 开发的核心语言。

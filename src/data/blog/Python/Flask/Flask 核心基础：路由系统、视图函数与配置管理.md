@@ -2,15 +2,14 @@
 title: Flask 核心基础：路由系统、视图函数与配置管理
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: flask-2-basics
-description: 'Flask 核心基础教程，详解路由系统配置、视图函数编写、请求响应处理、Session 会话管理以及 Flask 配置文件的各种加载方式'
+description: '深入讲解Flask路由系统配置、视图函数编写、请求响应处理、Session会话管理以及配置文件的各种加载方式。'
 tags:
   - Python
   - Flask
   - 路由
   - 视图
-category: Flask
 draft: false
 language: zh-CN
 ---

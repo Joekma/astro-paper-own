@@ -1,5 +1,5 @@
 ---
-title: Cookie 和 Session 完全指南 - Web 身份认证技术
+title: Cookie 和 Session：Web 身份认证技术与状态管理
 author: FjellOverflow
 pubDatetime: 2024-08-13T00:00:00Z
 modDatetime: 2026-04-22T00:00:00Z
@@ -8,8 +8,9 @@ draft: false
 tags:
   - Python
   - Web开发
-  - docs
-description: Cookie 和 Session 完全指南，深入讲解Web身份认证技术、状态管理与安全最佳实践。
+  - Cookie
+  - Session
+description: '深入讲解Web身份认证技术Cookie和Session、状态管理与安全最佳实践。'
 ---
 
 # Cookie 和 Session 完全指南 - Web 身份认证技术

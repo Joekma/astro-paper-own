@@ -1,16 +1,15 @@
 ---
-title: WebSocket详解
+title: WebSocket 协议原理和使用方法
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: websocket-tutorial
-description: 'WebSocket协议原理和使用方法'
+description: 'WebSocket协议原理和使用方法。'
 tags:
   - WebSocket
   - 网络
   - 实时通信
   - Web
-category: 网络
 draft: false
 language: zh-CN
 ---

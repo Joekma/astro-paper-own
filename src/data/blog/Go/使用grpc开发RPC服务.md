@@ -1,19 +1,20 @@
 ---
-title: Go语言gRPC微服务开发完整教程（2024）：Protocol Buffers、RPC、流式通信实战
+title: Go语言gRPC微服务开发：Protocol Buffers、RPC、流式通信实战
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: grpc-rpc-service
-description: '使用gRPC和Protocol Buffers开发RPC服务完整教程，详细讲解proto文件编写、gRPC四种通信模式（简单RPC、流式RPC）、拦截器、认证、TLS加密和负载均衡，包含完整微服务项目代码。'
+description: '详细讲解使用gRPC和Protocol Buffers开发RPC服务，包括proto文件编写、gRPC四种通信模式（简单RPC、流式RPC）、拦截器、认证、TLS加密、负载均衡和连接池，包含完整微服务项目代码。'
 tags:
   - Go
-  - Golang
   - gRPC
   - RPC
   - 微服务
   - Protocol Buffers
   - protobuf
   - 分布式系统
+  - 流式通信
+  - TLS
 draft: false
 language: zh-CN
 ---

@@ -1,5 +1,5 @@
 ---
-title: 网络编程之Socket
+title: 网络编程之Socket：TCP/UDP协议与Socket套接字编程
 author: FjellOverflow
 pubDatetime: 2024-08-13T00:00:00Z
 modDatetime: 2026-04-22T00:00:00Z
@@ -8,8 +8,9 @@ draft: false
 tags:
   - Python
   - 网络编程
-  - docs
-description: 网络编程之Socket，详细讲解TCP/UDP协议、Socket套接字编程与网络通信原理。
+  - TCP
+  - UDP
+description: '详细讲解TCP/UDP协议、Socket套接字编程与网络通信原理。'
 ---
 
 # 网络编程之Socket

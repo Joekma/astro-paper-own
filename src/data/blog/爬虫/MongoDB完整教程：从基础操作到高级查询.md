@@ -1,5 +1,5 @@
 ---
-title: MongoDB完整教程：从基础操作到高级查询
+title: MongoDB 操作与高级查询
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
@@ -14,7 +14,7 @@ tags:
   - 聚合查询
   - Python数据库
   - 数据库设计
-description: 'MongoDB最全面的使用教程，涵盖基础知识、CRUD操作、聚合管道、索引优化和Python实战代码示例，从入门到精通的完整指南。'
+description: 'MongoDB使用指南，涵盖基础知识、CRUD操作、聚合管道、索引优化和Python实战代码示例。'
 ---
 
 > MongoDB 是一款强大、灵活、易于扩展的通用型数据库，采用文档存储模式。

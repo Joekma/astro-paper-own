@@ -1,15 +1,16 @@
 ---
-title: Django组件(一) Django之分页器
+title: Django 分页器组件详解
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-component-1-paginator
 featured: false
 draft: false
 tags:
   - Python
   - Django
-description: "Django 组件 - 分页器"
+  - 分页器
+description: "深入讲解Django分页器组件的使用方法和实践技巧。"
 ---
 
 ## Django的分页器（paginator）简介

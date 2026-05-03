@@ -1,5 +1,5 @@
 ---
-title: Redis Cluster集群
+title: Redis Cluster集群配置、原理和运维
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00

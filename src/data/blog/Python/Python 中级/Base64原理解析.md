@@ -2,7 +2,7 @@
 title: Base64原理解析
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: base64-encoding-principle
 description: '深入理解 Base64 编码原理：编码原理、Python实现、实际应用场景'
 tags:

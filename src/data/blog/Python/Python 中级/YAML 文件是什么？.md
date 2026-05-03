@@ -2,7 +2,7 @@
 title: YAML 文件是什么？
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: yaml-tutorial-basics
 description: 'YAML语法入门教程，介绍YAML的基本语法、数据结构和实际应用'
 tags:

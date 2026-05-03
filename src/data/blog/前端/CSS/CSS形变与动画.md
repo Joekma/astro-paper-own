@@ -3,15 +3,18 @@ title: CSS形变与动画
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
-slug: css-transforms-and-animations
+slug: css-transforms-and-animations-complete-guide
 featured: false
 draft: false
 tags:
   - CSS
-  - 前端
-  - 动画
-  - Web
-description: 'CSS形变与动画教程，包括2D转换、3D转换、过渡动画和关键帧动画'
+  - 前端开发
+  - 2D转换
+  - 3D转换
+  - CSS动画
+  - 过渡效果
+  - Web开发
+description: '全面掌握CSS形变与动画技术，包括2D转换、3D转换、过渡动画、关键帧动画及实战案例，附送卡片翻转和加载动画等综合示例'
 ---
 
 > CSS 形变和动画可以为网页添加丰富的视觉效果。

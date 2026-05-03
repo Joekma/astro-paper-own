@@ -1,17 +1,20 @@
 ---
-title: jQuery使用教程
+title: jQuery快速入门与实战
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
-slug: jquery-tutorial-basics
+slug: jquery-quick-start-tutorial
 featured: false
 draft: false
 tags:
   - jQuery
   - JavaScript
-  - 前端
-  - Web
-description: 'jQuery基础教程，包括选择器、DOM操作、事件处理和动画'
+  - 前端开发
+  - 选择器
+  - DOM操作
+  - AJAX
+  - Web开发
+description: 'jQuery快速入门，通过简洁的示例讲解选择器、DOM操作、事件处理和AJAX等核心功能，适合初学者快速上手jQuery'
 ---
 
 > jQuery 简化了 DOM 操作和事件处理。

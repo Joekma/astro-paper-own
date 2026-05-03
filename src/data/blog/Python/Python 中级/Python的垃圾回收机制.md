@@ -2,7 +2,7 @@
 title: Python 垃圾回收机制
 author: 程序员
 pubDatetime: 2024-08-11T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: python-garbage-collection
 description: '深入理解 Python 垃圾回收机制：引用计数、分代回收、循环垃圾回收'
 tags:

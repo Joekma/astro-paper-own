@@ -1,15 +1,16 @@
 ---
-title: Django组件(四) Django之Auth模块
+title: Django Auth 用户认证模块详解
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-component-4-auth
 featured: false
 draft: false
 tags:
   - Python
   - Django
-description: "Django 组件 - Auth 模块"
+  - 用户认证
+description: "深入讲解Django Auth用户认证模块的使用方法和实践技巧。"
 ---
 
 ## Auth模块概述

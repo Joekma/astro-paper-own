@@ -1,10 +1,10 @@
 ---
-title: TCP协议详解（上）
+title: TCP协议特性（上）：连接管理、滑动窗口
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: tcp-protocol-part1
-description: 'TCP协议特性详解，包括连接管理、滑动窗口等'
+description: 'TCP协议特性，包括连接管理、滑动窗口等'
 tags:
   - TCP
   - 网络

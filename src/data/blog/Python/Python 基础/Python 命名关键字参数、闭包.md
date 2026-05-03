@@ -2,16 +2,15 @@
 title: Python 函数进阶：命名关键字参数与闭包
 author: 程序员
 pubDatetime: 2018-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: python-advanced-functions-closure
-description: '深入理解 Python 的命名关键字参数、函数对象、嵌套、名称空间与作用域、闭包'
+description: '深入讲解Python的命名关键字参数、函数对象、嵌套、名称空间与作用域、闭包等高级概念。'
 tags:
   - Python
   - 函数
   - 闭包
   - 作用域
   - 命名空间
-category: Python
 draft: false
 language: zh-CN
 ---

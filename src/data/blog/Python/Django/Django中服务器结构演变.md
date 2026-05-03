@@ -1,15 +1,16 @@
 ---
-title: Django中服务器结构演变
+title: Django 服务器结构演变
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-server-structure-evolution
 featured: false
 draft: false
 tags:
   - Python
   - Django
-description: "Django 中服务器结构演变"
+  - 服务器
+description: "深入讲解Django服务器结构的演变和各个Handler之间的关系。"
 ---
 
 ## 起步

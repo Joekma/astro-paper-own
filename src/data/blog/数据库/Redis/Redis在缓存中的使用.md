@@ -1,5 +1,5 @@
 ---
-title: Redis缓存使用
+title: Redis作为缓存的使用方法和最佳实践
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00

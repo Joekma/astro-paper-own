@@ -2,15 +2,14 @@
 title: Python 装饰器、迭代器、生成器
 author: 程序员
 pubDatetime: 2018-09-28T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: python-decorator-iterator-generator
-description: '深入理解 Python 装饰器、迭代器、生成器：装饰器模式、迭代器协议、生成器yield'
+description: '深入讲解Python装饰器、迭代器、生成器：装饰器模式、迭代器协议、生成器yield等核心概念。'
 tags:
   - Python
   - 装饰器
   - 迭代器
   - 生成器
-category: Python中级
 draft: false
 language: zh-CN
 ---

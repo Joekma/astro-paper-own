@@ -1,13 +1,12 @@
 ---
-title: Go语言包管理完全指南（2024）：GOPATH、Modules、import、导出规则详解
+title: Go语言包管理：GOPATH、Modules、import、导出规则详解
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: go-packages
-description: 'Go语言包管理完整教程，详细讲解GOPATH、Go Modules（go.mod）、package、import、导出规则、循环导入和内部包，包含完整代码示例和项目结构建议。'
+description: '详细讲解Go语言GOPATH、Go Modules（go.mod）、package、import、导出规则、循环导入、内部包、init函数执行顺序和最佳项目结构建议。'
 tags:
   - Go
-  - Golang
   - 包管理
   - Modules
   - import

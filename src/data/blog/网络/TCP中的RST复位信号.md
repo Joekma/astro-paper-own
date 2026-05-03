@@ -1,15 +1,14 @@
 ---
-title: TCP RST复位信号
+title: TCP RST 复位信号的原因和影响
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: tcp-rst-signal
-description: 'TCP RST复位信号的原因和影响'
+description: 'TCP RST复位信号的原因和影响。'
 tags:
   - TCP
   - 网络
   - 协议
-category: 网络
 draft: false
 language: zh-CN
 ---

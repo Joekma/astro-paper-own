@@ -1,5 +1,5 @@
 ---
-title: 并发编程之IO模型
+title: 并发编程之IO模型：阻塞IO、非阻塞IO、IO多路复用、异步IO
 author: FjellOverflow
 pubDatetime: 2018-11-14T00:00:00Z
 modDatetime: 2026-04-22T00:00:00Z
@@ -8,8 +8,7 @@ draft: false
 tags:
   - Python
   - 并发编程
-  - docs
-description: 并发编程之IO模型，详解阻塞IO、非阻塞IO、IO多路复用、异步IO等核心概念与实现。
+description: '详解并发编程IO模型，阻塞IO、非阻塞IO、IO多路复用、异步IO等核心概念与实现。'
 ---
 
 # 并发编程之IO模型

@@ -8,8 +8,7 @@ draft: false
 tags:
   - Python
   - 进程管理
-  - docs
-description: Python 进程的特征与状态，涵盖进程特征、进程调度算法、进程控制块（PCB）等核心概念。
+description: '深入讲解Python进程的特征与状态，涵盖进程特征、进程调度算法、进程控制块（PCB）等核心概念。'
 ---
 
 # Python 进程的特征与状态   

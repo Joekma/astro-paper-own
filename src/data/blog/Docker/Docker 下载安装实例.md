@@ -1,13 +1,14 @@
 ---
-title: Docker 下载安装实例
+title: Docker 下载安装与配置：Nginx 和 MySQL 实例
 author: 程序员
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: docker-download-install-examples
-description: 'Docker 下载安装实例，包含 Nginx 和 MySQL 的安装配置教程'
+description: '详细讲解Docker中安装和配置Nginx、MySQL等常用服务的方法。'
 tags:
   - Docker
-category: Docker
+  - Nginx
+  - MySQL
 draft: false
 language: zh-CN
 ---

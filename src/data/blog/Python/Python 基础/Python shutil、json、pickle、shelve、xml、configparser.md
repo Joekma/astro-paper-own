@@ -2,9 +2,9 @@
 title: Python 常用模块：shutil、json、pickle、shelve、xml、configparser
 author: 程序员
 pubDatetime: 2018-10-17T00:00:00.000+08:00
-updated: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: python-common-modules-serializtion-config
-description: '深入理解 Python 常用模块：文件操作、序列化和配置文件处理'
+description: '深入讲解Python常用模块：文件操作、序列化和配置文件处理。'
 tags:
   - Python
   - shutil
@@ -13,7 +13,6 @@ tags:
   - shelve
   - xml
   - configparser
-category: Python
 draft: false
 language: zh-CN
 ---

@@ -1,8 +1,8 @@
 ---
-title: Python 面向对象三大特性之继承
+title: Python 面向对象之继承：单继承、多继承、组合、MRO
 author: FjellOverflow
 pubDatetime: 2024-08-13T00:00:00Z
-updated: 2026-04-29T00:00:00Z
+modDatetime: 2026-04-29T00:00:00.000+08:00
 slug: python-oop-inheritance
 featured: false
 draft: false
@@ -10,8 +10,7 @@ tags:
   - Python
   - 面向对象
   - 继承
-  - docs
-description: 深入理解 Python 面向对象三大特性之一的继承，掌握单继承、多继承、组合、MRO 等核心概念，学会运用继承实现代码复用。
+description: '深入讲解Python面向对象中的继承，掌握单继承、多继承、组合、MRO等核心概念，学会运用继承实现代码复用。'
 language: zh-CN
 ---
 
