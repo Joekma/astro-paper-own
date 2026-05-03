@@ -1,5 +1,5 @@
----
-author: Sat Naing
+﻿---
+author: Joekma
 pubDatetime: 2022-09-26T12:13:24Z
 modDatetime: 2024-01-04T09:09:06Z
 title: Predefined color schemes

@@ -1,6 +1,6 @@
----
+﻿---
 title: CentOS 7 系统优化：内核参数、安全配置和性能调优
-author: 程序员
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: centos7-optimization

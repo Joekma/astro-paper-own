@@ -1,6 +1,6 @@
----
+﻿---
 title: Docker 使用：容器运行、生命周期管理和基本操作
-author: 程序员
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: docker-usage-tutorial

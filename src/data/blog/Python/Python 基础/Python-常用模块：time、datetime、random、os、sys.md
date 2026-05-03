@@ -1,6 +1,6 @@
----
+﻿---
 title: Python 常用模块：time、datetime、random、os、sys
-author: 程序员
+author: Joekma
 pubDatetime: 2018-08-16T00:00:00.000+08:00
 modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: python-common-modules-time-random-os-sys

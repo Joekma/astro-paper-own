@@ -1,6 +1,6 @@
----
+﻿---
 title: Go语言基本语法：变量、数据类型、运算符详解
-author: 程序员
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: go-basic-syntax

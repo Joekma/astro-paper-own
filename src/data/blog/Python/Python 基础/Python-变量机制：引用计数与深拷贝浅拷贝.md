@@ -1,6 +1,6 @@
----
+﻿---
 title: Python 变量机制：引用计数与深拷贝浅拷贝
-author: 程序员
+author: Joekma
 pubDatetime: 2018-09-13T16:45:00.000+08:00
 modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: python-variables-data-types-deep-shallow-copy

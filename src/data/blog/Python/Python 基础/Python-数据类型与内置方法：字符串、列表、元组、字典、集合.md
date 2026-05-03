@@ -1,6 +1,6 @@
----
+﻿---
 title: Python 数据类型与内置方法：字符串、列表、元组、字典、集合
-author: 程序员
+author: Joekma
 pubDatetime: 2018-09-18T00:00:00.000+08:00
 modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: python-data-types-built-in-methods

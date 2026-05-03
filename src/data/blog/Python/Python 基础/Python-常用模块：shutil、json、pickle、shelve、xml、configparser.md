@@ -1,6 +1,6 @@
----
+﻿---
 title: Python 常用模块：shutil、json、pickle、shelve、xml、configparser
-author: 程序员
+author: Joekma
 pubDatetime: 2018-10-17T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: python-common-modules-serializtion-config

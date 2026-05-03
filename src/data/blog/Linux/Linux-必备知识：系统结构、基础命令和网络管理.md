@@ -1,6 +1,6 @@
----
+﻿---
 title: Linux 必备知识：系统结构、基础命令和网络管理
-author: 程序员
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: linux-essential-knowledge

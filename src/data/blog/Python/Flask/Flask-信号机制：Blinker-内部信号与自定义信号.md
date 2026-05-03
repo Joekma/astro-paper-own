@@ -1,6 +1,6 @@
----
+﻿---
 title: Flask 信号机制：Blinker 内部信号与自定义信号
-author: 程序员
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: flask-6-signals

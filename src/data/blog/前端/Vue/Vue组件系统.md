@@ -1,6 +1,6 @@
----
+﻿---
 title: Vue组件系统
-author: 程序员
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: vue-components

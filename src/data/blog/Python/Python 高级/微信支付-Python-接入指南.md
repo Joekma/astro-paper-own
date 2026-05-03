@@ -1,6 +1,6 @@
----
+﻿---
 title: 微信支付 Python 接入指南
-author: FjellOverflow
+author: Joekma
 pubDatetime: 2024-08-12T00:00:00Z
 modDatetime: 2026-04-22T00:00:00Z
 featured: false

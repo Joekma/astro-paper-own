@@ -1,6 +1,6 @@
----
+﻿---
 title: Python 文本处理：字符串切割、re.sub、strip
-author: FjellOverflow
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 modDatetime: 2026-05-03T00:00:00.000+08:00
 featured: false

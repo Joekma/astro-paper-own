@@ -1,6 +1,6 @@
----
+﻿---
 title: IPython 完全指南 - 交互式 Python 开发环境
-author: 程序员
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: python-ipython-guide

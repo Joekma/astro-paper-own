@@ -1,6 +1,6 @@
----
+﻿---
 title: Python 面向对象之继承：单继承、多继承、组合、MRO
-author: FjellOverflow
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 modDatetime: 2026-04-29T00:00:00.000+08:00
 slug: python-oop-inheritance

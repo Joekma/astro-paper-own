@@ -1,6 +1,6 @@
----
+﻿---
 title: Python 函数进阶：命名关键字参数与闭包
-author: 程序员
+author: Joekma
 pubDatetime: 2018-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: python-advanced-functions-closure

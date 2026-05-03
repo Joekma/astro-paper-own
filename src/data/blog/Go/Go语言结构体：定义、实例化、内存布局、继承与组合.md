@@ -1,6 +1,6 @@
----
+﻿---
 title: Go语言结构体：定义、实例化、内存布局、继承与组合
-author: 程序员
+author: Joekma
 pubDatetime: 2019-01-17T00:00:00.000+08:00
 modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: go-structs

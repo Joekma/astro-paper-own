@@ -1,6 +1,6 @@
----
+﻿---
 title: Python 元类与单例模式：type创建类、自定义元类
-author: 程序员
+author: Joekma
 pubDatetime: 2018-11-19T00:00:00.000+08:00
 modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: python-metaclass-singleton

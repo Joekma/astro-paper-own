@@ -1,6 +1,6 @@
----
+﻿---
 title: Ajax技术原理与实战应用
-author: 程序员
+author: Joekma
 pubDatetime: 2019-02-18T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: ajax-deep-analysis-and-practical-applications

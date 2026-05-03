@@ -1,6 +1,6 @@
----
+﻿---
 title: Flask 蓝图机制与数据库连接池
-author: 程序员
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: flask-3-blueprint-dbutils

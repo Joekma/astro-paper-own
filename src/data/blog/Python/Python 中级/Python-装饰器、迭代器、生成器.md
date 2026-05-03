@@ -1,6 +1,6 @@
----
+﻿---
 title: Python 装饰器、迭代器、生成器
-author: 程序员
+author: Joekma
 pubDatetime: 2018-09-28T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: python-decorator-iterator-generator

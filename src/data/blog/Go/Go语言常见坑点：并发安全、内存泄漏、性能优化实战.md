@@ -1,6 +1,6 @@
----
+﻿---
 title: Go语言常见坑点：并发安全、内存泄漏、性能优化实战
-author: 程序员
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: go-common-pitfalls

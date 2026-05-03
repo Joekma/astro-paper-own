@@ -1,6 +1,6 @@
----
+﻿---
 title: Python 递归：函数递归、尾递归优化、递归算法应用
-author: FjellOverflow
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 modDatetime: 2026-04-22T00:00:00Z
 featured: false

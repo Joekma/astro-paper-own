@@ -1,6 +1,6 @@
----
+﻿---
 title: Python requests库：HTTP请求、API调用、文件下载
-author: 程序员
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: python-requests-library
@@ -369,9 +369,6 @@ asyncio.run(main())
 | **学习曲线** | 简单 | 中等 |
 | **适用场景** | 小规模爬虫 | 大规模爬虫 |
 
-> **建议**：小规模项目用 requests，大规模并发项目用 aiohttp。
-```
-
 ## 小结
 
 - **GET/POST**：基本请求方法
@@ -379,5 +376,3 @@ asyncio.run(main())
 - **重试**：HTTPAdapter 配置
 - **超时**：避免长时间等待
 - **代理**：突破访问限制
-- **aiohttp**：高性能异步 HTTP 客户端，适合大规模并发爬虫
-- **并发控制**：使用 Semaphore 限制并发数，避免被封禁

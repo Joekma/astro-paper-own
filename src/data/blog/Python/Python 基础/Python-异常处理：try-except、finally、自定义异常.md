@@ -1,6 +1,6 @@
----
+﻿---
 title: Python 异常处理：try-except、finally、自定义异常
-author: 程序员
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: python-exception-handling

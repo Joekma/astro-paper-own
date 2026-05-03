@@ -1,6 +1,6 @@
----
+﻿---
 title: Go语言Redis和MySQL数据库：连接池、事务、ORM实战
-author: 程序员
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: golang-use-redis-mysql

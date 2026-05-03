@@ -1,6 +1,6 @@
----
+﻿---
 title: Python 进程的特征与状态
-author: FjellOverflow
+author: Joekma
 pubDatetime: 2018-09-15T00:00:00Z
 modDatetime: 2026-04-22T00:00:00Z
 featured: false

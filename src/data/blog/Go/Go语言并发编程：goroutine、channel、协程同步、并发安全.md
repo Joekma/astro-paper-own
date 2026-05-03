@@ -1,6 +1,6 @@
----
+﻿---
 title: Go语言并发编程：goroutine、channel、协程同步、并发安全
-author: 程序员
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: go-concurrency

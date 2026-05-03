@@ -1,6 +1,6 @@
----
+﻿---
 title: Python 正则表达式：贪婪模式、勉强模式、占有模式、分组捕获
-author: FjellOverflow
+author: Joekma
 pubDatetime: 2024-08-12T00:00:00Z
 modDatetime: 2026-04-29T00:00:00.000+08:00
 slug: python-regex-advanced

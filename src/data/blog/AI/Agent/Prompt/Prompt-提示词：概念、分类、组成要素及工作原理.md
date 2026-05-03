@@ -1,6 +1,6 @@
----
+﻿---
 title: Prompt 提示词：概念、分类、组成要素及工作原理
-author: AI Writer
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 modDatetime: 2026-04-22T00:00:00Z
 slug: what-is-prompt

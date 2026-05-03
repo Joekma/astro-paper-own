@@ -1,6 +1,6 @@
----
+﻿---
 title: Python 发送邮件
-author: FjellOverflow
+author: Joekma
 pubDatetime: 2019-03-05T00:00:00Z
 modDatetime: 2026-04-22T00:00:00Z
 featured: false

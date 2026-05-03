@@ -1,6 +1,6 @@
----
+﻿---
 title: Python 常用库之 functools 指南
-author: FjellOverflow
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 modDatetime: 2026-04-22T00:00:00Z
 featured: false

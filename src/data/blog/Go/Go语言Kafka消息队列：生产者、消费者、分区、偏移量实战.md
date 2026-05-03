@@ -1,6 +1,6 @@
----
+﻿---
 title: Go语言Kafka消息队列：生产者、消费者、分区、偏移量实战
-author: 程序员
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: golang-use-kafka

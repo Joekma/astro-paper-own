@@ -1,6 +1,6 @@
----
+﻿---
 title: Python 输入输出与基本运算符
-author: 程序员
+author: Joekma
 pubDatetime: 2018-08-13T00:00:00.000+08:00
 modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: python-input-output-basic-operators

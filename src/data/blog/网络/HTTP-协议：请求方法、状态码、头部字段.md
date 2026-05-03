@@ -1,6 +1,6 @@
----
+﻿---
 title: HTTP 协议：请求方法、状态码、头部字段
-author: 程序员
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: http-protocol-detailed-intro

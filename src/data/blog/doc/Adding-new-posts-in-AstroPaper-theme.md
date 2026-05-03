@@ -1,5 +1,5 @@
----
-author: Sat Naing
+﻿---
+author: Joekma
 pubDatetime: 2022-09-23T15:22:00Z
 modDatetime: 2025-06-13T16:52:45.934Z
 title: Adding new posts in AstroPaper theme
@@ -103,7 +103,7 @@ Here is the sample frontmatter for a post.
 ```yaml file="src/data/blog/sample-post.md"
 ---
 title: The title of the post
-author: your name
+author: Joekma
 pubDatetime: 2022-09-21T05:17:19Z
 slug: the-title-of-the-post
 featured: true

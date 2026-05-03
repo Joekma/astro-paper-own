@@ -1,6 +1,6 @@
----
+﻿---
 title: Django框架(四) Django之视图层
-author: 程序员
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-framework-4-view

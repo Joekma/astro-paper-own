@@ -1,6 +1,6 @@
----
+﻿---
 title: Django框架(六) Django之模板继承
-author: 程序员
+author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-framework-6-template-inherit
