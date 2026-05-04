@@ -3,7 +3,7 @@ export const SITE = {
   author: "DongSheng Yang",
   profile: "https://github.com/Joekma",
   desc: "人生没有白走的路",
-  title: "鲸鱼于海",
+  title: "鲸与海",
   ogImage: "astropaper-og.jpg",
   lightAndDarkMode: true,
   postPerIndex: 4,
