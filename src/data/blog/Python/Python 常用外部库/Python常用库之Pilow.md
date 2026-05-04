@@ -1,7 +1,8 @@
-﻿---
+---
 title: Python常用库之Pilow
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
+slug: python-pillow-image-processing
 modDatetime: 2026-04-22T00:00:00Z
 featured: false
 draft: false

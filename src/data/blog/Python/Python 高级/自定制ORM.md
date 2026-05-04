@@ -1,7 +1,8 @@
-﻿---
+---
 title: 自定制ORM
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
+slug: custom-orm-implementation
 modDatetime: 2026-04-22T00:00:00Z
 featured: false
 draft: false
