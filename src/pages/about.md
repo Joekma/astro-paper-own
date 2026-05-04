@@ -3,35 +3,40 @@ layout: ../layouts/AboutLayout.astro
 title: "About"
 ---
 
-AstroPaper is a minimal, accessible and SEO-friendly blog theme built with [Astro](https://astro.build/) and [Tailwind CSS](https://tailwindcss.com/).
+# 关于我
 
-![Astro Paper](public/astropaper-og.jpg)
+## 👋 你好
 
-AstroPaper provides a solid foundation for blogs, or even portfolios\_ with full markdown support, built-in dark mode, and a clean layout that works out-of-the-box.
+我叫杨东升，是一位 项目经理&&全栈开发工程师，专注于 AI 大模型应用、RPA 、爬虫、数据处理等领域，同时也对金融与游戏领域保持热情。
 
-The blog posts in this theme also serve as guides, docs or example articles\_ making AstroPaper a flexible starting point for your next content-driven site.
+## 🛠 技术栈
 
-## Features
+- **后端**: Python,Go
+- **前端**: Vue, Astro, JavaScript, TypeScript, CSS, HTML
+- **数据库**: MySQL, Redis, MongoDB, PostgreSQL, Qdrant, milvus
+- **DevOps**: Docker, Kubernetes, CI/CD
+- **消息队列**: Kafka, RabbitMQ
+- **大模型应用**: RAG, LLM 对话系统
+- **Agent**: OpenClaw、Hermes
+- **硬件**: 复习中 
 
-AstroPaper comes with a set of useful features that make content publishing easy and effective:
 
-- SEO-friendly
-- Fast performance
-- Light & dark mode
-- Highly customizable
-- Organizable blog posts
-- Responsive & accessible
-- Static search with [PageFind](https://pagefind.app/)
-- Automatic social image generation
+## 📚 最近在学
 
-and so much more.
+- AI 大模型论文阅读
+- Agent 框架原理分析与实现 
+- Astro 框架学习
 
-## Show your support
+## 📫 联系方式
 
-If you like [AstroPaper](https://github.com/satnaing/astro-paper), consider giving it a star ⭐️.
+- GitHub: [github.com/Joekma](https://github.com/Joekma)
+- Twitter: [@DongshengY98879](https://twitter.com/DongshengY98879)
+- 邮箱: dongshengyang915@gmail.com
 
-Found a bug 🐛 or have an improvement ✨ in mind? Feel free to open an [issue](https://github.com/satnaing/astro-paper/issues), submit a [pull request](https://github.com/satnaing/astro-paper/pulls) or start a [discussion](https://github.com/satnaing/astro-paper/discussions).
+## 💬 留言
 
-If you find this theme helpful, you can also [sponsor me on GitHub](https://github.com/sponsors/satnaing) or [buy me a coffee](https://buymeacoffee.com/satnaing) to show your support — every penny counts.
+如果你有任何问题或想法，欢迎通过社交媒体与我联系，也可以提交 GitHub Issue。
 
-Kyay zuu! 🙏🏼
+---
+
+感谢你的访问！🙏

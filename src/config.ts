@@ -1,9 +1,9 @@
 export const SITE = {
-  website: "https://joekma.vercel.app/", // replace this with your deployed domain
+  website: "https://joekma.vercel.app/",
   author: "DongSheng Yang",
   profile: "https://github.com/Joekma",
-  desc: "All paths converge",
-  title: "Joekma",
+  desc: "人生没有白走的路",
+  title: "鲸鱼于海",
   ogImage: "astropaper-og.jpg",
   lightAndDarkMode: true,
   postPerIndex: 4,
