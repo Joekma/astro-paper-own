@@ -5,7 +5,7 @@ title: "About"
 
 # 关于我
 
-## 👋 你好
+## 👋 你好，欢迎来到我的博客
 
 我叫杨东升，是一位 项目经理&&全栈开发工程师，专注于 AI 大模型应用、RPA 、爬虫、数据处理等领域，同时也对金融与游戏领域保持热情。
 
@@ -16,10 +16,10 @@ title: "About"
 - **数据库**: MySQL, Redis, MongoDB, PostgreSQL, Qdrant, milvus
 - **DevOps**: Docker, Kubernetes, CI/CD
 - **消息队列**: Kafka, RabbitMQ
-- **大模型应用**: RAG, LLM 对话系统
+- **大模型应用**: RAG, LLM 个人/企业助手
 - **Agent**: OpenClaw、Hermes
-- **硬件**: 复习中 
-
+- **硬件**: 学习中 
+- **金融知识**: 学习中
 
 ## 📚 最近在学
 
