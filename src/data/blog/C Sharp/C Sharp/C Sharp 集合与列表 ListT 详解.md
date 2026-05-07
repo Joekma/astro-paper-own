@@ -18,7 +18,7 @@ language: zh-CN
 
 ## 概述
 
-集合是编程中处理一组数据的基础工具。C# 提供了丰富的集合类型，其中 `List<T>` 是最常用的动态数组。本教程将详细介绍 List 的使用方法和常用操作。
+集合是编程中处理一组数据的基础工具。C# 提供了丰富的集合类型，其中 `List<T>` 是最常用的动态数组。本文将详细介绍 List 的使用方法和常用操作。
 
 ### 集合类型对比
 
@@ -153,7 +153,7 @@ if (names.Count > 5)
 List<string> names = new List<string> { "Alice", "Bob" };
 
 Console.WriteLine($"元素数量: {names.Count}");  // 2
-Console.WriteLine($"容量: {names.Capacity}");   // 4（自动增长）
+Console.WriteLine($"容量: {names.Capacity}");   // 4 默认初始容量；翻倍增长：4→8；16→32；64→128；
 ```
 
 ---
@@ -474,17 +474,17 @@ List<string> names = new List<string>(1000);  // 预分配1000个空间
 ```csharp
 List<string> names = new List<string> { "A", "B", "C" };
 
-// ❌ 错误：foreach中修改集合
+// 错误：foreach中修改集合
 foreach (string name in names)
 {
     if (name == "B")
         names.Remove(name);
 }
 
-// ✅ 正确：使用 RemoveAll
+// 正确：使用 RemoveAll
 names.RemoveAll(n => n == "B");
 
-// ✅ 正确：倒序遍历时删除
+// 正确：倒序遍历时删除
 for (int i = names.Count - 1; i >= 0; i--)
 {
     if (names[i] == "B")
@@ -503,7 +503,7 @@ List<string> names = new List<string> { "Alice" };
 
 Console.WriteLine(names[10]);  // ❌ IndexOutOfRangeException
 
-// ✅ 正确做法
+// 正确做法
 if (names.Count > 10)
 {
     Console.WriteLine(names[10]);
@@ -517,7 +517,7 @@ List<string> names = new List<string>();
 
 names[0] = "Alice";  // ❌ 空列表没有索引0
 
-// ✅ 正确做法
+// 正确做法
 names.Add("Alice");
 ```
 
@@ -527,7 +527,7 @@ names.Add("Alice");
 List<int> numbers = new List<int> { 1, 2, 3 };
 numbers.Add("4");  // ❌ 编译错误：类型不匹配
 
-// ✅ 正确做法
+// 正确做法
 numbers.Add(4);
 ```
 

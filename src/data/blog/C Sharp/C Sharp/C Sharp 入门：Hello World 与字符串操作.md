@@ -58,6 +58,18 @@ dotnet new console -n HelloWorld
 cd HelloWorld
 dotnet run
 ```
+- `dotnet new` - 创建新项目
+- `console` - 模板类型（控制台应用）
+- `-n HelloWorld` - 项目名称（Name）
+
+执行后的结果：
+
+```
+HelloWorld/
+├── HelloWorld.csproj     # 项目文件
+├── Program.cs            # 主程序文件
+└── obj/                  # 临时编译文件夹
+```
 
 ---
 
@@ -76,7 +88,7 @@ Console.WriteLine(aFriend);
 
 ```
 类型    变量名    =    初始值;
- string  name     =  "Alice";
+string  name     =    "Alice";
 ```
 
 ### 修改变量值

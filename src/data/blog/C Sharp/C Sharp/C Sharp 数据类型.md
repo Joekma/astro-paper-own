@@ -247,7 +247,7 @@ bool isNullOrWhiteSpace = string.IsNullOrWhiteSpace("   ");  // true
 ```csharp
 using System.Text;
 
-var sb = new StringBuilder();
+var sb = new StringBuilder(); //StringBuilder 只修改内部缓冲区
 sb.Append("Hello");
 sb.AppendLine(" World!");  // 添加换行
 sb.AppendFormat("Count: {0}", 42);
@@ -255,7 +255,7 @@ sb.Insert(5, ",");       // 在位置5插入
 sb.Remove(0, 6);          // 删除前6个字符
 sb.Replace("World", "C#");
 
-string result = sb.ToString();
+string result = sb.ToString(); // 最后一次才创建字符串
 ```
 
 ---
@@ -359,16 +359,18 @@ double? nullableDouble = 3.14;
 bool? nullableBool = true;
 
 // 检查值
-if (nullableInt.HasValue)
+if (nullableInt.HasValue) // 检查是否为 null, 有值时为 true;false 不执行代码块
 {
-    int value = nullableInt.Value;
+    int value = nullableInt.Value; // 如果 nullableInt 为 null, 会抛出异常 ArgumentNullException
 }
 
 // 使用空合并运算符
-int result = nullableInt ?? 0;  // 如果为 null，使用 0
+int result = nullableInt ?? 0;  // 左边为 null → 返回右边值（0）;左边有值 → 返回左边的值
 
 // 空条件访问
-int? length = nullableInt?.ToString()?.Length;
+int? length = nullableInt?.ToString()?.Length; //nullableInt 是 null，所以整个表达式的值是 null ;length = null
+
+
 ```
 
 ### 可空引用类型
@@ -493,7 +495,7 @@ else
     Console.WriteLine("转换失败");
 }
 
-// 使用弃元（C# 7+）
+// 使用弃元（C# 7+）, 只检查是否成功, 不返回转换结果
 bool success = int.TryParse("789", out _);
 ```
 
@@ -656,11 +658,17 @@ if (!string.IsNullOrEmpty(a))
 int? a = null;
 int? b = 10;
 
-// ❌ 错误：运算结果可能为 null
-int? c = a + b;  // null
+// ✅ 简洁且正确 - 利用运算符提升
+int? result1 = a + b;        // null
+int? result2 = a * 5;        // null
+int? result3 = b * 5;        // 50
 
-// ✅ 正确：处理 null 情况
-int? c = a.HasValue && b.HasValue ? a + b : null;
+// ❌ 冗余 - 不需要手动检查
+int? result4 = a.HasValue && b.HasValue ? a + b : null;
+
+// ✅ 只在需要默认值时使用空合并
+int final = (a + b) ?? 0;    // 0
+int final2 = (b + 5) ?? 0;   // 15
 ```
 
 ---

@@ -18,7 +18,7 @@ language: zh-CN
 
 ## 概述
 
-类是 C# 中最核心的概念之一，它是面向对象编程的基础。本教程将详细介绍类的定义、对象的创建、继承机制和接口的实现。
+类是 C# 中最核心的概念之一，它是面向对象编程的基础。本文将详细介绍类的定义、对象的创建、继承机制和接口的实现。
 
 ### 核心概念速览
 
@@ -126,7 +126,7 @@ person1.Age = 25;
 Person person2 = new Person { Name = "Bob", Age = 30 };
 
 // 匿名对象
-var anonymous = new { Name = "Anonymous", Age = 20 };
+var anonymous = new { Name = "Anonymous", Age = 20 };  // 不需要定义类,编译器自动生成一个匿名类型，属性是只读的
 ```
 
 ---
@@ -147,6 +147,8 @@ public class Person
     }
 }
 ```
+- 当创建 `Person` 对象时，自动将 `Name` 初始化为 `"Unknown"`
+- 不需要显式调用，系统会自动执行默认构造函数
 
 ### 带参数的构造函数
 
@@ -180,6 +182,7 @@ public class Person
 ### 构造函数链
 
 使用 `this` 关键字调用其他构造函数：
+在 C# 中，`this` 关键字在这个上下文里指的是当前类的另一个构造函数。
 
 ```csharp
 public class Person
@@ -209,6 +212,11 @@ public class Person
 
 初始化静态成员：
 
+- 使用 static 关键字
+- 不能有参数
+- 不能有访问修饰符（public、private 等）
+- 只能有一个静态构造函数
+
 ```csharp
 public class Configuration
 {
@@ -223,6 +231,24 @@ public class Configuration
     }
 }
 ```
+
+**在第一次访问类的任何静态成员之前自动调用，且只调用一次**
+
+```csharp
+// 首次访问静态属性时，会触发静态构造函数执行
+string name = Configuration.AppName;  // 此时静态构造函数执行
+int version = Configuration.Version;   // 不会再执行
+
+// 或者创建实例时也会先触发
+Configuration config = new Configuration();  // 也会先执行静态构造函数
+```
+
+|场景| 说明|
+|--------|------|
+|初始化静态字段|设置静态属性的初始值|
+|加载配置文件|从文件或数据库读取一次配置|
+|注册日志记录器|初始化日志系统|
+|创建连接池|数据库连接池等单次初始化|
 
 ---
 
@@ -244,9 +270,8 @@ public class Person
 ```csharp
 public class Person
 {
-    private string _name;
-    
-    public string Name
+    private string _name; // 私有字段 - 存储实际数据
+    public string Name // 公开属性 - 控制访问逻辑
     {
         get { return _name; }
         set 
@@ -257,8 +282,8 @@ public class Person
         }
     }
     
-    private int _age;
-    public int Age
+    private int _age; // 私有字段 - 存储实际数据
+    public int Age // 公开属性 - 控制访问逻辑
     {
         get { return _age; }
         set
@@ -267,6 +292,30 @@ public class Person
                 throw new ArgumentException("年龄必须在0-150之间");
             _age = value;
         }
+    }
+}
+```
+### 简化写法（C# 7.0+）
+
+```csharp
+public class Person
+{
+    private string _name;
+    public string Name
+    {
+        get => _name;
+        set => _name = !string.IsNullOrWhiteSpace(value) 
+            ? value 
+            : throw new ArgumentException("姓名不能为空");
+    }
+    
+    private int _age;
+    public int Age
+    {
+        get => _age;
+        set => _age = value >= 0 && value <= 150
+            ? value
+            : throw new ArgumentException("年龄必须在0-150之间");
     }
 }
 ```
@@ -347,7 +396,7 @@ public class Animal
     public string Name { get; set; }
     
     // 虚方法
-    public virtual void MakeSound()
+    public virtual void MakeSound()  // 虚方法 - 可以被重写
     {
         Console.WriteLine($"{Name} 发出声音");
     }
@@ -356,7 +405,7 @@ public class Animal
 public class Dog : Animal
 {
     // 重写基类方法
-    public override void MakeSound()
+    public override void MakeSound()  // 重写基类方法 - 可以在派生类中实现不同的行为
     {
         Console.WriteLine($"{Name} 汪汪叫");
     }
@@ -364,7 +413,7 @@ public class Dog : Animal
 
 public class Cat : Animal
 {
-    public override void MakeSound()
+    public override void MakeSound()  // 重写基类方法 - 可以在派生类中实现不同的行为
     {
         Console.WriteLine($"{Name} 喵喵叫");
     }
@@ -383,13 +432,17 @@ animal2.MakeSound();  // 输出: 咪咪 喵喵叫
 
 ### 抽象类和抽象方法
 
+- 抽象类不能被实例化
+- 抽象成员没有实现（无方法体）
+- 派生类必须实现所有抽象成员（除非派生类也是抽象的）
+
 ```csharp
 // 抽象类
 public abstract class Shape
 {
-    public abstract double Area { get; }
+    public abstract double Area { get; }  // 抽象属性 - 必须在派生类中实现
     
-    public abstract void Draw();
+    public abstract void Draw();  // 抽象方法 - 必须在派生类中实现
 }
 
 // 抽象方法必须在派生类中实现

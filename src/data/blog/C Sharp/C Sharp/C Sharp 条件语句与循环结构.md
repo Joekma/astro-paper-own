@@ -21,7 +21,7 @@ language: zh-CN
 
 ## 概述
 
-程序的核心能力之一是根据不同条件做出决策并重复执行代码。本教程将详细介绍 C# 中的条件语句和循环结构。
+程序的核心能力之一是根据不同条件做出决策并重复执行代码。本文将详细介绍 C# 中的条件语句和循环结构。
 
 ### 概念速览
 
@@ -205,7 +205,7 @@ switch (day)
 {
     case 1:
         Console.WriteLine("星期一");
-        break;
+        break; // 必须要有，防止贯穿
     case 2:
         Console.WriteLine("星期二");
         break;
@@ -217,6 +217,55 @@ switch (day)
         break;
 }
 ```
+### Switch 语句的重要规则
+
+- 每个 `case` 分支必须以 `break` 结束，除非是最后一个 `case`。
+- 如果没有 `break`，会继续执行下一个 `case` 分支，直到遇到 `break` 或 `default`。
+
+```csharp
+// 允许的跳转语句
+switch (value)
+{
+    case 1:
+        Console.WriteLine("A");
+        break;        // 最常见的
+    case 2:
+        Console.WriteLine("B");
+        return;       // 在方法中使用
+    case 3:
+        Console.WriteLine("C");
+        goto case 4;  // 跳转到其他 case
+    case 4:
+        Console.WriteLine("D");
+        goto default; // 跳转到 default
+    default:
+        Console.WriteLine("Default");
+        break;
+}
+```
+
+- 允许空 case 贯穿
+```csharp
+int score = 85;
+
+switch (score / 10)
+{
+    case 10:
+    case 9:  // 两个 case 共享相同代码
+        Console.WriteLine("A");
+        break;
+    case 8:
+        Console.WriteLine("B");
+        break;
+    case 7:
+        Console.WriteLine("C");
+        break;
+    default:
+        Console.WriteLine("D 或以下");
+        break;
+}
+```
+
 
 ### switch 表达式（C# 8.0+）
 
@@ -269,14 +318,14 @@ while (counter < 5)
 **避免无限循环：**
 
 ```csharp
-// ❌ 错误：counter 永远是 0
+// 错误：counter 永远是 0
 while (counter < 5)
 {
     Console.WriteLine(counter);
     // 忘记 counter++
 }
 
-// ✅ 正确：确保条件最终变为 false
+// 正确：确保条件最终变为 false
 while (counter < 5)
 {
     Console.WriteLine(counter);

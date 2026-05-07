@@ -73,7 +73,8 @@ Predicate<string> isLong = s => s.Length > 10;
 
 ```csharp
 // 基本委托声明
-public delegate void MessageHandler(string message);
+public delegate void MessageHandler(string message); 
+// 访问修饰符 返回值类型 委托名称     参数类型
 public delegate T Transformer<T>(T input);
 public delegate bool Filter<T>(T item);
 ```
