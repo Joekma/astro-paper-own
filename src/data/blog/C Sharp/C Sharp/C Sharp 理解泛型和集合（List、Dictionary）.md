@@ -306,6 +306,51 @@ list.Sort((a, b) => b.CompareTo(a));  // 降序
 int idx = list.BinarySearch(5);  // 查找 5 的位置
 ```
 
+### 其他方法
+
+```csharp
+var list = new List<int> { 1, 2, 3, 4, 5 };
+
+// 转换所有元素
+List<string> strNums = list.ConvertAll(n => n.ToString());
+// 结果: ["1", "2", "3", "4", "5"]
+
+// 判断是否存在
+bool hasEven = list.Exists(n => n % 2 == 0);  // true
+bool hasNegative = list.Exists(n => n < 0);   // false
+
+// 判断所有元素
+bool allPositive = list.TrueForAll(n => n > 0);  // true
+
+// 转换为数组
+int[] array = list.ToArray();
+
+// 获取子列表
+var sub = list.GetRange(1, 3);  // 从索引1开始取3个元素
+// 结果: [2, 3, 4]
+```
+
+### 遍历时修改
+
+```csharp
+var list = new List<int> { 1, 2, 3, 4, 5 };
+
+// ❌ 错误：foreach 中直接修改
+foreach (var n in list)
+{
+    if (n > 3) list.Remove(n);
+}
+
+// ✅ 正确：倒序遍历
+for (int i = list.Count - 1; i >= 0; i--)
+{
+    if (list[i] > 3) list.RemoveAt(i);
+}
+
+// ✅ 正确：使用 RemoveAll
+list.RemoveAll(n => n > 3);
+```
+
 ---
 
 ## Dictionary<TKey, TValue> 详解
@@ -471,6 +516,82 @@ symmetric.SymmetricExceptWith(set2);  // { 1, 2, 5, 6 }
 bool isSubset = set1.IsSubsetOf(union);  // true
 bool isSuperset = union.IsSupersetOf(set1);  // true
 ```
+
+---
+
+## LinkedList<T> 详解
+
+### 双向链表
+
+LinkedList 是双向链表，适合频繁插入删除的场景：
+
+```csharp
+var linked = new LinkedList<int>();
+
+// 添加节点
+linked.AddFirst(1);      // 头部添加
+linked.AddLast(5);      // 尾部添加
+linked.AddAfter(linked.First!, 2);  // 在首节点后添加
+linked.AddBefore(linked.Last!, 4);  // 在尾节点前添加
+
+// 结果: 1 → 2 → 4 → 5
+```
+
+### 遍历和访问
+
+```csharp
+var linked = new LinkedList<string>();
+linked.AddLast("A");
+linked.AddLast("B");
+linked.AddLast("C");
+
+// 正向遍历
+for (LinkedListNode<string>? node = linked.First; node != null; node = node.Next)
+{
+    Console.WriteLine(node.Value);
+}
+
+// 反向遍历
+for (LinkedListNode<string>? node = linked.Last; node != null; node = node.Previous)
+{
+    Console.WriteLine(node.Value);
+}
+
+// 直接访问
+Console.WriteLine(linked.First?.Value);   // 第一个: "A"
+Console.WriteLine(linked.Last?.Value);    // 最后一个: "C"
+Console.WriteLine(linked.Count);          // 元素个数: 3
+```
+
+### 插入和删除
+
+```csharp
+var linked = new LinkedList<int>(new[] { 1, 3, 5 });
+
+// 插入节点
+var node2 = linked.Find(3);
+linked.AddAfter(node2!, 4);   // 在 3 后插入 4
+
+var node4 = linked.Find(4);
+linked.AddBefore(node4!, 2);  // 在 4 前插入 2
+
+// 删除节点
+linked.Remove(3);             // 删除值 3
+linked.RemoveFirst();        // 删除第一个
+linked.RemoveLast();         // 删除最后一个
+linked.Clear();              // 清空所有
+
+// 结果: 1 → 2 → 4 → 5
+```
+
+### 适用场景
+
+| 场景 | 说明 |
+|------|------|
+| **频繁插入删除** | O(1) 时间复杂度 |
+| **不需要随机访问** | 只能顺序遍历 |
+| **实现其他数据结构** | 如栈、队列、双端队列 |
+| **迭代时需要删除** | 安全地在迭代中删除当前节点 |
 
 ---
 
