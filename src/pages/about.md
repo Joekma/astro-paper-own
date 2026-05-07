@@ -26,6 +26,8 @@ title: "About"
 - AI 大模型论文阅读
 - Agent 框架原理分析与实现 
 - Astro 框架学习
+- Avalonia 框架学习
+- C# 学习
 
 ## 📫 联系方式
 
