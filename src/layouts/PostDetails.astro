@@ -10,6 +10,7 @@ import ShareLinks from "@/components/ShareLinks.astro";
 import BackButton from "@/components/BackButton.astro";
 import BackToTopButton from "@/components/BackToTopButton.astro";
 import { getPath } from "@/utils/getPath";
+import { getPostCategory } from "@/utils/getPostCategory";
 import { slugifyStr } from "@/utils/slugify";
 import IconChevronLeft from "@/assets/icons/IconChevronLeft.svg";
 import IconChevronRight from "@/assets/icons/IconChevronRight.svg";
@@ -35,7 +36,23 @@ const {
   hideEditPost,
 } = post.data;
 
-const { Content } = await render(post);
+const { Content, headings } = await render(post);
+const tableOfContents = headings.filter(
+  heading => heading.depth >= 2 && heading.depth <= 4
+);
+const category = getPostCategory(post);
+const relatedPosts = posts
+  .filter(relatedPost => {
+    if (relatedPost.id === post.id) return false;
+
+    return getPostCategory(relatedPost).category === category.category;
+  })
+  .slice(0, 15)
+  .map(({ data: { title }, id, filePath }) => ({
+    id,
+    title,
+    filePath,
+  }));
 
 let ogImageUrl: string | undefined;
 
@@ -96,7 +113,7 @@ const nextPost =
     >
       {title}
     </h1>
-    <div class="my-2 flex items-center gap-2">
+    <div class="my-2 flex flex-wrap items-center gap-2">
       <Datetime {pubDatetime} {modDatetime} {timezone} size="lg" />
       <span
         aria-hidden="true"
@@ -160,8 +177,91 @@ const nextPost =
       }
     </div>
   </main>
+  {
+    tableOfContents.length > 0 && (
+      <aside
+        class="app-toc hidden rounded border border-border p-4 text-sm xl:block"
+        aria-labelledby="table-of-contents-title"
+        data-pagefind-ignore
+      >
+        <h2 id="table-of-contents-title" class="mb-3 text-base font-semibold">
+          {"\u6587\u7ae0\u76ee\u5f55"}
+        </h2>
+        <nav>
+          <ol class="space-y-2">
+            {tableOfContents.map(heading => (
+              <li
+                class:list={[
+                  "leading-relaxed",
+                  {
+                    "ps-3": heading.depth === 3,
+                    "ps-6 text-xs": heading.depth >= 4,
+                  },
+                ]}
+              >
+                <a
+                  href={`#${heading.slug}`}
+                  class="block text-foreground/80 hover:text-accent"
+                >
+                  {heading.text}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      </aside>
+    )
+  }
+  {
+    relatedPosts.length > 0 && (
+      <aside
+        class="app-related hidden rounded border border-border p-4 text-sm 2xl:block"
+        aria-labelledby="related-posts-title"
+        data-pagefind-ignore
+      >
+        <h2 id="related-posts-title" class="mb-3 text-base font-semibold">
+          {"\u7cfb\u5217\u6587\u7ae0"}
+        </h2>
+        <nav>
+          <ol class="space-y-3">
+            {relatedPosts.map(relatedPost => (
+              <li class="leading-relaxed">
+                <a
+                  href={getPath(relatedPost.id, relatedPost.filePath)}
+                  class="block text-foreground/80 decoration-dashed underline-offset-4 hover:text-accent hover:underline"
+                >
+                  {relatedPost.title}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      </aside>
+    )
+  }
   <Footer />
 </Layout>
+
+<style>
+  .app-toc,
+  .app-related {
+    position: fixed;
+    top: 7rem;
+    z-index: 5;
+    max-height: calc(100vh - 9rem);
+    width: 16rem;
+    overflow-y: auto;
+    background: var(--background);
+  }
+
+  .app-toc {
+    left: max(1rem, calc((100vw - 48rem) / 2 - 18rem));
+  }
+
+  .app-related {
+    right: max(1rem, calc((100vw - 48rem) / 2 - 18rem));
+  }
+</style>
 
 <script is:inline data-astro-rerun>
   /** Create a progress indicator

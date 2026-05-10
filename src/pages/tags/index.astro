@@ -10,15 +10,78 @@ import { SITE } from "@/config";
 
 const posts = await getCollection("blog");
 
-let tags = getUniqueTags(posts);
+const visibleTagLimit = 80;
+const tags = getUniqueTags(posts);
+const visibleTags = tags.slice(0, visibleTagLimit);
+const hiddenTags = tags.slice(visibleTagLimit);
 ---
 
 <Layout title={`Tags | ${SITE.title}`}>
   <Header />
-  <Main pageTitle="Tags" pageDesc="All the tags used in posts.">
-    <ul class="flex flex-wrap gap-6">
-      {tags.map(({ tag, tagName }) => <Tag {tag} {tagName} />)}
+  <Main pageTitle="Tags" pageDesc="All tags sorted by article count.">
+    <ul class="flex flex-wrap gap-x-6 gap-y-4">
+      {
+        visibleTags.map(({ tag, tagName, count }) => (
+          <Tag {tag} {tagName} {count} />
+        ))
+      }
     </ul>
+
+    {
+      hiddenTags.length > 0 && (
+        <>
+          <ul
+            id="more-tags"
+            class="mt-4 hidden flex-wrap gap-x-6 gap-y-4"
+            data-tag-expanded="false"
+          >
+            {hiddenTags.map(({ tag, tagName, count }) => (
+              <Tag {tag} {tagName} {count} />
+            ))}
+          </ul>
+
+          <button
+            id="toggle-tags"
+            class="mt-8 rounded border border-border px-4 py-2 text-sm font-medium hover:border-accent hover:text-accent"
+            type="button"
+            aria-expanded="false"
+            aria-controls="more-tags"
+          >
+            {"\u663e\u793a\u5168\u90e8"}
+          </button>
+        </>
+      )
+    }
   </Main>
   <Footer />
 </Layout>
+
+<script>
+  function initTagToggle() {
+    const moreTags = document.querySelector("#more-tags");
+    const toggleButton = document.querySelector("#toggle-tags");
+
+    if (!moreTags || !toggleButton) return;
+    if (toggleButton instanceof HTMLElement && toggleButton.dataset.ready) {
+      return;
+    }
+
+    if (toggleButton instanceof HTMLElement) {
+      toggleButton.dataset.ready = "true";
+    }
+
+    toggleButton.addEventListener("click", () => {
+      const isExpanded = toggleButton.getAttribute("aria-expanded") === "true";
+
+      toggleButton.setAttribute("aria-expanded", String(!isExpanded));
+      moreTags.classList.toggle("hidden", isExpanded);
+      moreTags.classList.toggle("flex", !isExpanded);
+      toggleButton.textContent = isExpanded
+        ? "\u663e\u793a\u5168\u90e8"
+        : "\u6536\u8d77";
+    });
+  }
+
+  initTagToggle();
+  document.addEventListener("astro:after-swap", initTagToggle);
+</script>
