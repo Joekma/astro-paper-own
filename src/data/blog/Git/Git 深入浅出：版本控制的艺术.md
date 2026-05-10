@@ -1,5 +1,6 @@
 ---
 title: Git 深入浅出：版本控制的艺术
+series: Git
 author: Joekma
 pubDatetime: 2026-05-07T00:00:00.000+08:00
 modDatetime: 2026-05-07T00:00:00.000+08:00

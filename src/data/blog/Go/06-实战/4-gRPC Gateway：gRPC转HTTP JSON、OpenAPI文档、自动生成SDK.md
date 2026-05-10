@@ -14,6 +14,7 @@ tags:
   - OpenAPI
   - Swagger
 draft: false
+series: go
 language: zh-CN
 ---
 

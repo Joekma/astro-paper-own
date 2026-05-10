@@ -1,5 +1,6 @@
 ---
 title: UI Automation 入门指南：核心概念与架构
+series: ui-automation
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00

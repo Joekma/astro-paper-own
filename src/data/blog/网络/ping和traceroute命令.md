@@ -1,4 +1,4 @@
-﻿---
+---
 title: ping和traceroute命令
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -12,6 +12,7 @@ tags:
   - Linux
 category: 网络
 draft: false
+series: 网络
 language: zh-CN
 ---
 

@@ -14,6 +14,7 @@ tags:
   - YAML
   - 序列化
 draft: false
+series: go
 language: zh-CN
 ---
 

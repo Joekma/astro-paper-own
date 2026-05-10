@@ -1,4 +1,4 @@
-﻿---
+---
 title: Flask 自定义 Form 组件与 WTForms 源码解析
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -12,6 +12,7 @@ tags:
   - 表单
   - 源码分析
 category: Flask
+series: flask
 draft: false
 language: zh-CN
 ---

@@ -14,6 +14,7 @@ tags:
   - 类型断言
   - error
 draft: false
+series: go
 language: zh-CN
 ---
 

@@ -1,4 +1,4 @@
-﻿---
+---
 title: Flask 框架介绍与基础使用
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -9,6 +9,7 @@ tags:
   - Python
   - Flask
   - Web开发
+series: flask
 draft: false
 language: zh-CN
 ---

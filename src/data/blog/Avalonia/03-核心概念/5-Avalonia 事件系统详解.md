@@ -12,6 +12,7 @@ tags:
   - UI 框架
   - 事件处理
 draft: false
+series: Avalonia
 language: zh-CN
 ---
 

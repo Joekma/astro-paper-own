@@ -1,4 +1,4 @@
-﻿---
+---
 title: Flask 自定义分页组件实现详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -11,6 +11,7 @@ tags:
   - 分页
   - 组件
 category: Flask
+series: flask
 draft: false
 language: zh-CN
 ---

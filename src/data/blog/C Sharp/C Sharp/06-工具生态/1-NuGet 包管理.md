@@ -12,6 +12,7 @@ tags:
   - 依赖管理
   - NuGet 源
 draft: false
+series: csharp
 language: zh-CN
 ---
 

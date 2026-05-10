@@ -1,4 +1,4 @@
-﻿---
+---
 title: Flask 蓝图机制与数据库连接池
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -11,6 +11,7 @@ tags:
   - 蓝图
   - 数据库连接池
   - DBUtils
+series: flask
 draft: false
 language: zh-CN
 ---

@@ -14,6 +14,7 @@ tags:
   - 架构
   - 设计模式
 draft: false
+series: Avalonia
 language: zh-CN
 ---
 

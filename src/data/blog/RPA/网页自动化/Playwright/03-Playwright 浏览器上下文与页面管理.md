@@ -1,5 +1,6 @@
 ---
 title: Playwright 浏览器上下文与页面管理
+series: playwright
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00

@@ -11,6 +11,7 @@ tags:
   - Flask-Script
   - 命令行
 category: Flask
+series: flask
 draft: false
 language: zh-CN
 ---

@@ -1,5 +1,6 @@
 ---
 title: Playwright 交互操作：点击、输入、拖拽等
+series: playwright
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00

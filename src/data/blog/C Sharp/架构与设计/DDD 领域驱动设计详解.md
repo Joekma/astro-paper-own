@@ -13,6 +13,7 @@ tags:
   - CQRS
   - 仓储模式
 draft: false
+series: csharp
 language: zh-CN
 ---
 

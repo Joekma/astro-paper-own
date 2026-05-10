@@ -16,6 +16,7 @@ tags:
   - for
   - foreach
 draft: false
+series: csharp
 language: zh-CN
 ---
 

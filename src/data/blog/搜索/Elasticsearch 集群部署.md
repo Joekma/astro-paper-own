@@ -1,5 +1,6 @@
 ﻿---
 title: Elasticsearch 集群部署
+series: 搜索、elasticsearch
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00

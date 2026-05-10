@@ -1,4 +1,4 @@
-﻿---
+---
 title: WebSocket 协议原理和使用方法
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -11,6 +11,7 @@ tags:
   - 实时通信
   - Web
 draft: false
+series: 网络
 language: zh-CN
 ---
 

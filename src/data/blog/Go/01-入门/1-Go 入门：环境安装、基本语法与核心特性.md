@@ -1,4 +1,4 @@
-﻿---
+---
 title: Go 入门：环境安装、基本语法与核心特性
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -13,6 +13,7 @@ tags:
   - goroutine
   - 并发编程
 draft: false
+series: go
 language: zh-CN
 ---
 

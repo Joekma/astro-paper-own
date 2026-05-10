@@ -14,6 +14,7 @@ tags:
   - select
   - goto
 draft: false
+series: go
 language: zh-CN
 ---
 

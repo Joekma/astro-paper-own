@@ -15,6 +15,7 @@ tags:
   - gofmt
   - 开发工具
 draft: false
+series: go
 language: zh-CN
 ---
 

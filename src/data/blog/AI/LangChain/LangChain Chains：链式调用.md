@@ -10,6 +10,7 @@ tags:
   - Chain
   - LLM
 draft: false
+series: LangChain
 language: zh-CN
 ---
 

@@ -1,5 +1,6 @@
 ---
 title: win32com 进程与线程管理
+series: win32com
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00

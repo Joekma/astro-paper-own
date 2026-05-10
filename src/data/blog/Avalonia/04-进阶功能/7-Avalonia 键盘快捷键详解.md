@@ -14,6 +14,7 @@ tags:
   - 键盘交互
   - 命令绑定
 draft: false
+series: Avalonia
 language: zh-CN
 ---
 

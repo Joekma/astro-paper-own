@@ -10,6 +10,7 @@ tags:
   - Memory
   - LLM
 draft: false
+series: LangChain
 language: zh-CN
 ---
 

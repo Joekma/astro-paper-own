@@ -14,6 +14,7 @@ tags:
   - DataContext
   - UI 框架
 draft: false
+series: Avalonia
 language: zh-CN
 ---
 

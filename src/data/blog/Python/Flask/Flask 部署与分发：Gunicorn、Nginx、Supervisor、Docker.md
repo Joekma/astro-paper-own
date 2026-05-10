@@ -1,4 +1,4 @@
-﻿---
+---
 title: Flask 部署与分发：Gunicorn、Nginx、Supervisor、Docker
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -11,6 +11,7 @@ tags:
   - 部署
   - Gunicorn
   - Nginx
+series: flask
 draft: false
 language: zh-CN
 ---

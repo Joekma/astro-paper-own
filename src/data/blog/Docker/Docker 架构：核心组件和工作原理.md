@@ -1,4 +1,4 @@
-﻿---
+---
 title: Docker 架构：核心组件和工作原理
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -8,6 +8,7 @@ description: '深入讲解Docker架构，介绍Docker核心组件和工作原理
 tags:
   - Docker
 draft: false
+series: docker
 language: zh-CN
 ---
 

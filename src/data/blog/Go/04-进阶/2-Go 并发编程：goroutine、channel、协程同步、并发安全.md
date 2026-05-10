@@ -15,6 +15,7 @@ tags:
   - 同步机制
   - sync
 draft: false
+series: go
 language: zh-CN
 ---
 

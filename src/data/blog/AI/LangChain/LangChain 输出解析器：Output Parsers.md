@@ -10,6 +10,7 @@ tags:
   - Output Parser
   - LLM
 draft: false
+series: LangChain
 language: zh-CN
 ---
 

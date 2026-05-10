@@ -1,4 +1,4 @@
-﻿---
+---
 title: TCP协议特性（上）：连接管理、滑动窗口
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -11,6 +11,7 @@ tags:
   - 协议
 category: 网络
 draft: false
+series: 网络
 language: zh-CN
 ---
 

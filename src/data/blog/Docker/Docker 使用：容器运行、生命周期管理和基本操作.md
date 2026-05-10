@@ -1,4 +1,4 @@
-﻿---
+---
 title: Docker 使用：容器运行、生命周期管理和基本操作
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -8,6 +8,7 @@ description: '深入讲解Docker容器运行、生命周期管理和基本操作
 tags:
   - Docker
 draft: false
+series: docker
 language: zh-CN
 ---
 

@@ -11,6 +11,7 @@ tags:
   - Session
   - Redis
   - Flask-Session
+series: flask
 draft: false
 language: zh-CN
 ---

@@ -1,4 +1,4 @@
-﻿---
+---
 title: Django 中如何让外部访问本地的静态资源
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -6,6 +6,7 @@ modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-static-resources
 featured: false
 draft: false
+series: django
 tags:
   - Python
   - Django

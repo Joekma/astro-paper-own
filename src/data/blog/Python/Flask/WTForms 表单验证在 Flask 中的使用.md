@@ -1,4 +1,4 @@
-﻿---
+---
 title: WTForms 表单验证在 Flask 中的使用
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -11,6 +11,7 @@ tags:
   - WTForms
   - 表单验证
 category: Flask
+series: flask
 draft: false
 language: zh-CN
 ---

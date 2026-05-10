@@ -13,6 +13,7 @@ tags:
   - Lambda
   - 语言集成查询
 draft: false
+series: csharp
 language: zh-CN
 ---
 

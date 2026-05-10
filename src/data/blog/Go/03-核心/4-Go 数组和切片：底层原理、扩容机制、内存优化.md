@@ -13,6 +13,7 @@ tags:
   - Map
   - sync.Map
 draft: false
+series: go
 language: zh-CN
 ---
 

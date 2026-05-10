@@ -1,4 +1,4 @@
-﻿---
+---
 title: Docker 命令速查：容器、镜像、仓库常用命令
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -8,6 +8,7 @@ description: 'Docker命令速查手册，包含容器、镜像、仓库等常用
 tags:
   - Docker
 draft: false
+series: docker
 language: zh-CN
 ---
 

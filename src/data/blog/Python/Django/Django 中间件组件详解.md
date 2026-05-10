@@ -1,4 +1,4 @@
-﻿---
+---
 title: Django 中间件组件详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -6,6 +6,7 @@ modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-component-3-middleware
 featured: false
 draft: false
+series: django
 tags:
   - Python
   - Django

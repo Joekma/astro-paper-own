@@ -1,4 +1,4 @@
-﻿---
+---
 title: Docker Compose：定义和运行多容器应用
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -9,6 +9,7 @@ tags:
   - Docker
   - Docker Compose
 draft: false
+series: docker
 language: zh-CN
 ---
 

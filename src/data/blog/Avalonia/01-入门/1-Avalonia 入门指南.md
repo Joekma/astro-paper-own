@@ -14,6 +14,7 @@ tags:
   - 跨平台
   - 桌面应用
 draft: false
+series: Avalonia
 language: zh-CN
 ---
 

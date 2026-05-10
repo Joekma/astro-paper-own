@@ -1,4 +1,4 @@
-﻿---
+---
 title: Docker 下载安装与配置：Nginx 和 MySQL 实例
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -10,6 +10,7 @@ tags:
   - Nginx
   - MySQL
 draft: false
+series: docker
 language: zh-CN
 ---
 

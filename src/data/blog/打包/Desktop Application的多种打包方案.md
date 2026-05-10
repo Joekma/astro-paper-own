@@ -1,5 +1,6 @@
 ---
 title: Desktop Application的多种打包方案
+series: 打包部署
 author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00

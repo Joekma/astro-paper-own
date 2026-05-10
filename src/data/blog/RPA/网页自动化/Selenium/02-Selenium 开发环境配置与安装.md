@@ -1,5 +1,6 @@
 ---
 title: Selenium 开发环境配置与安装
+series: selenium
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00

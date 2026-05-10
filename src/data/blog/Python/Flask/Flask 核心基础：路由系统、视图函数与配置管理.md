@@ -1,4 +1,4 @@
-﻿---
+---
 title: Flask 核心基础：路由系统、视图函数与配置管理
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -10,6 +10,7 @@ tags:
   - Flask
   - 路由
   - 视图
+series: flask
 draft: false
 language: zh-CN
 ---

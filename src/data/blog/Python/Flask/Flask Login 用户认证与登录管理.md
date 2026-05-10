@@ -10,6 +10,7 @@ tags:
   - Flask
   - Flask-Login
   - 用户认证
+series: flask
 draft: false
 language: zh-CN
 ---

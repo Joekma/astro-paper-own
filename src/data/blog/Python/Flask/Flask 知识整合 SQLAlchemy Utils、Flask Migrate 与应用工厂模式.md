@@ -12,6 +12,7 @@ tags:
   - 数据库
   - 应用工厂
 category: Flask
+series: flask
 draft: false
 language: zh-CN
 ---

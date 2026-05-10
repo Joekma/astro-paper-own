@@ -1,4 +1,4 @@
-﻿---
+---
 title: Flask 信号机制：Blinker 内部信号与自定义信号
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -10,6 +10,7 @@ tags:
   - Flask
   - 信号
   - Blinker
+series: flask
 draft: false
 language: zh-CN
 ---

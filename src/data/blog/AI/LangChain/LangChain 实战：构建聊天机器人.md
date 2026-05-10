@@ -10,6 +10,7 @@ tags:
   - ChatBot
   - 实战
 draft: false
+series: LangChain
 language: zh-CN
 ---
 

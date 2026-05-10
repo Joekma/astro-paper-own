@@ -14,6 +14,7 @@ tags:
   - 消息中间件
   - 消费者组
 draft: false
+series: go
 language: zh-CN
 ---
 

@@ -13,6 +13,7 @@ tags:
   - 命名空间
   - 指令
 draft: false
+series: Avalonia
 language: zh-CN
 ---
 

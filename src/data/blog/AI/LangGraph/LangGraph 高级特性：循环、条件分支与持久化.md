@@ -1,5 +1,6 @@
 ---
 title: LangGraph 高级特性：循环、条件分支与持久化
+series: LangGraph
 author: Joekma
 pubDatetime: 2026-05-08T00:00:00.000+08:00
 modDatetime: 2026-05-08T00:00:00.000+08:00

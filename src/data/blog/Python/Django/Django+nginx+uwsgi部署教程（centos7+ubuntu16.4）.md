@@ -1,4 +1,4 @@
-﻿---
+---
 title: Django+nginx+uwsgi部署教程（centos7+ubuntu16.4）
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -6,6 +6,7 @@ modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-nginx-uwsgi-deployment
 featured: false
 draft: false
+series: django
 tags:
   - Python
   - Django

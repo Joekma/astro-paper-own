@@ -13,6 +13,7 @@ tags:
   - go.mod
   - GOPATH
 draft: false
+series: go
 language: zh-CN
 ---
 

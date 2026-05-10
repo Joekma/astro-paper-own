@@ -1,5 +1,6 @@
 ---
 title: LlamaIndex 查询与检索机制
+series: LlamaIndex
 author: Joekma
 pubDatetime: 2026-05-08T00:00:00.000+08:00
 modDatetime: 2026-05-08T00:00:00.000+08:00

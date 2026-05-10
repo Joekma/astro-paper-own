@@ -1,5 +1,6 @@
 ---
 title: Playwright 爬虫实战：动态页面数据抓取
+series: playwright
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00

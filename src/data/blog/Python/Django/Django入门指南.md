@@ -6,6 +6,7 @@ modDatetime: 2026-05-04T00:00:00.000+08:00
 slug: django-getting-started
 featured: false
 draft: false
+series: django
 tags:
   - Python
   - Django

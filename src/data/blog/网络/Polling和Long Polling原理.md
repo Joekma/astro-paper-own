@@ -1,4 +1,4 @@
-﻿---
+---
 title: Polling和Long Polling原理
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -12,6 +12,7 @@ tags:
   - 实时通信
 category: 网络
 draft: false
+series: 网络
 language: zh-CN
 ---
 

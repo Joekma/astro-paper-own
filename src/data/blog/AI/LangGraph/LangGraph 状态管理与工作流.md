@@ -1,5 +1,6 @@
 ---
 title: LangGraph 状态管理与工作流
+series: LangGraph
 author: Joekma
 pubDatetime: 2026-05-08T00:00:00.000+08:00
 modDatetime: 2026-05-08T00:00:00.000+08:00

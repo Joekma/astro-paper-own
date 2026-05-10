@@ -1,4 +1,4 @@
-﻿---
+---
 title: CORS 跨域资源共享配置方法
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -11,6 +11,7 @@ tags:
   - 前端
   - Web
 draft: false
+series: 网络
 language: zh-CN
 ---
 

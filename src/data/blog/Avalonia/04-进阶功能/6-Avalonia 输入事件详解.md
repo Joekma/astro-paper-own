@@ -13,6 +13,7 @@ tags:
   - 手势事件
   - 交互
 draft: false
+series: Avalonia
 language: zh-CN
 ---
 

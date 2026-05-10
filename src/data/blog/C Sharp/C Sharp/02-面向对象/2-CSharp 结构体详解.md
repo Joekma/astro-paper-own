@@ -13,6 +13,7 @@ tags:
   - 记录类型
   - Record
 draft: false
+series: csharp
 language: zh-CN
 ---
 

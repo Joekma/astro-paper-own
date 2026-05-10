@@ -14,6 +14,7 @@ tags:
   - 命令绑定
   - 命令参数
 draft: false
+series: Avalonia
 language: zh-CN
 ---
 
