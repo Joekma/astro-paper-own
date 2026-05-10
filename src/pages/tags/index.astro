@@ -18,7 +18,7 @@ const hiddenTags = tags.slice(visibleTagLimit);
 
 <Layout title={`Tags | ${SITE.title}`}>
   <Header />
-  <Main pageTitle="Tags" pageDesc="All tags sorted by article count.">
+  <Main pageTitle="Tags">
     <ul class="flex flex-wrap gap-x-6 gap-y-4">
       {
         visibleTags.map(({ tag, tagName, count }) => (

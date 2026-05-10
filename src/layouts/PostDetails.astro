@@ -10,7 +10,6 @@ import ShareLinks from "@/components/ShareLinks.astro";
 import BackButton from "@/components/BackButton.astro";
 import BackToTopButton from "@/components/BackToTopButton.astro";
 import { getPath } from "@/utils/getPath";
-import { getPostCategory } from "@/utils/getPostCategory";
 import { slugifyStr } from "@/utils/slugify";
 import IconChevronLeft from "@/assets/icons/IconChevronLeft.svg";
 import IconChevronRight from "@/assets/icons/IconChevronRight.svg";
@@ -40,19 +39,21 @@ const { Content, headings } = await render(post);
 const tableOfContents = headings.filter(
   heading => heading.depth >= 2 && heading.depth <= 4
 );
-const category = getPostCategory(post);
-const relatedPosts = posts
-  .filter(relatedPost => {
-    if (relatedPost.id === post.id) return false;
+const series = post.data.series?.trim();
+const relatedPosts = series
+  ? posts
+      .filter(relatedPost => {
+        if (relatedPost.id === post.id) return false;
 
-    return getPostCategory(relatedPost).category === category.category;
-  })
-  .slice(0, 15)
-  .map(({ data: { title }, id, filePath }) => ({
-    id,
-    title,
-    filePath,
-  }));
+        return relatedPost.data.series?.trim() === series;
+      })
+      .slice(0, 15)
+      .map(({ data: { title }, id, filePath }) => ({
+        id,
+        title,
+        filePath,
+      }))
+  : [];
 
 let ogImageUrl: string | undefined;
 
