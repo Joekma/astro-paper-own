@@ -1,10 +1,10 @@
 ---
 title: LangChain 输出解析器：Output Parsers
 author: Joekma
-pubDatetime: 2026-05-07T00:00:00.000+08:00
-modDatetime: 2026-05-07T00:00:00.000+08:00
+pubDatetime: 2026-05-11T00:00:00.000+08:00
+modDatetime: 2026-05-11T00:00:00.000+08:00
 slug: langchain-output-parsers
-description: '深入讲解LangChain的Output Parser模块，包括结构化输出、JSON解析、Pydantic验证和自定义解析器。'
+description: '深入讲解LangChain v1.0的Output Parser模块，包括结构化输出、JSON解析和Pydantic验证。'
 tags:
   - LangChain
   - Output Parser
@@ -27,32 +27,6 @@ Output Parsers（输出解析器）是 LangChain 中用于将 LLM 的原始文�
 | 缺乏类型安全 | Pydantic 验证 |
 | 需要提取特定信息 | 自定义解析逻辑 |
 
-### Parser 工作流程
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Output Parser 工作流程                     │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│   LLM 原始输出                                              │
-│       │                                                      │
-│       ▼                                                      │
-│   ┌─────────────────┐                                        │
-│   │  Output Parser  │                                        │
-│   └────────┬────────┘                                        │
-│            │                                                  │
-│     ┌──────┴──────┐                                          │
-│     │             │                                          │
-│     ▼             ▼                                          │
-│  ┌────────┐  ┌────────────┐                                  │
-│  │ 格式化 │  │  结构验证  │                                  │
-│  └────────┘  └────────────┘                                  │
-│                                                              │
-│   转换后输出                                                 │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
-```
-
 ## Parser 类型概览
 
 | Parser | 说明 | 输出类型 |
@@ -62,46 +36,35 @@ Output Parsers（输出解析器）是 LangChain 中用于将 LLM 的原始文�
 | **PydanticOutputParser** | Pydantic 验证 | Pydantic 模型 |
 | **CommaSeparatedListOutputParser** | 列表解析 | List[str] |
 
-## 基础 Parser
+## StrOutputParser
 
-### StrOutputParser
+### 基础用法
 
 ```python
-# 导入所需的组件
-from langchain_core.output_parsers import StrOutputParser  # 字符串解析器
-from langchain_openai import ChatOpenAI                    # 聊天模型
-from langchain_core.prompts import PromptTemplate          # 提示词模板
+from langchain_core.output_parsers import StrOutputParser
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import PromptTemplate
 
-# 创建LLM实例
-llm = ChatOpenAI(model="gpt-4")
+llm = ChatOpenAI(model="gpt-4o")
 
-# 构建链：模板 -> 模型 -> 字符串解析器
-# StrOutputParser将模型输出转换为纯字符串
 chain = PromptTemplate.from_template("用一句话解释{topic}") | llm | StrOutputParser()
 
-# 调用链
 result = chain.invoke({"topic": "人工智能"})
-print(result)  # result是字符串类型
+print(result)
 ```
 
-## JSON Parser
+## JsonOutputParser
 
-### JsonOutputParser
+### 基础用法
 
 ```python
-# 导入所需的组件
-from langchain_core.output_parsers import JsonOutputParser  # JSON解析器
-from langchain_openai import ChatOpenAI                    # 聊天模型
-from langchain_core.prompts import PromptTemplate          # 提示词模板
+from langchain_core.output_parsers import JsonOutputParser
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import PromptTemplate
 
-# 创建LLM实例
-llm = ChatOpenAI(model="gpt-4")
-
-# 创建JSON解析器
+llm = ChatOpenAI(model="gpt-4o")
 parser = JsonOutputParser()
 
-# 创建提示词模板
-# {format_instructions}会被解析器的格式说明替换
 prompt = PromptTemplate.from_template(
     """返回一个JSON对象，包含以下信息：
     - name: 姓名
@@ -113,42 +76,35 @@ prompt = PromptTemplate.from_template(
     只返回JSON，不要其他内容。"""
 )
 
-# 构建链
 chain = prompt | llm | parser
 
-# 调用链
 result = chain.invoke({
     "format_instructions": parser.get_format_instructions()
 })
 
-# result是字典类型
 print(result)
+print(result["name"])
 ```
 
-## Pydantic Parser
+## PydanticOutputParser
 
 ### 基本使用
 
 ```python
-# 导入所需的组件
-from langchain_core.output_parsers import PydanticOutputParser  # Pydantic解析器
-from langchain_openai import ChatOpenAI                    # 聊天模型
-from langchain_core.prompts import PromptTemplate          # 提示词模板
-from pydantic import BaseModel, Field                     # Pydantic数据模型
-from typing import List                                   # 类型注解
+from langchain_core.output_parsers import PydanticOutputParser
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import PromptTemplate
+from pydantic import BaseModel, Field
+from typing import List
 
-# 定义Pydantic模型，指定期望的数据结构
 class Person(BaseModel):
-    name: str = Field(description="人物姓名")         # 姓名字段
-    age: int = Field(description="人物年龄")           # 年龄字段
-    occupation: str = Field(description="职业")       # 职业字段
-    skills: List[str] = Field(description="技能列表")  # 技能列表字段
+    name: str = Field(description="人物姓名")
+    age: int = Field(description="人物年龄")
+    occupation: str = Field(description="职业")
+    skills: List[str] = Field(description="技能列表")
 
-# 创建Pydantic解析器
 parser = PydanticOutputParser(pydantic_object=Person)
 
-# 创建提示词模板
-# 使用partial_variables预先填充格式说明
 prompt = PromptTemplate.from_template(
     """从以下文本中提取人物信息：
 
@@ -158,18 +114,13 @@ prompt = PromptTemplate.from_template(
     partial_variables={"format_instructions": parser.get_format_instructions()}
 )
 
-# 创建LLM实例
-llm = ChatOpenAI(model="gpt-4")
-
-# 构建链
+llm = ChatOpenAI(model="gpt-4o")
 chain = prompt | llm | parser
 
-# 调用链并传入文本
 result = chain.invoke({
     "query": "李明是一位35岁的数据科学家，精通Python、SQL和机器学习"
 })
 
-# 访问结果属性
 print(result.name)
 print(result.age)
 print(result.skills)
@@ -193,7 +144,9 @@ class PersonWithSkills(BaseModel):
 parser = PydanticOutputParser(pydantic_object=PersonWithSkills)
 
 chain = prompt | llm | parser
-result = chain.invoke({"query": "王芳，28岁，技能：Python（高级），数据分析（中级）"})
+result = chain.invoke({
+    "query": "王芳，28岁，技能：Python（高级），数据分析（中级）"
+})
 print(result.skills[0].name)
 ```
 
@@ -215,31 +168,6 @@ chain = PromptTemplate.from_template(
 ) | llm | parser
 
 result = chain.invoke({})
-print(result)
-```
-
-### 自定义列表解析
-
-```python
-from langchain_core.output_parsers import BaseOutputParser
-from typing import List
-
-class NumberedListParser(BaseOutputParser[List[str]]):
-    def parse(self, text: str) -> List[str]:
-        lines = text.strip().split('\n')
-        result = []
-        for line in lines:
-            cleaned = line.lstrip('0123456789.、)） ')
-            if cleaned:
-                result.append(cleaned)
-        return result
-
-    @property
-    def _type(self) -> str:
-        return "numbered_list"
-
-parser = NumberedListParser()
-result = parser.parse("1. 第一项\n2. 第二项\n3. 第三项")
 print(result)
 ```
 
@@ -276,7 +204,7 @@ from typing import Optional
 class DateParser(BaseOutputParser[Optional[datetime]]):
     def parse(self, text: str) -> Optional[datetime]:
         text = text.strip()
-        formats = ["%Y-%m-%d", "%Y/%m/%d", "%d-%m-%Y", "%d/%m/%Y", "%Y年%m月%d日"]
+        formats = ["%Y-%m-%d", "%Y/%m/%d", "%d-%m-%Y", "%d/%m/%Y"]
 
         for fmt in formats:
             try:
@@ -290,32 +218,26 @@ class DateParser(BaseOutputParser[Optional[datetime]]):
         return "date_parser"
 ```
 
-## 组合 Parser
-
-### Pipeline Parser
+### 编号列表解析
 
 ```python
-from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
+class NumberedListParser(BaseOutputParser[list]):
+    def parse(self, text: str) -> list:
+        lines = text.strip().split('\n')
+        result = []
+        for line in lines:
+            cleaned = line.lstrip('0123456789.、)） ')
+            if cleaned:
+                result.append(cleaned)
+        return result
 
-parser = StrOutputParser() | JsonOutputParser()
-```
+    @property
+    def _type(self) -> str:
+        return "numbered_list"
 
-## 格式化指令
-
-### 获取格式指令
-
-```python
-from langchain_core.output_parsers import PydanticOutputParser
-from pydantic import BaseModel
-
-class Person(BaseModel):
-    name: str
-    age: int
-
-parser = PydanticOutputParser(pydantic_object=Person)
-
-instructions = parser.get_format_instructions()
-print(instructions)
+parser = NumberedListParser()
+result = parser.parse("1. 第一项\n2. 第二项\n3. 第三项")
+print(result)
 ```
 
 ## 错误处理
@@ -331,6 +253,17 @@ try:
     result = chain.invoke({})
 except ValidationError as e:
     print(f"验证错误: {e}")
+```
+
+### OutputParserException 处理
+
+```python
+from langchain_core.exceptions import OutputParserException
+
+try:
+    result = chain.invoke({})
+except OutputParserException as e:
+    print(f"解析错误: {e}")
 ```
 
 ## 实际应用

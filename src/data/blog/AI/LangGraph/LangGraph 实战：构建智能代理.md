@@ -1,8 +1,8 @@
 ---
 title: LangGraph 实战：构建智能代理
 author: Joekma
-pubDatetime: 2026-05-07T00:00:00.000+08:00
-modDatetime: 2026-05-07T00:00:00.000+08:00
+pubDatetime: 2026-05-11T00:00:00.000+08:00
+modDatetime: 2026-05-11T00:00:00.000+08:00
 slug: langgraph-agent-pratice
 description: '使用LangGraph构建完整的智能代理应用，包括工具调用、决策逻辑和多Agent协作。'
 tags:
@@ -25,20 +25,20 @@ language: zh-CN
 │                    智能代理架构图                             │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
-│   ┌─────────┐                                               │
-│   │  用户   │                                               │
-│   └────┬────┘                                               │
-│        │                                                    │
-│        ▼                                                    │
-│   ┌─────────────────┐                                      │
-│   │    Agent Core   │                                      │
-│   └────────┬────────┘                                      │
-│            │                                               │
-│     ┌──────┼──────┐                                        │
-│     ▼      ▼      ▼                                        │
-│  ┌────┐ ┌────┐ ┌────┐                                     │
-│  │工具1│ │工具2│ │工具3│                                    │
-│  └────┘ └────┘ └────┘                                     │
+│   ┌─────────┐                                                │
+│   │  用户   │                                                │
+│   └────┬────┘                                                │
+│        │                                                      │
+│        ▼                                                      │
+│   ┌─────────────────┐                                        │
+│   │    Agent Core   │                                        │
+│   └────────┬────────┘                                        │
+│            │                                                  │
+│     ┌──────┼──────┐                                         │
+│     ▼      ▼      ▼                                         │
+│  ┌────┐ ┌────┐ ┌────┐                                      │
+│  │工具1│ │工具2│ │工具3│                                     │
+│  └────┘ └────┘ └────┘                                      │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -56,23 +56,19 @@ pip install langgraph langchain-openai langchain-community
 ### 创建工具集
 
 ```python
-# 导入工具装饰器和LangGraph组件
 from langchain_core.tools import tool
-from langchain_openai import ChatOpenAI
-from langgraph.graph import StateGraph, START, MessagesState
 from langgraph.prebuilt import ToolNode, tools_condition
+from langgraph.graph import StateGraph, START, END, MessagesState
+from langchain_openai import ChatOpenAI
 
-# 使用@tool装饰器定义工具函数
 @tool
 def search_knowledge_base(query: str) -> str:
     """搜索知识库获取相关信息"""
-    # 模拟知识库数据
     knowledge = {
         "python": "Python是一门高级编程语言...",
         "java": "Java是一种面向对象编程语言...",
         "javascript": "JavaScript是一种脚本语言..."
     }
-    # 查找相关知识
     for key, value in knowledge.items():
         if key in query.lower():
             return value
@@ -98,7 +94,6 @@ def send_notification(message: str, recipient: str) -> str:
     """发送通知"""
     return f"通知已发送给{recipient}：{message}"
 
-# 收集所有工具
 tools = [search_knowledge_base, calculate, get_current_time, send_notification]
 ```
 
@@ -107,39 +102,30 @@ tools = [search_knowledge_base, calculate, get_current_time, send_notification]
 ### 基础 Agent 图
 
 ```python
-# 创建Agent图
 def create_agent_graph():
-    # 创建消息状态图
     graph = StateGraph(MessagesState)
 
-    # 定义模型调用节点
     def call_model(state: MessagesState):
         messages = state["messages"]
-        # 创建模型实例
-        llm = ChatOpenAI(model="gpt-4")
-        # 绑定工具到模型
+        llm = ChatOpenAI(model="gpt-4o")
         llm_with_tools = llm.bind_tools(tools)
-        # 调用模型
         response = llm_with_tools.invoke(messages)
         return {"messages": [response]}
 
-    # 添加节点：模型节点和工具节点
-    graph.add_node("model", call_model)
-    graph.add_node("tools", ToolNode(tools))
+    tool_node = ToolNode(tools)
 
-    # 添加边：START -> model
+    graph.add_node("model", call_model)
+    graph.add_node("tools", tool_node)
+
     graph.add_edge(START, "model")
-    # 添加条件边：根据模型输出决定是否调用工具
     graph.add_conditional_edges(
         "model",
         tools_condition,
     )
-    # 添加边：tools -> model（工具执行后回到模型）
     graph.add_edge("tools", "model")
 
     return graph.compile()
 
-# 创建并使用Agent
 agent = create_agent_graph()
 
 result = agent.invoke({
@@ -175,7 +161,7 @@ def create_advanced_agent():
         else:
             prompt = messages[-1].content
 
-        llm = ChatOpenAI(model="gpt-4")
+        llm = ChatOpenAI(model="gpt-4o")
         response = llm.invoke([{"role": "user", "content": prompt}])
 
         return {
@@ -190,11 +176,11 @@ def create_advanced_agent():
         if hasattr(last_message, "content"):
             if "完成" in last_message.content or "结束" in last_message.content:
                 return "end"
-        return "model"
+        return "continue"
 
     graph.add_node("model", model_node)
     graph.add_edge(START, "model")
-    graph.add_conditional_edges("model", should_continue, {"model": "model", "end": END})
+    graph.add_conditional_edges("model", should_continue, {"continue": "model", "end": END})
 
     return graph.compile()
 
@@ -206,6 +192,8 @@ agent = create_advanced_agent()
 ### 复杂任务处理
 
 ```python
+from typing import Literal
+
 def create_coordinator_agent():
     class CoordinatorState(TypedDict):
         messages: list
@@ -219,7 +207,7 @@ def create_coordinator_agent():
         task = state["current_task"]
         return {"completed_tasks": state.get("completed_tasks", []) + [task]}
 
-    def route_task(state: CoordinatorState):
+    def route_task(state: CoordinatorState) -> Literal["calculator", "searcher", "time_checker", "model"]:
         task = state["current_task"]
         if "计算" in task:
             return "calculator"
@@ -248,6 +236,8 @@ def create_coordinator_agent():
     graph.add_edge("model", END)
 
     return graph.compile()
+
+agent = create_coordinator_agent()
 ```
 
 ## 带记忆的 Agent
@@ -264,7 +254,7 @@ def create_memory_agent():
 
     def call_model(state: MessagesState):
         messages = state["messages"]
-        llm = ChatOpenAI(model="gpt-4")
+        llm = ChatOpenAI(model="gpt-4o")
         response = llm.invoke(messages)
         return {"messages": [response]}
 
@@ -292,6 +282,8 @@ result2 = agent.invoke(
 ### 条件路由
 
 ```python
+from typing import Literal
+
 def create_decision_agent():
     class DecisionState(TypedDict):
         user_input: str
@@ -333,6 +325,8 @@ print(result["result"])
 ### 研究助手 Agent
 
 ```python
+from typing import Literal
+
 def create_research_agent():
     class ResearchState(TypedDict):
         topic: str
@@ -354,7 +348,7 @@ def create_research_agent():
         report = "\n".join(findings)
         return {"final_report": report}
 
-    def should_continue(state: ResearchState):
+    def should_continue(state: ResearchState) -> Literal["research", "compile"]:
         if len(state.get("findings", [])) >= 3:
             return "compile"
         return "research"

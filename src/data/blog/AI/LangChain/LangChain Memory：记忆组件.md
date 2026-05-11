@@ -1,10 +1,10 @@
 ---
 title: LangChain Memory：记忆组件
 author: Joekma
-pubDatetime: 2026-05-07T00:00:00.000+08:00
-modDatetime: 2026-05-07T00:00:00.000+08:00
+pubDatetime: 2026-05-11T00:00:00.000+08:00
+modDatetime: 2026-05-11T00:00:00.000+08:00
 slug: langchain-memory
-description: '深入讲解LangChain的Memory模块，包括对话记忆、缓冲记忆、实体记忆和各种记忆组合方式。'
+description: '深入讲解LangChain v1.0的Memory模块，包括对话记忆、缓冲记忆和组合记忆。'
 tags:
   - LangChain
   - Memory
@@ -33,15 +33,13 @@ Memory（记忆组件）是 LangChain 中用于在对话或处理过程中保持
 │                    Memory 工作流程                           │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
-│  ┌─────────┐    ┌─────────┐    ┌─────────┐                  │
-│  │   存储   │ ←→ │  读取   │ ←→ │  写入   │                  │
-│  └─────────┘    └─────────┘    └─────────┘                  │
-│      ↑                                                    │
-│      │                                                    │
-│  ┌───┴─────┐                                             │
-│  │ 上下文  │                                             │
-│  │ 历史数据 │                                             │
-│  └─────────┘                                             │
+│  用户输入 → 加载历史 → 合并上下文 → 调用模型                  │
+│                                      │                       │
+│                                      ▼                       │
+│                               保存到记忆                      │
+│                                      │                       │
+│                                      ▼                       │
+│                               下轮使用                        │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -50,93 +48,76 @@ Memory（记忆组件）是 LangChain 中用于在对话或处理过程中保持
 
 | 类型 | 说明 | 适用场景 |
 |------|------|---------|
-| **BufferMemory** | 简单缓冲记忆 | 短期对话 |
-| **ConversationBufferMemory** | 对话缓冲 | 标准聊天 |
+| **ConversationBufferMemory** | 简单缓冲记忆 | 标准聊天 |
 | **ConversationSummaryMemory** | 摘要记忆 | 长对话 |
 | **CombinedMemory** | 组合记忆 | 多维度记忆 |
 | **VectorStoreRetrieverMemory** | 向量记忆 | 语义检索 |
 
-## BufferMemory
+## ConversationBufferMemory
 
-### 基础用法（新版本）
-
-```python
-# 导入记忆组件和消息类型
-from langchain.memory import ConversationBufferMemory
-from langchain_core.messages import SystemMessage
-
-# 创建对话缓冲记忆实例
-memory = ConversationBufferMemory(
-    memory_key="history",        # 引用记忆的变量名
-    return_messages=True         # 返回消息对象而非字符串
-)
-
-# 向记忆中添加用户消息
-memory.chat_memory.add_user_message("你好")
-
-# 向记忆中添加AI回复
-memory.chat_memory.add_ai_message("你好！有什么可以帮助你的吗？")
-
-# 从记忆中加载数据
-# 返回包含"history"键的字典
-history = memory.load_memory_variables({})
-print(history)
-```
-
-## ConversationMemory
-
-### ConversationBufferMemory（新版本）
-
-完整的对话缓冲记忆：
+### 基础用法
 
 ```python
 from langchain.memory import ConversationBufferMemory
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import HumanMessage, AIMessage
 
 memory = ConversationBufferMemory(
     memory_key="history",
     return_messages=True
 )
 
-prompt = ChatPromptTemplate.from_messages([
-    ("system", "你是一个友好的助手。"),
-    MessagesPlaceholder(variable_name="history"),
-    ("human", "{input}")
-])
+memory.chat_memory.add_user_message("你好")
+memory.chat_memory.add_ai_message("你好！有什么可以帮助你的吗？")
 
-def chat_with_memory(input_text):
-    history = memory.load_memory_variables({})["history"]
-
-    chain = prompt | ChatOpenAI(model="gpt-4")
-    response = chain.invoke({
-        "input": input_text,
-        "history": history
-    })
-
-    memory.chat_memory.add_user_message(input_text)
-    memory.chat_memory.add_ai_message(response.content)
-
-    return response.content
-
-response = chat_with_memory("我喜欢编程")
-print(response)
-
-response = chat_with_memory("我的爱好是什么？")
-print(response)
+history = memory.load_memory_variables({})
+print(history["history"])
 ```
 
-## SummaryMemory
+### 在 Agent 中使用
 
-### ConversationSummaryMemory（新版本）
+```python
+from langchain.agents import create_agent
+from langchain.memory import ConversationBufferMemory
+from langchain_openai import ChatOpenAI
+from langchain_core.tools import tool
 
-对长对话进行摘要，节省 token：
+memory = ConversationBufferMemory(
+    memory_key="chat_history",
+    return_messages=True
+)
+
+@tool
+def get_weather(city: str) -> str:
+    """获取城市天气"""
+    return f"{city}今天晴天"
+
+llm = ChatOpenAI(model="gpt-4o")
+
+agent = create_agent(
+    model=llm,
+    tools=[get_weather],
+    system_prompt="你是一个有帮助的助手。",
+    memory=memory
+)
+
+result1 = agent.invoke({
+    "messages": [{"role": "user", "content": "我叫张三"}]
+})
+
+result2 = agent.invoke({
+    "messages": [{"role": "user", "content": "我叫什么名字？"}]
+})
+```
+
+## ConversationSummaryMemory
+
+### 对长对话进行摘要
 
 ```python
 from langchain.memory import ConversationSummaryMemory
 from langchain_openai import ChatOpenAI
 
-llm = ChatOpenAI(model="gpt-4")
+llm = ChatOpenAI(model="gpt-4o")
 
 memory = ConversationSummaryMemory(
     llm=llm,
@@ -144,14 +125,14 @@ memory = ConversationSummaryMemory(
     return_messages=True
 )
 
-for i in range(5):
-    memory.chat_memory.add_user_message(f"这是第{i+1}轮对话，内容涉及项目进度和技术讨论")
+for i in range(10):
+    memory.chat_memory.add_user_message(f"这是第{i+1}轮对话")
 
 summary = memory.load_memory_variables({})
 print(summary["summary"])
 ```
 
-## CombinedMemory（新版本）
+## CombinedMemory
 
 ### 组合多种记忆类型
 
@@ -163,7 +144,7 @@ from langchain.memory import (
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-llm = ChatOpenAI(model="gpt-4")
+llm = ChatOpenAI(model="gpt-4o")
 
 conv_memory = ConversationBufferMemory(
     memory_key="recent_history",
@@ -176,23 +157,22 @@ summary_memory = ConversationSummaryMemory(
     return_messages=True
 )
 
-prompt = ChatPromptTemplate.from_messages([
-    ("system", "你是一个友好的助手。"),
-    MessagesPlaceholder(variable_name="history"),
-    ("system", "对话摘要：{summary}"),
-    ("human", "{input}")
-])
-
-def chat_with_combined_memory(input_text):
+def chat_with_combined_memory(input_text, messages):
     recent_history = conv_memory.load_memory_variables({}).get("history", [])
     summary = summary_memory.load_memory_variables({}).get("summary", "")
 
-    chain = prompt | llm
-    response = chain.invoke({
-        "input": input_text,
-        "history": recent_history,
-        "summary": summary
-    })
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "你是一个友好的助手。"),
+        MessagesPlaceholder(variable_name="history"),
+        ("system", "对话摘要：{summary}"),
+        ("human", "{input}")
+    ])
+
+    response = llm.invoke(prompt.format_messages(
+        history=recent_history,
+        summary=summary,
+        input=input_text
+    ))
 
     conv_memory.chat_memory.add_user_message(input_text)
     conv_memory.chat_memory.add_ai_message(response.content)
@@ -201,20 +181,17 @@ def chat_with_combined_memory(input_text):
 
     return response.content
 
-chat_with_combined_memory("我们公司最近推出了新产品，用户反馈很好")
+chat_with_combined_memory("我们公司最近推出了新产品", [])
 ```
 
-## 向量记忆（新版本）
+## VectorStoreRetrieverMemory
 
-### VectorStoreRetrieverMemory
-
-基于语义检索的记忆：
+### 基于语义检索的记忆
 
 ```python
 from langchain.memory import VectorStoreRetrieverMemory
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
-from langchain_openai import ChatOpenAI
 
 embeddings = OpenAIEmbeddings()
 vectorstore = Chroma(embedding_function=embeddings)
@@ -240,132 +217,44 @@ related = memory.load_memory_variables(
 print(related)
 ```
 
-## 使用 Memory 在 Chain 中
-
-### 直接使用（新版本）
-
-```python
-from langchain.memory import ConversationBufferMemory
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-
-memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-
-prompt = ChatPromptTemplate.from_messages([
-    ("system", "你是一个友好的助手。"),
-    MessagesPlaceholder(variable_name="chat_history"),
-    ("human", "{question}")
-])
-
-def chat(question):
-    history = memory.load_memory_variables({}).get("chat_history", [])
-
-    chain = prompt | ChatOpenAI(model="gpt-4")
-    response = chain.invoke({
-        "question": question,
-        "chat_history": history
-    })
-
-    memory.chat_memory.add_user_message(question)
-    memory.chat_memory.add_ai_message(response.content)
-
-    return response.content
-
-chat("我叫小明，请记住我的名字")
-chat("我叫什么名字？")
-```
-
-### 在 Agent 中使用（新版本）
-
-```python
-from langchain_core.tools import tool
-from langchain_openai import ChatOpenAI
-from langchain import create_conversational_retrieval_agent
-
-llm = ChatOpenAI(model="gpt-4")
-
-memory = ConversationBufferMemory(
-    memory_key="chat_history",
-    return_messages=True
-)
-
-@tool
-def search_tool(query: str) -> str:
-    """搜索工具"""
-    return f"关于'{query}'的搜索结果..."
-
-tools = [search_tool]
-
-agent = create_conversational_retrieval_agent(llm, tools, memory=memory)
-
-agent.invoke({"input": "我叫王五，是一名数据科学家"})
-agent.invoke({"input": "我的职业是什么？"})
-```
-
 ## 持久化记忆
 
-### 使用基础存储
+### 使用 Checkpointer
 
 ```python
-# 导入记忆组件
-from langchain.memory import ConversationBufferMemory
+from langgraph.checkpoint.memory import MemorySaver
 
-# 创建对话缓冲记忆
+checkpointer = MemorySaver()
+
 memory = ConversationBufferMemory(
     memory_key="chat_history",
-    return_messages=True
+    return_messages=True,
+    checkpointer=checkpointer
 )
 
-# 添加对话消息
-memory.chat_memory.add_user_message("你好")
-memory.chat_memory.add_ai_message("你好！")
+config = {"configurable": {"thread_id": "user_123"}}
 
-# 获取消息列表
-# chat_memory.messages 是存储消息的列表
-chat_history = memory.chat_memory.messages
-```
-
-## 记忆与提示词模板
-
-### 自定义带记忆的提示词（新版本）
-
-```python
-from langchain.memory import ConversationBufferMemory
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_openai import ChatOpenAI
-
-memory = ConversationBufferMemory(
-    memory_key="history",
-    return_messages=True
+memory.save_context(
+    {"input": "你好"},
+    {"output": "你好！"}
 )
 
-prompt = ChatPromptTemplate.from_messages([
-    ("system", "你是一个友好的助手。记住之前的对话内容。"),
-    MessagesPlaceholder(variable_name="chat_history"),
-    ("human", "{question}")
-])
-```
-
-## 记忆管理
-
-### 清空记忆
-
-```python
-memory.clear()
-
-memory.chat_memory.messages.clear()
+history = memory.load_memory_variables({})
+print(history)
 ```
 
 ### 保存和加载
 
 ```python
-memory.save_context(
-    {"input": "用户输入"},
-    {"output": "AI输出"}
-)
+import json
 
 vars = memory.load_memory_variables({})
-print(vars)
+with open("memory.json", "w") as f:
+    json.dump(vars, f)
+
+with open("memory.json", "r") as f:
+    loaded = json.load(f)
+    print(loaded)
 ```
 
 ## 最佳实践
@@ -375,8 +264,7 @@ print(vars)
 | **选择合适的类型** | 短对话用 Buffer，长对话用 Summary |
 | **设置 token 限制** | 避免超出模型上下文限制 |
 | **定期清理** | 删除无用记忆 |
-| **持久化存储** | 生产环境使用数据库存储 |
-| **分离关注点** | 使用 CombinedMemory 管理多种记忆 |
+| **持久化存储** | 生产环境使用 checkpointer |
 
 ### 记忆类型选择指南
 
@@ -396,31 +284,12 @@ print(vars)
   │  └── CombinedMemory（组合多种）
 ```
 
-## 常见问题
-
-### Q1：如何限制记忆长度？
+### 限制记忆长度
 
 ```python
 memory = ConversationBufferMemory(
-    max_token_limit=1000
+    max_token_limit=2000
 )
-```
-
-### Q2：如何获取记忆内容？
-
-```python
-vars = memory.load_memory_variables({})
-print(vars["history"])
-```
-
-### Q3：如何持久化记忆？
-
-```python
-import json
-
-vars = memory.load_memory_variables({})
-with open("memory.json", "w") as f:
-    json.dump(vars, f)
 ```
 
 ## 总结

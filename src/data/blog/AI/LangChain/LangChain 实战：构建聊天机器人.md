@@ -1,10 +1,10 @@
 ---
 title: LangChain 实战：构建聊天机器人
 author: Joekma
-pubDatetime: 2026-05-07T00:00:00.000+08:00
-modDatetime: 2026-05-07T00:00:00.000+08:00
-slug: langchain-chatbot实战
-description: '使用LangChain构建完整的聊天机器人应用，包括对话管理、RAG集成和流式输出。'
+pubDatetime: 2026-05-11T00:00:00.000+08:00
+modDatetime: 2026-05-11T00:00:00.000+08:00
+slug: langchain-chatbot-pratice
+description: '使用LangChain v1.0构建完整的聊天机器人应用，包括对话管理和流式输出。'
 tags:
   - LangChain
   - ChatBot
@@ -16,25 +16,25 @@ language: zh-CN
 
 ## 概述
 
-本文将通过一个完整的实战项目，展示如何使用 LangChain 构建功能丰富的聊天机器人。我们将实现一个支持多轮对话、知识库问答和流式输出的智能助手。
+本文将通过一个完整的实战项目，展示如何使用 LangChain v1.0 构建功能丰富的聊天机器人。我们将实现一个支持多轮对话、知识库问答和流式输出的智能助手。
 
 ### 项目架构
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    聊天机器人架构                            │
+│                    聊天机器人架构                             │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
 │   ┌─────────────┐    ┌─────────────┐    ┌─────────────┐   │
 │   │   前端界面   │ ←→ │   API层     │ ←→ │  LangChain  │   │
 │   └─────────────┘    └─────────────┘    └─────────────┘   │
 │                                              │             │
-│                           ┌──────────────────┼──────────┐ │
-│                           │                  │          │ │
-│                           ▼                  ▼          ▼ │
-│                      ┌─────────┐      ┌─────────┐  ┌─────┐│
-│                      │ Memory  │      │  Agent  │  │ RAG ││
-│                      └─────────┘      └─────────┘  └─────┘│
+│                           ┌──────────────────┼──────────┐   │
+│                           │                  │          │   │
+│                           ▼                  ▼          ▼   │
+│                      ┌─────────┐      ┌─────────┐  ┌─────┐ │
+│                      │ Memory  │      │  Agent  │  │ RAG │ │
+│                      └─────────┘      └─────────┘  └─────┘ │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -44,14 +44,11 @@ language: zh-CN
 ### 环境准备
 
 ```bash
-pip install langchain-openai langchain-community
-pip install langchain
-pip install streamlit
-pip install python-dotenv
-pip install chromadb
+pip install langchain langgraph langchain-openai langchain-community
+pip install streamlit python-dotenv chromadb
 ```
 
-## 对话记忆模块（新版本）
+## 对话记忆模块
 
 ```python
 from langchain.memory import ConversationBufferMemory
@@ -69,16 +66,13 @@ class ChatMemory:
         self.memory.chat_memory.add_ai_message(ai_output)
 
     def get_history(self) -> list:
-        return self.memory.load_memory_variables({}).get("chat_history", [])
+        return self.memory.load_memory_variables({}).get("history", [])
 
     def clear(self):
         self.memory.clear()
-
-    def get_messages(self):
-        return self.memory.chat_memory.messages
 ```
 
-## 知识库模块（新版本）
+## 知识库模块
 
 ```python
 from langchain_community.document_loaders import TextLoader
@@ -118,44 +112,12 @@ class KnowledgeBase:
         return docs
 ```
 
-## 聊天链模块（新版本）
+## Agent 模块
 
 ```python
+from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.output_parsers import StrOutputParser
-
-def create_basic_chat_chain():
-    llm = ChatOpenAI(model="gpt-4", temperature=0.7)
-
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", "你是一个友好的AI助手，名字叫小智。"),
-        MessagesPlaceholder(variable_name="history"),
-        ("human", "{question}")
-    ])
-
-    chain = prompt | llm | StrOutputParser()
-    return chain
-
-def chat_with_memory(chain, memory, question):
-    history = memory.get_history()
-
-    response = chain.invoke({
-        "question": question,
-        "history": history
-    })
-
-    memory.save_context(question, response)
-    return response
-```
-
-## Agent 模块（新版本）
-
-```python
 from langchain_core.tools import tool
-from langchain_openai import ChatOpenAI
-from langchain import create_react_agent
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 @tool
 def calculator(expression: str) -> str:
@@ -173,20 +135,34 @@ def date_query(command: str) -> str:
     return datetime.now().strftime("%Y年%m月%d日")
 
 def create_tool_agent():
-    llm = ChatOpenAI(model="gpt-4", temperature=0)
+    llm = ChatOpenAI(model="gpt-4o", temperature=0)
     tools = [calculator, date_query]
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", "你是一个智能助手，可以使用工具来回答问题。"),
-        ("human", "{input}"),
-        MessagesPlaceholder(variable_name="agent_scratchpad")
-    ])
-
-    agent = create_react_agent(llm, tools, prompt)
+    agent = create_agent(
+        model=llm,
+        tools=tools,
+        system_prompt="你是一个智能助手，可以使用工具来回答问题。"
+    )
     return agent
 ```
 
-## 主应用（新版本）
+## 流式输出
+
+```python
+from langchain_openai import ChatOpenAI
+from langchain_core.callbacks import StreamingStdOutCallbackHandler
+
+def create_streaming_chain():
+    llm = ChatOpenAI(
+        model="gpt-4o",
+        streaming=True,
+        callbacks=[StreamingStdOutCallbackHandler()]
+    )
+
+    return llm
+```
+
+## Streamlit 应用
 
 ```python
 import streamlit as st
@@ -218,7 +194,7 @@ with st.sidebar:
 
 st.title("🤖 AI 聊天助手")
 
-for message in st.session_state.memory.get_messages():
+for message in st.session_state.memory.get_history():
     if hasattr(message, "type"):
         with st.chat_message("user" if message.type == "human" else "assistant"):
             st.write(message.content)
@@ -230,50 +206,20 @@ if user_input:
         st.write(user_input)
 
     with st.chat_message("assistant"):
-        if st.session_state.chat_mode == "basic":
-            chain = create_basic_chat_chain()
-            response = chat_with_memory(
-                chain,
-                st.session_state.memory,
-                user_input
-            )
-            st.write(response)
-```
+        if st.session_state.chat_mode == "agent":
+            agent = create_tool_agent()
+            result = agent.invoke({
+                "messages": [{"role": "user", "content": user_input}]
+            })
+            response = result["messages"][-1].content
+        else:
+            llm = ChatOpenAI(model="gpt-4o")
+            history = st.session_state.memory.get_history()
+            messages = history + [{"role": "user", "content": user_input}]
+            response = llm.invoke(messages).content
 
-## 增强功能
-
-### 流式输出
-
-```python
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
-
-def create_streaming_chain():
-    llm = ChatOpenAI(
-        model="gpt-4",
-        streaming=True
-    )
-
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", "你是一个友好的助手"),
-        ("human", "{question}")
-    ])
-
-    chain = prompt | llm
-    return chain
-```
-
-## 性能优化
-
-### 异步处理
-
-```python
-import asyncio
-from langchain_openai import ChatOpenAI
-
-async def async_chat(question: str):
-    chain = create_basic_chat_chain()
-    return await chain.ainvoke({"question": question})
+        st.write(response)
+        st.session_state.memory.save_context(user_input, response)
 ```
 
 ## 测试
@@ -285,22 +231,22 @@ def test_memory():
     history = memory.get_history()
     assert len(history) == 2
 
-def test_basic_chain():
-    chain = create_basic_chat_chain()
-    result = chain.invoke({"question": "Hello", "history": []})
-    assert isinstance(result, str)
-    assert len(result) > 0
+def test_agent():
+    agent = create_tool_agent()
+    result = agent.invoke({
+        "messages": [{"role": "user", "content": "计算 2+3*5"}]
+    })
+    assert result["messages"][-1].content
 ```
 
 ## 总结
 
-本文实现了一个完整的 LangChain 聊天机器人：
+本文实现了一个完整的 LangChain v1.0 聊天机器人：
 
 | 模块 | 功能 |
 |------|------|
 | **memory** | 对话记忆管理 |
 | **knowledge_base** | RAG 知识库 |
-| **chains** | 多种聊天链 |
 | **agents** | 工具调用 Agent |
 
 核心特性：

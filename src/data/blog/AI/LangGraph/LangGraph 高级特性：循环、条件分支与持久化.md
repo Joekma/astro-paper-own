@@ -1,8 +1,8 @@
 ---
 title: LangGraph 高级特性：循环、条件分支与持久化
 author: Joekma
-pubDatetime: 2026-05-07T00:00:00.000+08:00
-modDatetime: 2026-05-07T00:00:00.000+08:00
+pubDatetime: 2026-05-11T00:00:00.000+08:00
+modDatetime: 2026-05-11T00:00:00.000+08:00
 slug: langgraph-advanced-features
 description: '深入讲解LangGraph高级特性，包括循环控制、条件分支、状态持久化和人机交互。'
 tags:
@@ -22,18 +22,18 @@ LangGraph 的高级特性使其成为构建复杂 LLM 应用的理想选择。�
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                  LangGraph 高级特性                          │
+│                  LangGraph 高级特性                            │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
-│  │    循环     │  │  条件分支   │  │   持久化    │          │
-│  │  Control   │  │  Branching │  │ Persist    │          │
-│  └─────────────┘  └─────────────┘  └─────────────┘          │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
+│  │    循环     │  │  条件分支   │  │   持久化    │        │
+│  │  Control   │  │  Branching │  │ Persist    │        │
+│  └─────────────┘  └─────────────┘  └─────────────┘        │
 │                                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
-│  │   错误处理  │  │   子图调用  │  │  人机交互   │          │
-│  │ Error Hand │  │ Subgraph   │  │ Human in L │          │
-│  └─────────────┘  └─────────────┘  └─────────────┘          │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
+│  │   错误处理  │  │   子图调用  │  │  人机交互   │        │
+│  │ Error Hand │  │ Subgraph   │  │ Human in L │        │
+│  └─────────────┘  └─────────────┘  └─────────────┘        │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -53,17 +53,17 @@ class LoopState(TypedDict):
 def increment(state: LoopState):
     return {"counter": state["counter"] + 1}
 
-def should_continue(state: LoopState) -> Literal["increment", "done"]:
+def should_continue(state: LoopState) -> Literal["increment", "__end__"]:
     if state["counter"] < 5:
         return "increment"
-    return "done"
+    return "__end__"
 
 graph = StateGraph(LoopState)
 graph.add_node("increment", increment)
 graph.add_edge(START, "increment")
 graph.add_conditional_edges("increment", should_continue, {
     "increment": "increment",
-    "done": END
+    "__end__": END
 })
 app = graph.compile()
 ```
@@ -145,12 +145,12 @@ graph.add_conditional_edges("route", route_based_on_value)
 ```python
 from typing import Literal, Union
 
-def complex_router(state: BranchState) -> Literal["path_a", "path_b", "path_c", "end"]:
+def complex_router(state: BranchState) -> Literal["path_a", "path_b", "path_c", "__end__"]:
     value = state.get("value", 0)
     status = state.get("status", "pending")
 
     if status == "completed":
-        return "end"
+        return "__end__"
     if value > 100 and status == "active":
         return "path_a"
     if value > 50:

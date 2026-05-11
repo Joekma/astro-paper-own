@@ -1,10 +1,10 @@
 ---
 title: LangChain Retrieval：检索增强生成(RAG)
 author: Joekma
-pubDatetime: 2026-05-07T00:00:00.000+08:00
-modDatetime: 2026-05-07T00:00:00.000+08:00
+pubDatetime: 2026-05-11T00:00:00.000+08:00
+modDatetime: 2026-05-11T00:00:00.000+08:00
 slug: langchain-retrieval-rag
-description: '深入讲解LangChain的Retrieval模块，包括文档加载、文本分割、向量存储和检索器实现RAG应用。'
+description: '深入讲解LangChain v1.0的Retrieval模块，包括文档加载、文本分割、向量存储和检索器实现RAG。'
 tags:
   - LangChain
   - RAG
@@ -34,13 +34,13 @@ Retrieval（检索）是 LangChain 中实现检索增强生成（Retrieval-Augme
 │                      RAG 工作流程                            │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
-│  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌────────┐ │
-│  │  文档加载  │ → │  文本分割  │ → │  向量化  │ → │  存储   │ │
-│  └──────────┘   └──────────┘   └──────────┘   └────────┘ │
+│  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌────────┐   │
+│  │  文档加载  │ → │  文本分割  │ → │  向量化  │ → │  存储   │   │
+│  └──────────┘   └──────────┘   └──────────┘   └────────┘   │
 │                                                              │
-│  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌────────┐ │
-│  │  用户查询  │ → │  检索相关  │ → │  构建提示 │ → │  生成  │ │
-│  └──────────┘   └──────────┘   └──────────┘   └────────┘ │
+│  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌────────┐   │
+│  │  用户查询  │ → │  检索相关  │ → │  构建提示 │ → │  生成  │   │
+│  └──────────┘   └──────────┘   └──────────┘   └────────┘   │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -95,34 +95,17 @@ for doc in documents:
 | **CharacterTextSplitter** | 按字符分割 | 简单文本 |
 | **RecursiveCharacterTextSplitter** | 递归字符分割 | 通用场景 |
 | **TokenTextSplitter** | 按 Token 分割 | 控制上下文长度 |
-| **MarkdownTextSplitter** | Markdown 分割 | Markdown 文档 |
 
 ### 基础分割
 
 ```python
-from langchain.text_splitter import (
-    CharacterTextSplitter,
-    RecursiveCharacterTextSplitter
-)
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 splitter = RecursiveCharacterTextSplitter(
     chunk_size=1000,
     chunk_overlap=200,
     length_function=len,
     separators=["\n\n", "\n", " ", ""]
-)
-
-docs = splitter.split_documents(documents)
-```
-
-### 按 Token 分割
-
-```python
-from langchain.text_splitter import TokenTextSplitter
-
-splitter = TokenTextSplitter(
-    chunk_size=500,
-    chunk_overlap=50
 )
 
 docs = splitter.split_documents(documents)
@@ -210,79 +193,79 @@ retriever = vectorstore.as_retriever(
 )
 ```
 
-## RAG Chain 实现（新版本）
+## RAG Chain 实现
 
 ### 基础 RAG
 
 ```python
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
-from langchain.chains.retrieval import create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_core.runnables import RunnablePassthrough
 
-retriever = vectorstore.as_retriever(k=5)
+llm = ChatOpenAI(model="gpt-4o")
 
-prompt = PromptTemplate.from_template(
-    """基于以下上下文回答问题：
+def format_docs(docs):
+    return "\n\n".join([d.page_content for d in docs])
 
-    上下文：
-    {context}
-
-    问题：{input}
-
-    回答："""
-)
-
-combine_docs_chain = create_stuff_documents_chain(llm, prompt)
-rag_chain = create_retrieval_chain(retriever, combine_docs_chain)
-
-result = rag_chain.invoke({"input": "用户问题"})
-print(result["answer"])
-```
-
-### 带历史记录的 RAG（新版本）
-
-```python
-from langchain.memory import ConversationBufferMemory
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.messages import HumanMessage, AIMessage
-
-memory = ConversationBufferMemory(
-    memory_key="chat_history",
-    return_messages=True
-)
-
-def chat_with_history(question):
-    history = memory.load_memory_variables({}).get("chat_history", [])
-
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", "你是一个有帮助的助手。"),
-        MessagesPlaceholder(variable_name="chat_history"),
-        ("human", "{input}")
-    ])
-
-    retrieved_docs = retriever.invoke(question)
-
-    context = "\n\n".join([doc.page_content for doc in retrieved_docs])
-
-    context_prompt = PromptTemplate.from_template(
+rag_chain = (
+    {"context": retriever | format_docs, "question": RunnablePassthrough()}
+    | PromptTemplate.from_template(
         """基于以下上下文回答问题：
 
         上下文：
         {context}
 
-        问题：{input}
+        问题：{question}
+
+        回答："""
+    )
+    | llm
+)
+
+result = rag_chain.invoke("用户问题")
+```
+
+### 带历史记录的 RAG
+
+```python
+from langchain.memory import ConversationBufferMemory
+
+memory = ConversationBufferMemory(
+    memory_key="chat_history",
+    return_messages=True,
+    output_key="answer"
+)
+
+def chat_with_history(question):
+    history = memory.load_memory_variables({}).get("chat_history", [])
+
+    retrieved_docs = retriever.invoke(question)
+    context = "\n\n".join([doc.page_content for doc in retrieved_docs])
+
+    prompt = PromptTemplate.from_template(
+        """基于以下上下文和对话历史回答问题：
+
+        对话历史：
+        {chat_history}
+
+        上下文：
+        {context}
+
+        问题：{question}
 
         回答："""
     )
 
-    response = (context_prompt | llm).invoke({
-        "context": context,
-        "input": question
-    })
+    response = llm.invoke(prompt.format_messages(
+        chat_history=history,
+        context=context,
+        question=question
+    ))
 
-    memory.chat_memory.add_user_message(question)
-    memory.chat_memory.add_ai_message(response.content)
+    memory.save_context(
+        {"question": question},
+        {"answer": response.content}
+    )
 
     return response.content
 
@@ -317,19 +300,6 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 
 embeddings = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
-)
-```
-
-## 性能优化
-
-### 检索优化
-
-```python
-retriever = vectorstore.as_retriever(
-    search_kwargs={
-        "k": 10,
-        "filter": {...}
-    }
 )
 ```
 

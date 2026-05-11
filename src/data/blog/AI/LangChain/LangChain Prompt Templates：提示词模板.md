@@ -1,10 +1,10 @@
 ---
 title: LangChain Prompt Templates：提示词模板
 author: Joekma
-pubDatetime: 2026-05-07T00:00:00.000+08:00
-modDatetime: 2026-05-07T00:00:00.000+08:00
+pubDatetime: 2026-05-11T00:00:00.000+08:00
+modDatetime: 2026-05-11T00:00:00.000+08:00
 slug: langchain-prompt-templates
-description: '深入讲解LangChain提示词模板，包括PromptTemplate、ChatPromptTemplate、动态模板和最佳实践。'
+description: '深入讲解LangChain v1.0提示词模板，包括PromptTemplate、ChatPromptTemplate和动态模板。'
 tags:
   - LangChain
   - Prompt
@@ -32,57 +32,28 @@ language: zh-CN
 ### 基础用法
 
 ```python
-# 导入PromptTemplate类
 from langchain_core.prompts import PromptTemplate
 
-# 从模板字符串创建PromptTemplate
-# {text}是占位符，会在invoke时被实际值替换
 template = PromptTemplate.from_template("请将以下中文翻译成英文：{text}")
 
-# 使用invoke方法填充模板中的占位符
-prompt = template.invoke({
-    "text": "今天天气真好"
-})
-
-# 打印填充后的提示词字符串
+prompt = template.invoke({"text": "今天天气真好"})
 print(prompt.to_string())
-```
-
-### 模板输出类型
-
-```python
-# to_string(): 将模板转换为字符串格式
-prompt_str = template.invoke({"text": "AI"})
-print(prompt_str.to_string())
-
-# to_messages(): 将模板转换为消息列表格式
-# 返回HumanMessage对象列表，适合发送给聊天模型
-prompt_messages = template.invoke({"text": "AI"})
-print(prompt_messages.to_messages())
 ```
 
 ### 部分变量填充
 
 ```python
-# 导入PromptTemplate类
 from langchain_core.prompts import PromptTemplate
 
-# 创建模板，定义多个变量
 template = PromptTemplate(
     template="写一篇关于{topic}的{style}文章。",
     input_variables=["topic", "style"]
 )
 
-# partial(): 部分填充变量，生成新模板
-# 新模板只保留未填充的变量
 partial_template = template.partial(topic="人工智能")
 
-# 调用部分填充后的模板，只需提供剩余变量
 prompt = partial_template.invoke({"style": "技术博客"})
 print(prompt.to_string())
-
-# 也可以直接对模板进行部分填充
-template = template.partial(style="科普文章")
 ```
 
 ### 默认值模板
@@ -105,6 +76,7 @@ template = PromptTemplate.from_template(
 )
 
 prompt = template.invoke({"text": "Python是一门优秀的编程语言"})
+print(prompt.to_string())
 ```
 
 ## ChatPromptTemplate
@@ -135,6 +107,7 @@ print(prompt.to_messages())
 | **SystemMessage** | 系统角色 | 设置AI行为和身份 |
 | **HumanMessage** | 用户输入 | 用户的问题或指令 |
 | **AIMessage** | AI回复 | 预设的回复内容 |
+| **ToolMessage** | 工具结果 | 工具调用的返回值 |
 
 ```python
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
@@ -204,75 +177,34 @@ print(prompt.to_string())
 ### 示例选择器
 
 ```python
-# 导入语义相似度示例选择器
 from langchain_core.prompts import FewShotPromptTemplate, PromptTemplate
 from langchain_core.example_selectors import SemanticSimilarityExampleSelector
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 
-# 定义示例库
 examples = [
     {"input": "今天心情很好", "output": "happy"},
     {"input": "考试没考好很难过", "output": "sad"},
-    {"input": "收到礼物很开心", "output": "happy"},
-    {"input": "生病了很不舒服", "output": "sad"},
 ]
 
-# 创建语义相似度选择器
-# 会根据输入自动选择最相关的示例
 example_selector = SemanticSimilarityExampleSelector.from_examples(
-    examples=examples,                    # 示例库
-    embeddings=OpenAIEmbeddings(),        # 嵌入模型
-    vectorstore_cls=Chroma,              # 向量存储
-    k=2                                  # 选择2个最相关的示例
+    examples=examples,
+    embeddings=OpenAIEmbeddings(),
+    vectorstore_cls=Chroma,
+    k=2
 )
 
-# 创建Few-Shot模板，使用选择器代替固定示例
 few_shot_prompt = FewShotPromptTemplate(
-    example_selector=example_selector,    # 动态示例选择器
+    example_selector=example_selector,
     example_prompt=PromptTemplate.from_template(
         "中文：{input} -> 情感：{output}"
     ),
-    prefix="判断以下句子的情感：",        # 前缀提示
-    suffix="中文：{sentence} -> 情感：",  # 后缀，用户输入位置
+    prefix="判断以下句子的情感：",
+    suffix="中文：{sentence} -> 情感：",
     input_variables=["sentence"]
 )
 
-# 根据输入自动选择相关示例并生成提示词
-prompt = few_shot_prompt.invoke({
-    "sentence": "中彩票了，太高兴了！"
-})
-```
-
-## 管道模板
-
-### 组合多个模板
-
-```python
-from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
-
-analysis_template = PromptTemplate.from_template(
-    "分析这个问题：{question}\n关键点："
-)
-
-answer_template = PromptTemplate.from_template(
-    """基于以下分析回答问题：
-
-    分析：{analysis}
-
-    问题：{question}
-
-    回答："""
-)
-
-analysis_prompt = analysis_template.invoke({"question": "什么是AI？"})
-print(analysis_prompt.to_string())
-
-answer_prompt = answer_template.invoke({
-    "analysis": "用户想了解AI的基本概念",
-    "question": "什么是AI？"
-})
-print(answer_prompt.to_string())
+prompt = few_shot_prompt.invoke({"sentence": "中彩票了，太高兴了！"})
 ```
 
 ## 动态模板
@@ -341,102 +273,68 @@ prompt = template.invoke({
 print(prompt.to_string())
 ```
 
-## 模板继承和扩展
-
-### 基础模板复用
+## 与 Agent 结合
 
 ```python
-from langchain_core.prompts import PromptTemplate
+from langchain.agents import create_agent
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-base_template = """你是一个AI助手。请回答用户的问题。
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "你是一个{role}。"),
+    MessagesPlaceholder(variable_name="chat_history", optional=True),
+    ("human", "{input}"),
+    MessagesPlaceholder(variable_name="agent_scratchpad", optional=True)
+])
 
-问题：{question}
-回答："""
-
-extended_template = base_template + "\n\n请用简洁专业的语言回答。"
-
-template = PromptTemplate.from_template(extended_template)
+agent = create_agent(
+    model=ChatOpenAI(model="gpt-4o"),
+    tools=[],
+    system_prompt="你是一个有帮助的助手。"  # 也可以通过 prompt 参数传入
+)
 ```
 
 ## 最佳实践
 
-### 1. 结构化提示词
+| 实践 | 说明 |
+|------|------|
+| **结构化提示词** | 将提示词分成角色、任务、格式等部分 |
+| **分离可变部分** | 使用 partial_variables 分离固定内容 |
+| **包含示例** | Few-Shot 提升输出质量 |
+| **版本控制** | 为提示词添加版本标识 |
+
+### 结构化提示词示例
 
 ```python
-template = PromptTemplate.from_template("""任务：{task}
+from langchain_core.prompts import ChatPromptTemplate
+
+system_template = """你是一个专业的{profession}。
 
 背景信息：
 {background}
 
 要求：
-{requirements}
+1. 回答要准确专业
+2. 如有不确定，请明确说明
+3. 适当使用示例说明"""
 
-输入：
-{input}
+user_template = """请分析以下{topic}：
 
-输出：""")
-```
+{content}
 
-### 2. 分离可变和固定部分
+请提供详细分析。"""
 
-```python
-fixed_instructions = PromptTemplate.from_template(
-    "你是一个{profession}专家，遵循专业规范回答问题。",
-    partial_variables={"profession": "Python编程"}
-)
-```
+prompt = ChatPromptTemplate.from_messages([
+    ("system", system_template),
+    ("human", user_template)
+])
 
-### 3. 版本控制提示词
-
-```python
-template = PromptTemplate.from_template(
-    """[v2.0] 请按照以下格式回答：
-
-    格式：{format}
-
-    内容：{content}"""
-)
-```
-
-### 提示词模板检查清单
-
-| 检查项 | 说明 |
-|--------|------|
-| ✅ 定义所有必需变量 | 确保 input_variables 完整 |
-| ✅ 设置默认值 | 减少调用时参数 |
-| ✅ 添加格式约束 | 配合 OutputParser 使用 |
-| ✅ 使用描述性变量名 | 提高可读性 |
-| ✅ 包含示例 | Few-Shot 提升效果 |
-
-## 常见问题
-
-### Q1：如何调试模板？
-
-```python
-template = PromptTemplate.from_template("Hello {name}!")
-prompt = template.invoke({"name": "World"})
-print(prompt.to_string())
-```
-
-### Q2：如何处理可选变量？
-
-```python
-template = PromptTemplate.from_template(
-    "分析{topic}，难度：{level}",
-    partial_variables={"level": "中等"}
-)
-```
-
-### Q3：如何在模板中使用条件逻辑？
-
-```python
-def create_prompt(topic: str, include_examples: bool):
-    base = f"解释{topic}的概念。"
-    if include_examples:
-        base += "\n\n例如："
-        base += "\n- 示例1"
-        base += "\n- 示例2"
-    return PromptTemplate.from_template(base)
+formatted_prompt = prompt.invoke({
+    "profession": "数据分析师",
+    "background": "用户正在学习数据分析技能",
+    "topic": "Python数据分析",
+    "content": "Pandas库的主要功能有哪些？"
+})
 ```
 
 ## 总结
@@ -446,6 +344,6 @@ def create_prompt(topic: str, include_examples: bool):
 | **PromptTemplate** | 简单文本提示 |
 | **ChatPromptTemplate** | 对话场景 |
 | **FewShotPromptTemplate** | 需要示例的任务 |
-| **自定义模板** | 复杂逻辑需求 |
+| **MessagesPlaceholder** | 动态插入消息历史 |
 
 掌握提示词模板可以让你的 LLM 应用更加灵活和可维护。
