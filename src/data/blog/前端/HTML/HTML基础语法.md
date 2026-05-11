@@ -14,6 +14,8 @@ tags:
   - SEO优化
   - Web开发
 description: '系统讲解HTML基础语法，涵盖文档结构、标签语法、属性、语义化标签、SEO基础等核心知识'
+series: HTML
+language: zh-CN
 ---
 
 > HTML（超文本标记语言）是构建网页的基础。

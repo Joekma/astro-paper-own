@@ -12,6 +12,8 @@ tags:
   - Web
   - 编程
 description: 'JavaScript常用操作，包括字符串、数组、日期、正则等核心API'
+series: JavaScript
+language: zh-CN
 ---
 
 > JavaScript 提供了丰富的内置对象和 API，用于处理各种数据类型和操作。

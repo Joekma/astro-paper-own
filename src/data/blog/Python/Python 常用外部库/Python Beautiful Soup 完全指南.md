@@ -11,6 +11,8 @@ tags:
   - Beautiful Soup
   - docs
 description: Beautiful Soup 完全指南，Python 强大的 HTML/XML 解析库，涵盖解析器选择、文档遍历、搜索过滤等核心功能。
+series: python
+language: zh-CN
 ---
 
 # Python Beautiful Soup 完全指南

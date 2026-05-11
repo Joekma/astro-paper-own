@@ -11,6 +11,7 @@ tags:
   - 面向对象
   - docs
 description: 深入理解 Python 面向对象设计思想，掌握类、对象、属性、方法等核心概念，学会用面向对象的思维去设计程序。
+series: python
 language: zh-CN
 ---
 

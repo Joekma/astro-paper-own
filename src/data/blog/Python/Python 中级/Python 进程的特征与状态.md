@@ -10,6 +10,8 @@ tags:
   - Python
   - 进程管理
 description: '深入讲解Python进程的特征与状态，涵盖进程特征、进程调度算法、进程控制块（PCB）等核心概念。'
+series: python
+language: zh-CN
 ---
 
 # Python 进程的特征与状态   

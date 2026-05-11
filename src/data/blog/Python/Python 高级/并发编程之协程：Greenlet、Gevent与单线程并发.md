@@ -1,5 +1,7 @@
 ---
 title: 并发编程之协程：Greenlet、Gevent与单线程并发
+series: Python
+language: zh-CN
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: python-coroutine-greenlet-gevent

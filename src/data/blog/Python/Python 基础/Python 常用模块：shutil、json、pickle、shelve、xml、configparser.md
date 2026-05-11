@@ -14,6 +14,7 @@ tags:
   - xml
   - configparser
 draft: false
+series: python
 language: zh-CN
 ---
 

@@ -11,6 +11,7 @@ tags:
   - 类型系统
   - JavaScript 超集
 draft: false
+series: TypeScript
 language: zh-CN
 ---
 

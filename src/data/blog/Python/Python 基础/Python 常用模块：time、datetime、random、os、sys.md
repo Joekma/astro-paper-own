@@ -13,6 +13,7 @@ tags:
   - os
   - sys
 draft: false
+series: python
 language: zh-CN
 ---
 

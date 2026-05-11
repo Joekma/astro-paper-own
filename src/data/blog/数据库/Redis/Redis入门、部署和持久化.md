@@ -12,6 +12,8 @@ tags:
   - 入门
   - 缓存
 description: 'Redis入门，部署和持久化介绍'
+series: Redis
+language: zh-CN
 ---
 
 > Redis 是基于内存的高性能键值存储数据库，支持多种数据结构，广泛用于缓存、消息队列等场景。

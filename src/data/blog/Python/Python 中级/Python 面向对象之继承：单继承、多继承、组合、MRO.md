@@ -11,6 +11,7 @@ tags:
   - 面向对象
   - 继承
 description: '深入讲解Python面向对象中的继承，掌握单继承、多继承、组合、MRO等核心概念，学会运用继承实现代码复用。'
+series: python
 language: zh-CN
 ---
 

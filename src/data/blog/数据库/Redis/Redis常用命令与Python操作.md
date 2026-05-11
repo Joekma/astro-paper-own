@@ -11,6 +11,8 @@ tags:
   - 数据库
   - Python
 description: 'Redis常用命令和Python操作Redis的方法'
+series: Redis
+language: zh-CN
 ---
 
 > Redis 操作包括命令和 Python 接口。

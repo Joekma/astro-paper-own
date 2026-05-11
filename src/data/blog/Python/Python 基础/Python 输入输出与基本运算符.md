@@ -11,6 +11,7 @@ tags:
   - 运算符
   - 数据类型
 draft: false
+series: python
 language: zh-CN
 ---
 

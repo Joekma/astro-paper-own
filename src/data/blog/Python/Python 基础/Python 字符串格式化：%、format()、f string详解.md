@@ -11,6 +11,7 @@ tags:
   - f-string
   - format
 draft: false
+series: python
 language: zh-CN
 ---
 

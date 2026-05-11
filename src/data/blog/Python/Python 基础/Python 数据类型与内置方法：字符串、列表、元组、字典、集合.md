@@ -14,6 +14,7 @@ tags:
   - 字典
   - 集合
 draft: false
+series: python
 language: zh-CN
 ---
 

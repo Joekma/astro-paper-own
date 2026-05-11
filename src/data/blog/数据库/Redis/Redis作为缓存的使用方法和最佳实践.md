@@ -11,6 +11,8 @@ tags:
   - 数据库
   - 缓存
 description: 'Redis作为缓存的使用方法和最佳实践'
+series: Redis
+language: zh-CN
 ---
 
 > Redis 常用于缓存加速应用。

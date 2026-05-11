@@ -13,6 +13,8 @@ tags:
   - docs
 description: SQLAlchemy ORM 框架完全指南，涵盖数据库连接、一对多/多对多关系、增删查改等核心功能。
 
+series: python
+language: zh-CN
 ---
 
 # Python SQLAlchemy ORM 框架完全指南

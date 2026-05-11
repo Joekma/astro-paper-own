@@ -13,6 +13,7 @@ tags:
   - re
   - collections
 draft: false
+series: python
 language: zh-CN
 ---
 

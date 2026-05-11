@@ -11,6 +11,8 @@ tags:
   - NumPy
   - docs
 description: NumPy 完全指南，涵盖 ndarray 数据结构、数组创建、索引切片、通用函数等核心内容。
+series: python
+language: zh-CN
 ---
 
 # NumPy 完全指南 - 数组计算与数据分析

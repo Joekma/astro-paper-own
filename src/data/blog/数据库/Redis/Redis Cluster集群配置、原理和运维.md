@@ -11,6 +11,8 @@ tags:
   - 数据库
   - 集群
 description: 'Redis Cluster集群配置、原理和运维'
+series: Redis
+language: zh-CN
 ---
 
 ## 概述

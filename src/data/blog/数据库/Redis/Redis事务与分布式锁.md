@@ -12,6 +12,8 @@ tags:
   - 事务
   - 锁
 description: 'Redis事务和锁机制，包括MULTI/EXEC和分布式锁实现'
+series: Redis
+language: zh-CN
 ---
 
 ## 概述

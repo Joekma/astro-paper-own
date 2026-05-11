@@ -13,6 +13,8 @@ tags:
   - RDB
   - AOF
 description: 'Redis持久化机制，RDB和AOF详解'
+series: Redis
+language: zh-CN
 ---
 
 > Redis 持久化是保证数据安全的关键机制，RDB 和 AOF 是两种主要的持久化方式，各有优缺点。

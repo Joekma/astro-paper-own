@@ -12,6 +12,7 @@ tags:
   - 单例模式
   - type
 draft: false
+series: python
 language: zh-CN
 ---
 

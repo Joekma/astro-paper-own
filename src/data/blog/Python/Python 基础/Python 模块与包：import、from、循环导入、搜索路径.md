@@ -12,6 +12,7 @@ tags:
   - import
   - 作用域
 draft: false
+series: python
 language: zh-CN
 ---
 

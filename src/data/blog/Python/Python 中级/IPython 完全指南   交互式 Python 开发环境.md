@@ -11,6 +11,7 @@ tags:
   - 交互式开发
 category: Python中级
 draft: false
+series: python
 language: zh-CN
 ---
 

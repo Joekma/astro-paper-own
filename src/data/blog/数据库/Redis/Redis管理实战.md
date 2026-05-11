@@ -11,6 +11,8 @@ tags:
   - 数据库
   - 运维
 description: 'Redis管理运维实战经验，包含配置优化、监控和安全'
+series: Redis
+language: zh-CN
 ---
 
 ## 概述

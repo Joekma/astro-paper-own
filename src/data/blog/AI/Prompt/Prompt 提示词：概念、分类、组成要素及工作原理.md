@@ -1,4 +1,4 @@
-﻿---
+---
 title: Prompt 提示词：概念、分类、组成要素及工作原理
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
@@ -11,6 +11,8 @@ tags:
   - Prompt
   - LLM
 description: '深入理解Prompt提示词的概念、分类、组成要素及其工作原理。'
+series: Prompt
+language: zh-CN
 ---
 
 ## Table of contents

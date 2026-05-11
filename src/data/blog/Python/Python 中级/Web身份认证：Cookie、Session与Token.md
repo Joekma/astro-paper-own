@@ -14,6 +14,8 @@ tags:
   - Token
   - JWT
 description: 'Web身份认证技术详解，包括Cookie、Session、Token原理和JWT实现'
+series: python
+language: zh-CN
 ---
 
 > Web身份认证是Web开发的核心技术，本文详细介绍Cookie、Session、Token的原理和实践。

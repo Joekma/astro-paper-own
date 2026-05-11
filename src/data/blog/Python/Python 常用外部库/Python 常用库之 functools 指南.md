@@ -12,6 +12,8 @@ tags:
   - docs
 description: Python functools 模块完全指南，详解 partial 偏函数和 wraps 装饰器保留元信息的最佳实践。
 
+series: python
+language: zh-CN
 ---
 
 # Python 常用库之 functools 指南

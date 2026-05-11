@@ -13,6 +13,8 @@ tags:
   - re模块
   - 文件读写
 description: '利用Python简单处理文本，涵盖字符串切割、文本格式化、文件读写、正则替换（re.sub）、strip删除字符等基础操作和实战技巧。'
+series: python
+language: zh-CN
 ---
 
 # Python 简单处理文本

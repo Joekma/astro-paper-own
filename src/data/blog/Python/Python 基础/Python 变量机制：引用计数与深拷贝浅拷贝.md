@@ -13,6 +13,7 @@ tags:
   - 浅拷贝
   - LEGB
 draft: false
+series: python
 language: zh-CN
 ---
 

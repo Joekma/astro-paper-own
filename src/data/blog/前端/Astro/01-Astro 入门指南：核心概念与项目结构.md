@@ -11,6 +11,7 @@ tags:
   - 静态站点
   - SSG
 draft: false
+series: Astro
 language: zh-CN
 ---
 

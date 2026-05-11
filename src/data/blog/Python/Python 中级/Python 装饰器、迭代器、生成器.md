@@ -11,6 +11,7 @@ tags:
   - 迭代器
   - 生成器
 draft: false
+series: python
 language: zh-CN
 ---
 

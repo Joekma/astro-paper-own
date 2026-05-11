@@ -1,5 +1,7 @@
 ---
 title: 微信支付 Python 接入指南
+series: Python
+language: zh-CN
 author: Joekma
 pubDatetime: 2024-08-12T00:00:00Z
 slug: wechat-pay-python-integration-guide

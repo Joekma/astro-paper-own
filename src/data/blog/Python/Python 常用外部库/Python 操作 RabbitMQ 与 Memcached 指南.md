@@ -13,6 +13,8 @@ tags:
   - docs
 description: Python 操作 RabbitMQ 消息队列与 Memcached 缓存的完整指南，涵盖安装、队列模型、发布订阅等核心功能。
 
+series: python
+language: zh-CN
 ---
 
 # Python 操作 RabbitMQ 与 Memcached 指南

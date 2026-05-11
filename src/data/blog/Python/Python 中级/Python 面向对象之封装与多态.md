@@ -11,6 +11,7 @@ tags:
   - 封装
   - 多态
 draft: false
+series: python
 language: zh-CN
 ---
 

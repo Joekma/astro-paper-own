@@ -11,6 +11,8 @@ tags:
   - MySQL
   - docs
 description: PyMySQL 模块详解与 MySQL 权限管理指南。
+series: python
+language: zh-CN
 ---
 
 # Python MySQL权限管理、PyMySQL模块

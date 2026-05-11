@@ -16,6 +16,8 @@ tags:
   - 动画
   - Web开发
 description: '系统讲解JavaScript DOM和BOM核心知识，包含DOM节点操作、BOM对象模型、盒模型、事件模型、requestAnimationFrame动画等'
+series: JavaScript
+language: zh-CN
 ---
 
 > JavaScript 通过 DOM 和 BOM 两大对象模型与浏览器进行交互。

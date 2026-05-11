@@ -11,6 +11,8 @@ tags:
   - Django
   - docs
 description: Django Haystack 全文搜索框架完整指南，支持 Solr、Elasticsearch、Whoosh 等多种后端。
+series: python
+language: zh-CN
 ---
 
 # Haystack Complete Guide - Django Full-Text Search Framework

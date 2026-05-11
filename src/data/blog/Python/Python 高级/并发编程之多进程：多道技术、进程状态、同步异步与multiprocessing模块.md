@@ -1,5 +1,7 @@
 ---
 title: 并发编程之多进程：多道技术、进程状态、同步异步与multiprocessing模块
+series: Python
+language: zh-CN
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: python-multi-process-multiprocessing

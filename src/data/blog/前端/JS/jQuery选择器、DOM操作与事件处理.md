@@ -15,6 +15,8 @@ tags:
   - AJAX
   - Web开发
 description: '全面的jQuery详解，涵盖选择器、DOM操作、CSS操作、事件处理、动画效果和AJAX交互，助你快速掌握jQuery核心技能'
+series: JavaScript
+language: zh-CN
 ---
 
 > jQuery 是一个快速、简洁的 JavaScript 库，简化了 HTML 文档遍历、事件处理和动画等操作。

@@ -12,6 +12,7 @@ tags:
   - 垃圾回收
 category: Python中级
 draft: false
+series: python
 language: zh-CN
 ---
 

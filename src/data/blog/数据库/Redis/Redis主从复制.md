@@ -11,6 +11,8 @@ tags:
   - 数据库
   - 主从复制
 description: 'Redis主从复制配置、原理和实战'
+series: Redis
+language: zh-CN
 ---
 
 ## 概述

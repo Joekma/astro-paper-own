@@ -13,6 +13,8 @@ tags:
   - IO模型
   - 高性能
 description: 'Python网络编程完整指南，涵盖Socket套接字、IO模型、并发编程和异步实现'
+series: python
+language: zh-CN
 ---
 
 > 网络编程是服务端开发的核心技术，本文详细介绍Socket编程、IO模型对比和异步高性能实现。

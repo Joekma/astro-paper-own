@@ -11,6 +11,7 @@ tags:
   - 配置文件
 category: 其他
 draft: false
+series: python
 language: zh-CN
 ---
 

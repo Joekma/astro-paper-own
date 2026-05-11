@@ -12,6 +12,7 @@ tags:
   - 作用域
   - 命名空间
 draft: false
+series: python
 language: zh-CN
 ---
 

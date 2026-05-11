@@ -12,6 +12,8 @@ tags:
   - Web
   - 高级
 description: 'JavaScript高级语法，包括原型链、闭包、作用域链和DOM选择器'
+series: JavaScript
+language: zh-CN
 ---
 
 > JavaScript 高级特性包括原型链、闭包、作用域等。

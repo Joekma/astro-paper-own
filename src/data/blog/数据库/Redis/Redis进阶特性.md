@@ -11,6 +11,8 @@ tags:
   - 数据库
   - NoSQL
 description: 'Redis进阶特性，包括管道、事务、Lua脚本等'
+series: Redis
+language: zh-CN
 ---
 
 > Redis 进阶特性提升性能和功能。

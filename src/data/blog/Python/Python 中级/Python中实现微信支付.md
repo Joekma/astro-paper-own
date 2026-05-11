@@ -11,6 +11,8 @@ tags:
   - 微信支付
   - docs
 description: Python中实现微信支付，涵盖扫码支付、JSAPI支付、支付回调等核心流程。
+series: python
+language: zh-CN
 ---
 
 # Python中实现微信支付

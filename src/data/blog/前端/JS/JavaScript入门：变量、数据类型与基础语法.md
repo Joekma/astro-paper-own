@@ -14,6 +14,8 @@ tags:
   - 数据类型
   - Web开发
 description: 'JavaScript入门，讲解变量声明（var/let/const）、数据类型、运算符、控制结构等核心基础，快速掌握JavaScript编程基础'
+series: JavaScript
+language: zh-CN
 ---
 
 > JavaScript 是 Web 开发的核心语言。

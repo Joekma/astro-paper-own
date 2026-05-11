@@ -12,6 +12,7 @@ tags:
   - 语法
 category: 前端
 draft: false
+series: JavaScript
 language: zh-CN
 ---
 

@@ -11,6 +11,8 @@ tags:
   - Pillow
   - docs
 description: Pillow 图像处理库完全指南，涵盖图片打开、缩放、滤镜、验证码生成等常用操作。
+series: python
+language: zh-CN
 
 ---
 

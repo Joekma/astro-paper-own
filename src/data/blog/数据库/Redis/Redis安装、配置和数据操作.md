@@ -12,6 +12,8 @@ tags:
   - NoSQL
   - 缓存
 description: 'Redis安装配置和基本数据操作'
+series: Redis
+language: zh-CN
 ---
 
 > Redis 是高性能的内存键值存储数据库，广泛用于缓存、消息队列、排行榜等场景。

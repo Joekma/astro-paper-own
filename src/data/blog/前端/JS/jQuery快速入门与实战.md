@@ -15,6 +15,8 @@ tags:
   - AJAX
   - Web开发
 description: 'jQuery快速入门，通过简洁的示例讲解选择器、DOM操作、事件处理和AJAX等核心功能，适合初学者快速上手jQuery'
+series: JavaScript
+language: zh-CN
 ---
 
 > jQuery 简化了 DOM 操作和事件处理。

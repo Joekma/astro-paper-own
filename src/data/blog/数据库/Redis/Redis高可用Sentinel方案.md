@@ -12,6 +12,8 @@ tags:
   - 高可用
   - Sentinel
 description: 'Redis Sentinel高可用方案，包括主从切换和故障转移'
+series: Redis
+language: zh-CN
 ---
 
 > Sentinel 实现 Redis 高可用。

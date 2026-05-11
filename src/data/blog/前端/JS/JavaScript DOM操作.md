@@ -12,6 +12,8 @@ tags:
   - 前端
   - Web
 description: 'JavaScript DOM操作，包括元素选择、属性控制、内容操作和事件处理'
+series: JavaScript
+language: zh-CN
 ---
 
 > DOM（文档对象模型）是 JavaScript 操作网页内容的主要接口。

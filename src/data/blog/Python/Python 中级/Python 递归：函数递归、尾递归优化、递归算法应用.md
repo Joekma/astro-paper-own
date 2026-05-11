@@ -11,6 +11,8 @@ tags:
   - 算法
   - 递归
 description: '深入讲解Python递归，涵盖函数递归、尾递归优化、递归算法应用等核心概念。'
+series: python
+language: zh-CN
 ---
 
 # Python 递归

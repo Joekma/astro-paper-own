@@ -12,6 +12,7 @@ tags:
   - UTF-8
   - Unicode
 draft: false
+series: python
 language: zh-CN
 ---
 
