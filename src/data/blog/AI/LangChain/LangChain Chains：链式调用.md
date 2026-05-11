@@ -45,19 +45,17 @@ Chain（链）是 LangChain 的核心概念之一，它允许我们将多个组�
 
 ## LLMChain
 
-### 基础用法
+### 基础用法（新版本推荐 LCEL）
 
 LLMChain 是最基本的链类型，将提示词模板和语言模型结合：
 
 ```python
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
-from langchain.chains.llm import LLMChain
+from langchain_core.output_parsers import StrOutputParser
 
-# 创建模型
 llm = ChatOpenAI(model="gpt-4", temperature=0.7)
 
-# 创建提示词模板
 template = PromptTemplate.from_template(
     """你是一个创意写作助手。请为以下主题写一首诗：
 
@@ -67,28 +65,25 @@ template = PromptTemplate.from_template(
     诗歌："""
 )
 
-# 创建 LLMChain
-chain = LLMChain(llm=llm, prompt=template)
+chain = template | llm | StrOutputParser()
 
-# 运行链
 result = chain.invoke({
     "topic": "春天",
     "style": "现代诗"
 })
 
-print(result["text"])
+print(result)
 ```
 
-### 输出多个变量
+### 使用 LLMChain 类
 
 ```python
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
-from langchain.chains.llm import LLMChain
+from langchain.chains import LLMChain
 
 llm = ChatOpenAI(model="gpt-4")
 
-# 输出多个变量的模板
 template = PromptTemplate.from_template(
     """分析以下产品并提供反馈：
 
@@ -109,73 +104,78 @@ print(f"缺点：{result['cons']}")
 print(f"建议：{result['suggestions']}")
 ```
 
-### 带输出的链
+## LCEL 管道组合
+
+LangChain Expression Language (LCEL) 提供了更简洁的链式 API：
+
+### 基础管道
 
 ```python
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain.chains.llm import LLMChain
 
 llm = ChatOpenAI(model="gpt-4")
-parser = StrOutputParser()
 
-# 带输出的 LLMChain
-chain = LLMChain(
-    llm=llm,
-    prompt=PromptTemplate.from_template("用一句话解释{concept}"),
-    output_parser=parser
-)
+chain = PromptTemplate.from_template("解释{topic}") | llm | StrOutputParser()
 
-result = chain.invoke({"concept": "量子计算"})
+result = chain.invoke({"topic": "区块链"})
 print(result)
+```
+
+### 动态链
+
+```python
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import PromptTemplate
+
+llm = ChatOpenAI(model="gpt-4")
+
+def get_template(task: str) -> PromptTemplate:
+    templates = {
+        "summary": PromptTemplate.from_template("总结：{text}"),
+        "translate": PromptTemplate.from_template("翻译成英文：{text}"),
+        "analyze": PromptTemplate.from_template("分析：{text}"),
+    }
+    return templates.get(task, templates["summary"])
+
+def create_chain(task: str):
+    return PromptTemplate.from_template("{task}: {text}") | llm
+
+chain = create_chain("summary")
+result = chain.invoke({"task": "总结", "text": "LangChain很强大"})
 ```
 
 ## Sequential Chain
 
-### SimpleSequentialChain
+### SimpleSequentialChain（新版本）
 
 单输入单输出的顺序链：
 
 ```python
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
-from langchain.chains.sequential import SimpleSequentialChain
+from langchain_core.output_parsers import StrOutputParser
 
 llm = ChatOpenAI(model="gpt-4")
 
-# 链1：生成故事
-chain1 = LLMChain(
-    llm=llm,
-    prompt=PromptTemplate.from_template(
-        """为一个{character}写一个简短的冒险故事（100字以内）。
+chain1 = PromptTemplate.from_template(
+    """为一个{character}写一个简短的冒险故事（100字以内）。
+    角色：{character}"""
+) | llm
 
-        角色：{character}"""
-    )
-)
+chain2 = PromptTemplate.from_template(
+    """将以下故事翻译成英文：
+    {story}"""
+) | llm
 
-# 链2：翻译成英文
-chain2 = LLMChain(
-    llm=llm,
-    prompt=PromptTemplate.from_template(
-        """将以下故事翻译成英文：
+sequential_chain = chain1 | chain2 | StrOutputParser()
 
-        {story}"""
-    )
-)
-
-# 组合为顺序链
-sequential_chain = SimpleSequentialChain(
-    chains=[chain1, chain2],
-    verbose=True
-)
-
-# 运行
 result = sequential_chain.invoke({
     "character": "勇敢的小骑士"
 })
 
-print(result["output"])
+print(result)
 ```
 
 ### SequentialChain
@@ -185,11 +185,10 @@ print(result["output"])
 ```python
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
-from langchain.chains.sequential import SequentialChain
+from langchain.chains import SequentialChain
 
 llm = ChatOpenAI(model="gpt-4")
 
-# 链1：分析文章
 chain1 = LLMChain(
     llm=llm,
     prompt=PromptTemplate.from_template(
@@ -202,7 +201,6 @@ chain1 = LLMChain(
     output_key="main_points"
 )
 
-# 链2：生成摘要
 chain2 = LLMChain(
     llm=llm,
     prompt=PromptTemplate.from_template(
@@ -215,7 +213,6 @@ chain2 = LLMChain(
     output_key="summary"
 )
 
-# 链3：翻译成英文
 chain3 = LLMChain(
     llm=llm,
     prompt=PromptTemplate.from_template(
@@ -228,15 +225,12 @@ chain3 = LLMChain(
     output_key="english_summary"
 )
 
-# 组合
 full_chain = SequentialChain(
     chains=[chain1, chain2, chain3],
     input_variables=["article"],
     output_variables=["main_points", "summary", "english_summary"],
-    verbose=True
 )
 
-# 运行
 result = full_chain.invoke({
     "article": "人工智能技术正在快速发展..."
 })
@@ -251,249 +245,100 @@ print(f"英文摘要：{result['english_summary']}")
 用于数据转换的链：
 
 ```python
-from langchain.chains.sequential import TransformChain
-from langchain_core.prompts import PromptTemplate
+from langchain.chains import TransformChain
+from langchain_core.runnables import RunnableLambda
 
-# 定义转换函数
 def transform_function(inputs: dict) -> dict:
     text = inputs["text"]
-    # 简单处理：按行分割
     lines = text.split("\n")
     return {"lines": lines, "line_count": len(lines)}
 
-# 创建转换链
 transform_chain = TransformChain(
     input_variables=["text"],
     output_variables=["lines", "line_count"],
     transform=transform_function
 )
 
-# 使用
 result = transform_chain.invoke({
     "text": "第一行\n第二行\n第三行\n第四行"
 })
 print(f"行数：{result['line_count']}")
-print(f"内容：{result['lines']}")
 ```
 
-## RouterChain
+## 自定义 Chain（新版本）
 
-根据输入动态选择处理链：
+### 使用 LCEL 自定义
 
 ```python
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
-from langchain.chains.router.multi_prompt import MultiPromptChain
-from langchain.chains.router import RouterChain
-from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnableLambda
 
 llm = ChatOpenAI(model="gpt-4")
 
-# 定义不同场景的链
-math_template = PromptTemplate.from_template(
-    """你是一个数学老师。回答以下数学问题：
+def research_step(inputs: dict) -> dict:
+    topic = inputs["topic"]
+    chain = PromptTemplate.from_template("为{topic}写一份简要研究报告") | llm
+    result = chain.invoke({"topic": topic})
+    return {"research": result.content}
 
-    问题：{input}"""
-)
+def question_step(inputs: dict) -> dict:
+    research = inputs["research"]
+    chain = PromptTemplate.from_template(
+        "基于以下研究，提出3个深入问题：\n{research}"
+    ) | llm
+    result = chain.invoke({"research": research})
+    return {"questions": result.content}
 
-science_template = PromptTemplate.from_template(
-    """你是一个科学家。回答以下科学问题：
+custom_chain = RunnableLambda(research_step) | RunnableLambda(question_step)
 
-    问题：{input}"""
-)
-
-history_template = PromptTemplate.from_template(
-    """你是一个历史学家。回答以下历史问题：
-
-    问题：{input}"""
-)
-
-# 路由目标
-destination_chains = {
-    "math": math_template | llm | StrOutputParser(),
-    "science": science_template | llm | StrOutputParser(),
-    "history": history_template | llm | StrOutputParser(),
-}
-
-# 默认链
-default_chain = llm | StrOutputParser()
-
-# 路由提示词
-router_template = """根据问题类型选择相应的链：
-
-问题：{input}
-
-类型选项：math, science, history
-
-只输出类型名称，不要其他内容。"""
-
-from langchain.chains.router.llm_router import LLMRouterChain
-
-router_chain = LLMRouterChain.from_llm(
-    llm,
-    PromptTemplate.from_template(router_template),
-    destination_chains.keys(),
-    default_chain
-)
-```
-
-## LCEL 管道组合
-
-LangChain Expression Language (LCEL) 提供了更简洁的链式 API：
-
-### 基础管道
-
-```python
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import PromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-
-llm = ChatOpenAI(model="gpt-4")
-
-# 使用管道符组合
-chain = PromptTemplate.from_template("解释{topic}") | llm | StrOutputParser()
-
-# 调用
-result = chain.invoke({"topic": "区块链"})
+result = custom_chain.invoke({"topic": "量子计算"})
 print(result)
 ```
 
-### 动态链
-
-```python
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnablePassthrough
-
-llm = ChatOpenAI(model="gpt-4")
-
-# 动态选择提示词
-def get_template(task: str) -> PromptTemplate:
-    templates = {
-        "summary": PromptTemplate.from_template("总结：{text}"),
-        "translate": PromptTemplate.from_template("翻译成英文：{text}"),
-        "analyze": PromptTemplate.from_template("分析：{text}"),
-    }
-    return templates.get(task, templates["summary"])
-
-# 动态链
-def create_chain(task: str):
-    return PromptTemplate.from_template("{task}: {text}") | llm
-
-# 使用
-chain = create_chain("summary")
-result = chain.invoke({"task": "总结", "text": "LangChain很强大"})
-```
-
-### Runnable 接口
-
-```python
-from langchain_core.runnables import RunnableLambda, RunnablePassthrough
-
-# 自定义函数作为链
-def process_text(text: str) -> dict:
-    return {
-        "upper": text.upper(),
-        "lower": text.lower(),
-        "length": len(text)
-    }
-
-# 使用 RunnableLambda
-chain = RunnableLambda(process_text)
-
-result = chain.invoke("Hello World")
-print(result)
-```
-
-## 自定义 Chain
-
-### 继承基础类
-
-```python
-from langchain_core.prompts import PromptTemplate
-from langchain.chains.llm import LLMChain
-from langchain.chains import Chain
-
-class ResearchChain(Chain):
-    """研究分析链"""
-
-    def __init__(self, llm, **kwargs):
-        self.llm = llm
-        super().__init__(**kwargs)
-
-    @property
-    def input_keys(self):
-        return ["topic"]
-
-    @property
-    def output_keys(self):
-        return ["research", "questions"]
-
-    def _call(self, inputs):
-        topic = inputs["topic"]
-
-        # 生成研究报告
-        research_prompt = PromptTemplate.from_template(
-            "为{topic}写一份简要研究报告"
-        )
-        research_chain = LLMChain(llm=self.llm, prompt=research_prompt)
-        research = research_chain.run(topic)
-
-        # 生成问题
-        question_prompt = PromptTemplate.from_template(
-            "基于以下研究，提出3个深入问题：\n{research}"
-        )
-        question_chain = LLMChain(llm=self.llm, prompt=question_prompt)
-        questions = question_chain.run(research)
-
-        return {
-            "research": research,
-            "questions": questions
-        }
-
-# 使用
-research_chain = ResearchChain(llm=llm)
-result = research_chain.run(topic="量子计算")
-```
-
-## 链的记忆功能
+## 链的记忆功能（新版本）
 
 ### 添加 Memory
 
 ```python
 from langchain_openai import ChatOpenAI
-from langchain_core.prompts import PromptTemplate
-from langchain.chains.llm import LLMChain
-from langchain.memory import ConversationBufferMemory
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from langchain_core.runnables import RunnableLambda
 
 llm = ChatOpenAI(model="gpt-4")
 
-# 创建记忆
+def create_chain_with_memory(memory):
+    def chain_func(inputs):
+        history = memory.load_memory_variables({}).get("history", [])
+
+        prompt = ChatPromptTemplate.from_messages([
+            SystemMessage(content="基于以下对话历史回答问题。"),
+            MessagesPlaceholder(variable_name="history"),
+            HumanMessage(content=inputs["input"])
+        ])
+
+        chain = prompt | llm
+        response = chain.invoke({"history": history})
+
+        memory.save_context(
+            {"input": inputs["input"]},
+            {"output": response.content}
+        )
+
+        return {"response": response.content}
+
+    return RunnableLambda(chain_func)
+
 memory = ConversationBufferMemory(
     memory_key="history",
     return_messages=True
 )
 
-# 带记忆的链
-chain = LLMChain(
-    llm=llm,
-    prompt=PromptTemplate.from_template(
-        """基于以下对话历史回答问题：
+chain = create_chain_with_memory(memory)
 
-        历史：{history}
-
-        问题：{input}
-
-        回答："""
-    ),
-    memory=memory,
-    verbose=True
-)
-
-# 对话
-chain.run("我叫张三")
-chain.run("我叫什么名字？")
-chain.run("我是做什么的？")
+chain.invoke({"input": "我叫张三"})
+chain.invoke({"input": "我叫什么名字？"})
 ```
 
 ## 异步链
@@ -502,21 +347,16 @@ chain.run("我是做什么的？")
 import asyncio
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
-from langchain.chains.llm import LLMChain
+from langchain_core.output_parsers import StrOutputParser
 
 llm = ChatOpenAI(model="gpt-4")
 
-chain = LLMChain(
-    llm=llm,
-    prompt=PromptTemplate.from_template("用一句话解释：{topic}")
-)
+chain = PromptTemplate.from_template("用一句话解释：{topic}") | llm | StrOutputParser()
 
 async def async_invoke():
-    # 单次异步调用
     result = await chain.ainvoke({"topic": "量子纠缠"})
     print(result)
 
-    # 批量异步调用
     results = await chain.abatch([
         {"topic": "人工智能"},
         {"topic": "机器学习"},
@@ -531,17 +371,13 @@ asyncio.run(async_invoke())
 ## 错误处理
 
 ```python
-from langchain.chains.llm import LLMChain
+from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.exceptions import OutputParserException
 
-chain = LLMChain(
-    llm=llm,
-    prompt=PromptTemplate.from_template("返回JSON：{text}"),
-    output_parser=JsonOutputParser()
-)
+chain = PromptTemplate.from_template("返回JSON：{text}") | llm | JsonOutputParser()
 
 try:
-    result = chain.run({"text": "some text"})
+    result = chain.invoke({"text": "some text"})
 except OutputParserException as e:
     print(f"解析错误: {e}")
 ```
@@ -553,20 +389,18 @@ except OutputParserException as e:
 | **单一职责** | 每个链负责一个特定任务 |
 | **可复用性** | 创建通用链供多处使用 |
 | **错误处理** | 为链添加异常处理 |
-| **日志记录** | 使用 verbose 参数调试 |
+| **日志记录** | 使用 callbacks 参数调试 |
 | **性能优化** | 批量任务使用异步 API |
 
 ### 链的性能优化
 
 ```python
-# 使用 batch 提高吞吐量
 results = chain.batch([
     {"input": "问题1"},
     {"input": "问题2"},
     {"input": "问题3"}
 ])
 
-# 使用异步提高效率
 async def batch_process(items):
     results = await chain.abatch([{"input": i} for i in items])
     return results
@@ -576,12 +410,10 @@ async def batch_process(items):
 
 | 链类型 | 用途 | 特点 |
 |--------|------|------|
-| **LLMChain** | 基础链 | 模板+模型 |
-| **SimpleSequentialChain** | 顺序链 | 单输入/输出 |
+| **LCEL 管道** | 基础链 | 模板+模型+解析器 |
 | **SequentialChain** | 顺序链 | 多输入/输出 |
 | **TransformChain** | 转换链 | 数据转换 |
-| **RouterChain** | 路由链 | 动态选择 |
-| **RetrievalQA** | 问答链 | RAG 支持 |
+| **自定义链** | 特殊逻辑 | RunnableLambda |
 
 ## 总结
 

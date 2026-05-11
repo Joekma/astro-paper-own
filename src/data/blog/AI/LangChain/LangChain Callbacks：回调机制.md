@@ -48,8 +48,8 @@ Callbacks（回调机制）是 LangChain 中用于监控和记录 LLM 应用执�
 │   │ Handlers│       │ 触发器  │                              │
 │   └─────────┘       └─────────┘                              │
 │                                                              │
-│   事件列表：on_chain_start, on_chain_end, on_llm_start,      │
-│            on_llm_end, on_tool_start, on_tool_end...         │
+│   事件列表：on_chain_start, on_chain_end, on_chat_model_start,│
+│            on_chat_model_end, on_tool_start, on_tool_end...  │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -62,31 +62,23 @@ Callbacks（回调机制）是 LangChain 中用于监控和记录 LLM 应用执�
 from langchain_core.callbacks import BaseCallbackHandler
 
 class CustomHandler(BaseCallbackHandler):
-    """自定义回调处理器"""
+    def on_chat_model_start(self, serialized, messages, **kwargs):
+        print(f"聊天模型开始处理")
+
+    def on_chat_model_end(self, response, **kwargs):
+        print(f"聊天模型结束")
 
     def on_chain_start(self, serialized, inputs, **kwargs):
-        """链开始执行时调用"""
         print(f"Chain 开始: {serialized.get('name', 'unknown')}")
 
     def on_chain_end(self, outputs, **kwargs):
-        """链执行完成时调用"""
         print(f"Chain 结束: 输出包含 {len(outputs)} 个键")
 
-    def on_llm_start(self, serialized, prompts, **kwargs):
-        """LLM 开始推理时调用"""
-        print(f"LLM 开始处理 {len(prompts)} 个提示")
-
-    def on_llm_end(self, response, **kwargs):
-        """LLM 推理完成时调用"""
-        print(f"LLM 结束，生成 {len(response.generations)} 个结果")
-
     def on_tool_start(self, serialized, input_str, **kwargs):
-        """工具开始执行时调用"""
         print(f"工具开始: {serialized.get('name')}")
 
     def on_tool_end(self, output, **kwargs):
-        """工具执行完成时调用"""
-        print(f"工具结束: {output[:50]}...")
+        print(f"工具结束")
 ```
 
 ## 常用事件
@@ -116,30 +108,25 @@ class ChainHandler(BaseCallbackHandler):
         print(f"错误: {error}")
 ```
 
-### LLM 事件
+### Chat Model 事件
 
 | 事件 | 说明 |
 |------|------|
-| **on_llm_start** | 模型开始推理 |
+| **on_chat_model_start** | 模型开始推理 |
+| **on_chat_model_end** | 模型推理完成 |
 | **on_llm_new_token** | 生成新 token（流式） |
-| **on_llm_end** | 模型推理完成 |
 | **on_llm_error** | 模型推理出错 |
 
 ```python
 class LLMHandler(BaseCallbackHandler):
-    def on_llm_start(self, serialized, prompts, **kwargs):
+    def on_chat_model_start(self, serialized, messages, **kwargs):
         print("LLM 开始推理...")
-        print(f"提示词: {prompts[0][:100]}...")
 
     def on_llm_new_token(self, token, **kwargs):
         print(token, end="", flush=True)
 
-    def on_llm_end(self, response, **kwargs):
+    def on_chat_model_end(self, response, **kwargs):
         print("\nLLM 推理完成")
-        print(f"消耗 Token: {response.llm_output.get('token_usage', {})}")
-
-    def on_llm_error(self, error, **kwargs):
-        print(f"LLM 错误: {error}")
 ```
 
 ### Tool 事件
@@ -152,7 +139,7 @@ class LLMHandler(BaseCallbackHandler):
 
 ## 基础使用
 
-### 全局 Callback
+### 全局 Callback（新版本）
 
 ```python
 from langchain_openai import ChatOpenAI
@@ -170,13 +157,12 @@ llm = ChatOpenAI(
 response = llm.invoke("写一首关于春天的诗")
 ```
 
-### Chain Callback
+### Chain Callback（新版本）
 
 ```python
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
-from langchain.chains.llm import LLMChain
-from langchain_core.callbacks import BaseCallbackHandler
+from langchain_core.output_parsers import StrOutputParser
 
 class ChainCallbackHandler(BaseCallbackHandler):
     def on_chain_start(self, serialized, inputs, **kwargs):
@@ -185,38 +171,37 @@ class ChainCallbackHandler(BaseCallbackHandler):
     def on_chain_end(self, outputs, **kwargs):
         print(f"链执行完成!")
 
-chain = LLMChain(
-    llm=ChatOpenAI(model="gpt-4"),
-    prompt=PromptTemplate.from_template("解释{topic}"),
-    callbacks=[ChainCallbackHandler()]
-)
+chain = PromptTemplate.from_template("解释{topic}") | ChatOpenAI(model="gpt-4") | StrOutputParser()
 
-result = chain.invoke({"topic": "人工智能"})
+result = chain.invoke(
+    {"topic": "人工智能"},
+    config={"callbacks": [ChainCallbackHandler()]}
+)
 ```
 
-### Agent Callback
+### Agent Callback（新版本）
 
 ```python
-from langchain.agents import Agent, AgentExecutor, tool
+from langchain_core.tools import tool
+from langchain_openai import ChatOpenAI
+from langchain import create_react_agent
+from langchain_core.callbacks import BaseCallbackHandler
+
+class LoggingHandler(BaseCallbackHandler):
+    def on_tool_start(self, serialized, inputs, **kwargs):
+        print(f"工具开始: {serialized.get('name', 'unknown')}")
 
 @tool
 def get_weather(city: str) -> str:
     return f"{city}天气晴朗"
 
-agent = Agent.from_agent_type(
-    agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-    llm=ChatOpenAI(model="gpt-4"),
-    tools=[get_weather],
-    callbacks=[LoggingHandler()]
-)
+llm = ChatOpenAI(model="gpt-4")
+agent = create_react_agent(llm, [get_weather])
 
-executor = AgentExecutor(
-    agent=agent,
-    tools=[get_weather],
-    callbacks=[LoggingHandler()]
+result = agent.invoke(
+    {"messages": ["北京天气如何？"]},
+    config={"callbacks": [LoggingHandler()]}
 )
-
-result = executor.invoke({"input": "北京天气如何？"})
 ```
 
 ## 预定义回调处理器
@@ -245,11 +230,9 @@ response = llm.invoke("解释量子计算")
 from langchain_core.callbacks import FileCallbackHandler
 import logging
 
-# 设置日志
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# 创建文件处理器
 file_handler = FileCallbackHandler("app.log")
 
 llm = ChatOpenAI(
@@ -271,14 +254,13 @@ llm = ChatOpenAI(
     callbacks=[StreamingStdOutCallbackHandler()]
 )
 
-# 流式生成
 for chunk in llm.stream("写一篇关于春天的散文"):
     print(chunk.content, end="", flush=True)
 ```
 
 ## 异步回调
 
-### AsyncCallbackHandler
+### AsyncCallbackHandler（新版本）
 
 ```python
 from langchain_core.callbacks import AsyncCallbackHandler
@@ -291,13 +273,12 @@ class AsyncLoggingHandler(AsyncCallbackHandler):
     async def on_chain_end(self, outputs, **kwargs):
         print("异步链结束...")
 
-    async def on_llm_start(self, serialized, prompts, **kwargs):
+    async def on_chat_model_start(self, serialized, messages, **kwargs):
         print("异步LLM开始...")
 
-    async def on_llm_end(self, response, **kwargs):
+    async def on_chat_model_end(self, response, **kwargs):
         print("异步LLM结束...")
 
-# 使用异步回调
 async def run_async():
     handler = AsyncLoggingHandler()
 
@@ -316,18 +297,16 @@ asyncio.run(run_async())
 
 ```python
 class MixedHandler(BaseCallbackHandler):
-    """支持同步和异步的处理器"""
-
-    def on_llm_start(self, serialized, prompts, **kwargs):
+    def on_chat_model_start(self, serialized, messages, **kwargs):
         print("同步: LLM开始")
 
-    async def on_llm_end(self, response, **kwargs):
+    async def on_chat_model_end(self, response, **kwargs):
         print("异步: LLM结束")
 ```
 
 ## 实际应用
 
-### 1. 成本追踪
+### 1. 成本追踪（新版本）
 
 ```python
 from langchain_core.callbacks import BaseCallbackHandler
@@ -340,14 +319,13 @@ class CostTracker(BaseCallbackHandler):
         self.total_cost = 0
         self.requests = []
 
-    def on_llm_end(self, response, **kwargs):
-        usage = response.llm_output.get("token_usage", {})
+    def on_chat_model_end(self, response, **kwargs):
+        usage = response.usage_metadata
 
-        input_tokens = usage.get("prompt_tokens", 0)
-        output_tokens = usage.get("completion_tokens", 0)
+        input_tokens = usage.get("input_tokens", 0)
+        output_tokens = usage.get("output_tokens", 0)
         total = usage.get("total_tokens", 0)
 
-        # OpenAI 价格（每1000 token）
         cost = (input_tokens * 0.03 + output_tokens * 0.06) / 1000
 
         self.total_tokens += total
@@ -366,7 +344,6 @@ class CostTracker(BaseCallbackHandler):
             "请求数": len(self.requests)
         }
 
-# 使用
 tracker = CostTracker()
 llm = ChatOpenAI(model="gpt-4", callbacks=[tracker])
 
@@ -376,7 +353,7 @@ for i in range(5):
 print(tracker.get_report())
 ```
 
-### 2. 性能监控
+### 2. 性能监控（新版本）
 
 ```python
 import time
@@ -395,10 +372,10 @@ class PerformanceMonitor(BaseCallbackHandler):
         self.chain_times.append(elapsed)
         print(f"Chain 耗时: {elapsed:.2f}s")
 
-    def on_llm_start(self, serialized, prompts, **kwargs):
+    def on_chat_model_start(self, serialized, messages, **kwargs):
         self.llm_start = time.time()
 
-    def on_llm_end(self, response, **kwargs):
+    def on_chat_model_end(self, response, **kwargs):
         elapsed = time.time() - self.llm_start
         self.llm_times.append(elapsed)
 
@@ -425,7 +402,7 @@ class DetailedLogger(BaseCallbackHandler):
         log_entry = {
             "timestamp": datetime.now().isoformat(),
             "event": event_type,
-            "data": str(data)[:500]  # 截断
+            "data": str(data)[:500]
         }
         with open(self.log_file, "a") as f:
             f.write(json.dumps(log_entry) + "\n")
@@ -436,93 +413,85 @@ class DetailedLogger(BaseCallbackHandler):
     def on_chain_end(self, outputs, **kwargs):
         self._log("chain_end", outputs)
 
-    def on_llm_start(self, serialized, prompts, **kwargs):
-        self._log("llm_start", prompts)
+    def on_chat_model_start(self, serialized, messages, **kwargs):
+        self._log("llm_start", messages)
 
-    def on_llm_end(self, response, **kwargs):
-        self._log("llm_end", response.generations[0][0].text)
+    def on_chat_model_end(self, response, **kwargs):
+        self._log("llm_end", response.content)
 ```
 
 ## 多个 Callback
 
-### CallbackManager
+### 多个处理器（新版本）
 
 ```python
-from langchain_core.callbacks import CallbackManager
+handler1 = LoggingHandler()
+handler2 = CostTracker()
+handler3 = PerformanceMonitor()
 
-# 创建多个处理器
 handlers = [handler1, handler2, handler3]
 
-# 创建回调管理器
-manager = CallbackManager(handlers)
-
-# 在组件中使用
 llm = ChatOpenAI(
     model="gpt-4",
-    callback_manager=manager
+    callbacks=handlers
 )
-
-# 或使用 add_handler
-llm.callback_manager.add_handler(new_handler)
 ```
 
 ### 嵌套回调
 
 ```python
-# 不同层级使用不同回调
-chain = LLMChain(
-    llm=ChatOpenAI(callbacks=[llm_handler]),  # LLM 层
-    prompt=template,
-    callbacks=[chain_handler]  # Chain 层
+chain = PromptTemplate.from_template("{input}") | llm
+
+llm_response = llm.invoke(
+    "query",
+    config={"callbacks": [llm_handler]}
+)
+
+chain_response = chain.invoke(
+    {"input": "query"},
+    config={"callbacks": [chain_handler]}
 )
 ```
 
 ## 上下文传递
 
-### 使用 metadata
+### 使用 metadata（新版本）
 
 ```python
 from langchain_core.callbacks import BaseCallbackHandler
 
 class ContextHandler(BaseCallbackHandler):
-    def on_llm_start(self, serialized, prompts, **kwargs):
-        # 获取上下文中的 metadata
+    def on_chat_model_start(self, serialized, messages, **kwargs):
         metadata = kwargs.get("metadata", {})
         tags = metadata.get("tags", [])
         print(f"处理标签: {tags}")
 
-# 使用
 llm = ChatOpenAI(callbacks=[ContextHandler()])
 
-chain = LLMChain(
-    llm=llm,
-    prompt=template,
-    metadata={"tags": ["production", "user-facing"]}
-)
+chain = PromptTemplate.from_template("{input}") | llm
 
-chain.invoke({"input": "query"}, config={"metadata": {"user_id": "123"}})
+chain.invoke(
+    {"input": "query"},
+    config={
+        "metadata": {"user_id": "123", "tags": ["production"]}
+    }
+)
 ```
 
 ## 事件过滤
 
 ```python
 class FilteredHandler(BaseCallbackHandler):
-    """只处理特定事件"""
-
-    def supports_run_manager(self, callback_manager):
-        return True
+    def __init__(self, verbose=False):
+        self.verbose = verbose
 
     @property
     def ignore_llm(self):
-        return False  # 忽略 LLM 事件
+        return not self.verbose
 
     @property
     def ignore_chain(self):
-        return False
-
-    @property
-    def ignore_agent(self):
-        return True  # 忽略 Agent 事件
+        return not self.verbose
 ```
 
 ## 最佳实践
@@ -539,15 +508,14 @@ class FilteredHandler(BaseCallbackHandler):
 
 ```python
 class ProductionCallbacks:
-    """生产环境回调组合"""
-
     def __init__(self, config):
         self.handlers = [
             CostTracker(),
             PerformanceMonitor(),
             DetailedLogger(config.log_path),
-            StdOutCallbackHandler() if config.debug else NoOpHandler()
         ]
+        if config.debug:
+            self.handlers.append(StdOutCallbackHandler())
 
     def get_callbacks(self):
         return self.handlers
@@ -558,10 +526,8 @@ class ProductionCallbacks:
 ### Q1：如何禁用回调？
 
 ```python
-# 临时禁用
-llm = ChatOpenAI(callbacks=[])  # 空列表
+llm = ChatOpenAI(callbacks=[])
 
-# 或使用 config
 result = chain.invoke(
     {"input": "query"},
     config={"callbacks": []}
@@ -571,14 +537,13 @@ result = chain.invoke(
 ### Q2：如何共享回调状态？
 
 ```python
-class SharedStateHandler(BaseCallbackHandler):
+class SharedState:
     def __init__(self):
         self.state = {"tokens": 0, "errors": 0}
 
-handler1 = SharedStateHandler()
-handler2 = SharedStateHandler()
-
-# 两个处理器共享同一状态对象
+shared = SharedState()
+handler1 = LoggingHandler(shared)
+handler2 = CostTracker(shared)
 ```
 
 ### Q3：如何处理流式输出？
@@ -586,7 +551,6 @@ handler2 = SharedStateHandler()
 ```python
 class StreamHandler(BaseCallbackHandler):
     def on_llm_new_token(self, token, **kwargs):
-        # 实时处理 token
         print(token, end="", flush=True)
 ```
 

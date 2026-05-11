@@ -1,429 +1,339 @@
 ---
 title: LangGraph 入门指南：核心概念与架构
-series: LangGraph
 author: Joekma
-pubDatetime: 2026-05-08T00:00:00.000+08:00
-modDatetime: 2026-05-08T00:00:00.000+08:00
+pubDatetime: 2026-05-07T00:00:00.000+08:00
+modDatetime: 2026-05-07T00:00:00.000+08:00
 slug: langgraph-getting-started
-description: 'LangGraph入门指南，详细介绍核心概念、架构组件和有状态的工作流设计。'
+description: 'LangGraph入门指南，详细介绍核心概念、架构组件和使用场景。'
 tags:
   - LangGraph
-  - LLM
-  - AI
   - Agent
+  - LLM
 draft: false
+series: LangGraph
 language: zh-CN
 ---
 
 ## 概述
 
-LangGraph 是由 LangChain 团队开发的一个扩展库，专门用于创建有状态、多actor参与的大语言模型（LLM）应用。与 LangChain 的 Chain 不同，LangGraph 强调**循环计算**和**状态持久化**，非常适合构建复杂的 AI Agent、聊天机器人和多步骤工作流。
-
-### 为什么选择 LangGraph？
-
-| 特性 | 说明 |
-|------|------|
-| **有状态的工作流** | 支持在多次交互中保持和更新状态 |
-| **循环计算** | 支持条件循环、迭代等复杂控制流 |
-| **多节点协作** | 支持构建多个 agent/actor 协同工作 |
-| **持久化支持** | 内置检查点和状态持久化机制 |
-| **图结构设计** | 直观的有向图表示工作流 |
+LangGraph 是 LangChain 生态系统中用于构建有状态、多actor工作流的开源框架。它扩展了 LangChain 的 Chain 概念，引入了图结构，使得开发者可以创建具有循环、条件分支和持久化能力的复杂 LLM 应用。
 
 ### LangGraph vs LangChain Chain
 
 | 特性 | LangChain Chain | LangGraph |
 |------|----------------|-----------|
-| **执行模型** | 线性、无环 | 支持循环 |
-| **状态管理** | 依赖外部 Memory | 内置状态管理 |
-| **控制流** | 简单顺序执行 | 支持条件分支、循环 |
-| **适用场景** | 简单任务 | 复杂 Agent 工作流 |
+| **结构** | 线性链 | 有向图 |
+| **循环** | 不支持 | 支持 |
+| **条件分支** | 有限支持 | 完整支持 |
+| **状态管理** | 外部处理 | 内置 |
+| **持久化** | 有限 | 内置支持 |
 
-## 核心概念
-
-### 图结构（Graph）
-
-LangGraph 的核心是**有向图（Directed Graph）**，由节点（Node）和边（Edge）组成：
+### 核心概念
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      LangGraph Architecture                │
+│                      LangGraph 核心概念                       │
 ├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│    ┌──────────┐                                            │
-│    │  Start   │                                            │
-│    └────┬─────┘                                            │
-│         │                                                  │
-│         ▼                                                  │
-│    ┌──────────┐     ┌──────────┐     ┌──────────┐         │
-│    │  Node A  │────▶│  Node B  │────▶│  Node C  │         │
-│    └──────────┘     └────┬─────┘     └──────────┘         │
-│                          │                                  │
-│                    ┌─────▼─────┐                           │
-│                    │  Router   │                           │
-│                    └─────┬─────┘                           │
-│                          │                                  │
-│         ┌────────────────┼────────────────┐                │
-│         ▼                ▼                ▼                │
-│    ┌──────────┐     ┌──────────┐     ┌──────────┐         │
-│    │  Node D  │     │  Node E  │     │   End    │         │
-│    └──────────┘     └──────────┘     └──────────┘         │
-│                                                             │
+│                                                              │
+│   ┌──────────┐                                              │
+│   │   Node   │ ← 函数/处理单元                               │
+│   └──────────┘                                              │
+│        │                                                    │
+│   ┌────┴────┐                                              │
+│   │   Edge  │ ← 节点之间的连接                               │
+│   └────┬────┘                                              │
+│        │                                                    │
+│   ┌────┴────┐                                              │
+│   │  State   │ ← 整个图共享的状态                           │
+│   └──────────┘                                              │
+│                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 节点（Node）
+## 核心概念详解
 
-节点是图中的基本执行单元，可以是：
-- **LLM 调用**：执行语言模型推理
-- **工具调用**：执行特定功能（搜索、计算等）
-- **条件判断**：根据状态决定下一步
-- **数据处理**：转换、聚合数据
+### 1. Graph（图）
 
-### 边（Edge）
-
-边定义了节点之间的连接关系：
-- **普通边**：无条件转移到下一个节点
-- **条件边**：根据状态有条件地选择下一个节点
-
-## 环境配置
-
-### 安装 LangGraph
-
-```bash
-# 基础安装
-pip install langgraph
-
-# 包含所有依赖
-pip install langgraph[all]
-
-# 推荐安装（包含 LangChain 集成）
-pip install langgraph langchain-openai langchain-community
-```
-
-### 环境变量配置
-
-```bash
-# 设置 API Key
-export OPENAI_API_KEY="your-api-key"
-
-# 如果使用其他模型服务
-export ANTHROPIC_API_KEY="your-anthropic-key"
-```
-
-### 快速验证
+LangGraph 应用的核心结构是有向图：
 
 ```python
 from langgraph.graph import StateGraph, END
-from langgraph.graph import MessagesState
-from langchain_openai import ChatOpenAI
+from typing import TypedDict
 
-# 创建模型
-llm = ChatOpenAI(model="gpt-4")
-
-# 创建图
-graph = StateGraph(MessagesState)
-
-# 添加节点
-def call_model(state):
-    messages = state["messages"]
-    response = llm.invoke(messages)
-    return {"messages": [response]}
-
-graph.add_node("call_model", call_model)
-graph.add_edge("__start__", "call_model")
-graph.add_edge("call_model", END)
-
-# 编译并运行
-app = graph.compile()
-result = app.invoke({"messages": ["你好，介绍一下自己"]})
-print(result["messages"][-1].content)
-```
-
-## 状态管理
-
-### State 的定义
-
-LangGraph 使用 **State** 来管理应用的状态：
-
-```python
-from typing import TypedDict, Annotated
-from langgraph.graph import StateGraph
-import operator
-
-# 定义状态结构
-class AgentState(TypedDict):
-    messages: Annotated[list, operator.add]
-    user_info: str
-    session_id: str
-    turn_count: int
-
-# 创建图
-graph = StateGraph(AgentState)
-```
-
-### 状态更新
-
-状态可以通过 reducer 函数自动更新：
-
-```python
-from typing import TypedDict, Annotated
-import operator
-
-class MyState(TypedDict):
-    # 列表会自动累加
-    history: Annotated[list, operator.add]
-    # 普通字段会覆盖
+class GraphState(TypedDict):
+    messages: list
     current_step: str
-    # 支持默认值
-    count: int
 
-def step1(state):
-    return {
-        "history": ["Step 1 completed"],
-        "current_step": "step1",
-        "count": state.get("count", 0) + 1
-    }
-
-def step2(state):
-    return {
-        "history": ["Step 2 completed"],
-        "current_step": "step2",
-        "count": state.get("count", 0) + 1
-    }
-
-# 构建图
-graph = StateGraph(MyState)
-graph.add_node("step1", step1)
-graph.add_node("step2", step2)
-graph.add_edge("__start__", "step1")
-graph.add_edge("step1", "step2")
-graph.add_edge("step2", "__end__")
-
-app = graph.compile()
-result = app.invoke({})
-print(result)
-# {'history': ['Step 1 completed', 'Step 2 completed'], 'current_step': 'step2', 'count': 2}
+graph = StateGraph(GraphState)
 ```
 
-## 节点与边的构建
+### 2. Node（节点）
 
-### 添加节点
+节点是图中的处理单元：
 
 ```python
-from langgraph.graph import StateGraph, END, START
+def node_function(state):
+    return {"current_step": "processed"}
 
-# 定义状态
-class MyState(TypedDict):
-    data: str
-
-# 创建图
-graph = StateGraph(MyState)
-
-# 添加节点（函数形式）
-def process_data(state):
-    return {"data": state["data"] + " - processed"}
-
-graph.add_node("process", process_data)
-
-# 添加节点（可调用对象形式）
-class MyNode:
-    def __call__(self, state):
-        return {"data": state["data"] + " - class based"}
-
-graph.add_node("process_class", MyNode())
-
-# 起始节点
-graph.add_edge(START, "process")
-graph.add_edge("process", "process_class")
-graph.add_edge("process_class", END)
+graph.add_node("node_name", node_function)
 ```
 
-### 条件边
+### 3. Edge（边）
 
-条件边允许根据状态动态选择下一个节点：
+边定义了节点之间的连接关系：
 
 ```python
-from typing import Literal
-
-class WorkflowState(TypedDict):
-    user_request: str
-    classification: str
-    response: str
-
-def classify_request(state):
-    request = state["user_request"].lower()
-    if "help" in request:
-        return "help"
-    elif "feedback" in request:
-        return "feedback"
-    else:
-        return "general"
-
-def handle_help(state):
-    return {"response": "我来帮你！"}
-
-def handle_feedback(state):
-    return {"response": "感谢你的反馈！"}
-
-def handle_general(state):
-    return {"response": "好的，让我来处理你的请求。"}
-
-# 创建图
-graph = StateGraph(WorkflowState)
-graph.add_node("classify", classify_request)
-graph.add_node("handle_help", handle_help)
-graph.add_node("handle_feedback", handle_feedback)
-graph.add_node("handle_general", handle_general)
-
-# 条件边：根据分类结果选择节点
-graph.add_edge(START, "classify")
-graph.add_conditional_edges(
-    "classify",
-    lambda x: x["classification"],
-    {
-        "help": "handle_help",
-        "feedback": "handle_feedback",
-        "general": "handle_general"
-    }
-)
-
-# 所有处理节点都结束
-graph.add_edge("handle_help", END)
-graph.add_edge("handle_feedback", END)
-graph.add_edge("handle_general", END)
-
-app = graph.compile()
+graph.add_edge("node_a", "node_b")
+graph.add_conditional_edges("node_a", condition_function)
 ```
 
-## 循环工作流
+### 4. State（状态）
 
-LangGraph 支持循环结构，这对于需要迭代的任务非常有用：
+状态在整个图中共享和传递：
 
 ```python
-class LoopState(TypedDict):
-    count: int
-    max_count: int
+class AgentState(TypedDict):
+    messages: list
+    context: str
     result: str
+```
+
+## 基本使用
+
+### 简单的状态图
+
+```python
+from langgraph.graph import StateGraph, START, END
+from typing import TypedDict
+
+class SimpleState(TypedDict):
+    value: str
+
+def step_1(state):
+    return {"value": state["value"] + " -> 步骤1"}
+
+def step_2(state):
+    return {"value": state["value"] + " -> 步骤2"}
+
+def should_continue(state) -> str:
+    return "step_2" if len(state["value"]) < 20 else END
+
+graph = StateGraph(SimpleState)
+
+graph.add_node("step_1", step_1)
+graph.add_node("step_2", step_2)
+
+graph.add_edge(START, "step_1")
+graph.add_conditional_edges("step_1", should_continue)
+
+app = graph.compile()
+
+result = app.invoke({"value": "开始"})
+print(result)
+```
+
+### 带循环的图
+
+```python
+from langgraph.graph import StateGraph, START
+from typing import TypedDict
+
+class LoopState(TypedDict):
+    counter: int
+    messages: list
 
 def increment(state):
-    count = state["count"] + 1
-    return {
-        "count": count,
-        "result": f"计数: {count}"
-    }
+    return {"counter": state["counter"] + 1}
 
-def should_continue(state) -> Literal["increment", "__end__"]:
-    if state["count"] < state["max_count"]:
+def check_condition(state):
+    if state["counter"] < 5:
         return "increment"
-    return "__end__"
+    return END
 
 graph = StateGraph(LoopState)
 graph.add_node("increment", increment)
 graph.add_edge(START, "increment")
-
-# 条件边：决定是否继续循环
-graph.add_conditional_edges(
-    "increment",
-    should_continue,
-    {
-        "increment": "increment",
-        "__end__": END
-    }
-)
+graph.add_conditional_edges("increment", check_condition)
 
 app = graph.compile()
-result = app.invoke({"count": 0, "max_count": 3, "result": ""})
-print(result["count"])  # 3
+result = app.invoke({"counter": 0, "messages": []})
 ```
 
-## 实战示例：简单对话机器人
+## 实际应用示例
+
+### 1. 对话 Agent
 
 ```python
-from langgraph.graph import StateGraph, END, START, MessagesState
-from langgraph.graph import add_messages
-from typing import Annotated
+from langgraph.graph import StateGraph, START, MessagesState
 from langchain_openai import ChatOpenAI
+from langgraph.prebuilt import ToolNode
+from langgraph.prebuilt import tools_condition
+from typing import Literal
+from langchain_core.tools import tool
 
-llm = ChatOpenAI(model="gpt-4")
+@tool
+def search_database(query: str) -> str:
+    """搜索数据库"""
+    return f"数据库结果：关于'{query}'的信息"
 
-class ChatState(TypedDict):
-    messages: Annotated[list, add_messages]
-    user_name: str | None
+@tool
+def calculate(expression: str) -> str:
+    """执行计算"""
+    return str(eval(expression))
 
-def chatbot(state):
-    response = llm.invoke(state["messages"])
+tools = [search_database, calculate]
+
+graph = StateGraph(MessagesState)
+
+def call_model(state: MessagesState):
+    messages = state["messages"]
+    response = ChatOpenAI(model="gpt-4").invoke(messages)
     return {"messages": [response]}
 
-def should_end(state) -> Literal["chatbot", "__end__"]:
-    messages = state["messages"]
-    last_message = messages[-1].content.lower()
-    
-    # 检查是否应该说再见
-    if any(word in last_message for word in ["再见", "拜拜", "结束", "bye"]):
-        return "__end__"
-    return "chatbot"
+graph.add_node("model", call_model)
+graph.add_node("tools", ToolNode(tools))
 
-graph = StateGraph(ChatState)
-graph.add_node("chatbot", chatbot)
-graph.add_edge(START, "chatbot")
+graph.add_edge(START, "model")
 graph.add_conditional_edges(
-    "chatbot",
-    should_end,
-    {
-        "chatbot": "chatbot",
-        "__end__": END
-    }
+    "model",
+    tools_condition,
 )
+graph.add_edge("tools", "model")
 
 app = graph.compile()
 
-# 运行对话
-messages = [{"role": "user", "content": "你好！"}]
-result = app.invoke({"messages": messages, "user_name": None})
+result = app.invoke({
+    "messages": [{"role": "user", "content": "计算 2+3*5"}]
+})
 print(result["messages"][-1].content)
 ```
 
-## 持久化与检查点
+### 2. RAG 应用
 
-LangGraph 支持状态持久化，可以保存和恢复执行状态：
+```python
+from langgraph.graph import StateGraph, START
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import PromptTemplate
+
+class RAGState(TypedDict):
+    question: str
+    context: str
+    answer: str
+
+def retrieve(state: RAGState):
+    return {"context": "检索到的上下文信息..."}
+
+def generate(state: RAGState):
+    prompt = PromptTemplate.from_template(
+        "基于以下上下文回答问题：\n{context}\n\n问题：{question}"
+    )
+    llm = ChatOpenAI(model="gpt-4")
+    answer = (prompt | llm).invoke({
+        "context": state["context"],
+        "question": state["question"]
+    })
+    return {"answer": answer.content}
+
+graph = StateGraph(RAGState)
+graph.add_node("retrieve", retrieve)
+graph.add_node("generate", generate)
+graph.add_edge(START, "retrieve")
+graph.add_edge("retrieve", "generate")
+
+app = graph.compile()
+result = app.invoke({"question": "LangGraph是什么？", "context": "", "answer": ""})
+```
+
+## 主要特性
+
+### 1. 循环支持
+
+```python
+def should_loop(state):
+    return len(state["messages"]) < 10
+
+graph.add_conditional_edges("node", should_loop, {"loop": "node", "end": END})
+```
+
+### 2. 条件分支
+
+```python
+def route_based_on_input(state) -> Literal["path_a", "path_b"]:
+    if "查询" in state["input"]:
+        return "path_a"
+    return "path_b"
+
+graph.add_conditional_edges("router", route_based_on_input)
+```
+
+### 3. 状态持久化
 
 ```python
 from langgraph.checkpoint.memory import MemorySaver
 
-# 创建内存检查点
 checkpointer = MemorySaver()
-
-graph = StateGraph(ChatState)
-# ... 添加节点和边 ...
 app = graph.compile(checkpointer=checkpointer)
 
-# 创建新线程
 config = {"configurable": {"thread_id": "user_123"}}
-
-# 第一次对话
-app.invoke(
-    {"messages": [{"role": "user", "content": "我叫张三"}]},
-    config
-)
-
-# 第二次对话（保持上下文）
-app.invoke(
-    {"messages": [{"role": "user", "content": "我叫什么名字？"}]},
-    config
-)
+result = app.invoke({"state": "initial"}, config=config)
 ```
+
+### 4. 人机交互
+
+```python
+def human_node(state):
+    user_input = input("请输入：")
+    return {"user_input": user_input}
+
+graph.add_node("human", human_node)
+```
+
+## 安装和使用
+
+### 安装
+
+```bash
+pip install langgraph
+```
+
+### 基本导入
+
+```python
+from langgraph.graph import StateGraph, START, END
+from langgraph.prebuilt import create_react_agent
+from typing import TypedDict
+```
+
+## 应用场景
+
+| 场景 | 说明 |
+|------|------|
+| **多步骤 Agent** | 需要循环和工具调用的任务 |
+| **对话系统** | 带记忆的多轮对话 |
+| **RAG 流程** | 检索-生成工作流 |
+| **自动化流程** | 需要条件判断的业务流程 |
+| **监控系统** | 需要持续运行的系统 |
+
+## 最佳实践
+
+| 实践 | 说明 |
+|------|------|
+| **清晰的状态定义** | 使用 TypedDict 明确定义状态结构 |
+| **模块化节点** | 每个节点负责单一职责 |
+| **合理的条件分支** | 使用枚举或字面量定义分支 |
+| **状态持久化** | 生产环境使用检查点持久化 |
+| **错误处理** | 为节点添加异常处理 |
 
 ## 总结
 
-本文介绍了 LangGraph 的核心概念和架构：
+LangGraph 扩展了 LangChain，提供：
 
-| 概念 | 说明 |
+| 概念 | 作用 |
 |------|------|
-| **图结构** | 有向图表示工作流，由节点和边组成 |
-| **State** | 管理应用状态，支持多种数据类型 |
-| **Node** | 基本执行单元，可以是 LLM 调用、工具等 |
-| **Edge** | 连接节点，支持普通边和条件边 |
-| **循环** | 支持迭代和条件循环 |
-| **持久化** | 支持状态检查点和恢复 |
+| **Graph** | 应用的整体结构 |
+| **Node** | 处理单元 |
+| **Edge** | 节点连接 |
+| **State** | 共享状态 |
+| **Checkpointer** | 持久化支持 |
 
-LangGraph 的设计使其非常适合构建复杂的 AI Agent 和多步骤工作流。后续文章将深入讲解状态管理、工具集成和高级特性。🚀
+对于需要循环、条件分支和状态管理的复杂 LLM 应用，LangGraph 是理想的选择。

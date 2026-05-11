@@ -59,7 +59,7 @@ Agent（智能代理）是 LangChain 中最强大的功能之一，它赋予了 
 ### 使用 @tool 装饰器
 
 ```python
-from langchain.agents import tool
+from langchain_core.tools import tool
 
 @tool
 def get_weather(city: str) -> str:
@@ -94,30 +94,19 @@ def calculate(expression: str) -> str:
     except:
         return "计算错误"
 
-# 查看工具信息
-print(get_weather.name)  # get_weather
+print(get_weather.name)
 print(get_weather.description)
-print(get_weather.args)
 ```
 
 ### 使用 Tool 类
 
 ```python
-from langchain.agents import Tool
 from langchain_core.tools import tool
 
-# 方式1：函数定义
 def search_wikipedia(query: str) -> str:
     """搜索维基百科"""
     return f"关于'{query}'的信息..."
 
-search_tool = Tool(
-    name="wikipedia_search",
-    func=search_wikipedia,
-    description="搜索维基百科获取信息。输入应该是搜索关键词。"
-)
-
-# 方式2：使用 @tool 装饰器（推荐）
 @tool
 def search_wiki(query: str) -> str:
     """搜索维基百科获取信息。
@@ -134,24 +123,23 @@ def search_wiki(query: str) -> str:
 from langchain_community.tools import WikipediaQueryRun
 from langchain_community.utilities import WikipediaAPIWrapper
 
-# 维基百科搜索
 api_wrapper = WikipediaAPIWrapper()
 wiki_tool = WikipediaQueryRun(api_wrapper=api_wrapper)
 
-# 使用
 result = wiki_tool.invoke({"query": "Python编程语言"})
 ```
 
 ## Agent 类型
 
-### ZeroShotReAct
+### create_react_agent（新版本推荐方式）
 
 根据描述选择工具，不维护会话状态：
 
 ```python
-from langchain.agents import Agent, tool
-from langchain.agents.agent_types import AgentType
+from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
+from langchain import create_react_agent
+from langchain_core.messages import SystemMessage
 
 llm = ChatOpenAI(model="gpt-4", temperature=0)
 
@@ -167,102 +155,65 @@ def calculate(expression: str) -> str:
 
 tools = [get_weather, calculate]
 
-# 创建 Agent
-agent = Agent.from_agent_type(
-    agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-    llm=llm,
-    tools=tools,
-    verbose=True
+system_prompt = SystemMessage(content="""你是一个助手，可以访问一组工具。
+当需要信息时，使用工具获取。
+回答要简洁准确。""")
+
+agent = create_react_agent(
+    llm,
+    tools,
+    state_system_message=system_prompt
 )
 
-# 运行
-result = agent.invoke("北京今天的天气怎么样？")
-print(result)
+result = agent.invoke({"messages": ["北京今天的天气怎么样？"]})
+print(result["messages"][-1].content)
 ```
 
-### Conversational
+### create_conversational_retrieval_agent
 
 维护对话历史的 Agent：
 
 ```python
-from langchain.agents import ConversationalChatAgent
-from langchain.memory import ConversationBufferMemory
-
-# 创建记忆
-memory = ConversationBufferMemory(
-    memory_key="chat_history",
-    return_messages=True
-)
-
-# 创建 Agent
-agent = ConversationalChatAgent.from_llm_and_tools(
-    llm=llm,
-    tools=tools,
-    memory=memory,
-    system_message="你是一个友好的助手。",
-    verbose=True
-)
-
-# 对话
-agent.invoke("我叫张三")
-agent.invoke("我叫什么名字？")
-```
-
-### ReActDocStore
-
-使用文档存储的推理 Agent：
-
-```python
-from langchain.agents import create_react_docstore_agent
-from langchain_core.prompts import PromptTemplate
+from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
+from langchain import create_conversational_retrieval_agent
 
 llm = ChatOpenAI(model="gpt-4")
 
-# 简单的文档存储
-documents = {
-    "Apple": "苹果公司是一家美国科技公司，成立于1976年。",
-    "Microsoft": "微软公司是一家美国科技公司，成立于1975年。",
-    "Google": "谷歌是一家美国科技公司，成立于1998年。"
-}
+@tool
+def search_knowledge_base(query: str) -> str:
+    """搜索知识库获取信息"""
+    return f"关于'{query}'的知识库内容..."
 
-# 创建 Agent
-agent = create_react_docstore_agent(
-    llm=llm,
-    tools=tools,  # 需要 Lookup 和 Info 工具
-    prompt=PromptTemplate.from_template(...)
+@tool
+def get_calendar(event: str) -> str:
+    """获取日历事件"""
+    return f"日历事件: {event}"
+
+tools = [search_knowledge_base, get_calendar]
+
+agent = create_conversational_retrieval_agent(
+    llm,
+    tools,
+    verbose=True
 )
+
+result = agent.invoke({"input": "我叫张三"})
+result = agent.invoke({"input": "我叫什么名字？"})
 ```
 
-### OpenAI Functions Agent
+### create_structured_chat_agent
 
-使用 OpenAI 函数调用功能：
-
-```python
-from langchain.agents import Agent, OpenAIFunctionsAgent
-from langchain_core.messages import SystemMessage
-
-system_message = SystemMessage(content="""你是一个助手，可以访问一组工具。
-当需要信息时，使用工具获取。
-回答要简洁准确。""")
-
-prompt = OpenAIFunctionsAgent.create_prompt(system_message=system_message)
-
-agent = OpenAIFunctionsAgent(
-    llm=llm,
-    tools=tools,
-    prompt=prompt
-)
-```
-
-## Agent Executor
-
-### 基础用法
+使用结构化聊天：
 
 ```python
-from langchain.agents import AgentExecutor, tool
+from langchain_core.tools import tool
+from langchain_openai import ChatOpenAI
+from langchain.agents import create_structured_chat_agent
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-# 定义工具
+llm = ChatOpenAI(model="gpt-4")
+
 @tool
 def get_date(days_offset: int = 0) -> str:
     """获取日期
@@ -282,18 +233,54 @@ def calculate_days(from_date: str, to_date: str) -> str:
     d2 = datetime.strptime(to_date, "%Y年%m月%d日")
     return str((d2 - d1).days)
 
-# 创建 Executor
-executor = AgentExecutor(
-    agent=agent,
-    tools=[get_date, calculate_days],
-    verbose=True,
-    max_iterations=10,
-    handle_parsing_errors=True
-)
+tools = [get_date, calculate_days]
 
-# 执行
-result = executor.invoke({
-    "input": "今天距离2024年春节(2024年2月10日)还有多少天？"
+prompt = ChatPromptTemplate.from_messages([
+    ("system", """你是一个助手，可以访问一组工具。
+    始终使用工具来回答用户的问题。"""),
+    MessagesPlaceholder(variable_name="chat_history", optional=True),
+    ("human", "{input}"),
+    MessagesPlaceholder(variable_name="agent_scratchpad")
+])
+
+agent = create_structured_chat_agent(llm, tools, prompt)
+```
+
+## Agent Executor（新版本简化）
+
+### 基础用法
+
+```python
+from langchain_core.tools import tool
+from langchain_openai import ChatOpenAI
+from langchain import create_react_agent
+
+@tool
+def get_date(days_offset: int = 0) -> str:
+    """获取日期
+
+    Args:
+        days_offset: 相对于今天偏移的天数
+    """
+    from datetime import datetime, timedelta
+    date = datetime.now() + timedelta(days=days_offset)
+    return date.strftime("%Y年%m月%d日")
+
+@tool
+def calculate_days(from_date: str, to_date: str) -> str:
+    """计算两个日期之间的天数"""
+    from datetime import datetime
+    d1 = datetime.strptime(from_date, "%Y年%m月%d日")
+    d2 = datetime.strptime(to_date, "%Y年%m月%d日")
+    return str((d2 - d1).days)
+
+llm = ChatOpenAI(model="gpt-4", temperature=0)
+tools = [get_date, calculate_days]
+
+agent = create_react_agent(llm, tools)
+
+result = agent.invoke({
+    "messages": ["今天距离2024年春节(2024年2月10日)还有多少天？"]
 })
 ```
 
@@ -301,22 +288,20 @@ result = executor.invoke({
 
 | 参数 | 说明 | 默认值 |
 |------|------|--------|
-| **agent** | Agent 实例 | 必需 |
-| **tools** | 可用工具列表 | 必需 |
-| **verbose** | 是否打印详细日志 | False |
 | **max_iterations** | 最大迭代次数 | 15 |
-| **handle_parsing_errors** | 处理解析错误 | True |
-| **early_stopping_method** | 提前停止方法 | "force" |
+| **return_intermediate_steps** | 返回中间步骤 | False |
 
 ```python
-executor = AgentExecutor(
-    agent=agent,
-    tools=tools,
-    verbose=True,
-    max_iterations=5,
-    max_execution_time=60,  # 最大执行时间（秒）
-    handle_parsing_errors="handle_parsing_errors",  # 或 True
-    return_intermediate_steps=True  # 返回中间步骤
+from langchain_core.runnable import RunnableConfig
+
+config = RunnableConfig(
+    recursion_limit=10,
+    configurable={"verbose": True}
+)
+
+result = agent.invoke(
+    {"messages": ["你的问题"]},
+    config=config
 )
 ```
 
@@ -325,25 +310,27 @@ executor = AgentExecutor(
 ### 常用 Toolkits
 
 ```python
-# 文件系统工具包
-from langchain_community.agent_toolkits import FileManagementToolkit
-import os
+from langchain_core.tools import tool
+from langchain_openai import ChatOpenAI
 
-toolkit = FileManagementToolkit(
-    root_dir=os.getcwd(),
-    selected_tools=["read_file", "write_file", "list_directory"]
-)
-file_tools = toolkit.get_tools()
+llm = ChatOpenAI(model="gpt-4")
 
-# Python 解释器工具包
-from langchain_experimental.agents.agent_toolkits import create_python_agent
-from langchain_experimental.tools.python.tool import PythonREPLTool
+@tool
+def calculator(expression: str) -> str:
+    """执行数学计算"""
+    try:
+        result = eval(expression)
+        return f"计算结果：{result}"
+    except Exception as e:
+        return f"计算错误：{str(e)}"
 
-python_agent = create_python_agent(
-    llm=llm,
-    tool=PythonREPLTool(),
-    verbose=True
-)
+@tool
+def date_query(command: str) -> str:
+    """获取当前日期"""
+    from datetime import datetime
+    return datetime.now().strftime("%Y年%m月%d日")
+
+tools = [calculator, date_query]
 ```
 
 ## 多 Agent 协作
@@ -351,87 +338,84 @@ python_agent = create_python_agent(
 ### 协作模式
 
 ```python
-from langchain.agents import Agent, tool
+from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
+from langchain import create_react_agent
 
 llm = ChatOpenAI(model="gpt-4")
 
-# 专家 Agent
-researcher_tools = [...]
-researcher_agent = Agent.from_agent_type(
-    agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-    llm=llm,
-    tools=researcher_tools
-)
+@tool
+def search_research(query: str) -> str:
+    """搜索研究资料"""
+    return f"关于'{query}'的研究资料..."
 
-# 作家 Agent
-writer_tools = [...]
-writer_agent = Agent.from_agent_type(
-    agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-    llm=llm,
-    tools=writer_tools
-)
+@tool
+def write_article(topic: str) -> str:
+    """撰写文章"""
+    return f"关于'{topic}'的文章内容..."
 
-# 协调器
+@tool
+def review_content(content: str) -> str:
+    """审核内容"""
+    return f"审核意见：内容{len(content)}字，质量良好"
+
+researcher_tools = [search_research]
+writer_tools = [write_article]
+reviewer_tools = [review_content]
+
+researcher_agent = create_react_agent(llm, researcher_tools)
+writer_agent = create_react_agent(llm, writer_tools)
+reviewer_agent = create_react_agent(llm, reviewer_tools)
+
 def multi_agent_collaboration(task: str):
-    # 1. 研究
-    research = researcher_agent.invoke({"input": f"研究{task}"})
+    research = researcher_agent.invoke({"messages": [f"研究{task}"]})
 
-    # 2. 写作
     writing = writer_agent.invoke({
-        "input": f"基于以下研究写一篇文章：{research['output']}"
+        "messages": [f"基于以下研究写一篇文章：{research['messages'][-1].content}"]
     })
 
-    return writing["output"]
+    review = reviewer_agent.invoke({
+        "messages": [f"审核以下内容：{writing['messages'][-1].content}"]
+    })
+
+    return review["messages"][-1].content
 ```
 
-## 自定义 Agent
+## 自定义 Agent（新版本）
 
-### 继承 Agent 类
+### 使用 create_react_agent 自定义
 
 ```python
-from langchain.agents import Agent
-from langchain_core.tools import BaseTool
-from typing import List, Tuple, Union, Any
+from langchain_core.tools import tool
+from langchain_openai import ChatOpenAI
+from langchain import create_react_agent
+from langchain_core.prompts import ChatPromptTemplate, SystemMessage, MessagesPlaceholder
+from langchain_core.messages import HumanMessage, AIMessage
 
-class CustomAgent(Agent):
-    """自定义 Agent"""
+llm = ChatOpenAI(model="gpt-4")
 
-    @property
-    def observation_prefix(self) -> str:
-        return "Observation: "
+@tool
+def custom_tool(param: str) -> str:
+    """自定义工具"""
+    return f"处理结果: {param}"
 
-    @property
-    def llm_prefix(self) -> str:
-        return "Thought: "
+tools = [custom_tool]
 
-    @property
-    def output_keys(self) -> List[str]:
-        return ["output"]
+prompt = ChatPromptTemplate.from_messages([
+    SystemMessage(content="""你是一个专业的助手。
+    使用提供的工具来完成任务。
+    每次只使用一个工具。"""),
+    MessagesPlaceholder(variable_name="chat_history", optional=True),
+    ("human", "{input}"),
+    MessagesPlaceholder(variable_name="agent_scratchpad")
+])
 
-    def _construct_scratchpad(
-        self, intermediate_steps: List[Tuple[Any, str]]
-    ) -> str:
-        """构建思考过程"""
-        thoughts = ""
-        for action, observation in intermediate_steps:
-            thoughts += action.log
-            thoughts += f"\n{self.observation_prefix}{observation}\n"
-        return thoughts
+agent = create_react_agent(llm, tools, prompt)
 
-    def _get_text_output(
-        self, tool_arguments: str, observation: str
-    ) -> str:
-        return observation
-
-    def _take_next_step(
-        self, name_to_tool_map: dict,
-        color_mapping: dict,
-        inputs: dict,
-        intermediate_steps: List[Tuple[Any, str]]
-    ) -> Union[dict, Any]:
-        # 自定义决策逻辑
-        pass
+result = agent.invoke({
+    "input": "使用自定义工具处理'测试数据'",
+    "chat_history": []
+})
 ```
 
 ## 实战案例
@@ -439,8 +423,10 @@ class CustomAgent(Agent):
 ### 智能助手 Agent
 
 ```python
-from langchain.agents import Agent, tool, AgentExecutor
+from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
+from langchain import create_react_agent
+from langchain_core.messages import SystemMessage
 
 llm = ChatOpenAI(model="gpt-4", temperature=0)
 
@@ -450,7 +436,7 @@ def search_web(query: str) -> str:
     return f"搜索结果：关于'{query}'的最新信息..."
 
 @tool
-def get_time(city: str) -> str:
+def get_time() -> str:
     """获取当前时间"""
     from datetime import datetime
     return f"现在是{datetime.now().strftime('%Y年%m月%d日 %H:%M')}"
@@ -467,52 +453,42 @@ def send_email(to: str, content: str) -> str:
 
 tools = [search_web, get_time, calculate, send_email]
 
-agent = Agent.from_agent_type(
-    agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-    llm=llm,
-    tools=tools
+system_message = SystemMessage(content="""你是一个智能助手，可以使用工具来回答问题。
+可用工具：search_web, get_time, calculate, send_email""")
+
+agent = create_react_agent(
+    llm,
+    tools,
+    state_system_message=system_message
 )
 
-executor = AgentExecutor(
-    agent=agent,
-    tools=tools,
-    verbose=True
-)
-
-# 测试
-executor.invoke({
-    "input": "帮我查一下今天北京的天气，然后在明天下午3点给老板发一封邮件告诉他"
+result = agent.invoke({
+    "messages": ["帮我查一下今天北京的天气，然后在明天下午3点给老板发一封邮件告诉他"]
 })
+
+print(result["messages"][-1].content)
 ```
 
-### 数据分析 Agent
+### 数据分析 Agent（新版本）
 
 ```python
-from langchain.agents import create_pandas_dataframe_agent
-from langchain_experimental.agents import create_csv_agent
+from langchain_openai import ChatOpenAI
+from langchain_experimental.agents import create_pandas_dataframe_agent
 import pandas as pd
 
-# CSV 分析 Agent
-csv_agent = create_csv_agent(
-    llm=llm,
-    path="data.csv",
-    verbose=True
-)
+llm = ChatOpenAI(model="gpt-4", temperature=0)
 
-# 使用
-csv_agent.invoke("有多少行数据？")
-csv_agent.invoke("计算 'sales' 列的平均值")
-
-# DataFrame 分析
 df = pd.read_csv("sales_data.csv")
+
 df_agent = create_pandas_dataframe_agent(
-    llm=llm,
-    df=df,
-    verbose=True
+    llm,
+    df,
+    verbose=True,
+    agent_type="openai-tools"
 )
 
-df_agent.invoke("绘制销售趋势图")
-df_agent.invoke("找出销售额最高的前5个产品")
+result = df_agent.invoke("绘制销售趋势图")
+result = df_agent.invoke("找出销售额最高的前5个产品")
 ```
 
 ## 调试技巧
@@ -520,44 +496,38 @@ df_agent.invoke("找出销售额最高的前5个产品")
 ### 启用详细输出
 
 ```python
-executor = AgentExecutor(
-    agent=agent,
-    tools=tools,
-    verbose=True,
-    max_iterations=10
+from langchain_core.runnable import RunnableConfig
+
+config = RunnableConfig(
+    configurable={"verbose": True}
 )
 
-result = executor.invoke({
-    "input": "你的问题",
-    "intermediate_steps": []  # 跟踪中间步骤
-})
+result = agent.invoke(
+    {"messages": ["你的问题"]},
+    config=config
+)
 
-# 查看所有中间步骤
-if "intermediate_steps" in result:
-    for step in result["intermediate_steps"]:
-        print(f"Action: {step[0]}")
-        print(f"Observation: {step[1]}")
+if "messages" in result:
+    for msg in result["messages"]:
+        print(f"{msg.type}: {msg.content}")
 ```
 
 ### 常见错误处理
 
 ```python
-# 处理解析错误
-executor = AgentExecutor(
-    agent=agent,
-    tools=tools,
-    handle_parsing_errors=True  # 自动处理
+from langchain_core.runnable import RunnableConfig
+
+config = RunnableConfig(
+    recursion_limit=5
 )
 
-# 或者自定义处理
-def handle_error(error):
-    return f"遇到错误: {error}，请重新尝试"
-
-executor = AgentExecutor(
-    agent=agent,
-    tools=tools,
-    handle_parsing_errors=handle_error
-)
+try:
+    result = agent.invoke(
+        {"messages": ["你的问题"]},
+        config=config
+    )
+except Exception as e:
+    print(f"遇到错误: {e}")
 ```
 
 ## 最佳实践

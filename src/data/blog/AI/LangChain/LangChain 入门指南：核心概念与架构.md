@@ -63,23 +63,16 @@ LangChain 的核心架构围绕六大模块展开：
 ### 安装 LangChain
 
 ```bash
-# 基础安装
-pip install langchain
-
-# 安装所有依赖
-pip install langchain[all]
-
-# 推荐安装（常用依赖）
 pip install langchain-openai langchain-community
 ```
 
 ### 环境变量配置
 
 ```bash
-# 设置 OpenAI API Key
 export OPENAI_API_KEY="your-api-key"
+```
 
-# 或者在代码中设置
+```python
 import os
 os.environ["OPENAI_API_KEY"] = "your-api-key"
 ```
@@ -89,203 +82,132 @@ os.environ["OPENAI_API_KEY"] = "your-api-key"
 ```python
 from langchain_openai import ChatOpenAI
 
-# 创建模型实例
 llm = ChatOpenAI(model="gpt-4")
 
-# 测试调用
 response = llm.invoke("你好，请介绍一下你自己")
 print(response.content)
 ```
 
 ## Model I/O 模块
 
-### LLMs 和 Chat Models
-
-LangChain 支持两种类型的模型：
-
-| 类型 | 说明 | 使用场景 |
-|------|------|---------|
-| **LLMs** | 纯文本补全模型 | 文本生成、翻译 |
-| **Chat Models** | 对话模型 | 聊天机器人、问答 |
+### Chat Models
 
 ```python
-from langchain_openai import ChatOpenAI, OpenAI
+from langchain_openai import ChatOpenAI
 
-# Chat Model
 chat_model = ChatOpenAI(model="gpt-4")
 
-# LLM
-llm = OpenAI(model="gpt-3.5-turbo-instruct")
-
-# Chat Model 调用
 chat_response = chat_model.invoke("解释什么是量子计算")
 print(chat_response.content)
-
-# LLM 调用
-llm_response = llm.invoke("写一首关于春天的诗")
-print(llm_response)
 ```
 
 ### 提示词模板
 
-使用模板可以动态构建提示词：
-
 ```python
 from langchain_core.prompts import PromptTemplate
 
-# 简单模板
 template = PromptTemplate.from_template("请将以下中文翻译成英文：{text}")
 prompt = template.invoke({"text": "今天天气真好"})
 response = chat_model.invoke(prompt)
 print(response.content)
-
-# 带示例的模板
-template_with_examples = PromptTemplate.from_template(
-    """将以下单词转换为复数形式：
-
-    单词：{word}
-    复数："""
-)
 ```
 
 ## Chain 模块
 
-Chain 是 LangChain 的核心概念，用于将多个组件串联起来。
-
-### LLMChain
-
-最基本的链，用于将提示词模板和模型连接：
+### LCEL 管道（新版本推荐）
 
 ```python
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
-from langchain.chains.llm import LLMChain
+from langchain_core.output_parsers import StrOutputParser
 
-# 创建模型
 llm = ChatOpenAI(model="gpt-4", temperature=0)
 
-# 创建提示词模板
 template = PromptTemplate.from_template("你是一个专业的{profession}，请回答以下问题：{question}")
-chain = LLMChain(llm=llm, prompt=template)
+chain = template | llm | StrOutputParser()
 
-# 运行链
 result = chain.invoke({
     "profession": "软件工程师",
     "question": "什么是设计模式？"
 })
-print(result["text"])
-```
-
-### Sequential Chain
-
-顺序执行多个链：
-
-```python
-from langchain.chains.sequential import SequentialChain
-
-# 第一个链：翻译
-chain1 = LLMChain(
-    llm=llm,
-    prompt=PromptTemplate.from_template("将以下文本翻译成法语：{text}"),
-    output_key="french_text"
-)
-
-# 第二个链：总结
-chain2 = LLMChain(
-    llm=llm,
-    prompt=PromptTemplate.from_template("用一句话总结以下文本：{french_text}"),
-    output_key="summary"
-)
-
-# 组合成顺序链
-sequential_chain = SequentialChain(
-    chains=[chain1, chain2],
-    input_variables=["text"],
-    output_variables=["french_text", "summary"]
-)
-
-# 执行
-result = sequential_chain.invoke({
-    "text": "LangChain is a powerful framework for building LLM applications."
-})
+print(result)
 ```
 
 ## Agent 模块
 
-Agent 可以让模型自主决定执行哪些操作：
-
 ```python
-from langchain.agents import Agent, tool
-from langchain.agents.agent_types import AgentType
-from langchain_core.prompts import PromptTemplate
+from langchain_core.tools import tool
+from langchain_openai import ChatOpenAI
+from langchain import create_react_agent
 
-# 定义工具
 @tool
 def get_weather(city: str) -> str:
     """获取城市天气"""
     return f"{city}今天的天气是晴天，25摄氏度。"
 
-# 创建代理
+llm = ChatOpenAI(model="gpt-4")
 tools = [get_weather]
 
-agent = Agent.from_agent_type(
-    agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-    llm=llm,
-    tools=tools
-)
+agent = create_react_agent(llm, tools)
 
-# 运行代理
-result = agent.invoke("北京今天的天气怎么样？")
-print(result)
+result = agent.invoke({"messages": ["北京今天的天气怎么样？"]})
+print(result["messages"][-1].content)
 ```
 
 ## Memory 模块
 
-Memory 用于在对话或处理过程中保持状态：
-
 ```python
 from langchain.memory import ConversationBufferMemory
-from langchain.chains.conversation import ConversationChain
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_openai import ChatOpenAI
 
-# 创建内存
-memory = ConversationBufferMemory()
-
-# 创建对话链
-conversation = ConversationChain(
-    llm=llm,
-    memory=memory,
-    verbose=True
+memory = ConversationBufferMemory(
+    memory_key="chat_history",
+    return_messages=True
 )
 
-# 对话
-conversation.invoke("我叫张三，是一名软件工程师")
-conversation.invoke("我叫什么名字？")
-conversation.invoke("我的职业是什么？")
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "你是一个友好的助手。"),
+    MessagesPlaceholder(variable_name="chat_history"),
+    ("human", "{input}")
+])
+
+def chat(input_text):
+    history = memory.load_memory_variables({}).get("chat_history", [])
+
+    chain = prompt | ChatOpenAI(model="gpt-4")
+    response = chain.invoke({
+        "input": input_text,
+        "chat_history": history
+    })
+
+    memory.chat_memory.add_user_message(input_text)
+    memory.chat_memory.add_ai_message(response.content)
+
+    return response.content
+
+chat("我叫张三，是一名软件工程师")
+chat("我叫什么名字？")
+chat("我的职业是什么？")
 ```
 
 ## Retrieval 模块
 
-用于实现检索增强生成（RAG）：
-
 ```python
 from langchain_community.document_loaders import TextLoader
-from langchain.text_splitter import CharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 
-# 加载文档
 loader = TextLoader("文档路径.txt")
 documents = loader.load()
 
-# 分割文档
-splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 docs = splitter.split_documents(documents)
 
-# 创建向量存储
 embeddings = OpenAIEmbeddings()
 vectorstore = Chroma.from_documents(docs, embeddings)
 
-# 创建检索器
 retriever = vectorstore.as_retriever()
 ```
 
@@ -294,13 +216,12 @@ retriever = vectorstore.as_retriever()
 ```python
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
-from langchain.chains.llm import LLMChain
+from langchain_core.output_parsers import StrOutputParser
 
-# 初始化模型
 llm = ChatOpenAI(model="gpt-4", temperature=0.7)
 
-# 定义提示词
-template = """你是一个知识渊博的助手。基于以下上下文信息，
+template = PromptTemplate.from_template(
+    """你是一个知识渊博的助手。基于以下上下文信息，
 请回答用户的问题。如果上下文中没有相关信息，请如实说明。
 
 上下文：
@@ -309,27 +230,20 @@ template = """你是一个知识渊博的助手。基于以下上下文信息，
 问题：{question}
 
 回答："""
-
-prompt = PromptTemplate(
-    template=template,
-    input_variables=["context", "question"]
 )
 
-# 创建链
-chain = LLMChain(llm=llm, prompt=prompt)
+chain = template | llm | StrOutputParser()
 
-# 模拟上下文
 context = """
 LangChain 是一个用于构建 LLM 应用的框架。
 它提供了丰富的组件，包括模型、提示词模板、链、代理等。
 """
 
-# 问答
 result = chain.invoke({
     "context": context,
     "question": "LangChain 是什么？"
 })
-print(result["text"])
+print(result)
 ```
 
 ## 总结

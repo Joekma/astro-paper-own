@@ -53,184 +53,111 @@ Memory（记忆组件）是 LangChain 中用于在对话或处理过程中保持
 | **BufferMemory** | 简单缓冲记忆 | 短期对话 |
 | **ConversationBufferMemory** | 对话缓冲 | 标准聊天 |
 | **ConversationSummaryMemory** | 摘要记忆 | 长对话 |
-| **EntityMemory** | 实体记忆 | 实体信息提取 |
 | **CombinedMemory** | 组合记忆 | 多维度记忆 |
 | **VectorStoreRetrieverMemory** | 向量记忆 | 语义检索 |
 
 ## BufferMemory
 
-### 基础用法
+### 基础用法（新版本）
 
 ```python
-from langchain.memory import BufferMemory
-from langchain_openai import ChatOpenAI
-from langchain.chains.conversation import ConversationChain
+from langchain.memory import ConversationBufferMemory
+from langchain_core.messages import SystemMessage
 
-llm = ChatOpenAI(model="gpt-4", temperature=0)
-
-# 创建记忆
-memory = BufferMemory(
-    ai_prefix="AI助手",
-    human_prefix="用户"
+memory = ConversationBufferMemory(
+    memory_key="history",
+    return_messages=True
 )
 
-# 创建对话链
-conversation = ConversationChain(
-    llm=llm,
-    memory=memory,
-    verbose=True
-)
-
-# 对话
-conversation.invoke("我叫张三，是一名软件工程师")
-conversation.invoke("我叫什么名字？")
-conversation.invoke("我的职业是什么？")
-```
-
-### 自定义缓冲区
-
-```python
-from langchain.memory import BufferMemory
-
-memory = BufferMemory(
-    max_token_limit=100,  # 最大 token 数
-    ai_prefix="助手",
-    human_prefix="我"
-)
-
-# 手动添加消息
 memory.chat_memory.add_user_message("你好")
 memory.chat_memory.add_ai_message("你好！有什么可以帮助你的吗？")
 
-# 获取历史
 history = memory.load_memory_variables({})
 print(history)
 ```
 
 ## ConversationMemory
 
-### ConversationBufferMemory
+### ConversationBufferMemory（新版本）
 
 完整的对话缓冲记忆：
 
 ```python
 from langchain.memory import ConversationBufferMemory
 from langchain_openai import ChatOpenAI
-from langchain.chains.conversation import ConversationChain
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 memory = ConversationBufferMemory(
     memory_key="history",
-    return_messages=True,
-    output_key="response"
+    return_messages=True
 )
 
-conversation = ConversationChain(
-    llm=ChatOpenAI(model="gpt-4"),
-    memory=memory,
-    prompt=...  # 可选的自定义提示词
-)
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "你是一个友好的助手。"),
+    MessagesPlaceholder(variable_name="history"),
+    ("human", "{input}")
+])
 
-# 对话
-response = conversation.invoke({"input": "我喜欢编程"})
-print(f"回复: {response['response']}")
+def chat_with_memory(input_text):
+    history = memory.load_memory_variables({})["history"]
 
-# 查看记忆内容
-print(memory.load_memory_variables({}))
+    chain = prompt | ChatOpenAI(model="gpt-4")
+    response = chain.invoke({
+        "input": input_text,
+        "history": history
+    })
+
+    memory.chat_memory.add_user_message(input_text)
+    memory.chat_memory.add_ai_message(response.content)
+
+    return response.content
+
+response = chat_with_memory("我喜欢编程")
+print(response)
+
+response = chat_with_memory("我的爱好是什么？")
+print(response)
 ```
 
 ## SummaryMemory
 
-### ConversationSummaryMemory
+### ConversationSummaryMemory（新版本）
 
 对长对话进行摘要，节省 token：
 
 ```python
 from langchain.memory import ConversationSummaryMemory
 from langchain_openai import ChatOpenAI
-from langchain.chains.conversation import ConversationChain
 
 llm = ChatOpenAI(model="gpt-4")
 
-# 创建摘要记忆
 memory = ConversationSummaryMemory(
-    llm=llm,  # 需要 LLM 来生成摘要
+    llm=llm,
     memory_key="summary",
     return_messages=True
 )
 
-conversation = ConversationChain(
-    llm=llm,
-    memory=memory,
-    verbose=True
-)
-
-# 多次对话后查看摘要
 for i in range(5):
-    conversation.invoke({f"input": f"这是第{i+1}轮对话，内容涉及项目进度和技术讨论"})
+    memory.chat_memory.add_user_message(f"这是第{i+1}轮对话，内容涉及项目进度和技术讨论")
 
-# 查看生成的摘要
 summary = memory.load_memory_variables({})
 print(summary["summary"])
 ```
 
-### 对比 Buffer vs Summary
-
-| 特性 | BufferMemory | SummaryMemory |
-|------|-------------|--------------|
-| 存储内容 | 完整对话历史 | 摘要文本 |
-| Token 消耗 | 线性增长 | 固定长度 |
-| 信息完整性 | 完全保留 | 可能丢失细节 |
-| 适用场景 | 短对话 | 长对话 |
-
-## EntityMemory
-
-### 提取和记忆实体
-
-```python
-from langchain.memory import EntityMemory
-from langchain_openai import ChatOpenAI
-from langchain.chains.conversation import ConversationChain
-
-llm = ChatOpenAI(model="gpt-4")
-
-memory = EntityMemory(
-    llm=llm,
-    memory_key="entities",
-    return_messages=True
-)
-
-conversation = ConversationChain(
-    llm=llm,
-    memory=memory,
-    verbose=True
-)
-
-# 对话中提取实体
-conversation.invoke("我叫李明，在北京工作，是一名产品经理")
-conversation.invoke("我的名字是什么？")
-conversation.invoke("我在哪个城市工作？")
-
-# 查看提取的实体
-entities = memory.load_memory_variables({})
-print(entities["entities"])
-```
-
-## CombinedMemory
+## CombinedMemory（新版本）
 
 ### 组合多种记忆类型
 
 ```python
 from langchain.memory import (
     ConversationBufferMemory,
-    ConversationSummaryMemory,
-    CombinedMemory
+    ConversationSummaryMemory
 )
 from langchain_openai import ChatOpenAI
-from langchain.chains.conversation import ConversationChain
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 llm = ChatOpenAI(model="gpt-4")
 
-# 创建多种记忆
 conv_memory = ConversationBufferMemory(
     memory_key="recent_history",
     return_messages=True
@@ -242,23 +169,35 @@ summary_memory = ConversationSummaryMemory(
     return_messages=True
 )
 
-# 组合记忆
-memory = CombinedMemory(
-    memories=[conv_memory, summary_memory]
-)
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "你是一个友好的助手。"),
+    MessagesPlaceholder(variable_name="history"),
+    ("system", "对话摘要：{summary}"),
+    ("human", "{input}")
+])
 
-conversation = ConversationChain(
-    llm=llm,
-    memory=memory,
-    verbose=True
-)
+def chat_with_combined_memory(input_text):
+    recent_history = conv_memory.load_memory_variables({}).get("history", [])
+    summary = summary_memory.load_memory_variables({}).get("summary", "")
 
-# 对话
-conversation.invoke("我们公司最近推出了新产品，用户反馈很好")
-conversation.invoke("最近有什么新产品吗？")
+    chain = prompt | llm
+    response = chain.invoke({
+        "input": input_text,
+        "history": recent_history,
+        "summary": summary
+    })
+
+    conv_memory.chat_memory.add_user_message(input_text)
+    conv_memory.chat_memory.add_ai_message(response.content)
+    summary_memory.chat_memory.add_user_message(input_text)
+    summary_memory.chat_memory.add_ai_message(response.content)
+
+    return response.content
+
+chat_with_combined_memory("我们公司最近推出了新产品，用户反馈很好")
 ```
 
-## 向量记忆
+## 向量记忆（新版本）
 
 ### VectorStoreRetrieverMemory
 
@@ -270,19 +209,15 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_openai import ChatOpenAI
 
-# 创建向量存储
 embeddings = OpenAIEmbeddings()
 vectorstore = Chroma(embedding_function=embeddings)
 
-# 创建向量记忆
 memory = VectorStoreRetrieverMemory(
     vectorstore=vectorstore,
     memory_key="chat_history",
-    k=3,  # 检索最近3条相关记忆
-    search_score_threshold=0.5  # 相似度阈值
+    k=3
 )
 
-# 添加记忆
 memory.save_context(
     {"input": "我喜欢Python编程"},
     {"output": "Python是一门很棒的编程语言！"}
@@ -292,126 +227,99 @@ memory.save_context(
     {"output": "上海是一座国际化大都市！"}
 )
 
-# 检索相关记忆
 related = memory.load_memory_variables(
-    {"prompt": "我在哪里工作？"}
+    {"input": "我在哪里工作？"}
 )
 print(related)
 ```
 
 ## 使用 Memory 在 Chain 中
 
-### 直接在 LLMChain 中使用
+### 直接使用（新版本）
 
 ```python
 from langchain.memory import ConversationBufferMemory
 from langchain_openai import ChatOpenAI
-from langchain_core.prompts import PromptTemplate
-from langchain.chains.llm import LLMChain
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-llm = ChatOpenAI(model="gpt-4")
+memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
-# 创建带记忆的链
-memory = ConversationBufferMemory(memory_key="chat_history")
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "你是一个友好的助手。"),
+    MessagesPlaceholder(variable_name="chat_history"),
+    ("human", "{question}")
+])
 
-prompt = PromptTemplate.from_template(
-    """基于以下对话历史回答问题：
+def chat(question):
+    history = memory.load_memory_variables({}).get("chat_history", [])
 
-    历史：{chat_history}
+    chain = prompt | ChatOpenAI(model="gpt-4")
+    response = chain.invoke({
+        "question": question,
+        "chat_history": history
+    })
 
-    问题：{question}
+    memory.chat_memory.add_user_message(question)
+    memory.chat_memory.add_ai_message(response.content)
 
-    回答："""
-)
+    return response.content
 
-chain = LLMChain(
-    llm=llm,
-    prompt=prompt,
-    memory=memory,
-    verbose=True
-)
-
-# 使用
-chain.invoke({
-    "question": "我叫小明，请记住我的名字"
-})
-
-chain.invoke({
-    "question": "我叫什么名字？"
-})
+chat("我叫小明，请记住我的名字")
+chat("我叫什么名字？")
 ```
 
-### 在 Agent 中使用
+### 在 Agent 中使用（新版本）
 
 ```python
-from langchain.agents import Agent, tool
-from langchain.agents.agent_types import AgentType
-from langchain.memory import ConversationBufferMemory
+from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
+from langchain import create_conversational_retrieval_agent
 
 llm = ChatOpenAI(model="gpt-4")
 
-# 创建记忆
 memory = ConversationBufferMemory(
     memory_key="chat_history",
     return_messages=True
 )
 
-# 创建 Agent
-agent = Agent.from_agent_type(
-    agent_type=AgentType.CONVERSATIONAL_REACT_DESCRIPTION,
-    llm=llm,
-    memory=memory,
-    tools=[tool1, tool2]  # 可选的工具
-)
+@tool
+def search_tool(query: str) -> str:
+    """搜索工具"""
+    return f"关于'{query}'的搜索结果..."
 
-# 对话
-agent.invoke("我叫王五，是一名数据科学家")
-agent.invoke("我的职业是什么？")
+tools = [search_tool]
+
+agent = create_conversational_retrieval_agent(llm, tools, memory=memory)
+
+agent.invoke({"input": "我叫王五，是一名数据科学家"})
+agent.invoke({"input": "我的职业是什么？"})
 ```
 
 ## 持久化记忆
 
-### 使用 SQL 存储
+### 使用基础存储
 
 ```python
-from langchain.memory import SQLStore, ConversationBufferMemory
-
-# 创建 SQL 存储
-store = SQLStore(
-    session_id="user_123",
-    table_name="conversation_memory"
-)
+from langchain.memory import ConversationBufferMemory
 
 memory = ConversationBufferMemory(
-    chat_memory=store
+    memory_key="chat_history",
+    return_messages=True
 )
 
-# 对话自动持久化
 memory.chat_memory.add_user_message("你好")
 memory.chat_memory.add_ai_message("你好！")
-```
 
-### 使用 Redis 存储
-
-```python
-from langchain.memory import RedisChatMemory
-from langchain_openai import ChatOpenAI
-
-memory = RedisChatMemory(
-    session_id="user_123",
-    redis_url="redis://localhost:6379",
-    memory_key="chat_history"
-)
+chat_history = memory.chat_memory.messages
 ```
 
 ## 记忆与提示词模板
 
-### 自定义带记忆的提示词
+### 自定义带记忆的提示词（新版本）
 
 ```python
 from langchain.memory import ConversationBufferMemory
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 
 memory = ConversationBufferMemory(
@@ -419,18 +327,11 @@ memory = ConversationBufferMemory(
     return_messages=True
 )
 
-# 自定义提示词
 prompt = ChatPromptTemplate.from_messages([
     ("system", "你是一个友好的助手。记住之前的对话内容。"),
-    ("placeholder", "{chat_history}"),
-    ("human", "{question}"),
+    MessagesPlaceholder(variable_name="chat_history"),
+    ("human", "{question}")
 ])
-
-# 创建链
-chain = prompt | ChatOpenAI(model="gpt-4")
-
-# 使用
-from langchain.chains.history_aware_retriever import create_history_aware_retriever
 ```
 
 ## 记忆管理
@@ -438,23 +339,19 @@ from langchain.chains.history_aware_retriever import create_history_aware_retrie
 ### 清空记忆
 
 ```python
-# 清空所有记忆
 memory.clear()
 
-# 删除特定消息
-memory.chat_memory.messages.pop()
+memory.chat_memory.messages.clear()
 ```
 
 ### 保存和加载
 
 ```python
-# 保存记忆
 memory.save_context(
     {"input": "用户输入"},
     {"output": "AI输出"}
 )
 
-# 加载记忆变量
 vars = memory.load_memory_variables({})
 print(vars)
 ```
@@ -474,15 +371,14 @@ print(vars)
 ```
 对话长度
   │
-  │ 短（< 5轮）
+  │短（< 5轮）
   │  └── ConversationBufferMemory
   │
-  │ 中等（5-20轮）
+  │中等（5-20轮）
   │  └── ConversationSummaryMemory
   │
-  │ 长（> 20轮）
-  │  ├── 需要检索 → VectorStoreRetrieverMemory
-  │  └── 实体信息 → EntityMemory
+  │长（> 20轮）
+  │  └── 需要检索 → VectorStoreRetrieverMemory
   │
   │ 复杂场景
   │  └── CombinedMemory（组合多种）
@@ -494,7 +390,7 @@ print(vars)
 
 ```python
 memory = ConversationBufferMemory(
-    max_token_limit=1000  # 限制最大 token 数
+    max_token_limit=1000
 )
 ```
 
@@ -508,11 +404,11 @@ print(vars["history"])
 ### Q3：如何持久化记忆？
 
 ```python
-# 使用数据库
-from langchain.memory import SQLStore
+import json
 
-store = SQLStore(session_id="user_session")
-memory = ConversationBufferMemory(chat_memory=store)
+vars = memory.load_memory_variables({})
+with open("memory.json", "w") as f:
+    json.dump(vars, f)
 ```
 
 ## 总结
@@ -521,7 +417,6 @@ memory = ConversationBufferMemory(chat_memory=store)
 |------------|------|---------|
 | **BufferMemory** | 完整历史 | 短对话 |
 | **SummaryMemory** | 摘要存储 | 长对话 |
-| **EntityMemory** | 实体提取 | 实体信息 |
 | **VectorMemory** | 语义检索 | 大量记忆 |
 | **CombinedMemory** | 多类型组合 | 复杂需求 |
 

@@ -1,869 +1,434 @@
 ---
 title: LlamaIndex 实战：构建 RAG 应用
-series: LlamaIndex
 author: Joekma
-pubDatetime: 2026-05-08T00:00:00.000+08:00
-modDatetime: 2026-05-08T00:00:00.000+08:00
-slug: llamaindex-rag-practical
-description: '使用LlamaIndex构建完整的RAG应用，包括文档问答、知识库、聊天机器人和企业搜索系统。'
+pubDatetime: 2026-05-07T00:00:00.000+08:00
+modDatetime: 2026-05-07T00:00:00.000+08:00
+slug: llamaindex-rag-pratice
+description: '使用LlamaIndex构建完整的RAG应用，包括文档处理、索引构建、查询优化和多模态支持。'
 tags:
   - LlamaIndex
-  - LLM
-  - AI
   - RAG
-  - Practical
+  - 实战
 draft: false
+series: LlamaIndex
 language: zh-CN
 ---
 
 ## 概述
 
-RAG（检索增强生成）是当前构建 LLM 应用最流行的架构之一。本文将通过多个实战案例，展示如何使用 LlamaIndex 构建完整的 RAG 应用，包括文档问答系统、企业知识库、智能聊天机器人和高级搜索系统。
+本文将通过实战项目展示如何使用 LlamaIndex 构建完整的 RAG（检索增强生成）应用。我们将实现一个支持多种文档格式、灵活检索的智能问答系统。
 
-## 基础 RAG 流程
-
-### 完整的 RAG 流程
+### 项目架构
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      RAG Architecture                      │
+│                    RAG 应用架构                              │
 ├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌──────────┐                                              │
-│  │  文档    │                                              │
-│  └────┬─────┘                                              │
-│       │                                                    │
-│       ▼                                                    │
-│  ┌──────────┐     ┌──────────┐                            │
-│  │  加载    │────▶│  分割    │                            │
-│  └──────────┘     └────┬─────┘                            │
-│                       │                                   │
-│                       ▼                                   │
-│  ┌──────────┐     ┌──────────┐                            │
-│  │ 向量存储 │◀────│ 嵌入    │                            │
-│  └────┬─────┘     └──────────┘                            │
-│       │                                                    │
-│       │  ┌──────────┐                                     │
-│       ├──│ 用户查询 │                                     │
-│       │  └────┬─────┘                                     │
-│       ▼      ▼                                           │
-│  ┌──────────┐  ┌──────────┐                              │
-│  │  检索    │──│  检索    │                              │
-│  └────┬─────┘  └────┬─────┘                              │
-│       │             │                                    │
-│       │    ┌────────┴────────┐                           │
-│       │    │                 │                           │
-│       ▼    ▼                 ▼                           │
-│  ┌──────────┐          ┌──────────┐                      │
-│  │  上下文  │          │   LLM   │                      │
-│  └────┬─────┘          └────┬─────┘                      │
-│       │                    │                             │
-│       │    ┌────────────────┘                             │
-│       ▼    ▼                                             │
-│  ┌──────────┐                                            │
-│  │ 生成回答 │                                            │
-│  └──────────┘                                            │
-│                                                             │
+│                                                              │
+│   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌────────┐ │
+│   │  数据加载 │ → │  文本分割 │ → │  构建索引 │ → │  存储  │ │
+│   └──────────┘   └──────────┘   └──────────┘   └────────┘ │
+│                                                              │
+│   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌────────┐ │
+│   │  用户查询 │ → │  语义检索 │ → │  上下文  │ → │  生成  │ │
+│   └──────────┘   └──────────┘   └──────────┘   └────────┘ │
+│                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## 案例一：文档问答系统
+## 项目初始化
 
-### 基础实现
+### 环境配置
+
+```bash
+pip install llama-index
+pip install llama-index-llms-openai
+pip install llama-index-embeddings-openai
+pip install llama-index-readers-file
+```
+
+### 基本设置
 
 ```python
-from llama_index.core import (
-    VectorStoreIndex,
-    SimpleDirectoryReader,
-    ServiceContext
-)
 from llama_index.llms.openai import OpenAI
-
-# 1. 加载文档
-documents = SimpleDirectoryReader("./data/docs").load_data()
-
-# 2. 配置 LLM
-llm = OpenAI(model="gpt-4", temperature=0)
-service_context = ServiceContext.from_defaults(llm=llm)
-
-# 3. 创建索引
-index = VectorStoreIndex.from_documents(
-    documents,
-    service_context=service_context
-)
-
-# 4. 创建查询引擎
-query_engine = index.as_query_engine(
-    similarity_top_k=5,
-    response_mode="compact"
-)
-
-# 5. 问答函数
-def ask_question(question):
-    response = query_engine.query(question)
-    return {
-        "answer": response.response,
-        "sources": [
-            {
-                "text": node.text[:200],
-                "score": node.score,
-                "metadata": node.metadata
-            }
-            for node in response.source_nodes
-        ]
-    }
-
-# 测试
-result = ask_question("这份文档的主要观点是什么？")
-print(f"回答：{result['answer']}")
-```
-
-### 带历史记录的问答
-
-```python
-from llama_index.core import VectorStoreIndex
-from llama_index.core.memory import ChatMemoryBuffer
-
-class DocumentQAWithHistory:
-    """带对话历史的文档问答系统"""
-    
-    def __init__(self, documents):
-        # 创建索引
-        self.index = VectorStoreIndex.from_documents(documents)
-        
-        # 创建内存
-        self.memory = ChatMemoryBuffer.from_defaults()
-        
-        # 创建查询引擎
-        self.query_engine = self.index.as_query_engine(
-            similarity_top_k=5,
-            memory=self.memory
-        )
-    
-    def chat(self, question):
-        """对话"""
-        # 获取相关上下文
-        response = self.query_engine.query(question)
-        
-        # 保存到记忆
-        self.memory.put(
-            HumanMessage(content=question),
-            AIMessage(content=response.response)
-        )
-        
-        return response.response
-    
-    def reset(self):
-        """重置对话历史"""
-        self.memory.reset()
-
-# 使用
-qa_system = DocumentQAWithHistory(documents)
-
-# 多轮对话
-print(qa_system.chat("LangGraph 是什么？"))
-print(qa_system.chat("它和 LangChain 有什么关系？"))
-print(qa_system.chat("能给我一些使用示例吗？"))
-```
-
-## 案例二：企业知识库
-
-### 多数据源知识库
-
-```python
-from llama_index.core import VectorStoreIndex
-from llama_index.core import SimpleDirectoryReader
-from llama_index.core.readers import (
-    GitHubReader,
-    SlackReader,
-    NotionReader
-)
-from llama_index.core import StorageContext
-from llama_index.vector_stores.chroma import ChromaVectorStore
-import chromadb
-
-class EnterpriseKnowledgeBase:
-    """企业知识库"""
-    
-    def __init__(self):
-        self.documents = []
-        self.index = None
-        self.query_engine = None
-    
-    def load_all_sources(self):
-        """加载所有数据源"""
-        
-        # 1. 本地文档
-        local_docs = SimpleDirectoryReader("./data/docs").load_data()
-        self.documents.extend(local_docs)
-        
-        # 2. GitHub 文档
-        try:
-            github_reader = GitHubReader(
-                github_token="ghp_xxx",
-                owner="company",
-                repo="docs",
-                use_rich_text_output=True
-            )
-            github_docs = github_reader.load_data(branch="main")
-            self.documents.extend(github_docs)
-        except Exception as e:
-            print(f"GitHub 加载失败: {e}")
-        
-        # 3. Notion 笔记
-        try:
-            notion_reader = NotionPageReader(
-                integration_token="secret_xxx"
-            )
-            notion_docs = notion_reader.load_data(
-                page_ids=["page-id-1", "page-id-2"]
-            )
-            self.documents.extend(notion_docs)
-        except Exception as e:
-            print(f"Notion 加载失败: {e}")
-        
-        print(f"总共加载 {len(self.documents)} 个文档")
-    
-    def build_index(self):
-        """构建索引"""
-        # 使用向量数据库存储
-        chroma_client = chromadb.PersistentClient(path="./chroma_db")
-        vector_store = ChromaVectorStore(
-            chroma_client=chroma_client,
-            collection_name="enterprise_kb"
-        )
-        
-        storage_context = StorageContext.from_defaults(
-            vector_store=vector_store
-        )
-        
-        self.index = VectorStoreIndex.from_documents(
-            self.documents,
-            storage_context=storage_context
-        )
-        
-        self.query_engine = self.index.as_query_engine(
-            similarity_top_k=10,
-            response_mode="compact"
-        )
-    
-    def query(self, question, filters=None):
-        """查询"""
-        if filters:
-            self.query_engine = self.index.as_query_engine(
-                similarity_top_k=10,
-                response_mode="compact",
-                filters=filters
-            )
-        
-        response = self.query_engine.query(question)
-        
-        return {
-            "answer": response.response,
-            "sources": len(response.source_nodes),
-            "metadata": [node.metadata for node in response.source_nodes]
-        }
-
-# 使用
-kb = EnterpriseKnowledgeBase()
-kb.load_all_sources()
-kb.build_index()
-
-result = kb.query("公司的年假政策是什么？")
-print(result["answer"])
-```
-
-### 分类知识库
-
-```python
-from llama_index.core import VectorStoreIndex, SummaryIndex
-from llama_index.core.composability import ComposableGraph
-
-class CategorizedKnowledgeBase:
-    """分类知识库"""
-    
-    def __init__(self, documents):
-        # 按类别分组文档
-        self.category_docs = self._categorize_documents(documents)
-        
-        # 为每个类别创建索引
-        self.category_indexes = {}
-        for category, docs in self.category_docs.items():
-            self.category_indexes[category] = VectorStoreIndex.from_documents(docs)
-        
-        # 创建总索引
-        self.global_index = VectorStoreIndex.from_documents(documents)
-    
-    def _categorize_documents(self, documents):
-        """按类别分组文档"""
-        categories = {}
-        for doc in documents:
-            category = doc.metadata.get("category", "general")
-            if category not in categories:
-                categories[category] = []
-            categories[category].append(doc)
-        return categories
-    
-    def query_by_category(self, question, category):
-        """按类别查询"""
-        if category not in self.category_indexes:
-            return {"error": f"未找到类别: {category}"}
-        
-        engine = self.category_indexes[category].as_query_engine()
-        response = engine.query(question)
-        
-        return {
-            "category": category,
-            "answer": response.response,
-            "sources": len(response.source_nodes)
-        }
-    
-    def query_all(self, question):
-        """查询所有类别"""
-        # 获取所有类别的结果
-        results = {}
-        for category in self.category_indexes:
-            engine = self.category_indexes[category].as_query_engine(
-                similarity_top_k=3
-            )
-            response = engine.query(question)
-            results[category] = {
-                "answer": response.response,
-                "relevance": sum(n.score for n in response.source_nodes) / len(response.source_nodes)
-            }
-        
-        # 返回最相关的类别
-        best_category = max(results, key=lambda x: results[x]["relevance"])
-        
-        return {
-            "best_category": best_category,
-            "answer": results[best_category]["answer"],
-            "all_results": results
-        }
-
-# 使用
-kb = CategorizedKnowledgeBase(documents)
-result = kb.query_all("如何使用 API？")
-```
-
-## 案例三：智能聊天机器人
-
-### RAG 聊天机器人
-
-```python
-from llama_index.core import VectorStoreIndex
-from llama_index.core.memory import ChatMemoryBuffer
-from llama_index.core.chat_engine import ContextChatEngine
-from llama_index.llms.openai import OpenAI
-
-class RAGChatBot:
-    """基于 RAG 的聊天机器人"""
-    
-    def __init__(self, documents):
-        self.llm = OpenAI(model="gpt-4")
-        
-        # 构建索引
-        self.index = VectorStoreIndex.from_documents(documents)
-        
-        # 创建聊天引擎
-        self.chat_engine = ContextChatEngine.from_defaults(
-            retriever=self.index.as_retriever(similarity_top_k=5),
-            llm=self.llm,
-            memory=ChatMemoryBuffer.from_defaults()
-        )
-    
-    def chat(self, message):
-        """聊天"""
-        response = self.chat_engine.chat(message)
-        return response.response
-    
-    def reset(self):
-        """重置对话"""
-        self.chat_engine.reset()
-
-# 使用
-bot = RAGChatBot(documents)
-
-print(bot.chat("你好！"))
-print(bot.chat("你能帮我解答什么问题？"))
-print(bot.chat("LangGraph 的优势是什么？"))
-```
-
-### 多轮推理聊天
-
-```python
-from llama_index.core import VectorStoreIndex
-from llama_index.core.query_engine import MultiStepQueryEngine
-from llama_index.core.step_decomposition import LLMPathExtractor
-
-class ReasoningChatBot:
-    """带推理能力的聊天机器人"""
-    
-    def __init__(self, documents):
-        self.index = VectorStoreIndex.from_documents(documents)
-        
-        # 基础引擎
-        base_engine = self.index.as_query_engine(
-            similarity_top_k=5,
-            response_mode="compact"
-        )
-        
-        # 多步查询引擎
-        step_extractor = LLMPathExtractor.from_defaults()
-        
-        self.chat_engine = MultiStepQueryEngine(
-            query_engine=base_engine,
-            step_extractor=step_extractor
-        )
-    
-    def chat(self, message):
-        """多轮推理聊天"""
-        response = self.chat_engine.query(message)
-        return response.response
-
-# 使用
-bot = ReasoningChatBot(documents)
-print(bot.chat(
-    "LangGraph 和 LangChain 都能构建 Agent 应用，"
-    "它们之间有什么区别？应该选择哪个？"
-))
-```
-
-## 案例四：高级搜索系统
-
-### 混合搜索系统
-
-```python
-from llama_index.core import VectorStoreIndex
-from llama_index.core.retrievers import QueryFusionRetriever
-from llama_index.core.vector_stores import MetadataFilters
-
-class AdvancedSearchSystem:
-    """高级搜索系统"""
-    
-    def __init__(self, documents):
-        self.index = VectorStoreIndex.from_documents(documents)
-    
-    def search(self, query, filters=None, mode="hybrid"):
-        """高级搜索"""
-        
-        # 基础检索器
-        base_retriever = self.index.as_retriever(similarity_top_k=10)
-        
-        if mode == "hybrid":
-            # 混合检索
-            retriever = QueryFusionRetriever(
-                retrievers=[base_retriever],
-                similarity_top_k=5,
-                mode="rrf"
-            )
-        elif mode == "mmr":
-            # MMR 多样性检索
-            retriever = self.index.as_retriever(
-                vector_store_query_mode="mmr",
-                mmr_threshold=0.7,
-                similarity_top_k=10
-            )
-        else:
-            retriever = base_retriever
-        
-        engine = self.index.as_query_engine(
-            retriever=retriever,
-            response_mode="compact"
-        )
-        
-        # 应用过滤器
-        if filters:
-            engine = self.index.as_query_engine(
-                retriever=retriever,
-                filters=filters
-            )
-        
-        response = engine.query(query)
-        
-        return {
-            "answer": response.response,
-            "results": [
-                {
-                    "text": node.text,
-                    "score": node.score,
-                    "metadata": node.metadata
-                }
-                for node in response.source_nodes
-            ]
-        }
-
-# 使用
-search = AdvancedSearchSystem(documents)
-
-# 混合搜索
-result = search.search(
-    "深度学习框架",
-    mode="hybrid"
-)
-
-# 带过滤的搜索
-filters = MetadataFilters(
-    filters=[
-        MetadataFilter(key="category", operator="==", value="技术")
-    ]
-)
-result = search.search(
-    "Python",
-    filters=filters,
-    mode="mmr"
-)
-```
-
-### 语义缓存搜索
-
-```python
-from llama_index.core import VectorStoreIndex
-from llama_index.core.cache import SemanticCache
-import hashlib
-
-class CachedSearchSystem:
-    """带语义缓存的搜索系统"""
-    
-    def __init__(self, documents):
-        self.index = VectorStoreIndex.from_documents(documents)
-        
-        # 语义缓存
-        self.cache = SemanticCache(
-            index=self.index,
-            threshold=0.9  # 相似度阈值
-        )
-    
-    def search(self, query):
-        """搜索（带缓存）"""
-        # 检查缓存
-        cached_result = self.cache.lookup(query)
-        if cached_result:
-            return {
-                "answer": cached_result,
-                "cached": True
-            }
-        
-        # 执行查询
-        engine = self.index.as_query_engine()
-        response = engine.query(query)
-        
-        # 保存到缓存
-        self.cache.update(query, response.response)
-        
-        return {
-            "answer": response.response,
-            "cached": False
-        }
-
-# 使用
-search = CachedSearchSystem(documents)
-result1 = search.search("什么是机器学习")
-result2 = search.search("什么是机器学习")  # 使用缓存
-```
-
-## 案例五：PDF 文档分析
-
-```python
-from llama_index.core import VectorStoreIndex
-from llama_index.core.readers import PDFReader
-from llama_index.core.node_parser import SemanticSplitterNodeParser
 from llama_index.embeddings.openai import OpenAIEmbedding
 
-class PDFAnalyzer:
-    """PDF 文档分析器"""
-    
-    def __init__(self, pdf_path):
-        self.pdf_path = pdf_path
-        self.reader = PDFReader()
-        self.documents = None
-        self.index = None
-    
-    def load_and_process(self):
-        """加载和处理 PDF"""
-        # 加载 PDF
-        self.documents = self.reader.load_data(file=self.pdf_path)
-        
-        # 语义分割
-        embed_model = OpenAIEmbedding(model="text-embedding-3-small")
-        parser = SemanticSplitterNodeParser(
-            embed_model=embed_model,
-            buffer_size=1,
-            breakpoint_threshold_amount=0.5
-        )
-        
-        nodes = parser.get_nodes_from_documents(self.documents)
-        
-        # 创建索引
-        self.index = VectorStoreIndex.from_nodes(nodes)
-        
-        return len(nodes)
-    
-    def analyze(self, question):
-        """分析文档"""
-        if not self.index:
-            return {"error": "请先调用 load_and_process()"}
-        
-        engine = self.index.as_query_engine(
-            similarity_top_k=5,
-            response_mode="tree_summarize"
-        )
-        
-        response = engine.query(question)
-        
-        return {
-            "answer": response.response,
-            "pages_consulted": [
-                node.metadata.get("page_label", "unknown")
-                for node in response.source_nodes
-            ]
-        }
-    
-    def get_summary(self):
-        """获取摘要"""
-        engine = self.index.as_query_engine(
-            response_mode="tree_summarize"
-        )
-        
-        return engine.query("总结这份文档的主要内容").response
-
-# 使用
-analyzer = PDFAnalyzer("./document.pdf")
-node_count = analyzer.load_and_process()
-print(f"文档已分割为 {node_count} 个节点")
-
-summary = analyzer.get_summary()
-print(f"摘要：{summary}")
-
-result = analyzer.analyze("这份文档的关键技术点是什么？")
-print(f"分析结果：{result['answer']}")
+llm = OpenAI(model="gpt-4")
+embed_model = OpenAIEmbedding(model="text-embedding-3-small")
 ```
 
-## 案例六：实时文档更新
+## 数据加载模块
+
+### 加载多种文档
 
 ```python
-from llama_index.core import VectorStoreIndex
-from llama_index.core import StorageContext
-from llama_index.vector_stores.chroma import ChromaVectorStore
-import chromadb
+from llama_index.core import SimpleDirectoryReader
+from llama_index.core.config import ServiceContext
 
-class DynamicRAGSystem:
-    """动态 RAG 系统（支持实时更新）"""
-    
-    def __init__(self, collection_name="dynamic_rag"):
-        self.chroma_client = chromadb.PersistentClient(path="./chroma_db")
-        self.vector_store = ChromaVectorStore(
-            chroma_client=self.chroma_client,
-            collection_name=collection_name
-        )
-        self.storage_context = StorageContext.from_defaults(
-            vector_store=self.vector_store
-        )
-        self.index = None
-    
-    def initial_build(self, documents):
-        """初始构建"""
-        self.index = VectorStoreIndex.from_documents(
-            documents,
-            storage_context=self.storage_context
-        )
-        return len(documents)
-    
-    def add_documents(self, new_documents):
-        """添加文档"""
-        if not self.index:
-            return self.initial_build(new_documents)
-        
-        for doc in new_documents:
-            self.index.insert(doc)
-        
-        return len(new_documents)
-    
-    def delete_documents(self, doc_ids):
-        """删除文档"""
-        if not self.index:
-            return
-        
-        for doc_id in doc_ids:
-            self.index.delete(doc_id)
-    
-    def update_document(self, doc_id, new_document):
-        """更新文档"""
-        self.delete_documents([doc_id])
-        self.add_documents([new_document])
-    
-    def query(self, question):
-        """查询"""
-        engine = self.index.as_query_engine(
-            similarity_top_k=5
-        )
-        return engine.query(question).response
+service_context = ServiceContext.from_defaults(
+    llm=llm,
+    embed_model=embed_model
+)
 
-# 使用
-rag = DynamicRAGSystem("my_docs")
+def load_documents(data_dir: str):
+    reader = SimpleDirectoryReader(
+        input_dir=data_dir,
+        recursive=True,
+        exclude=["*.tmp", ".git/*"]
+    )
+    documents = reader.load_data()
+    return documents
 
-# 初始构建
-initial_count = rag.initial_build(initial_docs)
-print(f"初始加载 {initial_count} 个文档")
-
-# 实时添加
-rag.add_documents([new_doc])
-print("已添加新文档")
-
-# 查询
-result = rag.query("相关问题")
+documents = load_documents("./data")
+print(f"加载了 {len(documents)} 个文档")
 ```
 
-## 生产环境部署
-
-### Flask API
+### 自定义文档加载
 
 ```python
-from flask import Flask, request, jsonify
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+from llama_index.core import Document
 
-app = Flask(__name__)
-
-# 初始化（应用启动时）
-documents = SimpleDirectoryReader("./data").load_data()
-index = VectorStoreIndex.from_documents(documents)
-query_engine = index.as_query_engine()
-
-@app.route("/api/query", methods=["POST"])
-def query():
-    data = request.json
-    question = data.get("question")
-    
-    if not question:
-        return jsonify({"error": "问题不能为空"}), 400
-    
-    response = query_engine.query(question)
-    
-    return jsonify({
-        "answer": response.response,
-        "sources": [
-            {
-                "text": node.text[:200],
-                "score": node.score
-            }
-            for node in response.source_nodes
-        ]
-    })
-
-if __name__ == "__main__":
-    app.run(debug=False, port=5000)
+custom_doc = Document(
+    text="自定义文档内容",
+    metadata={
+        "source": "custom",
+        "category": "technical",
+        "version": "1.0"
+    }
+)
 ```
 
-### FastAPI 版本
+## 文本分割模块
+
+### 智能分割策略
 
 ```python
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+from llama_index.core.node_parser import SentenceSplitter
 
-app = FastAPI()
-
-# 初始化
-documents = SimpleDirectoryReader("./data").load_data()
-index = VectorStoreIndex.from_documents(documents)
-
-class QueryRequest(BaseModel):
-    question: str
-    top_k: int = 5
-
-class QueryResponse(BaseModel):
-    answer: str
-    sources: list
-
-@app.post("/api/query", response_model=QueryResponse)
-async def query(request: QueryRequest):
-    engine = index.as_query_engine(similarity_top_k=request.top_k)
-    response = engine.query(request.question)
-    
-    return QueryResponse(
-        answer=response.response,
-        sources=[
-            {
-                "text": node.text[:200],
-                "score": node.score,
-                "metadata": node.metadata
-            }
-            for node in response.source_nodes
-        ]
+def split_documents(documents, chunk_size=512, chunk_overlap=64):
+    parser = SentenceSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        separator="\n\n"
     )
 
-# 运行
-# uvicorn main:app --host 0.0.0.0 --port 8000
+    nodes = parser.get_nodes_from_documents(documents)
+    return nodes
+
+nodes = split_documents(documents)
+print(f"生成了 {len(nodes)} 个节点")
+```
+
+### 按标题分割
+
+```python
+from llama_index.core.node_parser import MarkdownNodeParser
+
+parser = MarkdownNodeParser()
+
+nodes = parser.get_nodes_from_documents(documents)
+```
+
+## 索引构建
+
+### 创建向量索引
+
+```python
+from llama_index.core import VectorStoreIndex, StorageContext
+from llama_index.core.config import ServiceContext
+
+def build_vector_index(nodes, persist_dir="./storage"):
+    service_context = ServiceContext.from_defaults(
+        llm=llm,
+        embed_model=embed_model
+    )
+
+    index = VectorStoreIndex.from_documents(
+        nodes,
+        service_context=service_context
+    )
+
+    index.storage_context.persist(persist_dir=persist_dir)
+
+    return index
+
+index = build_vector_index(nodes)
+```
+
+### 加载已有索引
+
+```python
+from llama_index.core import load_index_from_storage
+
+def load_existing_index(persist_dir="./storage"):
+    storage_context = StorageContext.from_defaults(
+        persist_dir=persist_dir
+    )
+
+    service_context = ServiceContext.from_defaults(
+        llm=llm,
+        embed_model=embed_model
+    )
+
+    index = load_index_from_storage(
+        storage_context=storage_context,
+        service_context=service_context
+    )
+
+    return index
+
+index = load_existing_index()
+```
+
+## 查询引擎
+
+### 基础查询
+
+```python
+def create_query_engine(index, similarity_top_k=5):
+    query_engine = index.as_query_engine(
+        similarity_top_k=similarity_top_k,
+        response_mode="compact"
+    )
+    return query_engine
+
+query_engine = create_query_engine(index)
+
+response = query_engine.query("你的问题")
+print(response)
+```
+
+### 高级查询配置
+
+```python
+from llama_index.core.query_engine import RetrieverQueryEngine
+from llama_index.core.retrievers import VectorIndexRetriever
+from llama_index.core.postprocessor import SimilarityPostprocessor
+
+retriever = VectorIndexRetriever(
+    index=index,
+    similarity_top_k=10,
+    alpha=0.5
+)
+
+postprocessor = SimilarityPostprocessor(
+    similarity_cutoff=0.7
+)
+
+query_engine = RetrieverQueryEngine.from_args(
+    retriever=retriever,
+    node_postprocessors=[postprocessor]
+)
+```
+
+## 对话式查询
+
+### Chat Engine
+
+```python
+def create_chat_engine(index):
+    chat_engine = index.as_chat_engine(
+        chat_mode="condense_plus_context",
+        similarity_top_k=5
+    )
+    return chat_engine
+
+chat_engine = create_chat_engine(index)
+
+response = chat_engine.chat("你好")
+print(response)
+
+response = chat_engine.chat("我刚才问了什么？")
+print(response)
+```
+
+### 多轮对话
+
+```python
+chat_engine = index.as_chat_engine(
+    chat_mode="context",
+    system_prompt="你是一个有帮助的助手，基于提供的上下文回答问题。"
+)
+
+messages = [
+    {"role": "user", "content": "我叫张三"},
+    {"role": "assistant", "content": "你好张三，有什么可以帮助你的？"},
+    {"role": "user", "content": "我的名字是什么？"}
+]
+
+for msg in messages:
+    response = chat_engine.chat(msg["content"])
+    print(f"{msg['role']}: {msg['content']}")
+    print(f"assistant: {response}")
+```
+
+## 检索优化
+
+### 混合检索
+
+```python
+from llama_index.core.retrievers import KeywordTableSimpleRetriever
+from llama_index.core import SummaryIndex
+
+keyword_index = SummaryIndex.from_documents(documents)
+
+hybrid_retriever = index.as_retriever(
+    vector_similarity_top_k=5,
+    filters=["metadata.category == 'technical'"]
+)
+```
+
+### 重排序
+
+```python
+from llama_index.core.postprocessor import SentenceEmbeddingRerank
+
+rerank = SentenceEmbeddingRerank(
+    top_n=5,
+    model="text-embedding-3-small"
+)
+
+query_engine = index.as_query_engine(
+    similarity_top_k=20,
+    node_postprocessors=[rerank]
+)
+```
+
+## 完整 RAG Pipeline
+
+### 封装为类
+
+```python
+class RAGApplication:
+    def __init__(self, data_dir: str, persist_dir: str = "./storage"):
+        self.data_dir = data_dir
+        self.persist_dir = persist_dir
+        self.service_context = ServiceContext.from_defaults(
+            llm=llm,
+            embed_model=embed_model
+        )
+        self.index = None
+        self.query_engine = None
+
+    def load_and_index(self):
+        reader = SimpleDirectoryReader(self.data_dir)
+        documents = reader.load_data()
+
+        parser = SentenceSplitter(chunk_size=512, chunk_overlap=64)
+        nodes = parser.get_nodes_from_documents(documents)
+
+        self.index = VectorStoreIndex.from_documents(
+            nodes,
+            service_context=self.service_context
+        )
+
+        self.index.storage_context.persist(self.persist_dir)
+        return self
+
+    def load_index(self):
+        storage_context = StorageContext.from_defaults(
+            persist_dir=self.persist_dir
+        )
+        self.index = load_index_from_storage(
+            storage_context=storage_context,
+            service_context=self.service_context
+        )
+        return self
+
+    def query(self, question: str) -> str:
+        if not self.index:
+            self.load_index()
+
+        query_engine = self.index.as_query_engine(
+            similarity_top_k=5,
+            response_mode="compact"
+        )
+
+        response = query_engine.query(question)
+        return response
+
+    def chat(self, message: str) -> str:
+        if not self.index:
+            self.load_index()
+
+        chat_engine = self.index.as_chat_engine(
+            chat_mode="condense_plus_context"
+        )
+
+        response = chat_engine.chat(message)
+        return response
+
+rag_app = RAGApplication("./data")
+rag_app.load_and_index()
+
+result = rag_app.query("关于某个主题的问题")
+print(result)
 ```
 
 ## 性能优化
 
-### 批处理
+### 批量查询
 
 ```python
-from concurrent.futures import ThreadPoolExecutor
+def batch_query(query_engine, questions: list):
+    responses = []
+    for question in questions:
+        response = query_engine.query(question)
+        responses.append(response)
+    return responses
 
-class BatchProcessor:
-    """批量处理器"""
-    
-    def __init__(self, documents, batch_size=10):
-        self.documents = documents
-        self.batch_size = batch_size
-        self.index = None
-    
-    def build_index(self):
-        """分批构建索引"""
-        batches = [
-            self.documents[i:i + self.batch_size]
-            for i in range(0, len(self.documents), self.batch_size)
-        ]
-        
-        # 构建所有批次
-        all_nodes = []
-        for batch in batches:
-            nodes = parser.get_nodes_from_documents(batch)
-            all_nodes.extend(nodes)
-        
-        self.index = VectorStoreIndex.from_nodes(all_nodes)
-        
-        return len(all_nodes)
-    
-    def batch_query(self, questions, max_workers=4):
-        """批量查询"""
-        def single_query(q):
-            engine = self.index.as_query_engine()
-            return engine.query(q).response
-        
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            results = list(executor.map(single_query, questions))
-        
-        return results
+responses = batch_query(query_engine, ["问题1", "问题2", "问题3"])
+```
+
+### 异步处理
+
+```python
+import asyncio
+
+async def async_query(query_engine, question: str):
+    response = await query_engine.aquery(question)
+    return response
+
+async def async_batch_query(query_engine, questions: list):
+    tasks = [async_query(query_engine, q) for q in questions]
+    responses = await asyncio.gather(*tasks)
+    return responses
+```
+
+## 错误处理
+
+```python
+def safe_query(query_engine, question: str, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            response = query_engine.query(question)
+            return response
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise e
+            continue
+    return "查询失败"
 ```
 
 ## 最佳实践
 
 | 实践 | 说明 |
 |------|------|
-| **数据质量** | 确保文档清洗、格式规范 |
-| **合理分割** | chunk_size 和 overlap 要适中 |
-| **选择索引** | 根据查询需求选择合适的索引类型 |
-| **混合检索** | 结合向量和关键词搜索 |
-| **结果验证** | 检查检索结果的相关性 |
-| **缓存策略** | 使用语义缓存提升性能 |
-| **错误处理** | 完善的异常处理机制 |
-| **监控日志** | 记录查询日志便于优化 |
+| **chunk_size 优化** | 根据文档长度调整（512-1024） |
+| **overlap 设置** | 保持 10-20% 的重叠 |
+| **similarity_top_k** | 检索更多候选后重排序 |
+| **metadata 利用** | 过滤和路由检索 |
 
 ## 总结
 
-本文通过多个实战案例展示了 LlamaIndex 构建 RAG 应用的能力：
+本文实现了一个完整的 LlamaIndex RAG 应用：
 
-- **文档问答系统**：基础 RAG、带历史的问答
-- **企业知识库**：多数据源、分类知识库
-- **智能聊天机器人**：RAG 聊天、推理聊天
-- **高级搜索系统**：混合搜索、语义缓存
-- **PDF 分析**：语义分割、摘要生成
-- **动态更新**：实时添加、删除文档
-- **生产部署**：Flask、FastAPI 部署
-- **性能优化**：批处理、并发查询
+| 模块 | 功能 |
+|------|------|
+| **数据加载** | 多格式文档支持 |
+| **文本分割** | 智能 chunk 策略 |
+| **索引构建** | 向量存储 |
+| **查询引擎** | 灵活检索 |
+| **对话引擎** | 多轮对话 |
 
-掌握这些实战技能，你将能够构建功能强大、性能优异的 RAG 应用！🚀
+这个 RAG Pipeline 可以作为构建更复杂知识问答系统的基础。
