@@ -309,25 +309,31 @@ class MixedHandler(BaseCallbackHandler):
 ### 1. 成本追踪（新版本）
 
 ```python
+# 导入所需的组件
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_openai import ChatOpenAI
 from datetime import datetime
 
+# 创建成本追踪器
 class CostTracker(BaseCallbackHandler):
     def __init__(self):
-        self.total_tokens = 0
-        self.total_cost = 0
-        self.requests = []
+        self.total_tokens = 0      # 累计Token数
+        self.total_cost = 0        # 累计成本
+        self.requests = []         # 请求记录列表
 
+    # 当聊天模型结束推理时触发
     def on_chat_model_end(self, response, **kwargs):
+        # 从响应中获取Token使用量
         usage = response.usage_metadata
 
-        input_tokens = usage.get("input_tokens", 0)
-        output_tokens = usage.get("output_tokens", 0)
-        total = usage.get("total_tokens", 0)
+        input_tokens = usage.get("input_tokens", 0)     # 输入Token数
+        output_tokens = usage.get("output_tokens", 0)    # 输出Token数
+        total = usage.get("total_tokens", 0)             # 总Token数
 
+        # 计算成本（GPT-4的参考价格）
         cost = (input_tokens * 0.03 + output_tokens * 0.06) / 1000
 
+        # 更新统计数据
         self.total_tokens += total
         self.total_cost += cost
         self.requests.append({
@@ -337,6 +343,7 @@ class CostTracker(BaseCallbackHandler):
             "cost": cost
         })
 
+    # 生成报告
     def get_report(self):
         return {
             "总Token数": self.total_tokens,
@@ -344,12 +351,15 @@ class CostTracker(BaseCallbackHandler):
             "请求数": len(self.requests)
         }
 
+# 使用追踪器
 tracker = CostTracker()
 llm = ChatOpenAI(model="gpt-4", callbacks=[tracker])
 
+# 模拟多次请求
 for i in range(5):
     llm.invoke(f"生成内容 {i}")
 
+# 打印成本报告
 print(tracker.get_report())
 ```
 

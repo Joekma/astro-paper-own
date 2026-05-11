@@ -55,10 +55,13 @@ LlamaIndex 是一个专为构建 LLM 应用设计的数据框架，特别擅长�
 从各种数据源读取数据：
 
 ```python
+# 导入LlamaIndex核心组件
 from llama_index.core import SimpleDirectoryReader
 
+# 使用SimpleDirectoryReader加载目录中的所有文件
 documents = SimpleDirectoryReader("./data").load_data()
 
+# 打印加载的文档数量
 print(f"加载了 {len(documents)} 个文档")
 ```
 
@@ -69,12 +72,16 @@ print(f"加载了 {len(documents)} 个文档")
 ```python
 from llama_index.core import Document
 
+# 创建文档对象，包含文本内容和元数据
 doc = Document(
     text="这是文档内容",
+    # 元数据可以包含来源、作者等信息，用于后续过滤
     metadata={"source": "example", "author": "张三"}
 )
 
+# 访问文档文本
 print(doc.text)
+# 访问文档元数据
 print(doc.metadata)
 ```
 
@@ -86,10 +93,16 @@ print(doc.metadata)
 from llama_index.core import Document
 from llama_index.core.node_parser import SimpleNodeParser
 
+# 创建文档
 doc = Document(text="长文档内容...")
+
+# 创建节点解析器
 parser = SimpleNodeParser()
+
+# 将文档分割成节点
 nodes = parser.get_nodes_from_documents([doc])
 
+# 打印生成的节点数量
 print(f"生成了 {len(nodes)} 个节点")
 ```
 
@@ -100,6 +113,8 @@ print(f"生成了 {len(nodes)} 个节点")
 ```python
 from llama_index.core import VectorStoreIndex
 
+# 从文档创建向量索引
+# 索引会自动处理文档分割、嵌入和存储
 index = VectorStoreIndex.from_documents(documents)
 print(index)
 ```
@@ -109,8 +124,10 @@ print(index)
 处理用户查询并返回答案：
 
 ```python
+# 将索引转换为查询引擎
 query_engine = index.as_query_engine()
 
+# 发送查询
 response = query_engine.query("用户的问题")
 print(response)
 ```

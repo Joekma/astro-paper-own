@@ -67,16 +67,21 @@ Output Parsers（输出解析器）是 LangChain 中用于将 LLM 的原始文�
 ### StrOutputParser
 
 ```python
-from langchain_core.output_parsers import StrOutputParser
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import PromptTemplate
+# 导入所需的组件
+from langchain_core.output_parsers import StrOutputParser  # 字符串解析器
+from langchain_openai import ChatOpenAI                    # 聊天模型
+from langchain_core.prompts import PromptTemplate          # 提示词模板
 
+# 创建LLM实例
 llm = ChatOpenAI(model="gpt-4")
 
+# 构建链：模板 -> 模型 -> 字符串解析器
+# StrOutputParser将模型输出转换为纯字符串
 chain = PromptTemplate.from_template("用一句话解释{topic}") | llm | StrOutputParser()
 
+# 调用链
 result = chain.invoke({"topic": "人工智能"})
-print(result)
+print(result)  # result是字符串类型
 ```
 
 ## JSON Parser
@@ -84,13 +89,19 @@ print(result)
 ### JsonOutputParser
 
 ```python
-from langchain_core.output_parsers import JsonOutputParser
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import PromptTemplate
+# 导入所需的组件
+from langchain_core.output_parsers import JsonOutputParser  # JSON解析器
+from langchain_openai import ChatOpenAI                    # 聊天模型
+from langchain_core.prompts import PromptTemplate          # 提示词模板
 
+# 创建LLM实例
 llm = ChatOpenAI(model="gpt-4")
+
+# 创建JSON解析器
 parser = JsonOutputParser()
 
+# 创建提示词模板
+# {format_instructions}会被解析器的格式说明替换
 prompt = PromptTemplate.from_template(
     """返回一个JSON对象，包含以下信息：
     - name: 姓名
@@ -102,11 +113,15 @@ prompt = PromptTemplate.from_template(
     只返回JSON，不要其他内容。"""
 )
 
+# 构建链
 chain = prompt | llm | parser
 
+# 调用链
 result = chain.invoke({
     "format_instructions": parser.get_format_instructions()
 })
+
+# result是字典类型
 print(result)
 ```
 
@@ -115,20 +130,25 @@ print(result)
 ### 基本使用
 
 ```python
-from langchain_core.output_parsers import PydanticOutputParser
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import PromptTemplate
-from pydantic import BaseModel, Field
-from typing import List
+# 导入所需的组件
+from langchain_core.output_parsers import PydanticOutputParser  # Pydantic解析器
+from langchain_openai import ChatOpenAI                    # 聊天模型
+from langchain_core.prompts import PromptTemplate          # 提示词模板
+from pydantic import BaseModel, Field                     # Pydantic数据模型
+from typing import List                                   # 类型注解
 
+# 定义Pydantic模型，指定期望的数据结构
 class Person(BaseModel):
-    name: str = Field(description="人物姓名")
-    age: int = Field(description="人物年龄")
-    occupation: str = Field(description="职业")
-    skills: List[str] = Field(description="技能列表")
+    name: str = Field(description="人物姓名")         # 姓名字段
+    age: int = Field(description="人物年龄")           # 年龄字段
+    occupation: str = Field(description="职业")       # 职业字段
+    skills: List[str] = Field(description="技能列表")  # 技能列表字段
 
+# 创建Pydantic解析器
 parser = PydanticOutputParser(pydantic_object=Person)
 
+# 创建提示词模板
+# 使用partial_variables预先填充格式说明
 prompt = PromptTemplate.from_template(
     """从以下文本中提取人物信息：
 
@@ -138,13 +158,18 @@ prompt = PromptTemplate.from_template(
     partial_variables={"format_instructions": parser.get_format_instructions()}
 )
 
+# 创建LLM实例
 llm = ChatOpenAI(model="gpt-4")
+
+# 构建链
 chain = prompt | llm | parser
 
+# 调用链并传入文本
 result = chain.invoke({
     "query": "李明是一位35岁的数据科学家，精通Python、SQL和机器学习"
 })
 
+# 访问结果属性
 print(result.name)
 print(result.age)
 print(result.skills)

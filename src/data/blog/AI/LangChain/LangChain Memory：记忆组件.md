@@ -61,17 +61,24 @@ Memory（记忆组件）是 LangChain 中用于在对话或处理过程中保持
 ### 基础用法（新版本）
 
 ```python
+# 导入记忆组件和消息类型
 from langchain.memory import ConversationBufferMemory
 from langchain_core.messages import SystemMessage
 
+# 创建对话缓冲记忆实例
 memory = ConversationBufferMemory(
-    memory_key="history",
-    return_messages=True
+    memory_key="history",        # 引用记忆的变量名
+    return_messages=True         # 返回消息对象而非字符串
 )
 
+# 向记忆中添加用户消息
 memory.chat_memory.add_user_message("你好")
+
+# 向记忆中添加AI回复
 memory.chat_memory.add_ai_message("你好！有什么可以帮助你的吗？")
 
+# 从记忆中加载数据
+# 返回包含"history"键的字典
 history = memory.load_memory_variables({})
 print(history)
 ```
@@ -300,16 +307,21 @@ agent.invoke({"input": "我的职业是什么？"})
 ### 使用基础存储
 
 ```python
+# 导入记忆组件
 from langchain.memory import ConversationBufferMemory
 
+# 创建对话缓冲记忆
 memory = ConversationBufferMemory(
     memory_key="chat_history",
     return_messages=True
 )
 
+# 添加对话消息
 memory.chat_memory.add_user_message("你好")
 memory.chat_memory.add_ai_message("你好！")
 
+# 获取消息列表
+# chat_memory.messages 是存储消息的列表
 chat_history = memory.chat_memory.messages
 ```
 

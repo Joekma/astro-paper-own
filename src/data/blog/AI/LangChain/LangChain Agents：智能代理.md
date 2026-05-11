@@ -59,8 +59,11 @@ Agent（智能代理）是 LangChain 中最强大的功能之一，它赋予了 
 ### 使用 @tool 装饰器
 
 ```python
+# 导入tool装饰器
 from langchain_core.tools import tool
 
+# 使用@tool装饰器定义工具函数
+# 装饰器会自动提取函数签名和文档字符串作为工具定义
 @tool
 def get_weather(city: str) -> str:
     """获取指定城市的天气信息。
@@ -71,6 +74,7 @@ def get_weather(city: str) -> str:
     Returns:
         天气信息字符串
     """
+    # 简单的模拟天气查询逻辑
     if "北京" in city:
         return f"{city}今天天气晴朗，温度25-30°C"
     elif "上海" in city:
@@ -94,6 +98,7 @@ def calculate(expression: str) -> str:
     except:
         return "计算错误"
 
+# 打印工具的名称和描述
 print(get_weather.name)
 print(get_weather.description)
 ```
@@ -101,12 +106,16 @@ print(get_weather.description)
 ### 使用 Tool 类
 
 ```python
+# 导入tool装饰器
 from langchain_core.tools import tool
 
+# 定义搜索函数
 def search_wikipedia(query: str) -> str:
     """搜索维基百科"""
     return f"关于'{query}'的信息..."
 
+# 使用@tool装饰器包装函数
+# 可以用于将已有的函数转换为工具
 @tool
 def search_wiki(query: str) -> str:
     """搜索维基百科获取信息。
@@ -120,12 +129,17 @@ def search_wiki(query: str) -> str:
 ### 常用预定义工具
 
 ```python
+# 导入Wikipedia查询工具
 from langchain_community.tools import WikipediaQueryRun
 from langchain_community.utilities import WikipediaAPIWrapper
 
+# 创建API包装器
 api_wrapper = WikipediaAPIWrapper()
+
+# 使用API包装器创建Wikipedia查询工具
 wiki_tool = WikipediaQueryRun(api_wrapper=api_wrapper)
 
+# 调用工具进行查询
 result = wiki_tool.invoke({"query": "Python编程语言"})
 ```
 
@@ -136,13 +150,16 @@ result = wiki_tool.invoke({"query": "Python编程语言"})
 根据描述选择工具，不维护会话状态：
 
 ```python
+# 导入所需的组件
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langchain import create_react_agent
 from langchain_core.messages import SystemMessage
 
+# 创建LLM实例，temperature=0使输出更确定性
 llm = ChatOpenAI(model="gpt-4", temperature=0)
 
+# 定义工具函数
 @tool
 def get_weather(city: str) -> str:
     """获取城市天气"""
@@ -153,19 +170,26 @@ def calculate(expression: str) -> str:
     """数学计算"""
     return str(eval(expression))
 
+# 注册工具列表
 tools = [get_weather, calculate]
 
+# 创建系统消息，定义Agent的角色和能力
 system_prompt = SystemMessage(content="""你是一个助手，可以访问一组工具。
 当需要信息时，使用工具获取。
 回答要简洁准确。""")
 
+# 创建ReAct Agent
+# Agent会自主决定何时使用工具
 agent = create_react_agent(
     llm,
     tools,
     state_system_message=system_prompt
 )
 
+# 调用Agent，传入消息列表
 result = agent.invoke({"messages": ["北京今天的天气怎么样？"]})
+
+# 提取最后一条消息（最终回答）
 print(result["messages"][-1].content)
 ```
 
@@ -174,12 +198,15 @@ print(result["messages"][-1].content)
 维护对话历史的 Agent：
 
 ```python
+# 导入所需的组件
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langchain import create_conversational_retrieval_agent
 
+# 创建LLM实例
 llm = ChatOpenAI(model="gpt-4")
 
+# 定义工具
 @tool
 def search_knowledge_base(query: str) -> str:
     """搜索知识库获取信息"""
@@ -190,15 +217,22 @@ def get_calendar(event: str) -> str:
     """获取日历事件"""
     return f"日历事件: {event}"
 
+# 注册工具列表
 tools = [search_knowledge_base, get_calendar]
 
+# 创建对话式检索Agent
+# 这种Agent会维护对话历史，支持多轮对话
 agent = create_conversational_retrieval_agent(
     llm,
     tools,
-    verbose=True
+    verbose=True  # 启用详细输出，方便调试
 )
 
+# 第一轮对话：告诉Agent我的名字
 result = agent.invoke({"input": "我叫张三"})
+
+# 第二轮对话：询问Agent我的名字
+# Agent会从对话历史中获取这个信息
 result = agent.invoke({"input": "我叫什么名字？"})
 ```
 
@@ -251,10 +285,12 @@ agent = create_structured_chat_agent(llm, tools, prompt)
 ### 基础用法
 
 ```python
+# 导入所需的组件
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langchain import create_react_agent
 
+# 定义获取日期的工具
 @tool
 def get_date(days_offset: int = 0) -> str:
     """获取日期
@@ -263,28 +299,37 @@ def get_date(days_offset: int = 0) -> str:
         days_offset: 相对于今天偏移的天数
     """
     from datetime import datetime, timedelta
+    # 计算目标日期
     date = datetime.now() + timedelta(days=days_offset)
     return date.strftime("%Y年%m月%d日")
 
+# 定义计算日期间隔的工具
 @tool
 def calculate_days(from_date: str, to_date: str) -> str:
     """计算两个日期之间的天数"""
     from datetime import datetime
+    # 解析日期字符串
     d1 = datetime.strptime(from_date, "%Y年%m月%d日")
     d2 = datetime.strptime(to_date, "%Y年%m月%d日")
+    # 计算天数差
     return str((d2 - d1).days)
 
+# 创建LLM实例
 llm = ChatOpenAI(model="gpt-4", temperature=0)
+
+# 注册工具
 tools = [get_date, calculate_days]
 
+# 创建Agent
 agent = create_react_agent(llm, tools)
 
+# 调用Agent，它会自动调用工具来完成任务
 result = agent.invoke({
     "messages": ["今天距离2024年春节(2024年2月10日)还有多少天？"]
 })
 ```
 
-### 执行器配置
+### 配置参数
 
 | 参数 | 说明 | 默认值 |
 |------|------|--------|
@@ -292,13 +337,16 @@ result = agent.invoke({
 | **return_intermediate_steps** | 返回中间步骤 | False |
 
 ```python
+# 导入RunnableConfig用于配置Agent行为
 from langchain_core.runnable import RunnableConfig
 
+# 创建配置对象
 config = RunnableConfig(
-    recursion_limit=10,
-    configurable={"verbose": True}
+    recursion_limit=10,              # 限制最大递归/迭代次数
+    configurable={"verbose": True}  # 启用详细输出
 )
 
+# 调用Agent并传入配置
 result = agent.invoke(
     {"messages": ["你的问题"]},
     config=config

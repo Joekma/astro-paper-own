@@ -56,19 +56,23 @@ pip install langgraph langchain-openai langchain-community
 ### 创建工具集
 
 ```python
+# 导入工具装饰器和LangGraph组件
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, START, MessagesState
 from langgraph.prebuilt import ToolNode, tools_condition
 
+# 使用@tool装饰器定义工具函数
 @tool
 def search_knowledge_base(query: str) -> str:
     """搜索知识库获取相关信息"""
+    # 模拟知识库数据
     knowledge = {
         "python": "Python是一门高级编程语言...",
         "java": "Java是一种面向对象编程语言...",
         "javascript": "JavaScript是一种脚本语言..."
     }
+    # 查找相关知识
     for key, value in knowledge.items():
         if key in query.lower():
             return value
@@ -94,6 +98,7 @@ def send_notification(message: str, recipient: str) -> str:
     """发送通知"""
     return f"通知已发送给{recipient}：{message}"
 
+# 收集所有工具
 tools = [search_knowledge_base, calculate, get_current_time, send_notification]
 ```
 
@@ -102,28 +107,39 @@ tools = [search_knowledge_base, calculate, get_current_time, send_notification]
 ### 基础 Agent 图
 
 ```python
+# 创建Agent图
 def create_agent_graph():
+    # 创建消息状态图
     graph = StateGraph(MessagesState)
 
+    # 定义模型调用节点
     def call_model(state: MessagesState):
         messages = state["messages"]
+        # 创建模型实例
         llm = ChatOpenAI(model="gpt-4")
+        # 绑定工具到模型
         llm_with_tools = llm.bind_tools(tools)
+        # 调用模型
         response = llm_with_tools.invoke(messages)
         return {"messages": [response]}
 
+    # 添加节点：模型节点和工具节点
     graph.add_node("model", call_model)
     graph.add_node("tools", ToolNode(tools))
 
+    # 添加边：START -> model
     graph.add_edge(START, "model")
+    # 添加条件边：根据模型输出决定是否调用工具
     graph.add_conditional_edges(
         "model",
         tools_condition,
     )
+    # 添加边：tools -> model（工具执行后回到模型）
     graph.add_edge("tools", "model")
 
     return graph.compile()
 
+# 创建并使用Agent
 agent = create_agent_graph()
 
 result = agent.invoke({

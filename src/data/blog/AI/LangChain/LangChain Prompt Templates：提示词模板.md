@@ -32,23 +32,31 @@ language: zh-CN
 ### 基础用法
 
 ```python
+# 导入PromptTemplate类
 from langchain_core.prompts import PromptTemplate
 
+# 从模板字符串创建PromptTemplate
+# {text}是占位符，会在invoke时被实际值替换
 template = PromptTemplate.from_template("请将以下中文翻译成英文：{text}")
 
+# 使用invoke方法填充模板中的占位符
 prompt = template.invoke({
     "text": "今天天气真好"
 })
 
+# 打印填充后的提示词字符串
 print(prompt.to_string())
 ```
 
 ### 模板输出类型
 
 ```python
+# to_string(): 将模板转换为字符串格式
 prompt_str = template.invoke({"text": "AI"})
 print(prompt_str.to_string())
 
+# to_messages(): 将模板转换为消息列表格式
+# 返回HumanMessage对象列表，适合发送给聊天模型
 prompt_messages = template.invoke({"text": "AI"})
 print(prompt_messages.to_messages())
 ```
@@ -56,17 +64,24 @@ print(prompt_messages.to_messages())
 ### 部分变量填充
 
 ```python
+# 导入PromptTemplate类
 from langchain_core.prompts import PromptTemplate
 
+# 创建模板，定义多个变量
 template = PromptTemplate(
     template="写一篇关于{topic}的{style}文章。",
     input_variables=["topic", "style"]
 )
 
+# partial(): 部分填充变量，生成新模板
+# 新模板只保留未填充的变量
 partial_template = template.partial(topic="人工智能")
+
+# 调用部分填充后的模板，只需提供剩余变量
 prompt = partial_template.invoke({"style": "技术博客"})
 print(prompt.to_string())
 
+# 也可以直接对模板进行部分填充
 template = template.partial(style="科普文章")
 ```
 
@@ -189,11 +204,13 @@ print(prompt.to_string())
 ### 示例选择器
 
 ```python
+# 导入语义相似度示例选择器
 from langchain_core.prompts import FewShotPromptTemplate, PromptTemplate
 from langchain_core.example_selectors import SemanticSimilarityExampleSelector
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 
+# 定义示例库
 examples = [
     {"input": "今天心情很好", "output": "happy"},
     {"input": "考试没考好很难过", "output": "sad"},
@@ -201,23 +218,27 @@ examples = [
     {"input": "生病了很不舒服", "output": "sad"},
 ]
 
+# 创建语义相似度选择器
+# 会根据输入自动选择最相关的示例
 example_selector = SemanticSimilarityExampleSelector.from_examples(
-    examples=examples,
-    embeddings=OpenAIEmbeddings(),
-    vectorstore_cls=Chroma,
-    k=2
+    examples=examples,                    # 示例库
+    embeddings=OpenAIEmbeddings(),        # 嵌入模型
+    vectorstore_cls=Chroma,              # 向量存储
+    k=2                                  # 选择2个最相关的示例
 )
 
+# 创建Few-Shot模板，使用选择器代替固定示例
 few_shot_prompt = FewShotPromptTemplate(
-    example_selector=example_selector,
+    example_selector=example_selector,    # 动态示例选择器
     example_prompt=PromptTemplate.from_template(
         "中文：{input} -> 情感：{output}"
     ),
-    prefix="判断以下句子的情感：",
-    suffix="中文：{sentence} -> 情感：",
+    prefix="判断以下句子的情感：",        # 前缀提示
+    suffix="中文：{sentence} -> 情感：",  # 后缀，用户输入位置
     input_variables=["sentence"]
 )
 
+# 根据输入自动选择相关示例并生成提示词
 prompt = few_shot_prompt.invoke({
     "sentence": "中彩票了，太高兴了！"
 })

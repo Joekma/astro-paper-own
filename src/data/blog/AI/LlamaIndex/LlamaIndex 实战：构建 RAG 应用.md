@@ -50,10 +50,14 @@ pip install llama-index-readers-file
 ### 基本设置
 
 ```python
+# 导入OpenAI的LLM和嵌入模型
 from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.openai import OpenAIEmbedding
 
+# 创建LLM实例
 llm = OpenAI(model="gpt-4")
+
+# 创建嵌入模型实例，用于将文本转换为向量
 embed_model = OpenAIEmbedding(model="text-embedding-3-small")
 ```
 
@@ -62,23 +66,28 @@ embed_model = OpenAIEmbedding(model="text-embedding-3-small")
 ### 加载多种文档
 
 ```python
+# 导入文档加载器和配置类
 from llama_index.core import SimpleDirectoryReader
 from llama_index.core.config import ServiceContext
 
+# 创建服务上下文，配置LLM和嵌入模型
 service_context = ServiceContext.from_defaults(
     llm=llm,
     embed_model=embed_model
 )
 
+# 定义文档加载函数
 def load_documents(data_dir: str):
+    # 创建目录读取器
     reader = SimpleDirectoryReader(
         input_dir=data_dir,
-        recursive=True,
-        exclude=["*.tmp", ".git/*"]
+        recursive=True,                 # 递归扫描子目录
+        exclude=["*.tmp", ".git/*"]    # 排除临时文件和git目录
     )
     documents = reader.load_data()
     return documents
 
+# 加载文档
 documents = load_documents("./data")
 print(f"加载了 {len(documents)} 个文档")
 ```
@@ -88,8 +97,10 @@ print(f"加载了 {len(documents)} 个文档")
 ```python
 from llama_index.core import Document
 
+# 创建自定义文档
 custom_doc = Document(
     text="自定义文档内容",
+    # 包含自定义元数据
     metadata={
         "source": "custom",
         "category": "technical",
@@ -105,13 +116,16 @@ custom_doc = Document(
 ```python
 from llama_index.core.node_parser import SentenceSplitter
 
+# 定义文档分割函数
 def split_documents(documents, chunk_size=512, chunk_overlap=64):
+    # 创建句子级别的分割器
     parser = SentenceSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        separator="\n\n"
+        chunk_size=chunk_size,        # 每个chunk的字符数
+        chunk_overlap=chunk_overlap,  # 相邻chunk的重叠字符数
+        separator="\n\n"             # 分割符
     )
 
+    # 将文档分割成节点
     nodes = parser.get_nodes_from_documents(documents)
     return nodes
 
@@ -134,20 +148,24 @@ nodes = parser.get_nodes_from_documents(documents)
 ### 创建向量索引
 
 ```python
+# 导入向量存储索引和存储上下文
 from llama_index.core import VectorStoreIndex, StorageContext
 from llama_index.core.config import ServiceContext
 
 def build_vector_index(nodes, persist_dir="./storage"):
+    # 创建服务上下文
     service_context = ServiceContext.from_defaults(
         llm=llm,
         embed_model=embed_model
     )
 
+    # 从节点创建索引
     index = VectorStoreIndex.from_documents(
         nodes,
         service_context=service_context
     )
 
+    # 持久化存储
     index.storage_context.persist(persist_dir=persist_dir)
 
     return index
@@ -161,15 +179,18 @@ index = build_vector_index(nodes)
 from llama_index.core import load_index_from_storage
 
 def load_existing_index(persist_dir="./storage"):
+    # 创建存储上下文，指定持久化目录
     storage_context = StorageContext.from_defaults(
         persist_dir=persist_dir
     )
 
+    # 创建服务上下文
     service_context = ServiceContext.from_defaults(
         llm=llm,
         embed_model=embed_model
     )
 
+    # 从存储加载索引
     index = load_index_from_storage(
         storage_context=storage_context,
         service_context=service_context
@@ -186,9 +207,10 @@ index = load_existing_index()
 
 ```python
 def create_query_engine(index, similarity_top_k=5):
+    # 将索引转换为查询引擎
     query_engine = index.as_query_engine(
-        similarity_top_k=similarity_top_k,
-        response_mode="compact"
+        similarity_top_k=similarity_top_k,  # 检索最相似的top_k个结果
+        response_mode="compact"              # 压缩上下文模式
     )
     return query_engine
 

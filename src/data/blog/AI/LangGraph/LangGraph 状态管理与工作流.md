@@ -48,24 +48,29 @@ language: zh-CN
 ### TypedDict 基础
 
 ```python
+# 导入TypedDict用于类型安全的状态定义
 from typing import TypedDict, List
 
+# 定义Agent状态结构
 class AgentState(TypedDict):
-    messages: List[str]
-    context: str
-    iterations: int
+    messages: List[str]     # 消息列表
+    context: str            # 上下文信息
+    iterations: int         # 迭代次数
 ```
 
 ### 带注解的状态
 
 ```python
+# 导入Annotated用于特殊状态更新策略
 from typing import TypedDict, Annotated
 import operator
 
+# Annotated用于指定状态字段的特殊更新策略
+# operator.add 表示列表字段使用追加而非替换策略
 class EnhancedState(TypedDict):
-    messages: Annotated[list, operator.add]
-    counter: int
-    results: dict
+    messages: Annotated[list, operator.add]  # 消息自动追加
+    counter: int                            # 普通整数
+    results: dict                            # 结果字典
 ```
 
 ## 状态更新策略
@@ -73,22 +78,32 @@ class EnhancedState(TypedDict):
 ### 基础更新
 
 ```python
+# 导入LangGraph组件
 from langgraph.graph import StateGraph, START
 from typing import TypedDict
 
+# 定义简单状态
 class SimpleState(TypedDict):
     value: str
     count: int
 
+# 递增计数器的节点
 def increment(state: SimpleState):
+    # 返回要更新的字段，会与现有状态合并
     return {"count": state["count"] + 1}
 
+# 更新值的节点
 def update_value(state: SimpleState):
     return {"value": state["value"] + "_updated"}
 
+# 创建图
 graph = StateGraph(SimpleState)
+
+# 添加节点
 graph.add_node("increment", increment)
 graph.add_node("update", update_value)
+
+# 添加边
 graph.add_edge(START, "increment")
 graph.add_edge("increment", "update")
 ```
@@ -96,6 +111,7 @@ graph.add_edge("increment", "update")
 ### 合并更新
 
 ```python
+# 可以一次返回多个字段的更新
 def multi_update(state: SimpleState):
     return {
         "value": "new_value",
@@ -106,12 +122,15 @@ def multi_update(state: SimpleState):
 ### Annotated 状态
 
 ```python
+# Annotated[list, operator.add] 表示消息追加而非替换
 class MessageState(TypedDict):
     messages: Annotated[list, operator.add]
 
+# 添加消息会自动追加到列表
 def add_message(state: MessageState):
     return {"messages": [{"role": "assistant", "content": "新消息"}]}
 
+# 再添加一条消息会追加而非替换
 def another_message(state: MessageState):
     return {"messages": [{"role": "user", "content": "用户消息"}]}
 ```
@@ -141,23 +160,31 @@ class CustomMessagesState(TypedDict):
 ### MemorySaver
 
 ```python
+# 导入内存检查点保存器
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, START, MessagesState
 
+# 创建内存检查点
 memory = MemorySaver()
 
+# 创建图
 graph = StateGraph(MessagesState)
 graph.add_node("process", lambda s: {"messages": s["messages"]})
 graph.add_edge(START, "process")
+
+# 编译时传入检查点，实现状态持久化
 app = graph.compile(checkpointer=memory)
 
+# 配置，包含线程ID用于区分不同会话
 config = {"configurable": {"thread_id": "user_123"}}
 
+# 调用应用，状态会被保存
 result = app.invoke(
     {"messages": [{"role": "user", "content": "你好"}]},
     config=config
 )
 
+# 获取对话历史
 history = [s async for s in app.astream_history(config)]
 ```
 

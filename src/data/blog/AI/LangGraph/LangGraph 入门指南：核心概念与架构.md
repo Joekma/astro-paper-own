@@ -103,31 +103,44 @@ class AgentState(TypedDict):
 ### 简单的状态图
 
 ```python
+# 导入LangGraph核心组件
 from langgraph.graph import StateGraph, START, END
 from typing import TypedDict
 
+# 定义状态类型，使用TypedDict确保类型安全
 class SimpleState(TypedDict):
-    value: str
+    value: str  # 状态值字段
 
+# 定义第一个处理节点
 def step_1(state):
+    # 返回要更新的状态字段
     return {"value": state["value"] + " -> 步骤1"}
 
+# 定义第二个处理节点
 def step_2(state):
     return {"value": state["value"] + " -> 步骤2"}
 
+# 条件判断函数，决定下一步走向
 def should_continue(state) -> str:
+    # 如果value长度小于20，继续到step_2，否则结束
     return "step_2" if len(state["value"]) < 20 else END
 
+# 创建状态图，指定状态类型
 graph = StateGraph(SimpleState)
 
+# 添加节点
 graph.add_node("step_1", step_1)
 graph.add_node("step_2", step_2)
 
+# 添加边：START -> step_1
 graph.add_edge(START, "step_1")
+# 添加条件边：step_1根据条件转到step_2或END
 graph.add_conditional_edges("step_1", should_continue)
 
+# 编译图，生成可执行的应用
 app = graph.compile()
 
+# 调用应用，传入初始状态
 result = app.invoke({"value": "开始"})
 print(result)
 ```
@@ -135,26 +148,35 @@ print(result)
 ### 带循环的图
 
 ```python
+# 导入核心组件
 from langgraph.graph import StateGraph, START
 from typing import TypedDict
 
+# 定义带计数器的状态
 class LoopState(TypedDict):
-    counter: int
-    messages: list
+    counter: int        # 计数器
+    messages: list     # 消息列表
 
+# 递增计数器
 def increment(state):
     return {"counter": state["counter"] + 1}
 
+# 检查循环条件
 def check_condition(state):
+    # 如果计数器小于5，继续循环，否则结束
     if state["counter"] < 5:
         return "increment"
     return END
 
+# 创建图并添加节点
 graph = StateGraph(LoopState)
 graph.add_node("increment", increment)
+
+# 添加边和条件边
 graph.add_edge(START, "increment")
 graph.add_conditional_edges("increment", check_condition)
 
+# 编译并调用
 app = graph.compile()
 result = app.invoke({"counter": 0, "messages": []})
 ```

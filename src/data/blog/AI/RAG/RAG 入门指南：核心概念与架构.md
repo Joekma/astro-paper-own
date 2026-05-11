@@ -80,17 +80,23 @@ RAG（Retrieval-Augmented Generation，检索增强生成）是一种结合了�
 负责将各种格式的文档转换为可处理的文本：
 
 ```python
+# 导入LangChain的文档加载器和文本分割器
 from langchain_community.document_loaders import TextLoader, PDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
+# 加载PDF文档
 loader = PDFLoader("document.pdf")
 documents = loader.load()
 
+# 创建文本分割器
+# chunk_size: 每个文本块的字符数
+# chunk_overlap: 相邻块之间的重叠字符数
 splitter = RecursiveCharacterTextSplitter(
     chunk_size=1000,
     chunk_overlap=200
 )
 
+# 将文档分割成小块
 chunks = splitter.split_documents(documents)
 
 print(f"加载了 {len(documents)} 个文档")
@@ -102,17 +108,21 @@ print(f"分割成 {len(chunks)} 个文本块")
 将文本块转换为向量并存储：
 
 ```python
+# 导入嵌入模型和向量数据库
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 
+# 创建嵌入模型（将文本转为向量）
 embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
+# 从文档块创建向量数据库
 vectorstore = Chroma.from_documents(
-    documents=chunks,
-    embedding=embeddings,
-    persist_directory="./chroma_db"
+    documents=chunks,           # 文本块列表
+    embedding=embeddings,       # 嵌入模型
+    persist_directory="./chroma_db"  # 持久化存储目录
 )
 
+# 保存向量数据库到磁盘
 vectorstore.persist()
 ```
 
@@ -121,13 +131,16 @@ vectorstore.persist()
 根据用户查询找到最相关的文档：
 
 ```python
+# 将向量数据库转换为检索器
 retriever = vectorstore.as_retriever(
-    search_type="similarity",
-    search_kwargs={"k": 5}
+    search_type="similarity",   # 使用相似度搜索
+    search_kwargs={"k": 5}       # 返回最相似的5个结果
 )
 
+# 执行检索
 relevant_docs = retriever.invoke("用户查询内容")
 
+# 遍历并打印检索结果
 for i, doc in enumerate(relevant_docs):
     print(f"文档 {i+1}: {doc.page_content[:100]}...")
     print(f"相似度: {doc.metadata}")
@@ -138,12 +151,15 @@ for i, doc in enumerate(relevant_docs):
 将检索到的上下文与用户查询结合，生成回答：
 
 ```python
+# 导入LangChain组件
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
+# 创建LLM实例
 llm = ChatOpenAI(model="gpt-4")
 
+# 创建提示词模板
 prompt = PromptTemplate.from_template(
     """基于以下上下文回答问题。如果上下文中没有相关信息，请如实说明。
 
@@ -155,9 +171,13 @@ prompt = PromptTemplate.from_template(
     回答："""
 )
 
+# 构建生成链
 chain = prompt | llm | StrOutputParser()
 
+# 将检索到的文档内容合并为上下文
 context = "\n\n".join([doc.page_content for doc in relevant_docs])
+
+# 生成回答
 answer = chain.invoke({
     "context": context,
     "question": "用户的问题"
@@ -174,9 +194,13 @@ print(answer)
 
 ```python
 def naive_rag(query, vectorstore, llm):
+    # 步骤1：检索相关文档
     docs = vectorstore.similarity_search(query, k=5)
+    
+    # 步骤2：构建上下文
     context = "\n\n".join([d.page_content for d in docs])
 
+    # 步骤3：构建提示词并生成回答
     prompt = f"""基于以下上下文回答：
     {context}
 
@@ -194,16 +218,20 @@ def naive_rag(query, vectorstore, llm):
 from langchain_core.docstore.document import Document
 
 def filtered_rag(query, vectorstore, llm, similarity_threshold=0.7):
+    # 步骤1：检索更多候选文档
     docs = vectorstore.similarity_search_with_score(query, k=10)
 
+    # 步骤2：过滤低相似度文档
     filtered_docs = [
         doc for doc, score in docs
-        if score < similarity_threshold
+        if score < similarity_threshold  # 分数低于阈值才保留
     ]
 
+    # 如果没有足够相关的文档
     if not filtered_docs:
         return "未找到足够相关的信息"
 
+    # 步骤3：使用前5个高质量文档生成回答
     context = "\n\n".join([d.page_content for d in filtered_docs[:5]])
     return generate_response(context, query, llm)
 ```
@@ -216,10 +244,13 @@ def filtered_rag(query, vectorstore, llm, similarity_threshold=0.7):
 from langchain_core.output_parsers import StrOutputParser
 
 def reranked_rag(query, vectorstore, reranker, llm, top_k=20, final_k=5):
+    # 步骤1：初步检索，获取更多候选
     initial_docs = vectorstore.similarity_search(query, k=top_k)
 
+    # 步骤2：使用重排序模型优化排序
     reranked_docs = reranker.rerank(query, initial_docs, top_n=final_k)
 
+    # 步骤3：使用重排序后的文档生成回答
     context = "\n\n".join([doc.page_content for doc in reranked_docs])
 
     return generate_response(context, query, llm)
@@ -239,16 +270,21 @@ class MultiModalRAG:
         self.llm = llm
 
     def query(self, query, include_images=True):
+        # 检索相关文档
         docs = self.vectorstore.similarity_search(query)
 
+        # 构建多模态上下文
         contexts = []
         for doc in docs:
+            # 根据文档类型处理内容
             if doc.metadata.get("type") == "text":
                 contexts.append(doc.page_content)
             elif doc.metadata.get("type") == "image" and include_images:
+                # 对图像进行描述
                 image_desc = self.image_processor.describe(doc.page_content)
                 contexts.append(f"[图片描述]: {image_desc}")
 
+        # 合并上下文并生成回答
         full_context = "\n\n".join(contexts)
         return self.llm.invoke(f"基于以下内容回答：{full_context}\n\n问题：{query}")
 ```
