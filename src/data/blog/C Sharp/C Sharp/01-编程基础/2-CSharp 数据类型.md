@@ -437,70 +437,211 @@ bool canRead = (access & FileAccess.Read) != 0;  // true
 
 ---
 
-## 类型转换
+## 隐式类型转换
 
-### 隐式转换
+隐式转换是编译器自动执行的安全转换，不需要特殊语法。
 
-自动完成的安全转换：
+### 何时发生隐式转换
+
+隐式转换发生在数据类型范围较小时转换为范围较大的类型时：
 
 ```csharp
-// 小类型到大类型
-int i = 42;
-long l = i;      // int 到 long
-double d = i;     // int 到 double
+// byte → int：byte 范围（0-255）完全包含在 int 中
+byte small = 100;
+int large = small;  // 隐式转换，编译器自动完成
 
-// 字符到数值
-char c = 'A';
-int ascii = c;    // 65
+// int → long：int 的所有值都是 long 的有效值
+int number = 42;
+long bigger = number;  // 隐式转换
+
+// int → double：整数可以无损转换为浮点数
+int count = 100;
+double ratio = count;  // 100.0
+
+// 数值类型的隐式转换方向
+// sbyte → short → int → long → float → double
+// byte → ushort → int → uint → long → ulong → float → double
+// char  → int
 ```
 
-### 显式转换（强制转换）
+### 隐式转换安全的原因
 
-需要手动指定：
+| 源类型  | 目标类型                                                      | 是否安全                                         |
+| ------- | ------------------------------------------------------------- | ------------------------------------------------ |
+| `sbyte` | `short` `int` `long` `float` `double`                         | ✅ 目标范围更大                                  |
+| `byte`  | `short` `ushort` `int` `uint` `long` `ulong` `float` `double` | ✅ 目标范围更大                                  |
+| `int`   | `long` `float` `double`                                       | ✅ long 范围更大，double 精度足够表示所有 int 值 |
+| `int`   | `decimal`                                                     | ✅ decimal 精度更高                              |
+| `uint`  | `long` `ulong` `float` `double` `decimal`                     | ✅ 目标范围更大                                  |
+| `char`  | `int` `uint` `long` `ulong` `float` `double` `decimal`        | ✅ char 对应 Unicode 码点                        |
+
+### 隐式转换示例
 
 ```csharp
-double d = 3.14;
-int i = (int)d;  // 截断为 3
+// 整数之间的隐式转换
+sbyte sb = 10;
+short sh = sb;   // sbyte → short
+int i = sh;      // short → int
+long l = i;      // int → long
 
-// 使用 checked 检查溢出
-int big = 300;
-byte b = checked((byte)big);  // 抛出 OverflowException
+// 浮点类型的隐式转换
+int intVal = 50;
+float floatVal = intVal;   // int → float（可能丢失精度，但仍是隐式）
+double doubleVal = floatVal; // float → double
+
+// char 的隐式转换
+char letter = 'A';
+int asciiCode = letter;  // char → int，'A' 的 Unicode 值是 65
 ```
 
-### Convert 类
+---
 
-提供安全类型转换：
+## 显示类型转换
+
+显式转换（强制转换）需要手动指定转换方向，编译器不会自动执行。
+
+### 何时需要显式转换
+
+显式转换发生在数据范围可能变小时：
+
+| 源类型   | 目标类型 | 说明                            |
+| -------- | -------- | ------------------------------- |
+| `int`    | `byte`   | int 可能超出 byte 范围（0-255） |
+| `long`   | `int`    | long 可能超出 int 范围          |
+| `double` | `int`    | 小数部分会被截断                |
+| `string` | `int`    | 字符串不是数字类型              |
+
+### 基本强制转换
 
 ```csharp
-string str = "123";
-int num = Convert.ToInt32(str);  // 安全转换
+// double → int：小数部分会被截断（不是四舍五入）
+double d = 3.999;
+int i = (int)d;  // 结果为 3，不是 4
 
-double d = 3.99;
-int i = Convert.ToInt32(d);  // 四舍五入为 4
+// long → int：可能丢失数据
+long bigNumber = 1_000_000;
+int small = (int)bigNumber;  // 正常转换
 
-// 转换为字符串
-string fromInt = Convert.ToString(42);
-string fromBool = Convert.ToString(true);
+// 超出范围会回绕（C# 默认不检查溢出）
+long overflow = 300;
+byte b = (byte)overflow;  // 44（300 % 256 = 44）
+
+// int → byte
+int val = 256;
+byte result = (byte)val;  // 0（256 % 256 = 0）
 ```
 
-### Parse 和 TryParse
+### checked 和 unchecked
+
+控制是否检查整数溢出：
 
 ```csharp
-// Parse - 可能抛异常
-int num = int.Parse("123");
-
-// TryParse - 安全返回
-if (int.TryParse("456", out int result))
+// unchecked（默认）：不检查溢出，结果回绕
+unchecked
 {
-    Console.WriteLine($"转换成功: {result}");
-}
-else
-{
-    Console.WriteLine("转换失败");
+    int a = int.MaxValue;       // 2,147,483,647
+    int b = (int)(a + 1);     // -2,147,483,648（回绕）
 }
 
-// 使用弃元（C# 7+）, 只检查是否成功, 不返回转换结果
-bool success = int.TryParse("789", out _);
+// checked：启用溢出检查，超出范围时抛出 OverflowException
+checked
+{
+    int a = int.MaxValue;
+    int b = (int)(a + 1);     // 抛出 OverflowException
+}
+
+// 项目级设置可在 .csproj 中配置
+// <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+// 例如：CheckForOverflowUnderflow 设为 true 后整个项目默认启用溢出检查
+```
+
+### checked 上下文对显式转换的影响
+
+```csharp
+int big = 1000;
+checked
+{
+    // 强制转换也会检查溢出
+    byte explicit = (byte)big;  // 232（1000 % 256），如果 big 超出 byte 范围则抛异常
+}
+
+unchecked
+{
+    byte explicit = (byte)big;  // 232，不会抛异常
+}
+```
+
+### Convert 类安全转换
+
+Convert 类提供检查溢出的安全转换方法：
+
+```csharp
+// ToInt32：超出范围时抛出异常，而不是回绕
+string str = "1000";
+int result = Convert.ToInt32(str);  // 1000
+
+// ToByte：超出 0-255 范围时抛出 OverflowException
+try
+{
+    long bigVal = 1000;
+    byte safe = Convert.ToByte(bigVal);  // 抛出 OverflowException
+}
+catch (OverflowException)
+{
+    Console.WriteLine("值超出 byte 范围");
+}
+
+// 安全截断
+double d = 99.9;
+int truncated = Convert.ToInt32(d);  // 100（四舍五入）
+```
+
+### ToByte 与 (byte) 强制转换的区别
+
+| 转换方式         | 超出范围时             |
+| ---------------- | ---------------------- |
+| `(byte)强制转换` | 回绕（取模）           |
+| `Convert.ToByte` | 抛出 OverflowException |
+
+```csharp
+long value = 300;
+
+// 强制转换：回绕
+byte cast = (byte)value;       // 44（300 % 256）
+
+// Convert.ToByte：抛异常
+try
+{
+    byte safe = Convert.ToByte(value);  // OverflowException
+}
+catch (OverflowException)
+{
+    Console.WriteLine("超出范围");
+}
+```
+
+### float / double / decimal 之间的转换
+
+```csharp
+// double → float：精度可能降低
+double large = 3.14159265358979;
+float single = (float)large;  // 3.1415927
+
+// float/double → decimal：需要显式转换
+float pi = 3.14F;
+decimal money = (decimal)pi;  // 3.14M
+
+// decimal → float/double：可能丢失精度
+decimal precise = 0.1234567890123456789012345678M;
+double approx = (double)precise;  // 精度降低
+
+// int ↔ decimal：需要显式转换（int → decimal 其实是隐式）
+int integer = 100;
+decimal fromInt = integer;  // 隐式转换，100.0M
+decimal explicit = (decimal)integer;  // 也可以显式
+
+decimal dec = 99.9M;
+int toInt = (int)dec;  // 99（截断）
 ```
 
 ---
