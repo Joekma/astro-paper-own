@@ -704,53 +704,119 @@ foreach (var item in stack)
 
 ## 协变和逆变
 
-### 协变 (out)
+### 先理解继承关系
 
-协变允许使用比声明更具体的类型：
+协变和逆变的前提是类型之间有继承关系。先看一个类层次：
 
 ```csharp
-// IEnumerable<T> 是协变的
-IEnumerable<Dog> dogs = new List<Dog> { new Dog(), new Dog() };
-IEnumerable<Animal> animals = dogs;  // 允许！
+public class Animal
+{
+    public string Name => "动物";
+}
 
-// Func<TResult> 也是协变的
-Func<Dog> dogFunc = () => new Dog();
-Func<Animal> animalFunc = dogFunc;  // 允许！
+public class Dog : Animal  // Dog 继承自 Animal
+{
+    public string Name => "狗";
+}
 ```
 
-### 逆变 (in)
+在这个关系中，`Dog` 是"更具体"的类型，`Animal` 是"更一般"的类型。
 
-逆变允许使用比声明更一般的类型：
+### 协变 (out) — "只出不进"
+
+**协变**用 `out` 关键字修饰，用于**输出**场景（如返回值）。它允许把"更具体"的泛型赋值给"更一般"的泛型。
+
+通俗理解：**"狗"是"动物"，所以装"狗"的容器可以当成装"动物"的容器来用。**
 
 ```csharp
-// Action<T> 是逆变的
-Action<Animal> printAnimal = a => Console.WriteLine(a.Name);
-Action<Dog> printDog = printAnimal;  // 允许！
+// 创建一个装 Dog 的列表
+IEnumerable<Dog> dogs = new List<Dog> { new Dog() };
+
+// dogs 是装"狗"的容器
+// IEnumerable<Animal> 是装"动物"的容器
+// 装"狗"的容器 → 可以当作装"动物"的容器（协变）
+IEnumerable<Animal> animals = dogs;  // ✅ 允许！
+
+// 解释：dogs 里每个元素都是 Dog，Dog 是 Animal 的子类，
+//       所以把 dogs 当作 animals 用，完全安全，不会出乱子。
+```
+
+`Func<TResult>` 也是协变的——它只能**产出** `TResult`，所以可以把产出"狗"的函数当成产出"动物"的函数：
+
+```csharp
+// 一个返回 Dog 的函数
+Func<Dog> dogFunc = () => new Dog();
+
+// Func<Animal> 表示一个返回"动物"的函数
+// 返回"狗"的函数 → 可以当作返回"动物"的函数（协变）
+Func<Animal> animalFunc = dogFunc;  // ✅ 允许！
+
+// 解释：dogFunc 返回 Dog，Dog 肯定是 Animal，所以当 animalFunc 用完全没问题。
+```
+
+### 逆变 (in) — "只进不出"
+
+**逆变**用 `in` 关键字修饰，用于**输入**场景（如参数）。它允许把"更一般"的泛型赋值给"更具体"的泛型。
+
+通俗理解：**如果一个方法接受"动物"，那它肯定也能接受"狗"，因为"狗"就是"动物"。**
+
+```csharp
+// 一个接受 Animal 参数的 lambda
+Action<Animal> printAnimal = animal =>
+{
+    Console.WriteLine(animal.Name);
+};
+
+// Action<Dog> 表示接受"狗"的方法
+// 接受"动物"的方法 → 可以当作接受"狗"的方法（逆变）
+Action<Dog> printDog = printAnimal;  // ✅ 允许！
 
 printDog(new Dog());  // 调用时会当作 Animal 处理
+
+// 解释：printAnimal 接受 Animal，什么动物都行，当然也能接受 Dog。
+//       所以把它当 printDog 用完全安全。
 ```
 
-### 自定义协变接口
+### 对比总结
+
+| 类型 | 方向        | 场景                            | `out`/`in` |
+| ---- | ----------- | ------------------------------- | ---------- |
+| 协变 | 具体 → 一般 | 返回值、只读的 `IEnumerable<T>` | `out T`    |
+| 逆变 | 一般 → 具体 | 参数、只写的 `Action<T>`        | `in T`     |
+
+> **记忆技巧**
+>
+> - **协变（out）**：产出者（Producer），用 `out`。"产出的东西"可以用更宽泛的类型接收。
+> - **逆变（in）**：消费者（Consumer），用 `in`。"接受的东西"可以用更具体的类型表示。
+
+### 自定义协变和逆变接口
 
 ```csharp
-// 定义协变接口
+// 定义一个只生产 T 的接口，用 out 标记为协变
 public interface IProducer<out T>
 {
-    T Produce();
+    T Produce();  // T 是"产出"的，所以用 out
 }
 
-// 定义逆变接口
+// 定义一个只消费 T 的接口，用 in 标记为逆变
 public interface IConsumer<in T>
 {
-    void Consume(T item);
+    void Consume(T item);  // T 是"消耗"的，所以用 in
 }
 
-// 使用
+// 使用 IProducer
 IProducer<Dog> dogProducer = () => new Dog();
-IProducer<Animal> animalProducer = dogProducer;  // 协变
 
-IConsumer<Animal> animalConsumer = a => Console.WriteLine(a);
-IConsumer<Dog> dogConsumer = animalConsumer;  // 逆变
+// IProducer<Animal> 是"更一般"的接口，IProducer<Dog> 是"更具体"的
+// 生产"狗"的 producer → 可以当作生产"动物"的 producer（协变）
+IProducer<Animal> animalProducer = dogProducer;  // ✅
+
+// 使用 IConsumer
+IConsumer<Animal> animalConsumer = animal => Console.WriteLine(animal);
+
+// IConsumer<Dog> 是"更具体"的接口，IConsumer<Animal> 是"更一般"的
+// 接受"动物"的 consumer → 可以当作接受"狗"的 consumer（逆变）
+IConsumer<Dog> dogConsumer = animalConsumer;  // ✅
 ```
 
 ---
