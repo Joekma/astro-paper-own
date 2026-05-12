@@ -473,6 +473,52 @@ foreach (var kvp in overrides)
 
 ---
 
+### 语法演进对比
+
+C# 在不同版本中逐步简化了字典的初始化语法：
+
+```csharp
+// C# 2.0（2005）- 手动 Add
+Dictionary<string, int> dict = new Dictionary<string, int>();
+dict.Add("Alice", 90);
+dict.Add("Bob", 85);
+
+// C# 3.0（2007）- 集合初始化器
+var dict = new Dictionary<string, int>
+{
+    { "Alice", 90 },
+    { "Bob", 85 }
+};
+
+// C# 6.0（2015）- 索引初始化器
+var dict = new Dictionary<string, int>
+{
+    ["Alice"] = 90,
+    ["Bob"] = 85
+};
+
+// C# 12（2023）- 集合表达式
+Dictionary<string, int> dict = ["Alice": 90, "Bob": 85];
+```
+
+| 语法         | 示例                     | 底层调用     | 重复键处理               |
+| ------------ | ------------------------ | ------------ | ------------------------ |
+| 索引初始化器 | `["key"] = value`        | 索引器 `set` | 覆盖已有值               |
+| 集合初始化器 | `{ "key", value }`       | `Add` 方法   | 抛出 `ArgumentException` |
+| 构造后赋值   | `dict["key"] = value`    | 索引器 `set` | 覆盖已有值               |
+| `Add` 方法   | `dict.Add("key", value)` | `Add` 方法   | 抛出 `ArgumentException` |
+
+### 选择建议
+
+| 场景             | 推荐语法                        | 原因                           |
+| ---------------- | ------------------------------- | ------------------------------ |
+| 需要覆盖已有数据 | 索引初始化器 `["key"] = value`  | 自动覆盖，不抛异常             |
+| 需要唯一性保证   | 集合初始化器 `{ "key", value }` | 重复键时抛出异常，提前发现错误 |
+| 从外部加载配置   | 索引初始化器                    | 支持覆盖，更灵活               |
+| 初始化固定常量   | 集合初始化器                    | 防止意外重复键                 |
+
+---
+
 ## HashSet<T> 详解
 
 ### 基本用法
