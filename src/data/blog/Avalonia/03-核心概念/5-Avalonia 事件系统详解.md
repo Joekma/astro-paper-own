@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: avalonia-events-overview
-description: '深入学习 Avalonia 路由事件系统，掌握事件路由策略、事件处理、事件标记，以及自定义路由事件的创建方法。'
+description: "深入学习 Avalonia 路由事件系统，掌握事件路由策略、事件处理、事件标记，以及自定义路由事件的创建方法。"
 tags:
   - Avalonia
   - 事件系统
@@ -22,11 +22,11 @@ Avalonia 使用与 WPF 类似的路由事件（Routed Event）系统。路由事
 
 ### 路由事件的核心价值
 
-| 价值 | 说明 |
-|------|------|
-| **事件冒泡** | 子元素的事件可以向上传播到父元素 |
-| **事件隧道** | 父元素可以先于子元素拦截事件 |
-| **集中处理** | 在父元素中统一处理子元素的事件 |
+| 价值         | 说明                               |
+| ------------ | ---------------------------------- |
+| **事件冒泡** | 子元素的事件可以向上传播到父元素   |
+| **事件隧道** | 父元素可以先于子元素拦截事件       |
+| **集中处理** | 在父元素中统一处理子元素的事件     |
 | **解耦设计** | 子元素触发事件，父元素决定如何响应 |
 
 ---
@@ -35,11 +35,11 @@ Avalonia 使用与 WPF 类似的路由事件（Routed Event）系统。路由事
 
 每个路由事件都有一种路由策略，决定事件如何穿过元素树：
 
-| 策略 | 方向 | 说明 |
-|------|------|------|
-| **Bubble** | 子到父 | 事件首先在源元素上触发，然后向上传播到根元素。这是最常见的策略。 |
+| 策略       | 方向   | 说明                                                                          |
+| ---------- | ------ | ----------------------------------------------------------------------------- |
+| **Bubble** | 子到父 | 事件首先在源元素上触发，然后向上传播到根元素。这是最常见的策略。              |
 | **Tunnel** | 父到子 | 事件首先在根元素上触发，然后向下传播到源元素。隧道事件通常用于预览/拦截场景。 |
-| **Direct** | 仅源 | 事件仅在源元素上触发，不穿过元素树。 |
+| **Direct** | 仅源   | 事件仅在源元素上触发，不穿过元素树。                                          |
 
 事件可以组合策略。例如，许多输入事件使用 `Tunnel | Bubble`，这意味着事件首先从根向下隧道传播，然后在源处向上冒泡。
 
@@ -82,8 +82,8 @@ Window ← 事件首先从这里开始（隧道）
 ```csharp
 private void OnButtonClick(object? sender, RoutedEventArgs e)
 {
-    // sender 是被点击的 Button
-    // e.Source 是事件的原始源
+    // sender：附加事件处理器的元素（本例中为 Button 本身）
+    // e.Source：实际引发事件的原始元素（在事件冒泡/隧道中可能与 sender 不同）
 }
 ```
 
@@ -138,6 +138,7 @@ private void OnButtonClick(object? sender, RoutedEventArgs e)
 如果你需要接收已标记为已处理的事件，请使用 `handledEventsToo` 参数：
 
 ```csharp
+// AddHandler 的 handledEventsToo 参数设为 true 时，即使事件被标记为 Handled=true，仍会收到通知
 myPanel.AddHandler(Button.ClickEvent, OnButtonClick, RoutingStrategies.Bubble, handledEventsToo: true);
 ```
 
@@ -145,12 +146,12 @@ myPanel.AddHandler(Button.ClickEvent, OnButtonClick, RoutingStrategies.Bubble, h
 
 ## RoutedEventArgs 属性
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| **Source** | `object?` | 最初引发事件的元素。 |
-| **Handled** | `bool` | 事件是否已被处理。设置为 `true` 可停止路由。 |
-| **Route** | `RoutingStrategies` | 当前路由阶段（`Tunnel`、`Bubble` 或 `Direct`）。 |
-| **RoutedEvent** | `RoutedEvent` | 正在引发的路由事件。 |
+| 属性            | 类型                | 说明                                             |
+| --------------- | ------------------- | ------------------------------------------------ |
+| **Source**      | `object?`           | 最初引发事件的元素。                             |
+| **Handled**     | `bool`              | 事件是否已被处理。设置为 `true` 可停止路由。     |
+| **Route**       | `RoutingStrategies` | 当前路由阶段（`Tunnel`、`Bubble` 或 `Direct`）。 |
+| **RoutedEvent** | `RoutedEvent`       | 正在引发的路由事件。                             |
 
 ---
 
@@ -259,7 +260,7 @@ public partial class MainWindow : Window
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        
+
         if (e.Key == Key.Escape)
         {
             Close();
@@ -286,17 +287,17 @@ protected override void OnPointerPressed(PointerPressedEventArgs e)
 protected override void OnPointerMoved(PointerEventArgs e)
 {
     base.OnPointerMoved(e);
-    
+
     if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
     {
         var currentPoint = e.GetPosition(this);
         var delta = currentPoint - _startPoint;
-        
+
         if (!_isDragging && (Math.Abs(delta.X) > 5 || Math.Abs(delta.Y) > 5))
         {
             _isDragging = true;
         }
-        
+
         if (_isDragging)
         {
             // 处理拖动逻辑
@@ -318,12 +319,12 @@ protected override void OnPointerReleased(PointerReleasedEventArgs e)
 
 Avalonia 中的事件遵循统一的命名约定：
 
-| 事件类型 | 命名模式 | 示例 |
-|---------|---------|------|
-| 用户操作事件 | `Xxxed` | Clicked, Tapped, Pressed |
-| 状态变化事件 | `XxxChanged` | Loaded, Unloaded, GotFocus |
-| 输入相关事件 | `XxxEvent` | KeyDown, PointerMoved |
-| 手势事件 | `Xxxed` | Tapped, DoubleTapped, Holding |
+| 事件类型     | 命名模式     | 示例                          |
+| ------------ | ------------ | ----------------------------- |
+| 用户操作事件 | `Xxxed`      | Clicked, Tapped, Pressed      |
+| 状态变化事件 | `XxxChanged` | Loaded, Unloaded, GotFocus    |
+| 输入相关事件 | `XxxEvent`   | KeyDown, PointerMoved         |
+| 手势事件     | `Xxxed`      | Tapped, DoubleTapped, Holding |
 
 ---
 
@@ -356,11 +357,11 @@ Avalonia 中的事件遵循统一的命名约定：
 
 ## 总结
 
-| 策略 | 方向 | 用途 |
-|------|------|------|
+| 策略       | 方向    | 用途           |
+| ---------- | ------- | -------------- |
 | **Bubble** | 子 → 父 | 大多数交互事件 |
-| **Tunnel** | 父 → 子 | 预览/拦截场景 |
-| **Direct** | 仅源 | 局部事件 |
+| **Tunnel** | 父 → 子 | 预览/拦截场景  |
+| **Direct** | 仅源    | 局部事件       |
 
 ### 核心要点
 

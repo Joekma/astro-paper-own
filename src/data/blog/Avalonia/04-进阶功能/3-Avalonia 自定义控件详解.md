@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: avalonia-custom-controls
-description: '深入学习 Avalonia 自定义控件开发，掌握控件模板、样式键、定义属性和附加属性，以及创建可复用控件的方法。'
+description: "深入学习 Avalonia 自定义控件开发，掌握控件模板、样式键、定义属性和附加属性，以及创建可复用控件的方法。"
 tags:
   - Avalonia
   - 自定义控件
@@ -23,11 +23,11 @@ Avalonia 支持创建自定义控件来满足特定的 UI 需求。本文介绍�
 
 ### 自定义控件类型
 
-| 类型 | 基类 | 用途 |
-|------|------|------|
-| **UserControl** | `UserControl` | 组合现有控件 |
+| 类型                 | 基类               | 用途           |
+| -------------------- | ------------------ | -------------- |
+| **UserControl**      | `UserControl`      | 组合现有控件   |
 | **TemplatedControl** | `TemplatedControl` | 可样式化的控件 |
-| **Control** | `Control` | 完全自定义渲染 |
+| **Control**          | `Control`          | 完全自定义渲染 |
 
 ---
 
@@ -145,12 +145,12 @@ public class RoundButton : TemplatedControl
 </Style>
 ```
 
-### 使用 PART_ 前缀
+### 使用 PART\_ 前缀
 
 Avalonia 使用 `PART_` 前缀标记模板部件：
 
-| 前缀 | 说明 |
-|------|------|
+| 前缀    | 说明                           |
+| ------- | ------------------------------ |
 | `PART_` | 控件模板中必需或可选的命名元素 |
 
 ```xml
@@ -263,7 +263,7 @@ public class MyPanel : Panel
 public class MyControl : Control, IStyleable
 {
     Type IStyleable.StyleKey => typeof(MyControl);
-    
+
     // 控件逻辑...
 }
 ```
@@ -285,12 +285,12 @@ public class MyButton : Button
 
 ### 生命周期方法
 
-| 方法 | 调用时机 |
-|------|----------|
-| `OnApplyTemplate` | 控件模板应用时 |
-| `OnAttachedToVisualTree` | 附加到可视树时 |
+| 方法                       | 调用时机       |
+| -------------------------- | -------------- |
+| `OnApplyTemplate`          | 控件模板应用时 |
+| `OnAttachedToVisualTree`   | 附加到可视树时 |
 | `OnDetachedFromVisualTree` | 从可视树分离时 |
-| `OnPropertyChanged` | 属性变化时 |
+| `OnPropertyChanged`        | 属性变化时     |
 
 ### 示例
 
@@ -299,8 +299,10 @@ public class MyControl : TemplatedControl
 {
     protected override void OnApplyTemplate(TemplateSize callback)
     {
+        // 先调用基类方法，确保模板已正确加载
         base.OnApplyTemplate(callback);
-        // 获取模板中的部件
+        // callback 包含应用模板后控件的测量大小（Width、Height）
+        // 可以通过 this.FindControl<T>("PART_Name") 查找模板中的命名元素
         _border = this.GetControl<Border>("PART_Background");
     }
 
@@ -436,8 +438,11 @@ public class CircleAvatar : TemplatedControl
 ```csharp
 protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
 {
+    // 先调用基类，确保属性变更通知正常传播
     base.OnPropertyChanged(change);
-    if (change.Property == MyProperty)
+    // change.Property：变化的属性
+    // change.GetNewValue<T>()：获取新值
+    if (change.Property == ValueProperty)
     {
         UpdateVisual();
     }
@@ -450,29 +455,29 @@ protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs chang
 
 ### 控件类型选择
 
-| 场景 | 推荐类型 |
-|------|----------|
-| 简单组合 | UserControl |
+| 场景         | 推荐类型         |
+| ------------ | ---------------- |
+| 简单组合     | UserControl      |
 | 可样式化控件 | TemplatedControl |
-| 自定义渲染 | Control |
+| 自定义渲染   | Control          |
 
 ### 关键步骤
 
-| 步骤 | 操作 |
-|------|------|
-| 1 | 定义 StyledProperty |
-| 2 | 创建控件模板 |
-| 3 | 实现 OnApplyTemplate |
-| 4 | 添加样式 |
-| 5 | 处理伪状态 |
+| 步骤 | 操作                 |
+| ---- | -------------------- |
+| 1    | 定义 StyledProperty  |
+| 2    | 创建控件模板         |
+| 3    | 实现 OnApplyTemplate |
+| 4    | 添加样式             |
+| 5    | 处理伪状态           |
 
 ### 模板部件约定
 
-| 约定 | 说明 |
-|------|------|
-| `PART_Name` | 命名元素 |
+| 约定                | 说明     |
+| ------------------- | -------- |
+| `PART_Name`         | 命名元素 |
 | `{TemplateBinding}` | 模板绑定 |
-| `x:Name` | 元素命名 |
+| `x:Name`            | 元素命名 |
 
 ---
 

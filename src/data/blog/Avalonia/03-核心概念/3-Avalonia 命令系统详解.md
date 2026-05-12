@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: avalonia-commanding
-description: '深入学习 Avalonia 命令系统，掌握 ICommand 接口、RelayCommand、命令参数，以及如何在 MVVM 模式中分离 UI 和业务逻辑。'
+description: "深入学习 Avalonia 命令系统，掌握 ICommand 接口、RelayCommand、命令参数，以及如何在 MVVM 模式中分离 UI 和业务逻辑。"
 tags:
   - Avalonia
   - 命令系统
@@ -24,11 +24,11 @@ language: zh-CN
 
 ### 命令系统的优势
 
-| 优势 | 说明 |
-|------|------|
-| **解耦** | UI 控件与业务逻辑分离 |
-| **可测试性** | 命令可在没有 UI 的情况下测试 |
-| **复用性** | 同一个命令可绑定到多个控件 |
+| 优势         | 说明                              |
+| ------------ | --------------------------------- |
+| **解耦**     | UI 控件与业务逻辑分离             |
+| **可测试性** | 命令可在没有 UI 的情况下测试      |
+| **复用性**   | 同一个命令可绑定到多个控件        |
 | **状态管理** | 自动根据 CanExecute 启用/禁用控件 |
 
 ---
@@ -50,11 +50,11 @@ public interface ICommand
 
 ### 成员说明
 
-| 成员 | 用途 |
-|------|------|
-| `CanExecute` | 返回命令当前是否可以执行，控件用它来确定启用状态 |
-| `Execute` | 执行命令动作，用户激活控件时调用 |
-| `CanExecuteChanged` | 当 CanExecute 返回值可能改变时触发，控件监听此事件重新查询 CanExecute |
+| 成员                | 用途                                                                                                |
+| ------------------- | --------------------------------------------------------------------------------------------------- |
+| `CanExecute`        | 返回命令当前是否可以执行，控件用它来确定启用/禁用状态                                               |
+| `Execute`           | 执行命令动作，用户点击按钮/触发快捷键时调用                                                         |
+| `CanExecuteChanged` | 当 `CanExecute` 返回值可能改变时触发（通常由属性变化通知），控件自动订阅此事件重新查询 `CanExecute` |
 
 ---
 
@@ -123,7 +123,8 @@ public partial class MainViewModel : ObservableObject
 }
 ```
 
-源生成器自动创建 `SaveCommand` 和 `DeleteCommand` 属性。`DeleteCommand` 在 `CanExecuteChanged` 触发时重新评估 `CanDelete()`。
+源生成器自动创建 `SaveCommand` 和 `DeleteCommand` 属性（命名规则：方法名首字母大写 + Command）。
+`DeleteCommand` 在 `CanExecuteChanged` 触发时（即 `Name` 变化时）重新评估 `CanDelete()` 方法，决定按钮是否启用。
 
 ### 在 XAML 中使用
 
@@ -166,9 +167,9 @@ private async Task LoadDataAsync()
 
 ```xml
 <StackPanel>
-    <Button Content="加载数据" 
+    <Button Content="加载数据"
             Command="{Binding LoadDataCommand}" />
-    
+
     <ProgressBar IsIndeterminate="True"
                 IsVisible="{Binding LoadDataCommand.IsRunning}" />
 </StackPanel>
@@ -267,7 +268,7 @@ public partial class UserViewModel : ObservableObject
         // 登录逻辑
     }
 
-    private bool CanLogin() => 
+    private bool CanLogin() =>
         !string.IsNullOrEmpty(UserName) && !string.IsNullOrEmpty(Password);
 }
 ```
@@ -283,8 +284,8 @@ public partial class UserViewModel : ObservableObject
 ```csharp
 public class RelayCommand : ICommand
 {
-    private readonly Action _execute;
-    private readonly Func<bool>? _canExecute;
+    private readonly Action _execute;  // 命令执行逻辑
+    private readonly Func<bool>? _canExecute;  // 可选的条件判断逻辑
 
     public RelayCommand(Action execute, Func<bool>? canExecute = null)
     {
@@ -292,10 +293,13 @@ public class RelayCommand : ICommand
         _canExecute = canExecute;
     }
 
+    // 检查命令是否可以执行（返回 false 时控件自动禁用）
     public bool CanExecute(object? parameter) => _canExecute?.Invoke() ?? true;
 
+    // 执行命令
     public void Execute(object? parameter) => _execute();
 
+    // 通知控件重新评估 CanExecute（当相关属性变化时调用）
     public event EventHandler? CanExecuteChanged;
 
     public void RaiseCanExecuteChanged()
@@ -350,14 +354,14 @@ public class MainViewModel
 
 ### 控件列表
 
-| 控件 | 命令属性 | 触发时机 |
-|------|----------|----------|
-| `Button` | `Command` | 点击时 |
-| `MenuItem` | `Command` | 点击时 |
-| `ListBox` | `SelectionChangedCommand` | 选择改变时 |
-| `KeyBinding` | `Command` | 按下快捷键时 |
-| `ToggleButton` | `Command` | 切换时 |
-| `SplitButton` | `Command` | 主按钮点击时 |
+| 控件           | 命令属性                  | 触发时机     |
+| -------------- | ------------------------- | ------------ |
+| `Button`       | `Command`                 | 点击时       |
+| `MenuItem`     | `Command`                 | 点击时       |
+| `ListBox`      | `SelectionChangedCommand` | 选择改变时   |
+| `KeyBinding`   | `Command`                 | 按下快捷键时 |
+| `ToggleButton` | `Command`                 | 切换时       |
+| `SplitButton`  | `Command`                 | 主按钮点击时 |
 
 ### Button 命令
 
@@ -426,7 +430,7 @@ public class MainViewModel
         <Button Content="保存"
                 Command="{Binding SaveCommand}"
                 HotKey="Ctrl+S" />
-        
+
         <Menu>
             <MenuItem Header="保存"
                       Command="{Binding SaveCommand}"
@@ -500,7 +504,7 @@ public partial class UserListViewModel : ObservableObject
     private async Task EditUserAsync()
     {
         if (SelectedUser == null) return;
-        
+
         var dialog = new UserEditorDialog(SelectedUser);
         if (await dialog.ShowAsync() == DialogResult.Ok)
         {
@@ -515,12 +519,12 @@ public partial class UserListViewModel : ObservableObject
     private async Task DeleteUserAsync()
     {
         if (SelectedUser == null) return;
-        
+
         var result = await MessageBox.ShowAsync(
             "确定要删除此用户吗？",
             "确认删除",
             MessageBoxButtons.YesNo);
-            
+
         if (result == MessageBoxResult.Yes)
         {
             await _userService.DeleteUserAsync(SelectedUser.Id);
@@ -549,7 +553,7 @@ public partial class UserListViewModel : ObservableObject
                     Command="{Binding LoadUsersCommand}"
                     HotKey="F5" />
         </StackPanel>
-        
+
         <!-- 用户列表 -->
         <DataGrid ItemsSource="{Binding Users}"
                   SelectedItem="{Binding SelectedUser}"
@@ -623,22 +627,22 @@ public partial class FormViewModel : ObservableObject
     <TextBox Text="{Binding Email}"
              Watermark="邮箱"
              HorizontalAlignment="Stretch" />
-    
+
     <TextBox Text="{Binding Password}"
              Watermark="密码"
              PasswordChar="*"
              HorizontalAlignment="Stretch" />
-    
+
     <TextBox Text="{Binding ConfirmPassword}"
              Watermark="确认密码"
              PasswordChar="*"
              HorizontalAlignment="Stretch" />
-    
+
     <Button Content="提交"
             Command="{Binding SubmitCommand}"
             IsEnabled="{Binding !IsSubmitting}"
             HorizontalAlignment="Stretch" />
-    
+
     <ProgressBar IsIndeterminate="True"
                  IsVisible="{Binding IsSubmitting}" />
 </StackPanel>
@@ -740,7 +744,7 @@ private void OpenItem(Item item)
 private async Task LoadDataAsync()
 {
     if (LoadDataCommand.IsRunning) return;
-    
+
     await LoadDataInternalAsync();
 }
 ```
@@ -751,32 +755,32 @@ private async Task LoadDataAsync()
 
 ### 命令系统组件
 
-| 组件 | 用途 |
-|------|------|
-| `ICommand` | 命令接口 |
-| `RelayCommand` | 命令实现 |
-| `CommandParameter` | 命令参数传递 |
-| `CanExecute` | 命令可用性检查 |
-| `KeyBinding` | 快捷键绑定 |
+| 组件               | 用途           |
+| ------------------ | -------------- |
+| `ICommand`         | 命令接口       |
+| `RelayCommand`     | 命令实现       |
+| `CommandParameter` | 命令参数传递   |
+| `CanExecute`       | 命令可用性检查 |
+| `KeyBinding`       | 快捷键绑定     |
 
 ### 常用模式
 
-| 模式 | 用法 |
-|------|------|
-| **基础命令** | `[RelayCommand]` |
-| **带条件命令** | `[RelayCommand(CanExecute = nameof(Method))]` |
-| **异步命令** | `[RelayCommand] private async Task MethodAsync()` |
-| **参数命令** | `[RelayCommand] private void Method(Type param)` |
-| **状态通知** | `[NotifyCanExecuteChangedFor(nameof(Command))]` |
+| 模式           | 用法                                              |
+| -------------- | ------------------------------------------------- |
+| **基础命令**   | `[RelayCommand]`                                  |
+| **带条件命令** | `[RelayCommand(CanExecute = nameof(Method))]`     |
+| **异步命令**   | `[RelayCommand] private async Task MethodAsync()` |
+| **参数命令**   | `[RelayCommand] private void Method(Type param)`  |
+| **状态通知**   | `[NotifyCanExecuteChangedFor(nameof(Command))]`   |
 
 ### 命令绑定来源
 
-| 来源 | 优先级 |
-|------|--------|
-| `KeyBinding` | 全局快捷键 |
-| `HotKey` | 控件快捷键 |
-| `Command` 属性 | 控件命令 |
-| `MenuItem` | 菜单命令 |
+| 来源           | 优先级     |
+| -------------- | ---------- |
+| `KeyBinding`   | 全局快捷键 |
+| `HotKey`       | 控件快捷键 |
+| `Command` 属性 | 控件命令   |
+| `MenuItem`     | 菜单命令   |
 
 ---
 

@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: avalonia-property-system
-description: '深入学习 Avalonia 属性系统，掌握 StyledProperty、DirectProperty、AttachedProperty 的注册和使用，以及属性值优先级和元数据。'
+description: "深入学习 Avalonia 属性系统，掌握 StyledProperty、DirectProperty、AttachedProperty 的注册和使用，以及属性值优先级和元数据。"
 tags:
   - Avalonia
   - 属性系统
@@ -24,11 +24,11 @@ Avalonia 有自己的属性系统，扩展了标准 .NET 属性模型。Avalonia
 
 ### 属性类型概述
 
-| 属性类型 | 基类 | 用途 |
-|----------|------|------|
-| **Styled Property** | `StyledProperty<T>` | 参与样式系统的属性 |
-| **Direct Property** | `DirectProperty<TOwner, TValue>` | 由常规 C# 字段支持 |
-| **Attached Property** | `AttachedProperty<T>` | 可在任何 AvaloniaObject 上设置 |
+| 属性类型              | 基类                             | 用途                           |
+| --------------------- | -------------------------------- | ------------------------------ |
+| **Styled Property**   | `StyledProperty<T>`              | 参与样式系统的属性             |
+| **Direct Property**   | `DirectProperty<TOwner, TValue>` | 由常规 C# 字段支持             |
+| **Attached Property** | `AttachedProperty<T>`            | 可在任何 AvaloniaObject 上设置 |
 
 ---
 
@@ -58,14 +58,14 @@ public class MyControl : Control
 
 ### Register 方法参数
 
-| 参数 | 说明 |
-|------|------|
-| `name` | 属性名称，必须与 CLR 属性名匹配 |
-| `defaultValue` | 属性的默认值 |
-| `inherits` | 属性值是否沿可视树向下继承 |
-| `defaultBindingMode` | 默认绑定模式 |
-| `validate` | 返回 false 的值永不有效的验证函数 |
-| `coerce` | 在应用之前调整值的函数 |
+| 参数                 | 说明                                                     |
+| -------------------- | -------------------------------------------------------- |
+| `name`               | 属性名称，必须与 CLR 属性名匹配（区分大小写）            |
+| `defaultValue`       | 属性的默认值                                             |
+| `inherits`           | 属性值是否沿可视树向下继承（父控件设置后子控件自动获得） |
+| `defaultBindingMode` | 默认绑定模式（OneWay、TwoWay 等）                        |
+| `validate`           | 验证函数，返回 false 的值永远不会生效                    |
+| `coerce`             | 强制函数，在应用值之前对其进行调整                       |
 
 ### 完整示例
 
@@ -137,16 +137,19 @@ public class MyControl : Control
 
 ### SetAndRaise 方法
 
-在 setter 中使用 `SetAndRaise` 而非直接赋值：
+在 DirectProperty 的 setter 中必须使用 `SetAndRaise` 而非直接赋值：
 
 ```csharp
-// 推荐
+// 推荐：SetAndRaise 会自动触发 PropertyChanged 事件
 SetAndRaise(StatusProperty, ref _status, value);
 
-// 不推荐
+// 不推荐：手动实现容易遗漏事件触发
 _status = value;
 PropertyChanged?.Invoke(this, ...);
 ```
+
+> **为什么 DirectProperty 用 SetAndRaise？**
+> 虽然 DirectProperty 由 CLR 字段支持，但它仍然支持数据绑定和 PropertyChanged 通知。`SetAndRaise` 会比较新旧值，仅在值实际变化时触发通知，性能更优。
 
 ### 只读 DirectProperty
 
@@ -159,15 +162,15 @@ public static readonly DirectProperty<MyControl, bool> IsActiveProperty =
 
 ### StyledProperty vs DirectProperty
 
-| 行为 | Styled Property | Direct Property |
-|------|-----------------|------------------|
-| 参与样式 | 是 | 否 |
-| 参与动画 | 是 | 否 |
-| 支持值优先级 | 是 | 否（单一值） |
-| 可以继承值 | 是 | 否 |
-| 支持强制 | 是 | 否 |
-| 性能 | 属性存储查找 | 直接字段访问 |
-| 可以只读 | 否 | 是 |
+| 行为         | Styled Property | Direct Property |
+| ------------ | --------------- | --------------- |
+| 参与样式     | 是              | 否              |
+| 参与动画     | 是              | 否              |
+| 支持值优先级 | 是              | 否（单一值）    |
+| 可以继承值   | 是              | 否              |
+| 支持强制     | 是              | 否              |
+| 性能         | 属性存储查找    | 直接字段访问    |
+| 可以只读     | 否              | 是              |
 
 ---
 
@@ -281,8 +284,11 @@ public class MyControl : Control
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
+        // 先调用基类处理程序，确保属性系统正常工作
         base.OnPropertyChanged(change);
 
+        // change.Property：变化的属性
+        // change.GetOldValue<T>() / change.GetNewValue<T>()：新旧属性值
         if (change.Property == ValueProperty)
         {
             UpdateVisual();
@@ -302,13 +308,13 @@ public class MyControl : Control
 
 ### 优先级层次
 
-| 优先级 | 值来源 |
-|--------|--------|
-| 1 | 动画 |
-| 2 | 本地值 |
-| 3 | 样式/模板 |
-| 4 | 继承的值 |
-| 5 | 默认值 |
+| 优先级 | 值来源    |
+| ------ | --------- |
+| 1      | 动画      |
+| 2      | 本地值    |
+| 3      | 样式/模板 |
+| 4      | 继承的值  |
+| 5      | 默认值    |
 
 ### 优先级说明
 
@@ -467,27 +473,27 @@ internal void SetReadOnlyValue(string value) => SetValue(ReadOnlyProperty, value
 
 ### 属性类型对比
 
-| 类型 | 存储位置 | 样式支持 | 动画支持 | 继承支持 |
-|------|----------|----------|----------|----------|
-| StyledProperty | 属性系统 | ✅ | ✅ | ✅ |
-| DirectProperty | CLR 字段 | ❌ | ❌ | ❌ |
-| AttachedProperty | 任意元素 | ✅ | ✅ | ✅ |
+| 类型             | 存储位置 | 样式支持 | 动画支持 | 继承支持 |
+| ---------------- | -------- | -------- | -------- | -------- |
+| StyledProperty   | 属性系统 | ✅       | ✅       | ✅       |
+| DirectProperty   | CLR 字段 | ❌       | ❌       | ❌       |
+| AttachedProperty | 任意元素 | ✅       | ✅       | ✅       |
 
 ### 注册方法
 
-| 类型 | 注册方法 |
-|------|----------|
-| StyledProperty | `AvaloniaProperty.Register` |
-| DirectProperty | `AvaloniaProperty.RegisterDirect` |
+| 类型             | 注册方法                            |
+| ---------------- | ----------------------------------- |
+| StyledProperty   | `AvaloniaProperty.Register`         |
+| DirectProperty   | `AvaloniaProperty.RegisterDirect`   |
 | AttachedProperty | `AvaloniaProperty.RegisterAttached` |
 
 ### 核心方法
 
-| 方法 | 用途 |
-|------|------|
-| `GetValue` | 获取属性值 |
-| `SetValue` | 设置属性值 |
-| `ClearValue` | 清除属性值 |
+| 方法          | 用途             |
+| ------------- | ---------------- |
+| `GetValue`    | 获取属性值       |
+| `SetValue`    | 设置属性值       |
+| `ClearValue`  | 清除属性值       |
 | `SetAndRaise` | 设置值并触发通知 |
 
 ---

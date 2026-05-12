@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: avalonia-data-binding
-description: '深入学习 Avalonia 数据绑定，掌握 DataContext、Binding 语法、绑定模式、转换器，以及在 MVVM 模式中的应用。'
+description: "深入学习 Avalonia 数据绑定，掌握 DataContext、Binding 语法、绑定模式、转换器，以及在 MVVM 模式中的应用。"
 tags:
   - Avalonia
   - 数据绑定
@@ -23,10 +23,10 @@ language: zh-CN
 
 ### 数据绑定的优势
 
-| 优势 | 说明 |
-|------|------|
-| **解耦** | UI 和业务逻辑分离 |
-| **自动化** | 数据变化自动更新 UI |
+| 优势       | 说明                 |
+| ---------- | -------------------- |
+| **解耦**   | UI 和业务逻辑分离    |
+| **自动化** | 数据变化自动更新 UI  |
 | **可维护** | 代码更简洁，易于维护 |
 | **可测试** | ViewModel 可独立测试 |
 
@@ -89,12 +89,12 @@ Window (DataContext = MainViewModel)
 
 ### 绑定模式
 
-| 模式 | 说明 | 使用场景 |
-|------|------|----------|
-| `OneWay` | 源 → 目标 | 显示只读数据 |
-| `TwoWay` | 源 ↔ 目标 | 表单输入 |
-| `OneWayToSource` | 目标 → 源 | 用户输入场景 |
-| `OneTime` | 仅首次绑定 | 静态数据 |
+| 模式             | 说明       | 使用场景     |
+| ---------------- | ---------- | ------------ |
+| `OneWay`         | 源 → 目标  | 显示只读数据 |
+| `TwoWay`         | 源 ↔ 目标  | 表单输入     |
+| `OneWayToSource` | 目标 → 源  | 用户输入场景 |
+| `OneTime`        | 仅首次绑定 | 静态数据     |
 
 ### 绑定路径
 
@@ -127,7 +127,7 @@ Window (DataContext = MainViewModel)
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
             xmlns:vm="clr-namespace:MyApp.ViewModels"
             x:DataType="vm:MainViewModel">
-    
+
     <TextBlock Text="{Binding Message}" />
 </UserControl>
 ```
@@ -153,13 +153,18 @@ Window (DataContext = MainViewModel)
 ```csharp
 public class BoolToVisibilityConverter : IValueConverter
 {
-    public object? Convert(object? value, Type targetType, 
+    // Convert: 绑定方向从 ViewModel → View 时调用（数据→UI）
+    public object? Convert(object? value, Type targetType,
         object? parameter, CultureInfo culture)
     {
+        // 将 bool 值转换为 Avalonia 的 Visibility 枚举
+        // Visibility.Visible 可见，Visibility.Collapsed 隐藏
         return value is bool b && b ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    public object? ConvertBack(object? value, Type targetType, 
+    // ConvertBack: 绑定方向从 View → ViewModel 时调用（UI→数据）
+    // 例如：用户在 UI 上切换 CheckBox，值会传回 ViewModel
+    public object? ConvertBack(object? value, Type targetType,
         object? parameter, CultureInfo culture)
     {
         return value is Visibility v && v == Visibility.Visible;
@@ -182,18 +187,18 @@ public class BoolToVisibilityConverter : IValueConverter
 ### 使用转换器
 
 ```xml
-<TextBlock Text="加载中..." 
+<TextBlock Text="加载中..."
            IsVisible="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}" />
 ```
 
 ### 常用转换器
 
-| 转换器 | 功能 |
-|--------|------|
+| 转换器                      | 功能              |
+| --------------------------- | ----------------- |
 | `BoolToVisibilityConverter` | bool → Visibility |
-| `StringToUpperConverter` | 字符串转大写 |
-| `DateTimeFormatConverter` | 日期格式化 |
-| `InverseBoolConverter` | bool 取反 |
+| `StringToUpperConverter`    | 字符串转大写      |
+| `DateTimeFormatConverter`   | 日期格式化        |
+| `InverseBoolConverter`      | bool 取反         |
 | `NullToVisibilityConverter` | null → Visibility |
 
 ---
@@ -211,7 +216,7 @@ public partial class MainViewModel : ObservableObject
 {
     [ObservableProperty]
     private string _message = "Hello";
-    
+
     // 自动生成以下代码：
     // public string Message { get => _message; set => SetProperty(ref _message, value); }
 }
@@ -223,9 +228,9 @@ public partial class MainViewModel : ObservableObject
 public class MainViewModel : INotifyPropertyChanged
 {
     private string _message = "Hello";
-    
+
     public event PropertyChangedEventHandler? PropertyChanged;
-    
+
     public string Message
     {
         get => _message;
@@ -254,7 +259,7 @@ public class MainViewModel : INotifyPropertyChanged
 ### 带参数的命令
 
 ```xml
-<Button Content="删除" 
+<Button Content="删除"
         Command="{Binding DeleteCommand}"
         CommandParameter="{Binding SelectedItem}" />
 ```
@@ -318,14 +323,14 @@ Users.Clear();
 
 ### 绑定值优先级
 
-| 优先级 | 值来源 |
-|--------|--------|
-| 1 | 焦点/活动绑定（正在编辑） |
-| 2 | 本地值（代码或用户输入设置） |
-| 3 | 命令绑定 |
-| 4 | 样式/主题 |
-| 5 | 继承的值 |
-| 6 | 默认值 |
+| 优先级 | 值来源                       |
+| ------ | ---------------------------- |
+| 1      | 焦点/活动绑定（正在编辑）    |
+| 2      | 本地值（代码或用户输入设置） |
+| 3      | 命令绑定                     |
+| 4      | 样式/主题                    |
+| 5      | 继承的值                     |
+| 6      | 默认值                       |
 
 ---
 
@@ -361,8 +366,8 @@ public partial class UserFormViewModel : ObservableObject
         }
     }
 
-    private bool CanSubmit() => 
-        !string.IsNullOrWhiteSpace(Name) && 
+    private bool CanSubmit() =>
+        !string.IsNullOrWhiteSpace(Name) &&
         !string.IsNullOrWhiteSpace(Email);
 
     private void ClearForm()
@@ -376,13 +381,13 @@ public partial class UserFormViewModel : ObservableObject
 ```xml
 <StackPanel Margin="20" Spacing="10">
     <TextBlock Text="用户表单" FontSize="20" FontWeight="Bold" />
-    
+
     <TextBlock Text="姓名:" />
     <TextBox Text="{Binding Name, Mode=TwoWay}" Watermark="请输入姓名" />
-    
+
     <TextBlock Text="邮箱:" />
     <TextBox Text="{Binding Email, Mode=TwoWay}" Watermark="请输入邮箱" />
-    
+
     <Button Content="{Binding IsSubmitting, Converter={StaticResource BoolToTextConverter}, ConverterParameter='提交中|提交'}"
             Command="{Binding SubmitCommand}"
             HorizontalAlignment="Right" />
@@ -421,10 +426,10 @@ public partial class ListViewModel : ObservableObject
 <DockPanel>
     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10">
         <Button Content="添加" Command="{Binding AddItemCommand}" />
-        <Button Content="删除选中" Command="{Binding RemoveItemCommand}" 
+        <Button Content="删除选中" Command="{Binding RemoveItemCommand}"
                 CommandParameter="{Binding SelectedItem}" />
     </StackPanel>
-    
+
     <ListBox ItemsSource="{Binding Items}"
              SelectedItem="{Binding SelectedItem}">
         <ListBox.ItemTemplate>
@@ -478,42 +483,42 @@ public partial class ListViewModel : ObservableObject
 
 ### 绑定命名约定
 
-| 类型 | 约定 | 示例 |
-|------|------|------|
-| ViewModel | XxxViewModel | MainViewModel, UserViewModel |
-| 属性 | PascalCase | UserName, Email |
-| 命令 | XxxCommand | SaveCommand, DeleteCommand |
-| 集合 | PascalCase + s | Users, Items |
+| 类型      | 约定           | 示例                         |
+| --------- | -------------- | ---------------------------- |
+| ViewModel | XxxViewModel   | MainViewModel, UserViewModel |
+| 属性      | PascalCase     | UserName, Email              |
+| 命令      | XxxCommand     | SaveCommand, DeleteCommand   |
+| 集合      | PascalCase + s | Users, Items                 |
 
 ### 性能优化
 
-| 技巧 | 说明 |
-|------|------|
-| **使用 OneTime** | 静态数据使用一次性绑定 |
-| **编译绑定** | 启用 x:DataType 提高性能 |
-| **避免复杂路径** | 嵌套深度不超过 3 层 |
+| 技巧             | 说明                     |
+| ---------------- | ------------------------ |
+| **使用 OneTime** | 静态数据使用一次性绑定   |
+| **编译绑定**     | 启用 x:DataType 提高性能 |
+| **避免复杂路径** | 嵌套深度不超过 3 层      |
 
 ---
 
 ## 总结
 
-| 主题 | 说明 |
-|------|------|
-| **DataContext** | 数据上下文，继承机制 |
-| **Binding** | 绑定语法和模式 |
-| **编译绑定** | 性能优化，编译时验证 |
-| **IValueConverter** | 值转换 |
-| **INotifyPropertyChanged** | 属性变化通知 |
-| **ObservableCollection** | 集合绑定 |
+| 主题                       | 说明                 |
+| -------------------------- | -------------------- |
+| **DataContext**            | 数据上下文，继承机制 |
+| **Binding**                | 绑定语法和模式       |
+| **编译绑定**               | 性能优化，编译时验证 |
+| **IValueConverter**        | 值转换               |
+| **INotifyPropertyChanged** | 属性变化通知         |
+| **ObservableCollection**   | 集合绑定             |
 
 ### 绑定模式总结
 
-| 模式 | 数据流 | 使用场景 |
-|------|--------|----------|
-| OneWay | 源 → 目标 | 只读显示 |
-| TwoWay | 源 ↔ 目标 | 表单输入 |
+| 模式           | 数据流    | 使用场景 |
+| -------------- | --------- | -------- |
+| OneWay         | 源 → 目标 | 只读显示 |
+| TwoWay         | 源 ↔ 目标 | 表单输入 |
 | OneWayToSource | 目标 → 源 | 用户输入 |
-| OneTime | 仅首次 | 静态数据 |
+| OneTime        | 仅首次    | 静态数据 |
 
 ---
 

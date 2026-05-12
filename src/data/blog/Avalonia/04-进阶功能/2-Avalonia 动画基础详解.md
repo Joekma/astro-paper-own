@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: avalonia-animation-basics
-description: '深入学习 Avalonia 动画系统，掌握基本动画、关键帧动画、转换动画，以及在 UI 中实现流畅动画效果的方法。'
+description: "深入学习 Avalonia 动画系统，掌握基本动画、关键帧动画、转换动画，以及在 UI 中实现流畅动画效果的方法。"
 tags:
   - Avalonia
   - 动画
@@ -24,11 +24,11 @@ Avalonia 提供了丰富的动画支持，可以在应用程序中创建流畅�
 
 ### 动画类型
 
-| 类型 | 说明 |
-|------|------|
-| **基本动画** | 单值动画（Double、Color 等） |
-| **关键帧动画** | 多值多时间点的动画 |
-| **转换动画** | 控件状态转换动画 |
+| 类型           | 说明                         |
+| -------------- | ---------------------------- |
+| **基本动画**   | 单值动画（Double、Color 等） |
+| **关键帧动画** | 多值多时间点的动画           |
+| **转换动画**   | 控件状态转换动画             |
 
 ---
 
@@ -59,13 +59,13 @@ Avalonia 提供了丰富的动画支持，可以在应用程序中创建流畅�
 
 ### 动画属性
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `Duration` | Duration | 动画时长 |
-| `Delay` | Duration | 延迟开始 |
-| `IterationCount` | IterationCount | 迭代次数 |
+| 属性                | 类型              | 说明     |
+| ------------------- | ----------------- | -------- |
+| `Duration`          | Duration          | 动画时长 |
+| `Delay`             | Duration          | 延迟开始 |
+| `IterationCount`    | IterationCount    | 迭代次数 |
 | `PlaybackDirection` | PlaybackDirection | 播放方向 |
-| `FillMode` | FillMode | 填充模式 |
+| `FillMode`          | FillMode          | 填充模式 |
 
 ### Duration 格式
 
@@ -79,10 +79,10 @@ Avalonia 提供了丰富的动画支持，可以在应用程序中创建流畅�
 
 ### IterationCount
 
-| 值 | 说明 |
-|---|------|
-| `1` | 播放一次 |
-| `2` | 播放两次 |
+| 值         | 说明     |
+| ---------- | -------- |
+| `1`        | 播放一次 |
+| `2`        | 播放两次 |
 | `INFINITE` | 无限循环 |
 
 ---
@@ -106,11 +106,11 @@ Avalonia 提供了丰富的动画支持，可以在应用程序中创建流畅�
 
 ### Cue 点
 
-| 格式 | 说明 |
-|------|------|
-| `0%` | 起点 |
-| `50%` | 中点 |
-| `100%` | 终点 |
+| 格式   | 说明     |
+| ------ | -------- |
+| `0%`   | 起点     |
+| `50%`  | 中点     |
+| `100%` | 终点     |
 | `0.25` | 25% 位置 |
 
 ### 多属性动画
@@ -136,19 +136,19 @@ Avalonia 提供了丰富的动画支持，可以在应用程序中创建流畅�
 
 ### 常用缓动函数
 
-| 缓动 | 效果 |
-|------|------|
-| `LinearEasing` | 线性（无缓动） |
-| `QuadraticEasing` | 二次缓动 |
-| `CubicEasing` | 三次缓动 |
-| `QuarticEasing` | 四次缓动 |
-| `QuinticEasing` | 五次缓动 |
-| `SinusoidalEasing` | 正弦缓动 |
-| `ExponentialEasing` | 指数缓动 |
-| `CircleEasing` | 圆形缓动 |
-| `ElasticEasing` | 弹性缓动 |
-| `BackEasing` | 回退缓动 |
-| `BounceEasing` | 弹跳缓动 |
+| 缓动                | 效果           |
+| ------------------- | -------------- |
+| `LinearEasing`      | 线性（无缓动） |
+| `QuadraticEasing`   | 二次缓动       |
+| `CubicEasing`       | 三次缓动       |
+| `QuarticEasing`     | 四次缓动       |
+| `QuinticEasing`     | 五次缓动       |
+| `SinusoidalEasing`  | 正弦缓动       |
+| `ExponentialEasing` | 指数缓动       |
+| `CircleEasing`      | 圆形缓动       |
+| `ElasticEasing`     | 弹性缓动       |
+| `BackEasing`        | 回退缓动       |
+| `BounceEasing`      | 弹跳缓动       |
 
 ### 使用缓动函数
 
@@ -297,8 +297,8 @@ public void Hide()
 ### 示例 2：滑动动画
 
 ```xml
-<Border x:Name="SlidePanel" 
-        Width="200" 
+<Border x:Name="SlidePanel"
+        Width="200"
         Background="LightGray"
         HorizontalAlignment="Left">
     <Border.RenderTransform>
@@ -344,7 +344,7 @@ public void Pulse()
 {
     ScaleTransform.ScaleX = 1.1;
     ScaleTransform.ScaleY = 1.1;
-    
+
     // 延迟恢复
     Task.Delay(100).ContinueWith(_ =>
     {
@@ -388,7 +388,7 @@ public void Rotate()
         <DoubleAnimation Storyboard.TargetProperty="Opacity"
                          From="0" To="1" Duration="0:0:0.5"/>
     </Storyboard>
-    
+
     <Storyboard x:Key="SlideIn">
         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
                          From="-100" To="0" Duration="0:0:0.3"/>
@@ -425,24 +425,24 @@ storyboard.Resume();
 
 ### 最佳实践
 
-| 实践 | 说明 |
-|------|------|
+| 实践                  | 说明                                        |
+| --------------------- | ------------------------------------------- |
 | **使用 GPU 加速属性** | Opacity、TranslateTransform、ScaleTransform |
-| **避免动画大型元素** | 使用 ClipToBounds |
-| **限制动画时长** | 通常不超过 1 秒 |
-| **减少同时动画数量** | 批量动画会影响性能 |
+| **避免动画大型元素**  | 使用 ClipToBounds                           |
+| **限制动画时长**      | 通常不超过 1 秒                             |
+| **减少同时动画数量**  | 批量动画会影响性能                          |
 
 ### 推荐属性
 
-| 属性 | GPU 加速 |
-|------|----------|
-| `Opacity` | ✅ |
-| `TranslateTransform` | ✅ |
-| `ScaleTransform` | ✅ |
-| `RotateTransform` | ✅ |
-| `Width` | ❌ |
-| `Height` | ❌ |
-| `Margin` | ❌ |
+| 属性                 | GPU 加速 |
+| -------------------- | -------- |
+| `Opacity`            | ✅       |
+| `TranslateTransform` | ✅       |
+| `ScaleTransform`     | ✅       |
+| `RotateTransform`    | ✅       |
+| `Width`              | ❌       |
+| `Height`             | ❌       |
+| `Margin`             | ❌       |
 
 ---
 
@@ -484,28 +484,28 @@ storyboard.Resume();
 
 ### 动画类型
 
-| 类型 | 用途 | 属性 |
-|------|------|------|
-| **Animation** | 关键帧动画 | KeyFrames, Easing |
-| **Transitions** | 状态转换 | Property, Duration |
-| **Storyboard** | 复杂动画 | Child animations |
+| 类型            | 用途       | 属性               |
+| --------------- | ---------- | ------------------ |
+| **Animation**   | 关键帧动画 | KeyFrames, Easing  |
+| **Transitions** | 状态转换   | Property, Duration |
+| **Storyboard**  | 复杂动画   | Child animations   |
 
 ### 常用缓动函数
 
-| 缓动 | 特点 |
-|------|------|
-| `Linear` | 无缓动 |
+| 缓动        | 特点     |
+| ----------- | -------- |
+| `Linear`    | 无缓动   |
 | `Quadratic` | 二次曲线 |
-| `Elastic` | 弹性效果 |
-| `Bounce` | 弹跳效果 |
+| `Elastic`   | 弹性效果 |
+| `Bounce`    | 弹跳效果 |
 
 ### 性能优化
 
-| 优化 | 方法 |
-|------|------|
+| 优化         | 方法                    |
+| ------------ | ----------------------- |
 | **GPU 加速** | 使用 Opacity、Transform |
-| **限制区域** | 使用 ClipToBounds |
-| **减少数量** | 限制同时动画数 |
+| **限制区域** | 使用 ClipToBounds       |
+| **减少数量** | 限制同时动画数          |
 
 ---
 

@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: avalonia-layout-system
-description: '深入学习 Avalonia 布局系统，掌握 StackPanel、Grid、DockPanel、Canvas、WrapPanel 等面板的使用，以及对齐、边距、内边距等概念。'
+description: "深入学习 Avalonia 布局系统，掌握 StackPanel、Grid、DockPanel、Canvas、WrapPanel 等面板的使用，以及对齐、边距、内边距等概念。"
 tags:
   - Avalonia
   - 布局
@@ -37,8 +37,8 @@ Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复�
 
 布局系统为 `Children` 集合的每个成员完成两个阶段：
 
-| 阶段 | 方法 | 说明 |
-|------|------|------|
+| 阶段                | 方法              | 说明               |
+| ------------------- | ----------------- | ------------------ |
 | **Measure（测量）** | `MeasureOverride` | 计算子元素所需大小 |
 | **Arrange（排列）** | `ArrangeOverride` | 确定子元素最终位置 |
 
@@ -62,27 +62,27 @@ Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复�
 
 ### 可用面板
 
-| 面板 | 说明 |
-|------|------|
-| `Panel` | 所有子元素填满 Panel 边界 |
-| `Canvas` | 绝对定位，按坐标放置 |
-| `DockPanel` | 相对停靠布局 |
-| `Grid` | 灵活的网格区域 |
-| `RelativePanel` | 相对布局 |
-| `StackPanel` | 线性堆叠（水平或垂直） |
-| `WrapPanel` | 顺序环绕布局 |
-| `Expander` | 可折叠面板 |
+| 面板            | 说明                      |
+| --------------- | ------------------------- |
+| `Panel`         | 所有子元素填满 Panel 边界 |
+| `Canvas`        | 绝对定位，按坐标放置      |
+| `DockPanel`     | 相对停靠布局              |
+| `Grid`          | 灵活的网格区域            |
+| `RelativePanel` | 相对布局                  |
+| `StackPanel`    | 线性堆叠（水平或垂直）    |
+| `WrapPanel`     | 顺序环绕布局              |
+| `Expander`      | 可折叠面板                |
 
 ### 面板选择指南
 
-| 需求 | 推荐面板 |
-|------|----------|
-| 线性列表 | StackPanel |
-| 表格/网格 | Grid |
-| 停靠布局 | DockPanel |
-| 绝对定位 | Canvas |
-| 响应式环绕 | WrapPanel |
-| 相对位置 | RelativePanel |
+| 需求       | 推荐面板      |
+| ---------- | ------------- |
+| 线性列表   | StackPanel    |
+| 表格/网格  | Grid          |
+| 停靠布局   | DockPanel     |
+| 绝对定位   | Canvas        |
+| 响应式环绕 | WrapPanel     |
+| 相对位置   | RelativePanel |
 
 ---
 
@@ -94,10 +94,10 @@ Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复�
 
 ### 属性
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
+| 属性          | 类型        | 说明                            |
+| ------------- | ----------- | ------------------------------- |
 | `Orientation` | Orientation | 排列方向（Horizontal/Vertical） |
-| `Spacing` | double | 子元素间距 |
+| `Spacing`     | double      | 子元素间距                      |
 
 ### 示例
 
@@ -147,10 +147,10 @@ Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复�
 
 ### 属性
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
+| 属性                | 类型                       | 说明   |
+| ------------------- | -------------------------- | ------ |
 | `ColumnDefinitions` | ColumnDefinitionCollection | 列定义 |
-| `RowDefinitions` | RowDefinitionCollection | 行定义 |
+| `RowDefinitions`    | RowDefinitionCollection    | 行定义 |
 
 ### 定义语法
 
@@ -161,12 +161,12 @@ Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复�
 
 ### 列/行定义
 
-| 值 | 说明 |
-|---|------|
-| `Auto` | 自动计算大小 |
-| `*` | 分配剩余空间 |
-| `n*` | 按比例分配（n 是数字） |
-| `100` | 固定像素值 |
+| 值     | 说明                   |
+| ------ | ---------------------- |
+| `Auto` | 自动计算大小           |
+| `*`    | 分配剩余空间           |
+| `n*`   | 按比例分配（n 是数字） |
+| `100`  | 固定像素值             |
 
 ### Grid 附加属性
 
@@ -181,12 +181,12 @@ Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复�
 
 ### 跨行跨列
 
-| 属性 | 说明 |
-|------|------|
-| `Grid.Column` | 列位置 |
-| `Grid.Row` | 行位置 |
+| 属性              | 说明   |
+| ----------------- | ------ |
+| `Grid.Column`     | 列位置 |
+| `Grid.Row`        | 行位置 |
 | `Grid.ColumnSpan` | 跨列数 |
-| `Grid.RowSpan` | 跨行数 |
+| `Grid.RowSpan`    | 跨行数 |
 
 ### 示例
 
@@ -196,23 +196,23 @@ Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复�
     <StackPanel Grid.Row="0" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="10">
         <TextBlock Text="应用程序" FontSize="20" FontWeight="Bold" />
     </StackPanel>
-    
+
     <!-- 左侧菜单 -->
     <StackPanel Grid.Row="1" Grid.Column="0" Background="LightGray">
         <Button Content="首页" Margin="5" />
         <Button Content="设置" Margin="5" />
     </StackPanel>
-    
+
     <!-- 主内容 -->
     <Border Grid.Row="1" Grid.Column="1" Margin="10">
         <TextBlock Text="主内容区域" />
     </Border>
-    
+
     <!-- 右侧边栏 -->
     <Border Grid.Row="1" Grid.Column="2" Width="100">
         <TextBlock Text="边栏" />
     </Border>
-    
+
     <!-- 底部状态栏 -->
     <TextBlock Grid.Row="2" Grid.ColumnSpan="3" Text="就绪" />
 </Grid>
@@ -228,8 +228,8 @@ Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复�
 
 ### 属性
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
+| 属性            | 类型 | 说明                       |
+| --------------- | ---- | -------------------------- |
 | `LastChildFill` | bool | 最后子元素是否填满剩余空间 |
 
 ### Dock 附加属性
@@ -256,17 +256,17 @@ Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复�
             <MenuItem Header="保存" />
         </MenuItem>
     </Menu>
-    
+
     <!-- 底部状态栏 -->
     <TextBlock DockPanel.Dock="Bottom" Text="就绪" Padding="5" />
-    
+
     <!-- 左侧导航 -->
     <StackPanel DockPanel.Dock="Left" Width="150" Spacing="5" Margin="5">
         <Button Content="首页" />
         <Button Content="用户管理" />
         <Button Content="设置" />
     </StackPanel>
-    
+
     <!-- 主内容 -->
     <TextBlock Text="主内容区域"
                HorizontalAlignment="Center"
@@ -284,11 +284,11 @@ Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复�
 
 ### Canvas 附加属性
 
-| 属性 | 说明 |
-|------|------|
-| `Canvas.Left` | 距离左边位置 |
-| `Canvas.Top` | 距离顶部位置 |
-| `Canvas.Right` | 距离右边位置 |
+| 属性            | 说明         |
+| --------------- | ------------ |
+| `Canvas.Left`   | 距离左边位置 |
+| `Canvas.Top`    | 距离顶部位置 |
+| `Canvas.Right`  | 距离右边位置 |
 | `Canvas.Bottom` | 距离底部位置 |
 
 ### 示例
@@ -307,10 +307,10 @@ Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复�
 ```xml
 <Canvas>
     <!-- 图像 -->
-    <Image Source="/image.png" 
-           Canvas.Left="50" 
+    <Image Source="/image.png"
+           Canvas.Left="50"
            Canvas.Top="50" />
-           
+
     <!-- 覆盖文字 -->
     <TextBlock Text="图片标题"
                Canvas.Left="60"
@@ -329,11 +329,11 @@ Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复�
 
 ### 属性
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `Orientation` | Orientation | 排列方向 |
-| `Spacing` | Thickness | 子元素间距 |
-| `ItemSpacing` | Thickness | 单项间距 |
+| 属性          | 类型        | 说明       |
+| ------------- | ----------- | ---------- |
+| `Orientation` | Orientation | 排列方向   |
+| `Spacing`     | Thickness   | 子元素间距 |
+| `ItemSpacing` | Thickness   | 单项间距   |
 
 ### 示例
 
@@ -373,18 +373,18 @@ Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复�
 
 ### 附加属性
 
-| 属性 | 说明 |
-|------|------|
-| `RelativePanel.AlignLeftWith` | 左对齐目标 |
-| `RelativePanel.AlignRightWith` | 右对齐目标 |
-| `RelativePanel.AlignTopWith` | 顶部对齐目标 |
-| `RelativePanel.AlignBottomWith` | 底部对齐目标 |
-| `RelativePanel.AlignLeftWithPanel` | 与面板左边对齐 |
+| 属性                                | 说明           |
+| ----------------------------------- | -------------- |
+| `RelativePanel.AlignLeftWith`       | 左对齐目标     |
+| `RelativePanel.AlignRightWith`      | 右对齐目标     |
+| `RelativePanel.AlignTopWith`        | 顶部对齐目标   |
+| `RelativePanel.AlignBottomWith`     | 底部对齐目标   |
+| `RelativePanel.AlignLeftWithPanel`  | 与面板左边对齐 |
 | `RelativePanel.AlignRightWithPanel` | 与面板右边对齐 |
-| `RelativePanel.Above` | 在目标上方 |
-| `RelativePanel.Below` | 在目标下方 |
-| `RelativePanel.LeftOf` | 在目标左侧 |
-| `RelativePanel.RightOf` | 在目标右侧 |
+| `RelativePanel.Above`               | 在目标上方     |
+| `RelativePanel.Below`               | 在目标下方     |
+| `RelativePanel.LeftOf`              | 在目标左侧     |
+| `RelativePanel.RightOf`             | 在目标右侧     |
 
 ### 示例
 
@@ -392,18 +392,18 @@ Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复�
 <RelativePanel>
     <!-- 标题 -->
     <TextBlock x:Name="Title" Text="标题" FontSize="24" FontWeight="Bold" />
-    
+
     <!-- 副标题 -->
-    <TextBlock x:Name="Subtitle" 
-               Text="副标题" 
+    <TextBlock x:Name="Subtitle"
+               Text="副标题"
                RelativePanel.Below="Title" />
-    
+
     <!-- 关闭按钮 - 右上角 -->
-    <Button x:Name="CloseButton" 
-            Content="X" 
+    <Button x:Name="CloseButton"
+            Content="X"
             RelativePanel.AlignRightWithPanel="True"
             RelativePanel.AlignTopWithPanel="True" />
-    
+
     <!-- 内容区域 -->
     <TextBlock Text="主内容"
                RelativePanel.Below="Subtitle"
@@ -419,9 +419,9 @@ Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复�
 ### Border 控件
 
 ```xml
-<Border Background="LightBlue" 
-        BorderBrush="DarkBlue" 
-        BorderThickness="2" 
+<Border Background="LightBlue"
+        BorderBrush="DarkBlue"
+        BorderThickness="2"
         CornerRadius="5"
         Padding="10">
     <TextBlock Text="带边框的内容" />
@@ -430,10 +430,10 @@ Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复�
 
 ### Padding vs Margin
 
-| 属性 | 说明 | 作用域 |
-|------|------|--------|
+| 属性      | 说明     | 作用域                        |
+| --------- | -------- | ----------------------------- |
 | `Padding` | 内部间距 | Border、Button 等容器控件内部 |
-| `Margin` | 外部间距 | 元素相对于其他元素的距离 |
+| `Margin`  | 外部间距 | 元素相对于其他元素的距离      |
 
 ```xml
 <StackPanel Margin="10">
@@ -448,20 +448,20 @@ Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复�
 
 ### HorizontalAlignment
 
-| 值 | 说明 |
-|---|------|
-| `Left` | 左对齐 |
-| `Center` | 水平居中 |
-| `Right` | 右对齐 |
+| 值        | 说明     |
+| --------- | -------- |
+| `Left`    | 左对齐   |
+| `Center`  | 水平居中 |
+| `Right`   | 右对齐   |
 | `Stretch` | 拉伸填满 |
 
 ### VerticalAlignment
 
-| 值 | 说明 |
-|---|------|
-| `Top` | 顶部对齐 |
-| `Center` | 垂直居中 |
-| `Bottom` | 底部对齐 |
+| 值        | 说明     |
+| --------- | -------- |
+| `Top`     | 顶部对齐 |
+| `Center`  | 垂直居中 |
+| `Bottom`  | 底部对齐 |
 | `Stretch` | 拉伸填满 |
 
 ### 示例
@@ -488,19 +488,19 @@ Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复�
         <MenuItem Header="编辑" />
         <MenuItem Header="视图" />
     </Menu>
-    
+
     <!-- 状态栏 -->
     <StatusBar DockPanel.Dock="Bottom">
         <StatusBarItem Text="就绪" />
     </StatusBar>
-    
+
     <!-- 主区域使用 Grid -->
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="200" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
-        
+
         <!-- 导航 -->
         <Border Grid.Column="0" Background="F5F5F5">
             <StackPanel Spacing="5" Margin="10">
@@ -509,7 +509,7 @@ Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复�
                 <Button Content="设置" HorizontalAlignment="Stretch" />
             </StackPanel>
         </Border>
-        
+
         <!-- 内容 -->
         <Border Grid.Column="1" Margin="10">
             <TextBlock Text="内容区域" />
@@ -579,26 +579,26 @@ Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复�
 
 ### 面板选择
 
-| 面板 | 主要用途 | 特点 |
-|------|----------|------|
-| `StackPanel` | 线性排列 | 简单高效 |
-| `Grid` | 表格布局 | 灵活强大 |
-| `DockPanel` | 停靠布局 | 适合应用外壳 |
-| `Canvas` | 绝对定位 | 自由度高 |
-| `WrapPanel` | 环绕布局 | 响应式 |
-| `RelativePanel` | 相对布局 | 适配性好 |
+| 面板            | 主要用途 | 特点         |
+| --------------- | -------- | ------------ |
+| `StackPanel`    | 线性排列 | 简单高效     |
+| `Grid`          | 表格布局 | 灵活强大     |
+| `DockPanel`     | 停靠布局 | 适合应用外壳 |
+| `Canvas`        | 绝对定位 | 自由度高     |
+| `WrapPanel`     | 环绕布局 | 响应式       |
+| `RelativePanel` | 相对布局 | 适配性好     |
 
 ### 布局属性优先级
 
-| 属性 | 说明 |
-|------|------|
-| `Width/Height` | 显式尺寸 |
-| `MinWidth/MinHeight` | 最小尺寸 |
-| `MaxWidth/MaxHeight` | 最大尺寸 |
-| `Margin` | 外部间距 |
-| `Padding` | 内部间距 |
+| 属性                  | 说明     |
+| --------------------- | -------- |
+| `Width/Height`        | 显式尺寸 |
+| `MinWidth/MinHeight`  | 最小尺寸 |
+| `MaxWidth/MaxHeight`  | 最大尺寸 |
+| `Margin`              | 外部间距 |
+| `Padding`             | 内部间距 |
 | `HorizontalAlignment` | 水平对齐 |
-| `VerticalAlignment` | 垂直对齐 |
+| `VerticalAlignment`   | 垂直对齐 |
 
 ---
 

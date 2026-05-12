@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: avalonia-getting-started
-description: '深入学习 Avalonia UI 开发，从环境安装、项目创建到第一个 Avalonia 应用程序的完整指南。'
+description: "深入学习 Avalonia UI 开发，从环境安装、项目创建到第一个 Avalonia 应用程序的完整指南。"
 tags:
   - Avalonia
   - 入门指南
@@ -24,13 +24,13 @@ Avalonia UI 是一个跨平台的 .NET UI 框架，支持 Windows、macOS、Linu
 
 ### Avalonia 支持的平台
 
-| 平台 | 支持状态 |
-|------|----------|
-| Windows | ✅ 完全支持 |
-| macOS | ✅ 完全支持 |
-| Linux | ✅ 完全支持 |
+| 平台               | 支持状态      |
+| ------------------ | ------------- |
+| Windows            | ✅ 完全支持   |
+| macOS              | ✅ 完全支持   |
+| Linux              | ✅ 完全支持   |
 | Web（WebAssembly） | ✅ 实验性支持 |
-| iOS/Android | 🔜 开发中 |
+| iOS/Android        | 🔜 开发中     |
 
 ---
 
@@ -38,11 +38,11 @@ Avalonia UI 是一个跨平台的 .NET UI 框架，支持 Windows、macOS、Linu
 
 ### 系统要求
 
-| 要求 | 说明 |
-|------|------|
+| 要求         | 说明                                    |
+| ------------ | --------------------------------------- |
 | **操作系统** | Windows 10+/macOS 10.14+/Linux (GTK 3+) |
-| **.NET SDK** | .NET 6.0 或更高版本（推荐 .NET 8.0） |
-| **IDE** | Visual Studio 2022 / Rider / VS Code |
+| **.NET SDK** | .NET 6.0 或更高版本（推荐 .NET 8.0）    |
+| **IDE**      | Visual Studio 2022 / Rider / VS Code    |
 
 ### 检查 .NET SDK 安装
 
@@ -71,16 +71,16 @@ dotnet new install Avalonia.Templates
 
 安装后，你可以看到以下模板：
 
-| 模板名称 | 短名称 | 说明 |
-|----------|--------|------|
-| Avalonia App | avalonia.app | 标准应用 |
-| Avalonia MVVM App | avalonia.mvvm | MVVM 架构应用 |
-| Avalonia Cross Platform | avalonia.xplat | 跨平台应用 |
-| Avalonia Resource Dictionary | avalonia.resource | 资源字典 |
-| Avalonia Styles | avalonia.styles | 样式模板 |
-| Avalonia TemplatedControl | avalonia.templatedcontrol | 模板控件 |
-| Avalonia UserControl | avalonia.usercontrol | 用户控件 |
-| Avalonia Window | avalonia.window | 窗口 |
+| 模板名称                     | 短名称                    | 说明          |
+| ---------------------------- | ------------------------- | ------------- |
+| Avalonia App                 | avalonia.app              | 标准应用      |
+| Avalonia MVVM App            | avalonia.mvvm             | MVVM 架构应用 |
+| Avalonia Cross Platform      | avalonia.xplat            | 跨平台应用    |
+| Avalonia Resource Dictionary | avalonia.resource         | 资源字典      |
+| Avalonia Styles              | avalonia.styles           | 样式模板      |
+| Avalonia TemplatedControl    | avalonia.templatedcontrol | 模板控件      |
+| Avalonia UserControl         | avalonia.usercontrol      | 用户控件      |
+| Avalonia Window              | avalonia.window           | 窗口          |
 
 ### 验证安装
 
@@ -149,9 +149,10 @@ using Avalonia.Themes.Fluent;
 
 class Program
 {
-    [STAThread]
+    [STAThread]  // STAThread 属性标识线程为单线程单元（STA），某些 COM 组件需要
     public static void Main(string[] args)
     {
+        // StartWithClassicDesktopLifetime 会启动桌面应用程序并等待其退出
         BuildAvaloniaApp()
             .StartWithClassicDesktopLifetime(args);
     }
@@ -159,9 +160,9 @@ class Program
     public static AppBuilder BuildAvaloniaApp()
     {
         return AppBuilder.Configure<App>()
-            .UsePlatformDetect()
-            .UseFluentTheme()
-            .LogToTrace();
+            .UsePlatformDetect()        // 自动检测当前平台（Windows/macOS/Linux）
+            .UseFluentTheme()           // 使用 Fluent 设计主题
+            .LogToTrace();              // 将日志输出到 Trace（调试窗口）
     }
 }
 ```
@@ -266,9 +267,9 @@ dotnet run
 ### ViewModelBase.cs
 
 ```csharp
-using CommunityToolkit.Mvvm.ComponentModel;
-
-public abstract class ViewModelBase : ObservableObject
+// ObservableObject 是 CommunityToolkit.Mvvm 提供的基类
+// 自动实现 INotifyPropertyChanged 接口，属性变更时会通知 UI 更新
+public partial class ViewModelBase : ObservableObject
 {
 }
 ```
@@ -276,14 +277,20 @@ public abstract class ViewModelBase : ObservableObject
 ### MainWindowViewModel.cs
 
 ```csharp
+// CommunityToolkit.Mvvm 命名空间
+// ObservableObject 提供属性通知，Input 提供 [RelayCommand] 特性
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
+    // [ObservableProperty] 特性会在编译时自动生成 Message 属性及其 getter/setter
+    // 当 Message 值改变时，自动触发 PropertyChanged 事件通知 UI 更新
     [ObservableProperty]
     private string _message = "Hello, Avalonia!";
 
+    // [RelayCommand] 特性会在编译时自动生成 UpdateMessageCommand 命令
+    // 命令绑定到 UI 后，点击按钮会自动调用此方法
     [RelayCommand]
     private void UpdateMessage()
     {
@@ -304,18 +311,18 @@ public partial class MainWindowViewModel : ViewModelBase
         Width="800"
         Height="600">
 
-    <StackPanel HorizontalAlignment="Center" 
+    <StackPanel HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Spacing="20">
-        
+
         <TextBlock Text="{Binding Message}"
                    FontSize="32"
                    HorizontalAlignment="Center" />
-        
+
         <Button Content="更新消息"
                 Command="{Binding UpdateMessageCommand}"
                 HorizontalAlignment="Center" />
-    
+
     </StackPanel>
 
 </Window>
@@ -324,12 +331,13 @@ public partial class MainWindowViewModel : ViewModelBase
 修改 MainWindow.axaml.cs：
 
 ```csharp
+// MainWindow.axaml.cs - 窗口代码后置文件
 public partial class MainWindow : Window
 {
     public MainWindow()
     {
-        InitializeComponent();
-        DataContext = new MainWindowViewModel();
+        InitializeComponent();  // 加载并初始化 XAML 中定义的 UI
+        DataContext = new MainWindowViewModel();  // 设置数据上下文，绑定 ViewModel
     }
 }
 ```
@@ -428,13 +436,13 @@ dotnet build
 
 ## 推荐的 Avalonia 包
 
-| 包 | 用途 |
-|------|------|
-| CommunityToolkit.Mvvm | MVVM 工具包 |
-| Avalonia.FluentTheme | Fluent 主题 |
-| Avalonia.MaterialTheme | Material 主题 |
-| Avalonia.Xaml.Behaviors | 行为扩展 |
-| Avalonia.ReactiveUI | 响应式扩展 |
+| 包                      | 用途          |
+| ----------------------- | ------------- |
+| CommunityToolkit.Mvvm   | MVVM 工具包   |
+| Avalonia.FluentTheme    | Fluent 主题   |
+| Avalonia.MaterialTheme  | Material 主题 |
+| Avalonia.Xaml.Behaviors | 行为扩展      |
+| Avalonia.ReactiveUI     | 响应式扩展    |
 
 ### 安装推荐包
 
@@ -448,24 +456,24 @@ dotnet add package Avalonia.Xaml.Behaviors
 
 ## 下一步
 
-| 主题 | 说明 |
-|------|------|
+| 主题                                                                                                       | 说明                  |
+| ---------------------------------------------------------------------------------------------------------- | --------------------- |
 | [XAML 基础](file:///d:\Workspace\blg\astro-paper-own/src/data/blog/Avalonia/Avalonia%20XAML%20基础详解.md) | XAML 语法和绑定表达式 |
-| [数据绑定](file:///d:\Workspace\blg\astro-paper-own/src/data/blog/Avalonia/Avalonia%20数据绑定详解.md) | Binding、DataContext |
-| [布局系统](file:///d:\Workspace\blg\astro-paper-own/src/data/blog/Avalonia/Avalonia%20布局系统详解.md) | StackPanel、Grid |
-| [MVVM 模式](file:///d:\Workspace\blg\astro-paper-own/src/data/blog/Avalonia/Avalonia%20MVVM%20模式详解.md) | View/ViewModel/Model |
+| [数据绑定](file:///d:\Workspace\blg\astro-paper-own/src/data/blog/Avalonia/Avalonia%20数据绑定详解.md)     | Binding、DataContext  |
+| [布局系统](file:///d:\Workspace\blg\astro-paper-own/src/data/blog/Avalonia/Avalonia%20布局系统详解.md)     | StackPanel、Grid      |
+| [MVVM 模式](file:///d:\Workspace\blg\astro-paper-own/src/data/blog/Avalonia/Avalonia%20MVVM%20模式详解.md) | View/ViewModel/Model  |
 
 ---
 
 ## 总结
 
-| 步骤 | 操作 |
-|------|------|
-| 1 | 安装 .NET SDK |
-| 2 | 安装 Avalonia 模板 |
-| 3 | 创建项目 |
-| 4 | 运行验证 |
-| 5 | 添加代码 |
+| 步骤 | 操作               |
+| ---- | ------------------ |
+| 1    | 安装 .NET SDK      |
+| 2    | 安装 Avalonia 模板 |
+| 3    | 创建项目           |
+| 4    | 运行验证           |
+| 5    | 添加代码           |
 
 ---
 

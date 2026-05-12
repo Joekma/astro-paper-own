@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: avalonia-drag-and-drop
-description: '深入学习 Avalonia 拖放操作，掌握拖放事件、数据传输、DataTransfer 类，以及实现文件拖放和文本拖放的方法。'
+description: "深入学习 Avalonia 拖放操作，掌握拖放事件、数据传输、DataTransfer 类，以及实现文件拖放和文本拖放的方法。"
 tags:
   - Avalonia
   - 拖放
@@ -23,13 +23,13 @@ Avalonia 支持拖放操作，用于在控件之间、应用程序与操作系�
 
 ### 拖放操作的应用场景
 
-| 场景 | 说明 |
-|------|------|
-| **文件拖放** | 从文件管理器拖放文件到应用程序 |
-| **文本拖放** | 拖放文本内容 |
-| **图片拖放** | 拖放图片数据 |
-| **列表项移动** | 列表项之间的重新排序 |
-| **跨应用传输** | 与其他应用程序的数据交换 |
+| 场景           | 说明                           |
+| -------------- | ------------------------------ |
+| **文件拖放**   | 从文件管理器拖放文件到应用程序 |
+| **文本拖放**   | 拖放文本内容                   |
+| **图片拖放**   | 拖放图片数据                   |
+| **列表项移动** | 列表项之间的重新排序           |
+| **跨应用传输** | 与其他应用程序的数据交换       |
 
 ---
 
@@ -41,13 +41,13 @@ Avalonia 支持拖放操作，用于在控件之间、应用程序与操作系�
 
 ```xml
 <Border DragDrop.AllowDrop="True"
-        Background="LightGray" 
+        Background="LightGray"
         Padding="40"
         DragEnter="OnDragEnter"
         DragLeave="OnDragLeave"
         DragOver="OnDragOver"
         Drop="OnDrop">
-    <TextBlock Text="将文件拖放到这里" 
+    <TextBlock Text="将文件拖放到这里"
                HorizontalAlignment="Center" />
 </Border>
 ```
@@ -56,21 +56,21 @@ Avalonia 支持拖放操作，用于在控件之间、应用程序与操作系�
 
 ## 拖放事件
 
-| 事件 | 触发时机 |
-|------|----------|
-| `DragEnter` | 拖动时指针进入目标元素 |
-| `DragLeave` | 拖动时指针离开目标元素 |
-| `DragOver` | 拖动时指针在目标元素上移动，持续触发 |
-| `Drop` | 用户在目标元素上释放指针 |
+| 事件        | 触发时机                             |
+| ----------- | ------------------------------------ |
+| `DragEnter` | 拖动时指针进入目标元素               |
+| `DragLeave` | 拖动时指针离开目标元素               |
+| `DragOver`  | 拖动时指针在目标元素上移动，持续触发 |
+| `Drop`      | 用户在目标元素上释放指针             |
 
 ### DragEventArgs 属性
 
-| 属性 | 说明 |
-|------|------|
-| `DataTransfer` | 包含拖动数据的 `IDataTransfer` 对象 |
-| `DragEffects` | 允许和请求的拖动效果 |
-| `KeyModifiers` | 当前键盘修饰键（Ctrl、Shift、Alt） |
-| `GetPosition(Visual)` | 返回相对于给定视觉元素的指针位置 |
+| 属性                  | 说明                                |
+| --------------------- | ----------------------------------- |
+| `DataTransfer`        | 包含拖动数据的 `IDataTransfer` 对象 |
+| `DragEffects`         | 允许和请求的拖动效果                |
+| `KeyModifiers`        | 当前键盘修饰键（Ctrl、Shift、Alt）  |
+| `GetPosition(Visual)` | 返回相对于给定视觉元素的指针位置    |
 
 ---
 
@@ -78,11 +78,11 @@ Avalonia 支持拖放操作，用于在控件之间、应用程序与操作系�
 
 `DragDropEffects` 标志枚举指示允许的操作：
 
-| 值 | 说明 |
-|---|------|
-| `None` | 拖放目标不接受数据 |
-| `Copy` | 数据被复制到目标 |
-| `Move` | 数据被移动到目标 |
+| 值     | 说明                 |
+| ------ | -------------------- |
+| `None` | 拖放目标不接受数据   |
+| `Copy` | 数据被复制到目标     |
+| `Move` | 数据被移动到目标     |
 | `Link` | 创建到原始数据的链接 |
 
 在 `DragOver` 中设置 `e.DragEffects` 以控制光标反馈，在 `Drop` 中指示操作结果。
@@ -145,12 +145,12 @@ private async void OnPointerPressed(object? sender, PointerPressedEventArgs e)
 {
     var dragData = new DataTransfer();
     dragData.Set(DataFormat.Text, "从拖动开始!");
-    
+
     var result = await DragDrop.DoDragDropAsync(
         e,
         dragData,
         DragDropEffects.Copy | DragDropEffects.Move);
-    
+
     if (result == DragDropEffects.Move)
     {
         Debug.WriteLine("数据被移动了");
@@ -165,7 +165,7 @@ private async void StartFileDrag(IStorageFile file)
 {
     var data = new DataTransfer();
     data.Set(DataFormat.File, file);
-    
+
     await DragDrop.DoDragDropAsync(
         DragDropOperation.Default,
         data,
@@ -189,11 +189,11 @@ data.Set(DataFormat.Bitmap, bitmapImage);
 
 ### 标准数据格式
 
-| 格式 | 类型 | 说明 |
-|------|------|------|
-| `DataFormat.Text` | `string` | 纯文本 |
-| `DataFormat.Bitmap` | `Bitmap` | 位图图像数据 |
-| `DataFormat.File` | `IStorageItem` | 文件系统项 |
+| 格式                | 类型           | 说明         |
+| ------------------- | -------------- | ------------ |
+| `DataFormat.Text`   | `string`       | 纯文本       |
+| `DataFormat.Bitmap` | `Bitmap`       | 位图图像数据 |
+| `DataFormat.File`   | `IStorageItem` | 文件系统项   |
 
 ### 创建自定义格式
 
@@ -273,16 +273,16 @@ private void OnDragLeave(object? sender, DragEventArgs e)
 ```xml
 <Border x:Name="DropZone"
         DragDrop.AllowDrop="True"
-        Background="#F5F5F5" 
+        Background="#F5F5F5"
         CornerRadius="8"
-        Padding="40" 
+        Padding="40"
         Margin="20"
-        BorderBrush="DarkGray" 
+        BorderBrush="DarkGray"
         BorderThickness="1">
     <StackPanel Spacing="8" HorizontalAlignment="Center">
         <TextBlock Text="将文本或文件拖放到这里"
                    HorizontalAlignment="Center" />
-        <TextBlock x:Name="StatusText" 
+        <TextBlock x:Name="StatusText"
                    Foreground="Gray"
                    HorizontalAlignment="Center" />
     </StackPanel>
@@ -324,7 +324,7 @@ public partial class MainWindow : Window
     private void OnDrop(object? sender, DragEventArgs e)
     {
         DropZone.Background = new SolidColorBrush(Color.Parse("#F5F5F5"));
-        
+
         if (e.DataTransfer.Formats.Contains(DataFormat.Text))
         {
             var text = e.DataTransfer.TryGetText();
@@ -367,12 +367,12 @@ DragDrop.RemoveDropHandler(myBorder, OnDrop);
 
 ### 可用的注册方法
 
-| 方法 | 说明 |
-|------|------|
-| `DragDrop.AddDragEnterHandler` | 添加拖入处理程序 |
-| `DragDrop.AddDragLeaveHandler` | 添加拖出处理程序 |
-| `DragDrop.AddDragOverHandler` | 添加拖动经过处理程序 |
-| `DragDrop.AddDropHandler` | 添加释放处理程序 |
+| 方法                           | 说明                 |
+| ------------------------------ | -------------------- |
+| `DragDrop.AddDragEnterHandler` | 添加拖入处理程序     |
+| `DragDrop.AddDragLeaveHandler` | 添加拖出处理程序     |
+| `DragDrop.AddDragOverHandler`  | 添加拖动经过处理程序 |
+| `DragDrop.AddDropHandler`      | 添加释放处理程序     |
 
 ---
 
@@ -460,7 +460,7 @@ public partial class SortableList : ListBox
 ```xml
 <Border x:Name="ImageDropZone"
         DragDrop.AllowDrop="True"
-        Width="300" 
+        Width="300"
         Height="200"
         Background="LightGray">
     <Image x:Name="PreviewImage" Stretch="Uniform"/>
@@ -474,7 +474,7 @@ private void OnImageDrop(object? sender, DragEventArgs e)
     {
         var files = e.DataTransfer.GetFiles();
         var file = files?.FirstOrDefault();
-        
+
         if (file != null)
         {
             PreviewImage.Source = new Bitmap(file.Path.LocalPath);
@@ -552,20 +552,20 @@ private void OnDrop(object? sender, DragEventArgs e)
 
 ### 关键步骤
 
-| 步骤 | 操作 |
-|------|------|
-| 1 | 设置 `DragDrop.AllowDrop="True"` |
-| 2 | 处理 `DragOver` 设置 `DragEffects` |
-| 3 | 处理 `Drop` 读取 `DataTransfer` |
-| 4 | 可选：处理 `DragEnter/Leave` 视觉反馈 |
+| 步骤 | 操作                                  |
+| ---- | ------------------------------------- |
+| 1    | 设置 `DragDrop.AllowDrop="True"`      |
+| 2    | 处理 `DragOver` 设置 `DragEffects`    |
+| 3    | 处理 `Drop` 读取 `DataTransfer`       |
+| 4    | 可选：处理 `DragEnter/Leave` 视觉反馈 |
 
 ### DataTransfer 常用方法
 
-| 方法 | 说明 |
-|------|------|
-| `Set(format, data)` | 设置数据 |
-| `GetFiles()` | 获取文件列表 |
-| `TryGetText()` | 尝试获取文本 |
+| 方法                 | 说明             |
+| -------------------- | ---------------- |
+| `Set(format, data)`  | 设置数据         |
+| `GetFiles()`         | 获取文件列表     |
+| `TryGetText()`       | 尝试获取文本     |
 | `Formats.Contains()` | 检查格式是否存在 |
 
 ---

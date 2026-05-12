@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: avalonia-mvvm-pattern
-description: '深入学习 Avalonia MVVM 模式，掌握 View、ViewModel、Model 的职责分离，数据绑定连接，以及 CommunityToolkit.Mvvm 的使用方法。'
+description: "深入学习 Avalonia MVVM 模式，掌握 View、ViewModel、Model 的职责分离，数据绑定连接，以及 CommunityToolkit.Mvvm 的使用方法。"
 tags:
   - Avalonia
   - MVVM
@@ -24,12 +24,12 @@ Model-View-ViewModel（MVVM）模式将应用程序的用户界面与其逻辑�
 
 ### MVVM 的核心价值
 
-| 价值 | 说明 |
-|------|------|
-| **测试性** | ViewModel 可以像普通类一样进行单元测试，无需启动 UI |
-| **分离关注点** | UI 布局和应用程序逻辑独立演进 |
-| **XAML 天然契合** | Avalonia 的数据绑定系统使 MVVM 成为自然选择 |
-| **可替换性** | 每层都可以独立替换 |
+| 价值              | 说明                                                |
+| ----------------- | --------------------------------------------------- |
+| **测试性**        | ViewModel 可以像普通类一样进行单元测试，无需启动 UI |
+| **分离关注点**    | UI 布局和应用程序逻辑独立演进                       |
+| **XAML 天然契合** | Avalonia 的数据绑定系统使 MVVM 成为自然选择         |
+| **可替换性**      | 每层都可以独立替换                                  |
 
 ---
 
@@ -65,11 +65,11 @@ Model-View-ViewModel（MVVM）模式将应用程序的用户界面与其逻辑�
 
 ### 各层职责
 
-| 层 | 职责 | 技术实现 |
-|---|------|----------|
-| **View** | 结构、布局、外观 | XAML + code-behind |
-| **ViewModel** | 中介逻辑 | C# POCO + 属性通知 |
-| **Model** | 领域逻辑 | C# 类、服务 |
+| 层            | 职责             | 技术实现           |
+| ------------- | ---------------- | ------------------ |
+| **View**      | 结构、布局、外观 | XAML + code-behind |
+| **ViewModel** | 中介逻辑         | C# POCO + 属性通知 |
+| **Model**     | 领域逻辑         | C# 类、服务        |
 
 ### 单向依赖链
 
@@ -77,10 +77,10 @@ Model-View-ViewModel（MVVM）模式将应用程序的用户界面与其逻辑�
 View → ViewModel → Model
 ```
 
-- View 知道 ViewModel
-- ViewModel 知道 Model
-- Model 不知道 ViewModel
-- ViewModel 不知道 View
+- View 知道 ViewModel（View 设置 DataContext）
+- ViewModel 知道 Model（ViewModel 引用 Model/Service）
+- Model 不知道 ViewModel（Model 完全独立）
+- ViewModel 不知道 View（ViewModel 通过数据绑定更新 UI，不直接引用 View）
 
 ---
 
@@ -90,11 +90,11 @@ View → ViewModel → Model
 
 当应用程序增长时，将 UI 定义和应用程序逻辑放在相同的代码后置文件中会导致问题：
 
-| 问题 | 代码后置 | MVVM |
-|------|---------|------|
-| **控件交互** | 纠缠在一起 | 通过绑定解耦 |
+| 问题         | 代码后置           | MVVM          |
+| ------------ | ------------------ | ------------- |
+| **控件交互** | 纠缠在一起         | 通过绑定解耦  |
 | **单元测试** | 困难，需要 UI 平台 | 简单，无需 UI |
-| **代码耦合** | UI 和逻辑混合 | 分离良好 |
+| **代码耦合** | UI 和逻辑混合      | 分离良好      |
 
 ### MVVM 解决的问题
 
@@ -139,7 +139,7 @@ View 由 AXAML 文件和代码后置组成：
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="MyApp.Views.MainWindow"
         Title="MVVM 示例">
-    
+
     <StackPanel>
         <TextBlock Text="{Binding Message}" />
         <Button Content="点击" Command="{Binding ClickCommand}" />
@@ -195,17 +195,17 @@ public partial class MainViewModel : ObservableObject
 所有 ViewModel 应该继承 `ObservableObject`：
 
 ```csharp
-using CommunityToolkit.Mvvm.ComponentModel;
-
 public partial class MainViewModel : ObservableObject
 {
+    // [ObservableProperty] 特性：编译时自动生成 Name 和 Count 属性
+    // 生成的属性会包含完整的 INotifyPropertyChanged 实现
     [ObservableProperty]
     private string _name = "";
-    
+
     [ObservableProperty]
     private int _count = 0;
-    
-    // 源生成器创建：
+
+    // 编译后生成的代码相当于：
     // public string Name { get => _name; set => SetProperty(ref _name, value); }
     // public int Count { get => _count; set => SetProperty(ref _count, value); }
 }
@@ -290,7 +290,7 @@ public class UserService
 public partial class UserListViewModel : ObservableObject
 {
     private readonly IUserService _userService;
-    
+
     public UserListViewModel(IUserService userService)
     {
         _userService = userService;
@@ -318,17 +318,19 @@ public partial class MainWindow : Window
 ### 使用 DI 容器
 
 ```csharp
+// 使用 Microsoft.Extensions.DependencyInjection 进行依赖注入
 public partial class App : Application
 {
     public override void OnFrameworkInitializationCompleted()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<IUserService, UserService>();
-        services.AddTransient<MainViewModel>();
-        
-        var provider = services.BuildServiceProvider();
-        
+        var services = new ServiceCollection();  // 创建服务集合
+        services.AddSingleton<IUserService, UserService>();  // 注册单例服务
+        services.AddTransient<MainViewModel>();  // 注册瞬态 ViewModel（每次请求创建新实例）
+
+        var provider = services.BuildServiceProvider();  // 构建服务提供者
+
         var mainWindow = new MainWindow();
+        // 从容器中解析 MainViewModel 并设置到窗口
         mainWindow.DataContext = provider.GetRequiredService<MainViewModel>();
     }
 }
@@ -394,19 +396,19 @@ public partial class UserListViewModel : ObservableObject
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="MyApp.Views.UserListView">
-    
+
     <DockPanel>
         <!-- 工具栏 -->
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10">
             <Button Content="刷新" Command="{Binding LoadUsersCommand}" />
             <Button Content="删除" Command="{Binding DeleteUserCommand}" />
         </StackPanel>
-        
+
         <!-- 加载指示器 -->
-        <ProgressBar DockPanel.Dock="Top" 
+        <ProgressBar DockPanel.Dock="Top"
                      IsIndeterminate="True"
                      IsVisible="{Binding IsLoading}" />
-        
+
         <!-- 用户列表 -->
         <DataGrid ItemsSource="{Binding Users}"
                   SelectedItem="{Binding SelectedUser}"
@@ -445,28 +447,28 @@ public partial class UserFormViewModel : ObservableObject
     private async Task SubmitAsync()
     {
         ErrorMessage = "";
-        
+
         if (!IsValidEmail(Email))
         {
             ErrorMessage = "邮箱格式不正确";
             return;
         }
-        
+
         if (Password.Length < 6)
         {
             ErrorMessage = "密码至少6位";
             return;
         }
-        
+
         await SaveUserAsync();
     }
 
-    private bool CanSubmit() => 
+    private bool CanSubmit() =>
         !string.IsNullOrWhiteSpace(UserName) &&
         !string.IsNullOrWhiteSpace(Email) &&
         !string.IsNullOrWhiteSpace(Password);
 
-    private bool IsValidEmail(string email) => 
+    private bool IsValidEmail(string email) =>
         email.Contains("@");
 
     private async Task SaveUserAsync() { /* 保存逻辑 */ }
@@ -501,12 +503,12 @@ MyApp/
 
 ### 命名约定
 
-| 类型 | 约定 | 示例 |
-|------|------|------|
+| 类型      | 约定         | 示例          |
+| --------- | ------------ | ------------- |
 | ViewModel | XxxViewModel | MainViewModel |
-| Model | Xxx | User, Product |
-| Service | IXxxService | IUserService |
-| View | XxxView | UserListView |
+| Model     | Xxx          | User, Product |
+| Service   | IXxxService  | IUserService  |
+| View      | XxxView      | UserListView  |
 
 ---
 
@@ -585,7 +587,7 @@ private async Task LoadDataAsync()
 public class UserListViewModel
 {
     private readonly IUserService _userService;
-    
+
     public UserListViewModel(IUserService userService)
     {
         _userService = userService;
@@ -607,12 +609,12 @@ public class SettingsViewModel { /* 设置逻辑 */ }
 
 ### MVVM 核心组件
 
-| 组件 | 说明 | 技术 |
-|------|------|------|
-| **View** | UI 定义 | XAML |
-| **ViewModel** | 逻辑中介 | ObservableObject |
-| **Model** | 数据/业务 | C# 类 |
-| **绑定** | 连接桥梁 | {Binding} |
+| 组件          | 说明      | 技术             |
+| ------------- | --------- | ---------------- |
+| **View**      | UI 定义   | XAML             |
+| **ViewModel** | 逻辑中介  | ObservableObject |
+| **Model**     | 数据/业务 | C# 类            |
+| **绑定**      | 连接桥梁  | {Binding}        |
 
 ### 数据流
 

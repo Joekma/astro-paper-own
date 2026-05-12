@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: avalonia-lifecycle-events
-description: '深入学习 Avalonia 生命周期事件，掌握控件创建、加载、卸载的过程，以及如何正确初始化控件和清理资源。'
+description: "深入学习 Avalonia 生命周期事件，掌握控件创建、加载、卸载的过程，以及如何正确初始化控件和清理资源。"
 tags:
   - Avalonia
   - 生命周期事件
@@ -23,12 +23,12 @@ Avalonia 控件在创建、附加到可视树和移除的过程中会引发多�
 
 ### 生命周期事件的作用
 
-| 阶段 | 说明 |
-|------|------|
+| 阶段       | 说明                     |
+| ---------- | ------------------------ |
 | **初始化** | 设置 XAML 中定义的属性值 |
-| **附加** | 将控件添加到可视树 |
-| **加载** | 控件完全准备好交互 |
-| **卸载** | 从可视树移除控件 |
+| **附加**   | 将控件添加到可视树       |
+| **加载**   | 控件完全准备好交互       |
+| **卸载**   | 从可视树移除控件         |
 
 ---
 
@@ -38,20 +38,20 @@ Avalonia 控件在创建、附加到可视树和移除的过程中会引发多�
 
 当控件被创建并添加到可视树时，事件按以下顺序触发：
 
-| 顺序 | 事件/方法 | 定义类 | 说明 |
-|------|-----------|--------|------|
-| 1 | `Initialized` | `StyledElement` | 所有 XAML 属性值已设置，控件尚未附加到可视树 |
-| 2 | `AttachedToVisualTree` | `Visual` | 控件已添加到根可视树，布局尚未发生 |
-| 3 | `Loaded` | `Control` | 控件完全附加并准备好交互，在可视树附加完成后触发 |
+| 顺序 | 事件/方法              | 定义类          | 说明                                             |
+| ---- | ---------------------- | --------------- | ------------------------------------------------ |
+| 1    | `Initialized`          | `StyledElement` | 所有 XAML 属性值已设置，控件尚未附加到可视树     |
+| 2    | `AttachedToVisualTree` | `Visual`        | 控件已添加到根可视树，布局尚未发生               |
+| 3    | `Loaded`               | `Control`       | 控件完全附加并准备好交互，在可视树附加完成后触发 |
 
 ### 控件从可视树移除
 
 当控件被移除时：
 
-| 顺序 | 事件/方法 | 定义类 | 说明 |
-|------|-----------|--------|------|
-| 1 | `Unloaded` | `Control` | 控件即将从可视树移除 |
-| 2 | `DetachedFromVisualTree` | `Visual` | 控件已从可视树移除 |
+| 顺序 | 事件/方法                | 定义类    | 说明                 |
+| ---- | ------------------------ | --------- | -------------------- |
+| 1    | `Unloaded`               | `Control` | 控件即将从可视树移除 |
+| 2    | `DetachedFromVisualTree` | `Visual`  | 控件已从可视树移除   |
 
 ### 事件流程图
 
@@ -101,7 +101,7 @@ public class MyControl : Control
     protected override void OnInitialized()
     {
         base.OnInitialized();
-        
+
         // XAML 中的属性已设置
         // 可访问控件的属性值
         // 但可视树可能还不可用
@@ -116,7 +116,7 @@ myControl.Initialized += (sender, e) =>
 {
     // 控件已初始化
     var control = (Control)sender!;
-    
+
     // 可以安全地访问属性
     Debug.WriteLine($"控件已初始化: {control.GetHashCode()}");
 };
@@ -151,7 +151,7 @@ public class MyControl : Control
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        
+
         // e.RootVisual 是可视树的根
         // 可以订阅外部服务、定时器等
     }
@@ -159,7 +159,7 @@ public class MyControl : Control
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
-        
+
         // 清理外部订阅、定时器等
     }
 }
@@ -167,11 +167,11 @@ public class MyControl : Control
 
 ### VisualTreeAttachmentEventArgs 属性
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `RootVisual` | `Visual` | 控件附加到的可视树的根 |
-| `AttachmentPoint` | `Visual` | 控件直接附加到或分离自的视觉元素 |
-| `PresentationSource` | `IPresentationSource` | 托管可视树的呈现源 |
+| 属性                 | 类型                  | 说明                             |
+| -------------------- | --------------------- | -------------------------------- |
+| `RootVisual`         | `Visual`              | 控件附加到的可视树的根           |
+| `AttachmentPoint`    | `Visual`              | 控件直接附加到或分离自的视觉元素 |
+| `PresentationSource` | `IPresentationSource` | 托管可视树的呈现源               |
 
 ### 适用场景
 
@@ -190,7 +190,7 @@ public class MyControl : Control
 protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
 {
     base.OnAttachedToVisualTree(e);
-    
+
     // 获取顶级窗口
     var window = e.RootVisual as Window;
     if (window != null)
@@ -210,7 +210,7 @@ public class ScreenCaptureControl : Control
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        
+
         // 开始监听屏幕变化
         _screenSubscription = ScreenService.WatchScreenChanges()
             .Subscribe(OnScreenChanged);
@@ -220,7 +220,7 @@ public class ScreenCaptureControl : Control
     {
         _screenSubscription?.Dispose();
         _screenSubscription = null;
-        
+
         base.OnDetachedFromVisualTree(e);
     }
 
@@ -249,7 +249,7 @@ public class MyControl : Control
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
-        
+
         // 控件已完全就绪
         // 布局已完成，绑定生效
     }
@@ -257,7 +257,7 @@ public class MyControl : Control
     protected override void OnUnloaded(RoutedEventArgs e)
     {
         base.OnUnloaded(e);
-        
+
         // 清理资源
     }
 }
@@ -289,12 +289,12 @@ myControl.Unloaded += (sender, e) =>
 
 两个事件都表示控件已是可视树的一部分。关键区别：
 
-| 特性 | `AttachedToVisualTree` | `Loaded` |
-|------|----------------------|---------|
-| 触发时机 | 控件进入树时立即触发 | 附加完全完成后触发 |
-| 事件类型 | 普通 CLR 事件 | `RoutedEvent` |
-| 适用对象 | `Visual` | `Control` |
-| 布局状态 | 可能尚未完成 | 已完成 |
+| 特性     | `AttachedToVisualTree` | `Loaded`           |
+| -------- | ---------------------- | ------------------ |
+| 触发时机 | 控件进入树时立即触发   | 附加完全完成后触发 |
+| 事件类型 | 普通 CLR 事件          | `RoutedEvent`      |
+| 适用对象 | `Visual`               | `Control`          |
+| 布局状态 | 可能尚未完成           | 已完成             |
 
 **推荐**：大多数场景下使用 `Loaded`。仅在需要 `Root` 引用或处理非 `Control` 视觉元素时使用 `AttachedToVisualTree`。
 
@@ -310,7 +310,7 @@ myControl.Unloaded += (sender, e) =>
 myControl.DataContextChanged += (sender, e) =>
 {
     var newContext = ((Control)sender!).DataContext;
-    
+
     // 响应新的数据上下文
 };
 ```
@@ -338,7 +338,7 @@ public partial class UserListView : UserControl
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
-        
+
         if (DataContext is UserListViewModel vm)
         {
             // ViewModel 已设置，可以安全地访问
@@ -365,7 +365,7 @@ public partial class CustomerView : UserControl
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
-        
+
         // 确保 ViewModel 已设置
         if (DataContext is CustomerViewModel vm)
         {
@@ -386,7 +386,7 @@ public class StatusMonitor : Control
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        
+
         // 开始订阅状态变化
         _subscription = StatusService.StatusChanged
             .Subscribe(OnStatusChanged);
@@ -397,7 +397,7 @@ public class StatusMonitor : Control
         // 必须清理订阅，防止内存泄漏
         _subscription?.Dispose();
         _subscription = null;
-        
+
         base.OnDetachedFromVisualTree(e);
     }
 
@@ -418,7 +418,7 @@ public class AnimatedPanel : StackPanel
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
-        
+
         if (!_hasAnimated)
         {
             // 启动入场动画
@@ -431,7 +431,7 @@ public class AnimatedPanel : StackPanel
     {
         // 停止动画
         StopAnimation();
-        
+
         base.OnUnloaded(e);
     }
 
@@ -448,7 +448,7 @@ public class DeviceInfoControl : TextBlock
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        
+
         // 获取设备信息
         var screen = this.GetVisualRoot() as Window;
         if (screen != null)
@@ -470,10 +470,10 @@ public class VisualTreeAttachmentEventArgs : RoutedEventArgs
 {
     // 可视树的根元素
     public Visual RootVisual { get; }
-    
+
     // 控件直接附加到的元素
     public Visual AttachmentPoint { get; }
-    
+
     // 托管可视树的呈现源
     public IPresentationSource PresentationSource { get; }
 }
@@ -486,13 +486,13 @@ public class RoutedEventArgs : EventArgs
 {
     // 事件的原始源
     public object? Source { get; set; }
-    
+
     // 事件是否已处理
     public bool Handled { get; set; }
-    
+
     // 当前路由策略
     public RoutingStrategies Route { get; }
-    
+
     // 路由事件本身
     public RoutedEvent RoutedEvent { get; }
 }
@@ -540,7 +540,7 @@ private bool _isInitialized;
 protected override void OnLoaded(RoutedEventArgs e)
 {
     base.OnLoaded(e);
-    
+
     if (!_isInitialized)
     {
         // 初始化逻辑
@@ -587,25 +587,25 @@ protected override void OnLoaded(RoutedEventArgs e)
 
 ### 初始化顺序建议
 
-| 阶段 | 操作 |
-|------|------|
-| **构造函数** | 设置默认属性，创建子控件 |
-| **Initialized** | 配置验证规则，初始化数据结构 |
-| **OnDataContextChanged** | 订阅 ViewModel 命令 |
-| **Loaded** | 启动数据加载，执行 UI 操作 |
+| 阶段                     | 操作                         |
+| ------------------------ | ---------------------------- |
+| **构造函数**             | 设置默认属性，创建子控件     |
+| **Initialized**          | 配置验证规则，初始化数据结构 |
+| **OnDataContextChanged** | 订阅 ViewModel 命令          |
+| **Loaded**               | 启动数据加载，执行 UI 操作   |
 
 ---
 
 ## 总结
 
-| 事件 | 定义类 | 触发时机 | 用途 |
-|------|--------|----------|------|
-| **Initialized** | StyledElement | XAML 属性设置后 | 配置依赖属性的状态 |
-| **DataContextChanged** | StyledElement | DataContext 更改时 | 响应数据变化 |
-| **AttachedToVisualTree** | Visual | 进入可视树时 | 订阅外部资源 |
-| **Loaded** | Control | 完全加载后 | 执行 UI 操作 |
-| **Unloaded** | Control | 即将卸载时 | 清理资源 |
-| **DetachedFromVisualTree** | Visual | 离开可视树后 | 最终清理 |
+| 事件                       | 定义类        | 触发时机           | 用途               |
+| -------------------------- | ------------- | ------------------ | ------------------ |
+| **Initialized**            | StyledElement | XAML 属性设置后    | 配置依赖属性的状态 |
+| **DataContextChanged**     | StyledElement | DataContext 更改时 | 响应数据变化       |
+| **AttachedToVisualTree**   | Visual        | 进入可视树时       | 订阅外部资源       |
+| **Loaded**                 | Control       | 完全加载后         | 执行 UI 操作       |
+| **Unloaded**               | Control       | 即将卸载时         | 清理资源           |
+| **DetachedFromVisualTree** | Visual        | 离开可视树后       | 最终清理           |
 
 ### 生命周期管理最佳实践
 

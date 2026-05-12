@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: avalonia-gestures
-description: '深入学习 Avalonia 手势识别系统，掌握内置手势事件、GestureRecognizers，以及 Pinch、Pull、Scroll 等手势识别器的使用方法。'
+description: "深入学习 Avalonia 手势识别系统，掌握内置手势事件、GestureRecognizers，以及 Pinch、Pull、Scroll 等手势识别器的使用方法。"
 tags:
   - Avalonia
   - 手势识别
@@ -26,10 +26,10 @@ Avalonia 使用统一的指针事件系统。鼠标、触摸和手写笔输入�
 
 ### 手势 vs 指针事件
 
-| 层面 | 事件类型 | 说明 |
-|------|----------|------|
+| 层面     | 事件类型 | 说明                               |
+| -------- | -------- | ---------------------------------- |
 | **底层** | 指针事件 | 硬件做了什么（按钮按下、手指移动） |
-| **高层** | 手势事件 | 用户意图（点击、双指缩放） |
+| **高层** | 手势事件 | 用户意图（点击、双指缩放）         |
 
 ---
 
@@ -37,11 +37,11 @@ Avalonia 使用统一的指针事件系统。鼠标、触摸和手写笔输入�
 
 Avalonia 提供两种内置手势事件：
 
-| 事件 | 说明 |
-|------|------|
-| `Tapped` | 指针在控件上按下并释放 |
-| `DoubleTapped` | 在平台的双击时间和距离阈值内，在同一位置进行了两次点击 |
-| `Holding` | 指针被按下并保持不动。必须通过 `InputElement.IsHoldingEnabled` 为每个控件启用 |
+| 事件           | 说明                                                                          |
+| -------------- | ----------------------------------------------------------------------------- |
+| `Tapped`       | 指针在控件上按下并释放                                                        |
+| `DoubleTapped` | 在平台的双击时间和距离阈值内，在同一位置进行了两次点击                        |
+| `Holding`      | 指针被按下并保持不动。必须通过 `InputElement.IsHoldingEnabled` 为每个控件启用 |
 
 ### Tapped 事件
 
@@ -122,10 +122,10 @@ private void OnHolding(object? sender, HoldingEventArgs e)
 
 ### 可用手势识别器
 
-| 识别器 | 说明 | 用途 |
-|--------|------|------|
-| `PinchGestureRecognizer` | 两个指针相互靠近或远离 | 双指缩放 |
-| `PullGestureRecognizer` | 从控件边缘沿特定方向拖动指针 | 下拉刷新 |
+| 识别器                    | 说明                             | 用途     |
+| ------------------------- | -------------------------------- | -------- |
+| `PinchGestureRecognizer`  | 两个指针相互靠近或远离           | 双指缩放 |
+| `PullGestureRecognizer`   | 从控件边缘沿特定方向拖动指针     | 下拉刷新 |
 | `ScrollGestureRecognizer` | 拖动指针水平、垂直或双向滚动内容 | 滚动内容 |
 
 ---
@@ -162,7 +162,7 @@ image.GestureRecognizers.Add(new ScrollGestureRecognizer());
 
 ```xml
 <Border Background="DarkGray" ClipToBounds="True">
-    <Image x:Name="ZoomImage" 
+    <Image x:Name="ZoomImage"
            Source="/image.jpg"
            Stretch="UniformToFill">
         <Image.GestureRecognizers>
@@ -203,11 +203,11 @@ public partial class ZoomableImage : UserControl
 
 ### PinchEventArgs 属性
 
-| 属性 | 说明 |
-|------|------|
-| `Scale` | 当前缩放比例（相对于手势开始） |
-| `PivotX` | 缩放支点 X 坐标 |
-| `PivotY` | 缩放支点 Y 坐标 |
+| 属性     | 说明                           |
+| -------- | ------------------------------ |
+| `Scale`  | 当前缩放比例（相对于手势开始） |
+| `PivotX` | 缩放支点 X 坐标                |
+| `PivotY` | 缩放支点 Y 坐标                |
 
 ### 实用示例：带边界的缩放
 
@@ -219,7 +219,7 @@ private void OnPinch(object? sender, PinchEventArgs e)
 {
     var newScale = _lastScale * e.Scale;
     newScale = Math.Max(MinScale, Math.Min(MaxScale, newScale));
-    
+
     // 计算缩放中心
     var transform = ZoomImage.RenderTransform as TransformGroup;
     if (transform != null)
@@ -246,7 +246,7 @@ private void OnPinch(object? sender, PinchEventArgs e)
     <ScrollViewer.GestureRecognizers>
         <PullGestureRecognizer PullDirection="Top" />
     </ScrollViewer.GestureRecognizers>
-    
+
     <StackPanel Margin="20">
         <!-- 内容 -->
     </StackPanel>
@@ -263,12 +263,12 @@ public partial class RefreshableList : UserControl
     public RefreshableList()
     {
         InitializeComponent();
-        
+
         var pullRecognizer = new PullGestureRecognizer
         {
             PullDirection = PullDirection.Top
         };
-        
+
         AddHandler(PullGestureRecognizer.PullStartedEvent, OnPullStarted);
         AddHandler(PullGestureRecognizer.PullDeltaEvent, OnPullDelta);
         AddHandler(PullGestureRecognizer.PullCompletedEvent, OnPullCompleted);
@@ -298,19 +298,19 @@ public partial class RefreshableList : UserControl
 
 ### PullEventArgs 属性
 
-| 属性 | 说明 |
-|------|------|
-| `PullDirection` | 下拉方向 |
-| `PullDistance` | 当前下拉距离 |
+| 属性            | 说明         |
+| --------------- | ------------ |
+| `PullDirection` | 下拉方向     |
+| `PullDistance`  | 当前下拉距离 |
 
 ### PullDirection 选项
 
-| 值 | 说明 |
-|---|------|
-| `Top` | 从顶部下拉 |
+| 值       | 说明       |
+| -------- | ---------- |
+| `Top`    | 从顶部下拉 |
 | `Bottom` | 从底部上拉 |
-| `Left` | 从左侧右拉 |
-| `Right` | 从右侧左拉 |
+| `Left`   | 从左侧右拉 |
+| `Right`  | 从右侧左拉 |
 
 ---
 
@@ -326,11 +326,11 @@ public partial class RefreshableList : UserControl
 <Border ClipToBounds="True" Width="300" Height="200">
     <Canvas Width="600" Height="400" Background="LightGray">
         <Canvas.GestureRecognizers>
-            <ScrollGestureRecognizer 
+            <ScrollGestureRecognizer
                 CanScrollHorizontally="True"
                 CanScrollVertically="True" />
         </Canvas.GestureRecognizers>
-        
+
         <!-- 大面积内容 -->
     </Canvas>
 </Border>
@@ -338,10 +338,10 @@ public partial class RefreshableList : UserControl
 
 ### ScrollGestureRecognizer 属性
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `CanScrollHorizontally` | `bool` | 是否允许水平滚动 |
-| `CanScrollVertically` | `bool` | 是否允许垂直滚动 |
+| 属性                     | 类型   | 说明             |
+| ------------------------ | ------ | ---------------- |
+| `CanScrollHorizontally`  | `bool` | 是否允许水平滚动 |
+| `CanScrollVertically`    | `bool` | 是否允许垂直滚动 |
 | `IsScrollInertiaEnabled` | `bool` | 是否启用滚动惯性 |
 
 ### 滚动事件处理
@@ -351,10 +351,10 @@ private void OnScroll(object? sender, ScrollEventArgs e)
 {
     // e.DeltaX - 水平滚动量
     // e.DeltaY - 垂直滚动量
-    
+
     var offsetX = Canvas.GetLeft(contentElement);
     var offsetY = Canvas.GetTop(contentElement);
-    
+
     Canvas.SetLeft(contentElement, offsetX - e.DeltaX);
     Canvas.SetTop(contentElement, offsetY - e.DeltaY);
 }
@@ -408,7 +408,7 @@ private void Cleanup()
                     <PinchGestureRecognizer />
                 </Image.GestureRecognizers>
             </Image>
-            
+
             <TextBlock Text="双指缩放 / 双击重置"
                        Foreground="White"
                        HorizontalAlignment="Center"
@@ -474,15 +474,15 @@ public partial class ImageViewer : UserControl
 <UserControl>
     <DockPanel>
         <Border x:Name="RefreshIndicator"
-                Height="50" 
+                Height="50"
                 DockPanel.Dock="Top"
                 Background="LightBlue"
                 IsVisible="False">
-            <TextBlock Text="正在刷新..." 
+            <TextBlock Text="正在刷新..."
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center" />
         </Border>
-        
+
         <ScrollViewer>
             <ScrollViewer.GestureRecognizers>
                 <PullGestureRecognizer PullDirection="Top" />
@@ -513,12 +513,12 @@ public partial class PullRefreshList : UserControl
     private async void OnPullCompleted(object? sender, PullEventArgs e)
     {
         RefreshIndicator.IsVisible = true;
-        
+
         if (DataContext is PullRefreshViewModel vm)
         {
             await vm.RefreshAsync();
         }
-        
+
         RefreshIndicator.IsVisible = false;
     }
 }
@@ -533,7 +533,7 @@ public partial class PullRefreshList : UserControl
             <PinchGestureRecognizer />
             <ScrollGestureRecognizer CanScrollHorizontally="True" CanScrollVertically="True" />
         </Canvas.GestureRecognizers>
-        
+
         <!-- 地图内容 -->
         <Rectangle Fill="Green" Width="500" Height="500" />
     </Canvas>
@@ -588,26 +588,26 @@ public partial class MapView : UserControl
 
 ### PinchGestureRecognizer
 
-| 事件 | 说明 |
-|------|------|
-| `PinchEvent` | 双指缩放进行中 |
-| `PinchEndedEvent` | 双指缩放结束 |
+| 事件              | 说明           |
+| ----------------- | -------------- |
+| `PinchEvent`      | 双指缩放进行中 |
+| `PinchEndedEvent` | 双指缩放结束   |
 
 ### PullGestureRecognizer
 
-| 事件 | 说明 |
-|------|------|
-| `PullStartedEvent` | 开始下拉 |
-| `PullDeltaEvent` | 下拉过程中 |
-| `PullCompletedEvent` | 下拉完成 |
+| 事件                 | 说明       |
+| -------------------- | ---------- |
+| `PullStartedEvent`   | 开始下拉   |
+| `PullDeltaEvent`     | 下拉过程中 |
+| `PullCompletedEvent` | 下拉完成   |
 
 ### ScrollGestureRecognizer
 
-| 事件 | 说明 |
-|------|------|
-| `ScrollEvent` | 滚动进行中 |
-| `ScrollStartedEvent` | 开始滚动 |
-| `ScrollEndedEvent` | 滚动结束 |
+| 事件                 | 说明       |
+| -------------------- | ---------- |
+| `ScrollEvent`        | 滚动进行中 |
+| `ScrollStartedEvent` | 开始滚动   |
+| `ScrollEndedEvent`   | 滚动结束   |
 
 ---
 
@@ -652,27 +652,27 @@ args.Handled = true;
 
 ### 手势设计原则
 
-| 原则 | 说明 |
-|------|------|
-| **直觉性** | 手势应该符合用户直觉 |
-| **一致性** | 同类操作使用相同手势 |
+| 原则         | 说明                 |
+| ------------ | -------------------- |
+| **直觉性**   | 手势应该符合用户直觉 |
+| **一致性**   | 同类操作使用相同手势 |
 | **可发现性** | 提供视觉提示引导用户 |
-| **反馈性** | 操作时提供即时反馈 |
+| **反馈性**   | 操作时提供即时反馈   |
 
 ### 性能优化
 
-| 技巧 | 说明 |
-|------|------|
+| 技巧         | 说明                             |
+| ------------ | -------------------------------- |
 | **限制区域** | 使用 `ClipToBounds` 限制手势范围 |
-| **批量更新** | 使用变换矩阵而非逐属性更新 |
-| **节流处理** | 高频事件使用节流 |
+| **批量更新** | 使用变换矩阵而非逐属性更新       |
+| **节流处理** | 高频事件使用节流                 |
 
 ### 无障碍考虑
 
-| 考虑 | 说明 |
-|------|------|
-| **键盘替代** | 提供键盘操作替代手势 |
-| **辅助技术** | 确保屏幕阅读器可访问 |
+| 考虑         | 说明                   |
+| ------------ | ---------------------- |
+| **键盘替代** | 提供键盘操作替代手势   |
+| **辅助技术** | 确保屏幕阅读器可访问   |
 | **设置选项** | 可选地禁用或自定义手势 |
 
 ---
@@ -681,14 +681,14 @@ args.Handled = true;
 
 ### 内置手势 vs 手势识别器
 
-| 类型 | 手势 | 用途 |
-|------|------|------|
-| **内置** | `Tapped` | 点击 |
-| **内置** | `DoubleTapped` | 双击 |
-| **内置** | `Holding` | 长按 |
-| **识别器** | `PinchGestureRecognizer` | 双指缩放 |
-| **识别器** | `PullGestureRecognizer` | 下拉刷新 |
-| **识别器** | `ScrollGestureRecognizer` | 滚动 |
+| 类型       | 手势                      | 用途     |
+| ---------- | ------------------------- | -------- |
+| **内置**   | `Tapped`                  | 点击     |
+| **内置**   | `DoubleTapped`            | 双击     |
+| **内置**   | `Holding`                 | 长按     |
+| **识别器** | `PinchGestureRecognizer`  | 双指缩放 |
+| **识别器** | `PullGestureRecognizer`   | 下拉刷新 |
+| **识别器** | `ScrollGestureRecognizer` | 滚动     |
 
 ### 事件订阅模式
 
@@ -705,12 +705,12 @@ args.Handled = true;
 
 ### 使用场景
 
-| 场景 | 推荐手势 |
-|------|----------|
+| 场景         | 推荐手势                      |
+| ------------ | ----------------------------- |
 | **图片查看** | Pinch（缩放）+ Scroll（平移） |
-| **列表刷新** | Pull（下拉） |
-| **文档浏览** | Scroll（滚动） |
-| **画布操作** | Pinch + Scroll + Drag |
+| **列表刷新** | Pull（下拉）                  |
+| **文档浏览** | Scroll（滚动）                |
+| **画布操作** | Pinch + Scroll + Drag         |
 
 ---
 

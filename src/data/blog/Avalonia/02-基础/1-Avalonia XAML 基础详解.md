@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: avalonia-xaml-basics
-description: '深入学习 Avalonia XAML 语法，包括对象元素、属性特性、内容属性、集合语法、附加属性，以及标记扩展等核心概念。'
+description: "深入学习 Avalonia XAML 语法，包括对象元素、属性特性、内容属性、集合语法、附加属性，以及标记扩展等核心概念。"
 tags:
   - Avalonia
   - XAML
@@ -39,7 +39,8 @@ Avalonia 使用 `.axaml` 文件扩展名（Avalonia XAML）来区分其 XAML 文
 
 ### x: 命名空间
 
-x: 命名空间包含 XAML 指令和标记扩展：
+<!-- xmlns:x 定义 XAML 内部指令和标记扩展的命名空间 -->
+<!-- 包含 x:Class、x:Name、x:DataType 等内置指令 -->
 
 ```xml
 <Window xmlns="https://github.com/avaloniaui"
@@ -156,8 +157,10 @@ public partial class MainWindow : Window
 ```
 
 ```csharp
-// 在代码中访问
-SubmitButton.IsEnabled = false;
+// 在代码后置中，x:Name 声明的控件会自动生成为字段
+// 可以直接通过字段名访问 XAML 中的元素
+// 注意：submitButton 为 PascalCase（首字母大写），符合 C# 字段命名规范
+SubmitButton.IsEnabled = false;  // 禁用提交按钮
 ```
 
 ### x:DataType
@@ -169,7 +172,7 @@ SubmitButton.IsEnabled = false;
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
             xmlns:vm="clr-namespace:MyApp.ViewModels"
             x:DataType="vm:MainViewModel">
-    
+
     <TextBlock Text="{Binding Message}" />
 </UserControl>
 ```
@@ -235,12 +238,12 @@ SubmitButton.IsEnabled = false;
 
 ### 集合语法说明
 
-| 语法 | 说明 |
-|------|------|
-| `Auto` | 自动计算大小 |
-| `*` | 剩余空间 |
-| `n*` | 按比例分配（n 是数字） |
-| `100` | 固定像素值 |
+| 语法   | 说明                   |
+| ------ | ---------------------- |
+| `Auto` | 自动计算大小           |
+| `*`    | 剩余空间               |
+| `n*`   | 按比例分配（n 是数字） |
+| `100`  | 固定像素值             |
 
 ---
 
@@ -269,12 +272,12 @@ SubmitButton.IsEnabled = false;
 
 ### 常用附加属性
 
-| 面板 | 附加属性 |
-|------|----------|
-| Grid | `Grid.Row`, `Grid.Column`, `Grid.RowSpan`, `Grid.ColumnSpan` |
-| DockPanel | `DockPanel.Dock` |
-| Canvas | `Canvas.Left`, `Canvas.Top`, `Canvas.Right`, `Canvas.Bottom` |
-| RelativePanel | `RelativePanel.AlignLeftWith`, `RelativePanel.Above` 等 |
+| 面板          | 附加属性                                                     |
+| ------------- | ------------------------------------------------------------ |
+| Grid          | `Grid.Row`, `Grid.Column`, `Grid.RowSpan`, `Grid.ColumnSpan` |
+| DockPanel     | `DockPanel.Dock`                                             |
+| Canvas        | `Canvas.Left`, `Canvas.Top`, `Canvas.Right`, `Canvas.Bottom` |
+| RelativePanel | `RelativePanel.AlignLeftWith`, `RelativePanel.Above` 等      |
 
 ---
 
@@ -366,15 +369,15 @@ private void OnButtonClick(object? sender, RoutedEventArgs e)
 ```xml
 <Window Title="用户信息"
         Width="400" Height="300">
-    
+
     <StackPanel Margin="20" Spacing="10">
         <TextBlock Text="用户名:" FontWeight="Bold" />
         <TextBox Watermark="请输入用户名" />
-        
+
         <TextBlock Text="邮箱:" FontWeight="Bold" />
         <TextBox Watermark="请输入邮箱" />
-        
-        <StackPanel Orientation="Horizontal" 
+
+        <StackPanel Orientation="Horizontal"
                     HorizontalAlignment="Right"
                     Spacing="10">
             <Button Content="取消" />
@@ -396,14 +399,14 @@ private void OnButtonClick(object? sender, RoutedEventArgs e)
             <MenuItem Header="保存" />
         </MenuItem>
     </Menu>
-    
+
     <!-- 左侧导航 -->
     <StackPanel DockPanel.Dock="Left" Width="150">
         <Button Content="首页" Margin="5" />
         <Button Content="设置" Margin="5" />
         <Button Content="关于" Margin="5" />
     </StackPanel>
-    
+
     <!-- 主内容区域 -->
     <Grid Background="LightGray">
         <TextBlock Text="主内容区域"
@@ -422,7 +425,7 @@ private void OnButtonClick(object? sender, RoutedEventArgs e)
             <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
         </Style>
     </Window.Styles>
-    
+
     <Button Classes="primary" Content="主按钮" />
 </Window>
 ```
@@ -462,13 +465,13 @@ private void OnButtonClick(object? sender, RoutedEventArgs e)
 
 ## 总结
 
-| 语法 | 说明 |
-|------|------|
-| `<Button />` | 对象元素 |
-| `Content="text"` | 属性特性 |
+| 语法               | 说明     |
+| ------------------ | -------- |
+| `<Button />`       | 对象元素 |
+| `Content="text"`   | 属性特性 |
 | `<Button.Content>` | 属性元素 |
-| `{Binding Path}` | 标记扩展 |
-| `Grid.Row="0"` | 附加属性 |
+| `{Binding Path}`   | 标记扩展 |
+| `Grid.Row="0"`     | 附加属性 |
 
 ### XAML 文件结构
 
@@ -477,11 +480,11 @@ private void OnButtonClick(object? sender, RoutedEventArgs e)
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Namespace.ClassName"
         Title="标题">
-    
+
     <!-- 样式 -->
     <Window.Styles>
     </Window.Styles>
-    
+
     <!-- 内容 -->
     <StackPanel>
     </StackPanel>

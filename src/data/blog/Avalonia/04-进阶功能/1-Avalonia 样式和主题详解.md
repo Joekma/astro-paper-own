@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: avalonia-styling-themes
-description: '深入学习 Avalonia 样式系统，掌握样式定义、样式类、选择器、Setter、资源字典，以及 Fluent 和 Material 等主题的使用。'
+description: "深入学习 Avalonia 样式系统，掌握样式定义、样式类、选择器、Setter、资源字典，以及 Fluent 和 Material 等主题的使用。"
 tags:
   - Avalonia
   - 样式
@@ -70,7 +70,7 @@ Avalonia 样式系统是一种在控件之间共享属性设置的机制。Avalo
 <Style Selector="TextBlock.h1">
     <Setter Property="FontSize" Value="24"/>
     <Setter Property="FontWeight" Value="Bold"/>
-    
+
     <Style Selector="^:pointerover">
         <Setter Property="Foreground" Value="Red"/>
     </Style>
@@ -85,14 +85,14 @@ Avalonia 样式系统是一种在控件之间共享属性设置的机制。Avalo
 
 ### 选择器类型
 
-| 选择器 | 语法 | 匹配 |
-|--------|------|------|
-| 类型 | `Button` | Button 及其子类 |
-| 类 | `.primary` | Classes="primary" |
-| ID | `#saveButton` | x:Name="saveButton" |
-| 后代 | `StackPanel Button` | StackPanel 内的 Button |
-| 子代 | `StackPanel > Button` | StackPanel 直接子 Button |
-| 属性 | `Button.primary` | Button.primary |
+| 选择器 | 语法                  | 匹配                     |
+| ------ | --------------------- | ------------------------ |
+| 类型   | `Button`              | Button 及其子类          |
+| 类     | `.primary`            | Classes="primary"        |
+| ID     | `#saveButton`         | x:Name="saveButton"      |
+| 后代   | `StackPanel Button`   | StackPanel 内的 Button   |
+| 子代   | `StackPanel > Button` | StackPanel 直接子 Button |
+| 属性   | `Button.primary`      | Button.primary           |
 
 ### 组合选择器
 
@@ -223,14 +223,14 @@ Avalonia 自动转换值类型：
 
 ### 常用伪类
 
-| 伪类 | 说明 |
-|------|------|
-| `:pointerover` | 鼠标悬停 |
-| `:pressed` | 按下状态 |
-| `:disabled` | 禁用状态 |
-| `:focus` | 获得焦点 |
+| 伪类             | 说明     |
+| ---------------- | -------- |
+| `:pointerover`   | 鼠标悬停 |
+| `:pressed`       | 按下状态 |
+| `:disabled`      | 禁用状态 |
+| `:focus`         | 获得焦点 |
 | `:focus-visible` | 可见焦点 |
-| `:checked` | 选中状态 |
+| `:checked`       | 选中状态 |
 
 ### 使用示例
 
@@ -333,23 +333,23 @@ Avalonia.Application.Current!.RequestedThemeVariant = ThemeVariant.Default;
         <Setter Property="Padding" Value="10,5"/>
         <Setter Property="CornerRadius" Value="4"/>
     </Style>
-    
+
     <!-- 主要按钮 -->
     <Style Selector="Button.primary">
         <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
         <Setter Property="Foreground" Value="White"/>
     </Style>
-    
+
     <!-- 悬停效果 -->
     <Style Selector="Button.primary:pointerover">
         <Setter Property="Background" Value="{StaticResource PrimaryHoverBrush}"/>
     </Style>
-    
+
     <!-- 按下效果 -->
     <Style Selector="Button.primary:pressed">
         <Setter Property="Background" Value="{StaticResource PrimaryPressedBrush}"/>
     </Style>
-    
+
     <!-- 禁用状态 -->
     <Style Selector="Button.primary:disabled">
         <Setter Property="Opacity" Value="0.5"/>
@@ -369,23 +369,23 @@ Avalonia.Application.Current!.RequestedThemeVariant = ThemeVariant.Default;
         <Setter Property="FontSize" Value="24"/>
         <Setter Property="FontWeight" Value="Bold"/>
     </Style>
-    
+
     <Style Selector="TextBlock.h2">
         <Setter Property="FontSize" Value="20"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
-    
+
     <Style Selector="TextBlock.h3">
         <Setter Property="FontSize" Value="16"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
-    
+
     <!-- 正文 -->
     <Style Selector="TextBlock.body">
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
     </Style>
-    
+
     <!-- 辅助文本 -->
     <Style Selector="TextBlock.caption">
         <Setter Property="FontSize" Value="12"/>
@@ -420,13 +420,13 @@ Avalonia.Application.Current!.RequestedThemeVariant = ThemeVariant.Default;
 
 ### 优先级规则
 
-| 优先级 | 来源 | 说明 |
-|--------|------|------|
-| 1 | 控件本地值 | 直接设置 |
-| 2 | 本地样式 | x:Name 匹配 |
-| 3 | 视觉树内最近的样式 | 向上搜索 |
-| 4 | 视觉树内更远的样式 | 向上搜索 |
-| 5 | 应用级样式 | App.axaml |
+| 优先级 | 来源               | 说明        |
+| ------ | ------------------ | ----------- |
+| 1      | 控件本地值         | 直接设置    |
+| 2      | 本地样式           | x:Name 匹配 |
+| 3      | 视觉树内最近的样式 | 向上搜索    |
+| 4      | 视觉树内更远的样式 | 向上搜索    |
+| 5      | 应用级样式         | App.axaml   |
 
 ### 覆盖规则
 
@@ -477,30 +477,30 @@ Avalonia.Application.Current!.RequestedThemeVariant = ThemeVariant.Default;
 
 ### 样式系统组件
 
-| 组件 | 用途 |
-|------|------|
-| `Style` | 样式定义容器 |
-| `Setter` | 属性值设置 |
-| `Selector` | 匹配控件 |
-| `Resource` | 共享资源 |
+| 组件       | 用途         |
+| ---------- | ------------ |
+| `Style`    | 样式定义容器 |
+| `Setter`   | 属性值设置   |
+| `Selector` | 匹配控件     |
+| `Resource` | 共享资源     |
 
 ### 样式选择器
 
-| 选择器 | 语法 |
-|--------|------|
-| 类型 | `Button` |
-| 类 | `.primary` |
-| ID | `#button1` |
-| 伪类 | `:pointerover` |
-| 后代 | `StackPanel Button` |
+| 选择器 | 语法                |
+| ------ | ------------------- |
+| 类型   | `Button`            |
+| 类     | `.primary`          |
+| ID     | `#button1`          |
+| 伪类   | `:pointerover`      |
+| 后代   | `StackPanel Button` |
 
 ### 主题
 
-| 主题 | 特点 |
-|------|------|
-| Fluent | 现代 Windows 风格 |
+| 主题     | 特点                 |
+| -------- | -------------------- |
+| Fluent   | 现代 Windows 风格    |
 | Material | Material Design 风格 |
-| Simple | 简单跨平台风格 |
+| Simple   | 简单跨平台风格       |
 
 ---
 

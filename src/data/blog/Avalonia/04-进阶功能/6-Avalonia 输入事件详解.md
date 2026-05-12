@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: avalonia-input-events
-description: '深入学习 Avalonia 输入事件系统，掌握指针事件、键盘事件和手势事件的处理，包括鼠标、触摸、笔输入的统一处理方式。'
+description: "深入学习 Avalonia 输入事件系统，掌握指针事件、键盘事件和手势事件的处理，包括鼠标、触摸、笔输入的统一处理方式。"
 tags:
   - Avalonia
   - 输入事件
@@ -23,11 +23,11 @@ Avalonia 提供了全面的输入事件来处理指针（鼠标/触摸/笔）、
 
 ### 输入事件类型
 
-| 类型 | 说明 | 路由策略 |
-|------|------|----------|
-| **指针事件** | 鼠标、触摸、笔输入的统一抽象 | Bubble |
-| **键盘事件** | 按键按下和释放 | Bubble |
-| **手势事件** | 点击、滑动等高级手势 | Bubble |
+| 类型         | 说明                         | 路由策略 |
+| ------------ | ---------------------------- | -------- |
+| **指针事件** | 鼠标、触摸、笔输入的统一抽象 | Bubble   |
+| **键盘事件** | 按键按下和释放               | Bubble   |
+| **手势事件** | 点击、滑动等高级手势         | Bubble   |
 
 ---
 
@@ -37,14 +37,14 @@ Avalonia 提供了全面的输入事件来处理指针（鼠标/触摸/笔）、
 
 ### 指针事件列表
 
-| 事件 | 触发时机 |
-|------|----------|
-| `PointerEntered` | 指针进入控件边界时 |
-| `PointerExited` | 指针离开控件边界时 |
-| `PointerMoved` | 指针在控件内移动时 |
-| `PointerPressed` | 在控件上按下指针按钮时 |
-| `PointerReleased` | 在控件上释放指针按钮时 |
-| `PointerCaptureLost` | 控件失去指针捕获时 |
+| 事件                  | 触发时机               |
+| --------------------- | ---------------------- |
+| `PointerEntered`      | 指针进入控件边界时     |
+| `PointerExited`       | 指针离开控件边界时     |
+| `PointerMoved`        | 指针在控件内移动时     |
+| `PointerPressed`      | 在控件上按下指针按钮时 |
+| `PointerReleased`     | 在控件上释放指针按钮时 |
+| `PointerCaptureLost`  | 控件失去指针捕获时     |
 | `PointerWheelChanged` | 鼠标滚轮或触控板滚动时 |
 
 ### 处理指针事件
@@ -53,10 +53,10 @@ Avalonia 提供了全面的输入事件来处理指针（鼠标/触摸/笔）、
 protected override void OnPointerPressed(PointerPressedEventArgs e)
 {
     base.OnPointerPressed(e);
-    
+
     var point = e.GetPosition(this); // 相对于此控件的位置
     var properties = e.GetCurrentPoint(this).Properties;
-    
+
     if (properties.IsLeftButtonPressed)
     {
         Debug.WriteLine($"在 ({point.X}, {point.Y}) 按下了左键");
@@ -66,12 +66,12 @@ protected override void OnPointerPressed(PointerPressedEventArgs e)
 
 ### PointerEventArgs 关键属性
 
-| 属性/方法 | 说明 |
-|-----------|------|
-| `GetPosition(Visual)` | 返回相对于指定视觉元素的位置 |
-| `GetCurrentPoint(Visual)` | 返回包含位置和按钮状态的 PointerPoint |
-| `Pointer` | Pointer 实例，用于捕获操作 |
-| `KeyModifiers` | 是否按下了 Shift、Control、Alt 或 Meta 键 |
+| 属性/方法                 | 说明                                      |
+| ------------------------- | ----------------------------------------- |
+| `GetPosition(Visual)`     | 返回相对于指定视觉元素的位置              |
+| `GetCurrentPoint(Visual)` | 返回包含位置和按钮状态的 PointerPoint     |
+| `Pointer`                 | Pointer 实例，用于捕获操作                |
+| `KeyModifiers`            | 是否按下了 Shift、Control、Alt 或 Meta 键 |
 
 ### 指针捕获
 
@@ -100,9 +100,9 @@ protected override void OnPointerReleased(PointerReleasedEventArgs e)
 ### 示例 1：鼠标悬停效果
 
 ```xml
-<Border x:Name="HoverBorder" 
-        Background="Gray" 
-        Width="100" 
+<Border x:Name="HoverBorder"
+        Background="Gray"
+        Width="100"
         Height="100"
         PointerEntered="OnPointerEntered"
         PointerExited="OnPointerExited" />
@@ -143,18 +143,18 @@ protected override void OnPointerPressed(PointerPressedEventArgs e)
 protected override void OnPointerMoved(PointerEventArgs e)
 {
     base.OnPointerMoved(e);
-    
+
     if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
     {
         var currentPoint = e.GetPosition(this);
         var delta = currentPoint - _pressPoint;
-        
+
         // 超过阈值才认为是拖动
         if (!_isDragging && (Math.Abs(delta.X) > 5 || Math.Abs(delta.Y) > 5))
         {
             _isDragging = true;
         }
-        
+
         if (_isDragging)
         {
             // 处理拖动逻辑 - 例如：移动元素
@@ -177,10 +177,10 @@ protected override void OnPointerReleased(PointerReleasedEventArgs e)
 protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
 {
     base.OnPointerWheelChanged(e);
-    
+
     // 获取缩放因子
     var delta = e.Delta;
-    
+
     // 应用缩放
     ScaleTransform *= 1 + delta.Y * 0.1;
 }
@@ -194,10 +194,10 @@ protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
 
 ### 键盘事件列表
 
-| 事件 | 触发时机 |
-|------|----------|
-| `KeyDown` | 按下按键时 |
-| `KeyUp` | 释放按键时 |
+| 事件        | 触发时机                          |
+| ----------- | --------------------------------- |
+| `KeyDown`   | 按下按键时                        |
+| `KeyUp`     | 释放按键时                        |
 | `TextInput` | 接收到字符输入时（在 IME 处理后） |
 
 ### 处理键盘事件
@@ -206,13 +206,13 @@ protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
 protected override void OnKeyDown(KeyEventArgs e)
 {
     base.OnKeyDown(e);
-    
+
     if (e.Key == Key.Enter)
     {
         // 处理 Enter 键
         e.Handled = true;
     }
-    
+
     if (e.Key == Key.C && e.KeyModifiers.HasFlag(KeyModifiers.Control))
     {
         // 处理 Ctrl+C 快捷键
@@ -223,11 +223,11 @@ protected override void OnKeyDown(KeyEventArgs e)
 
 ### KeyEventArgs 关键属性
 
-| 属性 | 说明 |
-|------|------|
-| `Key` | 按下的物理键（来自 `Key` 枚举） |
+| 属性           | 说明                                      |
+| -------------- | ----------------------------------------- |
+| `Key`          | 按下的物理键（来自 `Key` 枚举）           |
 | `KeyModifiers` | 按住的修饰键（Control、Shift、Alt、Meta） |
-| `KeySymbol` | 按键产生的字符（如果有） |
+| `KeySymbol`    | 按键产生的字符（如果有）                  |
 
 ### 键盘事件实用示例
 
@@ -244,21 +244,21 @@ public partial class MainWindow : Window
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        
+
         // Ctrl+S 保存
         if (e.Key == Key.S && e.KeyModifiers.HasFlag(KeyModifiers.Control))
         {
             SaveDocument();
             e.Handled = true;
         }
-        
+
         // Ctrl+Z 撤销
         if (e.Key == Key.Z && e.KeyModifiers.HasFlag(KeyModifiers.Control))
         {
             Undo();
             e.Handled = true;
         }
-        
+
         // Escape 关闭
         if (e.Key == Key.Escape)
         {
@@ -277,7 +277,7 @@ private int _selectedIndex;
 protected override void OnKeyDown(KeyEventArgs e)
 {
     base.OnKeyDown(e);
-    
+
     switch (e.Key)
     {
         case Key.Up:
@@ -285,7 +285,7 @@ protected override void OnKeyDown(KeyEventArgs e)
             UpdateSelection();
             e.Handled = true;
             break;
-            
+
         case Key.Down:
             _selectedIndex = Math.Min(Items.Count - 1, _selectedIndex + 1);
             UpdateSelection();
@@ -327,18 +327,18 @@ private void OnPreviewPointerPressed(object? sender, PointerPressedEventArgs e)
 
 Avalonia 提供了基于原始指针事件构建的高级手势事件：
 
-| 事件 | 触发时机 |
-|------|----------|
-| `Tapped` | 快速点击手势完成时 |
-| `DoubleTapped` | 双击手势完成时 |
-| `Holding` | 检测到长按手势时（触摸） |
+| 事件           | 触发时机                 |
+| -------------- | ------------------------ |
+| `Tapped`       | 快速点击手势完成时       |
+| `DoubleTapped` | 双击手势完成时           |
+| `Holding`      | 检测到长按手势时（触摸） |
 
 手势事件会向上冒泡。对于更复杂的手势（捏合、拖动、滚动），请参阅手势文档。
 
 ### 手势事件示例
 
 ```xml
-<Border Tapped="OnBorderTapped" 
+<Border Tapped="OnBorderTapped"
         DoubleTapped="OnBorderDoubleTapped"
         Background="LightGray">
     <TextBlock Text="点击我" />
@@ -390,19 +390,19 @@ protected override void OnPointerPressed(PointerPressedEventArgs e)
 protected override void OnPointerMoved(PointerEventArgs e)
 {
     base.OnPointerMoved(e);
-    
+
     if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
     {
         var currentPoint = e.GetPosition(this);
         var delta = currentPoint - _startPoint;
-        
+
         // 阈值检测
         if (!_isDragging && (Math.Abs(delta.X) > DragThreshold || Math.Abs(delta.Y) > DragThreshold))
         {
             _isDragging = true;
             OnDragStarted(delta);
         }
-        
+
         if (_isDragging)
         {
             OnDragging(delta);
@@ -413,12 +413,12 @@ protected override void OnPointerMoved(PointerEventArgs e)
 protected override void OnPointerReleased(PointerReleasedEventArgs e)
 {
     base.OnPointerReleased(e);
-    
+
     if (_isDragging)
     {
         OnDragEnded(e.GetPosition(this) - _startPoint);
     }
-    
+
     _isDragging = false;
     e.Pointer.Capture(null);
 }
@@ -437,7 +437,7 @@ private float _rotation;
 protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
 {
     base.OnPointerWheelChanged(e);
-    
+
     // Ctrl + 滚轮：缩放
     if (e.KeyModifiers.HasFlag(KeyModifiers.Control))
     {
@@ -465,13 +465,13 @@ private void UpdateTransform()
 
 ## Key 枚举常用值
 
-| 类别 | 按键 |
-|------|------|
-| **字母键** | `Key.A` - `Key.Z` |
-| **数字键** | `Key.D0` - `Key.D9` |
-| **功能键** | `Key.F1` - `Key.F12` |
-| **方向键** | `Key.Up`, `Key.Down`, `Key.Left`, `Key.Right` |
-| **控制键** | `Key.Enter`, `Key.Escape`, `Key.Space`, `Key.Tab` |
+| 类别       | 按键                                                             |
+| ---------- | ---------------------------------------------------------------- |
+| **字母键** | `Key.A` - `Key.Z`                                                |
+| **数字键** | `Key.D0` - `Key.D9`                                              |
+| **功能键** | `Key.F1` - `Key.F12`                                             |
+| **方向键** | `Key.Up`, `Key.Down`, `Key.Left`, `Key.Right`                    |
+| **控制键** | `Key.Enter`, `Key.Escape`, `Key.Space`, `Key.Tab`                |
 | **修饰键** | `Key.LeftCtrl`, `Key.RightCtrl`, `Key.LeftShift`, `Key.RightAlt` |
 
 ---
@@ -529,16 +529,16 @@ private void UpdateTransform()
 
 ## 总结
 
-| 事件类型 | 事件 | 用途 |
-|---------|------|------|
-| **指针** | `PointerEntered/Exited` | 悬停效果 |
-| **指针** | `PointerMoved` | 鼠标跟踪 |
+| 事件类型 | 事件                      | 用途           |
+| -------- | ------------------------- | -------------- |
+| **指针** | `PointerEntered/Exited`   | 悬停效果       |
+| **指针** | `PointerMoved`            | 鼠标跟踪       |
 | **指针** | `PointerPressed/Released` | 点击检测、拖动 |
-| **指针** | `PointerWheelChanged` | 滚轮缩放、滚动 |
-| **键盘** | `KeyDown/Up` | 快捷键、导航 |
-| **手势** | `Tapped` | 点击反馈 |
-| **手势** | `DoubleTapped` | 快速操作 |
-| **手势** | `Holding` | 长按操作 |
+| **指针** | `PointerWheelChanged`     | 滚轮缩放、滚动 |
+| **键盘** | `KeyDown/Up`              | 快捷键、导航   |
+| **手势** | `Tapped`                  | 点击反馈       |
+| **手势** | `DoubleTapped`            | 快速操作       |
+| **手势** | `Holding`                 | 长按操作       |
 
 ### 输入处理最佳实践
 

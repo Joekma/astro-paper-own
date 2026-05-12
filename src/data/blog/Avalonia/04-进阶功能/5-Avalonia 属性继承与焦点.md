@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: avalonia-property-inheritance-focus
-description: '深入学习 Avalonia 属性继承机制和焦点系统，掌握如何在父子元素间共享属性值，以及键盘焦点管理、Tab 导航和方向键导航的实现方法。'
+description: "深入学习 Avalonia 属性继承机制和焦点系统，掌握如何在父子元素间共享属性值，以及键盘焦点管理、Tab 导航和方向键导航的实现方法。"
 tags:
   - Avalonia
   - 属性继承
@@ -44,17 +44,17 @@ language: zh-CN
 
 Avalonia 中有几个常用属性注册为继承属性：
 
-| 属性 | 定义类 | 作用 |
-|------|--------|------|
-| `FontFamily` | `TextElement` | 文本控件从父元素继承字体 |
-| `FontSize` | `TextElement` | 文本控件从父元素继承字号 |
-| `FontStyle` | `TextElement` | 文本控件继承字体样式（斜体、正体） |
-| `FontWeight` | `TextElement` | 文本控件继承字重（粗体、常规） |
-| `Foreground` | `TextElement` | 文本控件继承前景色 |
-| `LetterSpacing` | `TextElement` | 文本控件继承字符间距 |
-| `FlowDirection` | `Visual` | 控件继承从左到右或从右到左的布局方向 |
-| `DataContext` | `StyledElement` | 控件从父元素继承数据上下文 |
-| `RequestedThemeVariant` | `ThemeVariantScope` | 控件继承请求的主题变体（亮/暗） |
+| 属性                    | 定义类              | 作用                                 |
+| ----------------------- | ------------------- | ------------------------------------ |
+| `FontFamily`            | `TextElement`       | 文本控件从父元素继承字体             |
+| `FontSize`              | `TextElement`       | 文本控件从父元素继承字号             |
+| `FontStyle`             | `TextElement`       | 文本控件继承字体样式（斜体、正体）   |
+| `FontWeight`            | `TextElement`       | 文本控件继承字重（粗体、常规）       |
+| `Foreground`            | `TextElement`       | 文本控件继承前景色                   |
+| `LetterSpacing`         | `TextElement`       | 文本控件继承字符间距                 |
+| `FlowDirection`         | `Visual`            | 控件继承从左到右或从右到左的布局方向 |
+| `DataContext`           | `StyledElement`     | 控件从父元素继承数据上下文           |
+| `RequestedThemeVariant` | `ThemeVariantScope` | 控件继承请求的主题变体（亮/暗）      |
 
 ### 继承示例
 
@@ -64,10 +64,10 @@ Avalonia 中有几个常用属性注册为继承属性：
 <StackPanel FontSize="18">
     <!-- 继承 FontSize="18" -->
     <TextBlock Text="大号文本" />
-    
+
     <!-- 使用自己的 FontSize -->
     <TextBlock Text="小号文本" FontSize="12" />
-    
+
     <!-- 继承 FontSize="18" -->
     <Button Content="大号按钮文本" />
 </StackPanel>
@@ -77,13 +77,13 @@ Avalonia 中有几个常用属性注册为继承属性：
 
 在属性值优先级系统中，继承值的优先级最低：
 
-| 优先级 | 值来源 |
-|--------|--------|
-| 1 | 动画 |
-| 2 | 本地值 |
-| 3 | 样式（Setter） |
-| 4 | 继承的值 |
-| 5 | 默认值 |
+| 优先级 | 值来源         |
+| ------ | -------------- |
+| 1      | 动画           |
+| 2      | 本地值         |
+| 3      | 样式（Setter） |
+| 4      | 继承的值       |
+| 5      | 默认值         |
 
 ---
 
@@ -153,7 +153,7 @@ public partial class MainWindow : Window
     <StackPanel>
         <!-- 绑定到 MainWindowViewModel.Name -->
         <TextBlock Text="{Binding Name}" />
-        
+
         <!-- 绑定到 MainWindowViewModel.Email -->
         <TextBox Text="{Binding Email}" />
     </StackPanel>
@@ -181,12 +181,12 @@ public partial class MainWindow : Window
 
 ### 焦点相关属性
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `IsFocused` | `bool`（只读） | 元素是否持有焦点 |
-| `Focusable` | `bool` | 是否可以接收焦点 |
-| `IsTabStop` | `bool` | 是否参与 Tab 导航 |
-| `TabIndex` | `int` | Tab 导航顺序 |
+| 属性        | 类型           | 说明              |
+| ----------- | -------------- | ----------------- |
+| `IsFocused` | `bool`（只读） | 元素是否持有焦点  |
+| `Focusable` | `bool`         | 是否可以接收焦点  |
+| `IsTabStop` | `bool`         | 是否参与 Tab 导航 |
+| `TabIndex`  | `int`          | Tab 导航顺序      |
 
 ### IsFocused 和 Focusable
 
@@ -214,12 +214,12 @@ myTextBox.Focus(NavigationMethod.Unspecified, KeyModifiers.None);
 
 ### NavigationMethod 参数
 
-| 值 | 说明 |
-|---|------|
-| `Tab` | Tab 键按下 |
-| `Pointer` | 指针交互 |
+| 值            | 说明        |
+| ------------- | ----------- |
+| `Tab`         | Tab 键按下  |
+| `Pointer`     | 指针交互    |
 | `Directional` | 2D 方向导航 |
-| `Unspecified` | 默认 |
+| `Unspecified` | 默认        |
 
 ### 常用场景
 
@@ -265,11 +265,12 @@ private void OnPasswordKeyDown(KeyEventArgs e)
 `InputElement` 提供 `GotFocus` 和 `LostFocus` 事件。`GotFocusEventArgs` 包含触发焦点变更的 `NavigationMethod` 和 `KeyModifiers`。
 
 ```csharp
+// e.NavigationMethod 指示触发焦点的输入方式
 myTextBox.GotFocus += (sender, e) =>
 {
     if (e.NavigationMethod == NavigationMethod.Tab)
     {
-        // 用户 Tab 到此字段时全选文本
+        // 用户通过 Tab 键导航到此字段时全选文本，提升用户体验
         myTextBox.SelectAll();
     }
 };
@@ -317,10 +318,10 @@ private void OnGotFocus(object? sender, RoutedEventArgs e)
 
 使用这些伪类来样式化可聚焦的控件：
 
-| 伪类 | 说明 |
-|------|------|
-| `:focus` | 控件有焦点 |
-| `:focus-within` | 控件有焦点或其后代有焦点 |
+| 伪类             | 说明                           |
+| ---------------- | ------------------------------ |
+| `:focus`         | 控件有焦点                     |
+| `:focus-within`  | 控件有焦点或其后代有焦点       |
 | `:focus-visible` | 控件有焦点且应该显示视觉指示器 |
 
 ### 样式示例
@@ -328,17 +329,17 @@ private void OnGotFocus(object? sender, RoutedEventArgs e)
 ```css
 /* 默认焦点样式 */
 TextBox:focus {
-    border: 2px solid Blue;
+  border: 2px solid Blue;
 }
 
 /* 有焦点或其子元素有焦点时的容器样式 */
 StackPanel:focus-within {
-    background: LightYellow;
+  background: LightYellow;
 }
 
 /* 只在可见焦点时显示指示器 */
 Button:focus-visible {
-    outline: 2px solid Orange;
+  outline: 2px solid Orange;
 }
 ```
 
@@ -350,24 +351,27 @@ Button:focus-visible {
 
 ## FocusManager
 
-`FocusManager` 提供全局访问焦点功能，如获取当前聚焦元素或清除焦点：
+`FocusManager` 是全局焦点管理器，提供对应用程序级别焦点状态的访问：
 
 ```csharp
-// 获取当前聚焦的元素
+// 获取当前聚焦的元素（可为 null）
 var focused = FocusManager.Instance?.GetFocusedElement();
 
-// 清除当前元素的焦点
+// 清除当前元素的焦点（焦点将转移到窗口/页面根元素）
 FocusManager.Instance?.ClearFocus();
+
+// 设置焦点到指定元素
+FocusManager.Instance?.SetFocusedElement(myControl);
 ```
 
 ### FocusManager 常用操作
 
-| 操作 | 说明 |
-|------|------|
-| `GetFocusedElement()` | 获取当前聚焦元素 |
-| `GetFocusedElement(scope)` | 获取特定范围内的聚焦元素 |
-| `ClearFocus()` | 清除焦点 |
-| `SetFocusedElement(element)` | 设置焦点到指定元素 |
+| 操作                         | 说明                     |
+| ---------------------------- | ------------------------ |
+| `GetFocusedElement()`        | 获取当前聚焦元素         |
+| `GetFocusedElement(scope)`   | 获取特定范围内的聚焦元素 |
+| `ClearFocus()`               | 清除焦点                 |
+| `SetFocusedElement(element)` | 设置焦点到指定元素       |
 
 ---
 
@@ -407,14 +411,14 @@ Tab 焦点导航在你按 Tab 键时发生。任何 `IsTabStop` 属性设置为 
 
 ### KeyboardNavigationMode 模式
 
-| 值 | 容器项遍历方式 |
-|---|----------------|
-| `Continue` | 继续到下一个容器 |
-| `Cycle` | 在自身项内循环并回绕 |
-| `Contained` | 在开始或结束项处停止 |
-| `Once` | 容器和子项作为一组只接收一次焦点 |
-| `None` | 项不会被 Tab 导航聚焦 |
-| `Local` | 只考虑本地子树的 `TabIndex` |
+| 值          | 容器项遍历方式                   |
+| ----------- | -------------------------------- |
+| `Continue`  | 继续到下一个容器                 |
+| `Cycle`     | 在自身项内循环并回绕             |
+| `Contained` | 在开始或结束项处停止             |
+| `Once`      | 容器和子项作为一组只接收一次焦点 |
+| `None`      | 项不会被 Tab 导航聚焦            |
+| `Local`     | 只考虑本地子树的 `TabIndex`      |
 
 ---
 
@@ -428,24 +432,24 @@ Tab 焦点导航在你按 Tab 键时发生。任何 `IsTabStop` 属性设置为 
 
 ### 导航设备类型
 
-| 值 | 设备 |
-|---|------|
+| 值         | 设备                         |
+| ---------- | ---------------------------- |
 | `Disabled` | 任何键设备的 XY 导航都被禁用 |
-| `Keyboard` | 键盘方向键可用 |
-| `Gamepad` | 游戏手柄 DPad 可用 |
-| `Remote` | 遥控器可用 |
-| `Enabled` | 所有设备都可用 |
+| `Keyboard` | 键盘方向键可用               |
+| `Gamepad`  | 游戏手柄 DPad 可用           |
+| `Remote`   | 遥控器可用                   |
+| `Enabled`  | 所有设备都可用               |
 
 ### 导航策略
 
 当启用 2D 方向导航时，使用消歧策略选择导航目标：
 
-| 策略 | 导航目标 |
-|------|----------|
-| `Auto` | 从祖先继承策略；若无祖先指定则使用 `Projection` |
-| `Projection` | 在导航方向投影直线时遇到的第一个元素 |
-| `NavigationDirectionDistance` | 导航直线轴上最近的元素 |
-| `RectilinearDistance` | 基于最短曼哈顿距离最近的元素 |
+| 策略                          | 导航目标                                        |
+| ----------------------------- | ----------------------------------------------- |
+| `Auto`                        | 从祖先继承策略；若无祖先指定则使用 `Projection` |
+| `Projection`                  | 在导航方向投影直线时遇到的第一个元素            |
+| `NavigationDirectionDistance` | 导航直线轴上最近的元素                          |
+| `RectilinearDistance`         | 基于最短曼哈顿距离最近的元素                    |
 
 ### 显式导航
 
@@ -485,15 +489,15 @@ Tab 焦点导航在你按 Tab 键时发生。任何 `IsTabStop` 属性设置为 
     <Button x:Name="topLeft" Content="左上"
             XYFocus.Right="{Binding #topRight}"
             XYFocus.Down="{Binding #bottomLeft}" />
-            
+
     <Button x:Name="topRight" Content="右上"
             XYFocus.Left="{Binding #topLeft}"
             XYFocus.Down="{Binding #bottomRight}" />
-            
+
     <Button x:Name="bottomLeft" Content="左下"
             XYFocus.Up="{Binding #topLeft}"
             XYFocus.Right="{Binding #bottomRight}" />
-            
+
     <Button x:Name="bottomRight" Content="右下"
             XYFocus.Left="{Binding #bottomLeft}"
             XYFocus.Up="{Binding #topRight}" />
@@ -516,11 +520,11 @@ Tab 焦点导航在你按 Tab 键时发生。任何 `IsTabStop` 属性设置为 
 
 ```css
 Button:focus-visible {
-    outline: 2px solid Orange;
+  outline: 2px solid Orange;
 }
 
 Button:focus-visible:focus-visible {
-    /* 确保 FocusAdorner 为 null */
+  /* 确保 FocusAdorner 为 null */
 }
 ```
 
@@ -553,29 +557,29 @@ Button:focus-visible:focus-visible {
 
 ### 焦点管理
 
-| 场景 | 建议 |
-|------|------|
+| 场景         | 建议                 |
+| ------------ | -------------------- |
 | **表单加载** | 自动聚焦第一个输入框 |
-| **输入完成** | Tab 到下一个输入框 |
-| **提交后** | 聚焦提交按钮 |
-| **错误恢复** | 聚焦错误输入框 |
+| **输入完成** | Tab 到下一个输入框   |
+| **提交后**   | 聚焦提交按钮         |
+| **错误恢复** | 聚焦错误输入框       |
 
 ### Tab 导航
 
-| 场景 | 设置 |
-|------|------|
+| 场景         | 设置                        |
+| ------------ | --------------------------- |
 | **常规表单** | 默认 TabIndex，按可视树顺序 |
-| **单选组** | 循环导航 |
-| **对话框** | 焦点限制在对话框内 |
-| **跳过控件** | `IsTabStop="False"` |
+| **单选组**   | 循环导航                    |
+| **对话框**   | 焦点限制在对话框内          |
+| **跳过控件** | `IsTabStop="False"`         |
 
 ### 样式实践
 
-| 场景 | 伪类 |
-|------|------|
-| **始终显示** | `:focus` |
+| 场景           | 伪类             |
+| -------------- | ---------------- |
+| **始终显示**   | `:focus`         |
 | **仅键盘显示** | `:focus-visible` |
-| **容器聚焦** | `:focus-within` |
+| **容器聚焦**   | `:focus-within`  |
 
 ---
 
@@ -583,30 +587,30 @@ Button:focus-visible:focus-visible {
 
 ### 属性继承
 
-| 属性 | 继承来源 |
-|------|----------|
-| `FontSize/FontFamily` | TextElement 父元素 |
-| `Foreground` | TextElement 父元素 |
-| `DataContext` | StyledElement 父元素 |
-| `FlowDirection` | Visual 父元素 |
+| 属性                  | 继承来源             |
+| --------------------- | -------------------- |
+| `FontSize/FontFamily` | TextElement 父元素   |
+| `Foreground`          | TextElement 父元素   |
+| `DataContext`         | StyledElement 父元素 |
+| `FlowDirection`       | Visual 父元素        |
 
 ### 焦点系统
 
-| 事件/属性 | 用途 |
-|-----------|------|
+| 事件/属性            | 用途         |
+| -------------------- | ------------ |
 | `GotFocus/LostFocus` | 焦点变化通知 |
-| `:focus` | 焦点伪类 |
-| `:focus-visible` | 可见焦点伪类 |
-| `Focus()` | 显式聚焦 |
-| `FocusManager` | 全局焦点管理 |
+| `:focus`             | 焦点伪类     |
+| `:focus-visible`     | 可见焦点伪类 |
+| `Focus()`            | 显式聚焦     |
+| `FocusManager`       | 全局焦点管理 |
 
 ### 导航模式
 
-| 导航方式 | 触发 |
-|---------|------|
-| `Tab` | Tab 键 |
-| `Pointer` | 鼠标点击 |
-| `Directional` | 方向键 |
+| 导航方式      | 触发     |
+| ------------- | -------- |
+| `Tab`         | Tab 键   |
+| `Pointer`     | 鼠标点击 |
+| `Directional` | 方向键   |
 
 ---
 

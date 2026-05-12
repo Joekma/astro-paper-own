@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: avalonia-common-controls
-description: '深入学习 Avalonia 常用控件，包括 Button、TextBox、TextBlock、ListBox、ComboBox、CheckBox、RadioButton 等基础控件的使用方法和属性。'
+description: "深入学习 Avalonia 常用控件，包括 Button、TextBox、TextBlock、ListBox、ComboBox、CheckBox、RadioButton 等基础控件的使用方法和属性。"
 tags:
   - Avalonia
   - 控件
@@ -27,13 +27,13 @@ Avalonia 提供了丰富的内置控件，用于构建用户界面。本文介�
 
 ### 控件分类
 
-| 类别 | 控件 |
-|------|------|
-| **按钮** | Button、ToggleButton、RadioButton |
-| **文本** | TextBlock、TextBox、PasswordBox |
-| **选择** | CheckBox、ComboBox、ListBox |
-| **容器** | Border、ScrollViewer、Expander |
-| **对话框** | Window、WindowDialog |
+| 类别       | 控件                              |
+| ---------- | --------------------------------- |
+| **按钮**   | Button、ToggleButton、RadioButton |
+| **文本**   | TextBlock、TextBox、PasswordBox   |
+| **选择**   | CheckBox、ComboBox、ListBox       |
+| **容器**   | Border、ScrollViewer、Expander    |
+| **对话框** | Window、WindowDialog              |
 
 ---
 
@@ -41,13 +41,13 @@ Avalonia 提供了丰富的内置控件，用于构建用户界面。本文介�
 
 ### 基本属性
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `Content` | object | 按钮文本/内容 |
-| `Command` | ICommand | 绑定的命令 |
-| `CommandParameter` | object | 命令参数 |
-| `IsEnabled` | bool | 是否启用 |
-| `ClickMode` | ClickMode | 点击模式（Press/Release/Hover） |
+| 属性               | 类型      | 说明                            |
+| ------------------ | --------- | ------------------------------- |
+| `Content`          | object    | 按钮文本/内容                   |
+| `Command`          | ICommand  | 绑定的命令                      |
+| `CommandParameter` | object    | 命令参数                        |
+| `IsEnabled`        | bool      | 是否启用                        |
+| `ClickMode`        | ClickMode | 点击模式（Press/Release/Hover） |
 
 ### 基本使用
 
@@ -146,12 +146,12 @@ Avalonia 提供了丰富的内置控件，用于构建用户界面。本文介�
 
 ### 基本属性
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `Text` | string | 显示文本 |
-| `FontSize` | double | 字体大小 |
-| `FontWeight` | FontWeight | 字重（Bold/Normal） |
-| `Foreground` | IBrush | 前景色 |
+| 属性           | 类型         | 说明                                   |
+| -------------- | ------------ | -------------------------------------- |
+| `Text`         | string       | 显示文本                               |
+| `FontSize`     | double       | 字体大小                               |
+| `FontWeight`   | FontWeight   | 字重（Bold/Normal）                    |
+| `Foreground`   | IBrush       | 前景色                                 |
 | `TextWrapping` | TextWrapping | 文本换行（NoWrap/Wrap/WrapWholeWords） |
 
 ### 使用示例
@@ -177,13 +177,13 @@ Avalonia 提供了丰富的内置控件，用于构建用户界面。本文介�
 
 ### 基本属性
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `Text` | string | 文本内容 |
-| `Watermark` | string | 占位符 |
-| `MaxLength` | int | 最大长度 |
-| `AcceptsReturn` | bool | 接受回车 |
-| `PasswordChar` | char | 密码字符 |
+| 属性            | 类型   | 说明     |
+| --------------- | ------ | -------- |
+| `Text`          | string | 文本内容 |
+| `Watermark`     | string | 占位符   |
+| `MaxLength`     | int    | 最大长度 |
+| `AcceptsReturn` | bool   | 接受回车 |
+| `PasswordChar`  | char   | 密码字符 |
 
 ### 基本使用
 
@@ -215,11 +215,11 @@ Avalonia 提供了丰富的内置控件，用于构建用户界面。本文介�
 
 ### 基本属性
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `ItemsSource` | IEnumerable | 数据源 |
-| `SelectedItem` | object | 选中项 |
-| `SelectedIndex` | int | 选中索引 |
+| 属性            | 类型        | 说明     |
+| --------------- | ----------- | -------- |
+| `ItemsSource`   | IEnumerable | 数据源   |
+| `SelectedItem`  | object      | 选中项   |
+| `SelectedIndex` | int         | 选中索引 |
 
 ### 使用示例
 
@@ -258,10 +258,10 @@ Avalonia 提供了丰富的内置控件，用于构建用户界面。本文介�
 
 ### 基本属性
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `ItemsSource` | IEnumerable | 数据源 |
-| `SelectedItem` | object | 选中项 |
+| 属性            | 类型          | 说明     |
+| --------------- | ------------- | -------- |
+| `ItemsSource`   | IEnumerable   | 数据源   |
+| `SelectedItem`  | object        | 选中项   |
 | `SelectionMode` | SelectionMode | 选择模式 |
 
 ### 使用示例
@@ -316,19 +316,19 @@ Avalonia 提供了丰富的内置控件，用于构建用户界面。本文介�
 
 ### 基本属性
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `HorizontalScrollBarVisibility` | ScrollBarVisibility | 水平滚动条 |
-| `VerticalScrollBarVisibility` | ScrollBarVisibility | 垂直滚动条 |
-| `ScrollBarsAreAttached` | bool | 是否显示滚动条 |
+| 属性                            | 类型                | 说明           |
+| ------------------------------- | ------------------- | -------------- |
+| `HorizontalScrollBarVisibility` | ScrollBarVisibility | 水平滚动条     |
+| `VerticalScrollBarVisibility`   | ScrollBarVisibility | 垂直滚动条     |
+| `ScrollBarsAreAttached`         | bool                | 是否显示滚动条 |
 
 ### ScrollBarVisibility 选项
 
-| 值 | 说明 |
-|---|------|
-| `Auto` | 需要时显示 |
-| `Always` | 始终显示 |
-| `Never` | 从不显示 |
+| 值       | 说明       |
+| -------- | ---------- |
+| `Auto`   | 需要时显示 |
+| `Always` | 始终显示   |
+| `Never`  | 从不显示   |
 
 ### 使用示例
 
@@ -348,13 +348,13 @@ Avalonia 提供了丰富的内置控件，用于构建用户界面。本文介�
 
 ### 基本属性
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `Background` | IBrush | 背景色 |
-| `BorderBrush` | IBrush | 边框颜色 |
-| `BorderThickness` | Thickness | 边框厚度 |
-| `CornerRadius` | CornerRadius | 圆角 |
-| `Padding` | Thickness | 内边距 |
+| 属性              | 类型         | 说明     |
+| ----------------- | ------------ | -------- |
+| `Background`      | IBrush       | 背景色   |
+| `BorderBrush`     | IBrush       | 边框颜色 |
+| `BorderThickness` | Thickness    | 边框厚度 |
+| `CornerRadius`    | CornerRadius | 圆角     |
+| `Padding`         | Thickness    | 内边距   |
 
 ### 使用示例
 
@@ -398,10 +398,10 @@ Avalonia 提供了丰富的内置控件，用于构建用户界面。本文介�
 
 ### 基本属性
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `IsExpanded` | bool | 是否展开 |
-| `Header` | object | 标题内容 |
+| 属性              | 类型            | 说明     |
+| ----------------- | --------------- | -------- |
+| `IsExpanded`      | bool            | 是否展开 |
+| `Header`          | object          | 标题内容 |
 | `ExpandDirection` | ExpandDirection | 展开方向 |
 
 ### 使用示例
@@ -421,12 +421,12 @@ Avalonia 提供了丰富的内置控件，用于构建用户界面。本文介�
 
 ### 基本属性
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `Value` | double | 当前值 |
-| `Minimum` | double | 最小值 |
-| `Maximum` | double | 最大值 |
-| `IsIndeterminate` | bool | 不确定模式 |
+| 属性              | 类型   | 说明       |
+| ----------------- | ------ | ---------- |
+| `Value`           | double | 当前值     |
+| `Minimum`         | double | 最小值     |
+| `Maximum`         | double | 最大值     |
+| `IsIndeterminate` | bool   | 不确定模式 |
 
 ### 使用示例
 
@@ -442,13 +442,13 @@ Avalonia 提供了丰富的内置控件，用于构建用户界面。本文介�
 
 ### 基本属性
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `Value` | double | 当前值 |
-| `Minimum` | double | 最小值 |
-| `Maximum` | double | 最大值 |
-| `TickFrequency` | double | 刻度间隔 |
-| `IsSnapToTickEnabled` | bool | 是否吸附到刻度 |
+| 属性                  | 类型   | 说明           |
+| --------------------- | ------ | -------------- |
+| `Value`               | double | 当前值         |
+| `Minimum`             | double | 最小值         |
+| `Maximum`             | double | 最大值         |
+| `TickFrequency`       | double | 刻度间隔       |
+| `IsSnapToTickEnabled` | bool   | 是否吸附到刻度 |
 
 ### 使用示例
 
@@ -464,16 +464,16 @@ Avalonia 提供了丰富的内置控件，用于构建用户界面。本文介�
 
 ## 常用控件速查表
 
-| 控件 | 用途 | 关键属性 |
-|------|------|----------|
-| Button | 按钮 | Command, Content |
-| TextBox | 文本输入 | Text, Watermark, PasswordChar |
-| TextBlock | 文本显示 | Text, FontSize |
-| CheckBox | 复选框 | IsChecked, Content |
-| RadioButton | 单选框 | IsChecked, GroupName |
-| ComboBox | 下拉选择 | ItemsSource, SelectedItem |
-| ListBox | 列表 | ItemsSource, SelectedItem |
-| Border | 边框容器 | Background, BorderThickness |
+| 控件         | 用途     | 关键属性                      |
+| ------------ | -------- | ----------------------------- |
+| Button       | 按钮     | Command, Content              |
+| TextBox      | 文本输入 | Text, Watermark, PasswordChar |
+| TextBlock    | 文本显示 | Text, FontSize                |
+| CheckBox     | 复选框   | IsChecked, Content            |
+| RadioButton  | 单选框   | IsChecked, GroupName          |
+| ComboBox     | 下拉选择 | ItemsSource, SelectedItem     |
+| ListBox      | 列表     | ItemsSource, SelectedItem     |
+| Border       | 边框容器 | Background, BorderThickness   |
 | ScrollViewer | 滚动容器 | HorizontalScrollBarVisibility |
 
 ---
@@ -508,14 +508,14 @@ Avalonia 提供了丰富的内置控件，用于构建用户界面。本文介�
 
 ## 总结
 
-| 类别 | 控件 | 使用场景 |
-|------|------|----------|
-| **交互** | Button, ToggleButton | 用户操作 |
-| **输入** | TextBox, PasswordBox | 文本输入 |
-| **显示** | TextBlock | 文本显示 |
+| 类别     | 控件                  | 使用场景  |
+| -------- | --------------------- | --------- |
+| **交互** | Button, ToggleButton  | 用户操作  |
+| **输入** | TextBox, PasswordBox  | 文本输入  |
+| **显示** | TextBlock             | 文本显示  |
 | **选择** | CheckBox, RadioButton | 二元/单选 |
-| **列表** | ListBox, ComboBox | 多项选择 |
-| **容器** | Border, ScrollViewer | 布局组织 |
+| **列表** | ListBox, ComboBox     | 多项选择  |
+| **容器** | Border, ScrollViewer  | 布局组织  |
 
 ---
 
