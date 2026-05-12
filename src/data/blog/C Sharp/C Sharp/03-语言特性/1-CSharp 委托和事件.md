@@ -214,18 +214,23 @@ Console.WriteLine(multiply(4));  // 输出: 20 (使用最新的 multiplier)
 ```csharp
 public class Button
 {
-    // 声明事件
+    // 声明事件：event 关键字将委托封装为安全的事件
+    // 外部代码只能通过 += 和 -= 订阅/取消订阅，无法直接调用或赋值为 null
     public event EventHandler Clicked;
 
     public void OnClick()
     {
-        // 触发事件
+        // 触发事件：?.Invoke 语法安全地调用所有已订阅的处理程序
+        // 第一个参数 this：事件发布者（谁触发的），即当前 Button 实例
+        // 第二个参数 EventArgs.Empty：事件数据，本例为空，表示无需传递额外数据
         Clicked?.Invoke(this, EventArgs.Empty);
     }
 }
 
-// 订阅事件
+// 订阅事件：+= 将处理程序（lambda/方法）注册到事件
 var button = new Button();
+// sender：事件发布者，即 button 本身
+// e：事件数据，本例为 EventArgs.Empty（无数据）
 button.Clicked += (sender, e) => Console.WriteLine("按钮被点击了！");
 
 // 触发事件
@@ -265,11 +270,12 @@ public class Publisher
 ```csharp
 var publisher = new Publisher();
 
-// 订阅事件
-publisher.DataChanged += OnDataChanged;
-publisher.DataChanged += (sender, e) => Console.WriteLine($"收到: {e.Message}");
+// 订阅事件：+= 将处理程序注册到事件的委托调用列表
+publisher.DataChanged += OnDataChanged;  // 添加方法处理程序
+publisher.DataChanged += (sender, e) => Console.WriteLine($"收到: {e.Message}");  // 添加 lambda 处理程序
 
-// 取消订阅
+// 取消订阅：-= 将处理程序从委托调用列表移除
+// 注意：-= 必须移除同一个委托实例，lambda 需要保存为变量才能取消订阅
 publisher.DataChanged -= OnDataChanged;
 ```
 
