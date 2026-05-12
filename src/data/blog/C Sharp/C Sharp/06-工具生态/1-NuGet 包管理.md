@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: nuget-package-management
-description: '深入学习 NuGet 包管理器，掌握 NuGet 包的安装、更新、管理依赖项，以及私有 NuGet 源配置。'
+description: "深入学习 NuGet 包管理器，掌握 NuGet 包的安装、更新、管理依赖项，以及私有 NuGet 源配置。"
 tags:
   - NuGet
   - 包管理
@@ -22,13 +22,13 @@ NuGet 是 .NET 平台的包管理器，用于创建、共享和使用可重用�
 
 ### NuGet 的核心功能
 
-| 功能 | 说明 |
-|------|------|
-| **包管理** | 安装、更新、卸载 NuGet 包 |
-| **依赖解析** | 自动处理包之间的依赖关系 |
-| **版本控制** | 管理不同版本的包 |
-| **私有源** | 支持私有 NuGet 源 |
-| **缓存管理** | 加快包的安装和还原速度 |
+| 功能         | 说明                      |
+| ------------ | ------------------------- |
+| **包管理**   | 安装、更新、卸载 NuGet 包 |
+| **依赖解析** | 自动处理包之间的依赖关系  |
+| **版本控制** | 管理不同版本的包          |
+| **私有源**   | 支持私有 NuGet 源         |
+| **缓存管理** | 加快包的安装和还原速度    |
 
 ---
 
@@ -229,13 +229,13 @@ dotnet nuget disable source YourOrg
 
 ### 版本范围语法
 
-| 范围 | 说明 |
-|------|------|
-| `1.0` | 精确版本 1.0 |
-| `[1.0, 2.0)` | 大于等于 1.0，小于 2.0 |
+| 范围         | 说明                       |
+| ------------ | -------------------------- |
+| `1.0`        | 精确版本 1.0               |
+| `[1.0, 2.0)` | 大于等于 1.0，小于 2.0     |
 | `[1.0, 2.0]` | 大于等于 1.0，小于等于 2.0 |
-| `(1.0, 2.0)` | 大于 1.0，小于 2.0 |
-| `1.0.*` | 以 1.0 开头的最新版本 |
+| `(1.0, 2.0)` | 大于 1.0，小于 2.0         |
+| `1.0.*`      | 以 1.0 开头的最新版本      |
 
 ---
 
@@ -327,11 +327,11 @@ dotnet nuget locals all --clear
 
 ### 缓存位置
 
-| 缓存类型 | 说明 |
-|---------|------|
+| 缓存类型          | 说明            |
+| ----------------- | --------------- |
 | `global-packages` | 下载的 NuGet 包 |
-| `http-cache` | HTTP 请求缓存 |
-| `temp` | 临时文件 |
+| `http-cache`      | HTTP 请求缓存   |
+| `temp`            | 临时文件        |
 
 ---
 
@@ -413,7 +413,7 @@ dotnet nuget push ./bin/Release/MyLibrary.1.0.0.nupkg --source https://api.nuget
     <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
     <add key="private" value="https://pkgs.dev.azure.com/yourorg/_packaging/yourfeed/nuget/v3/index.json" />
   </packageSources>
-  
+
   <packageSourceMapping>
     <packageSource key="nuget.org">
       <package pattern="Newtonsoft.Json" />
@@ -545,55 +545,55 @@ dotnet restore --verbosity detailed
 
 ### JSON 处理
 
-| 包 | 说明 |
-|------|------|
-| Newtonsoft.Json | 功能强大的 JSON 序列化库 |
+| 包               | 说明                       |
+| ---------------- | -------------------------- |
+| Newtonsoft.Json  | 功能强大的 JSON 序列化库   |
 | System.Text.Json | 微软官方 JSON 库，性能更好 |
 
 ### HTTP 客户端
 
-| 包 | 说明 |
-|------|------|
-| Refit | 类型安全的 REST 客户端库 |
-| RestSharp | 简单的 REST 客户端 |
-| Polly | 弹性和暂时性故障处理 |
+| 包        | 说明                     |
+| --------- | ------------------------ |
+| Refit     | 类型安全的 REST 客户端库 |
+| RestSharp | 简单的 REST 客户端       |
+| Polly     | 弹性和暂时性故障处理     |
 
 ### 日志
 
-| 包 | 说明 |
-|------|------|
-| Serilog | 结构化日志库 |
-| NLog | 灵活的日志框架 |
+| 包      | 说明                  |
+| ------- | --------------------- |
+| Serilog | 结构化日志库          |
+| NLog    | 灵活的日志框架        |
 | log4net | Apache log4net 移植版 |
 
 ### 数据库
 
-| 包 | 说明 |
-|------|------|
-| Entity Framework Core | ORM 框架 |
-| Dapper | 轻量级 ORM |
-| MongoDB.Driver | MongoDB 驱动 |
+| 包                    | 说明         |
+| --------------------- | ------------ |
+| Entity Framework Core | ORM 框架     |
+| Dapper                | 轻量级 ORM   |
+| MongoDB.Driver        | MongoDB 驱动 |
 
 ### 测试
 
-| 包 | 说明 |
-|------|------|
-| xUnit | 单元测试框架 |
-| Moq | 模拟框架 |
-| FluentAssertions | 断言库 |
+| 包               | 说明         |
+| ---------------- | ------------ |
+| xUnit            | 单元测试框架 |
+| Moq              | 模拟框架     |
+| FluentAssertions | 断言库       |
 
 ---
 
 ## 总结
 
-| 主题 | 说明 |
-|------|------|
-| **包安装** | dotnet add package / Install-Package |
-| **包更新** | dotnet restore / Update-Package |
-| **NuGet 源** | nuget.org / 私有源 |
-| **版本管理** | 精确版本 / 版本范围 |
-| **依赖解析** | 自动处理冲突 |
-| **缓存管理** | global-packages / http-cache |
+| 主题         | 说明                                 |
+| ------------ | ------------------------------------ |
+| **包安装**   | dotnet add package / Install-Package |
+| **包更新**   | dotnet restore / Update-Package      |
+| **NuGet 源** | nuget.org / 私有源                   |
+| **版本管理** | 精确版本 / 版本范围                  |
+| **依赖解析** | 自动处理冲突                         |
+| **缓存管理** | global-packages / http-cache         |
 
 ---
 

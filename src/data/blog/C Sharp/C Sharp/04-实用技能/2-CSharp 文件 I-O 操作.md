@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-07T00:00:00.000+08:00
 modDatetime: 2026-05-07T00:00:00.000+08:00
 slug: csharp-file-io
-description: '深入学习 C# 文件操作，掌握文件读写、目录管理、路径处理、Stream 编程等核心技能。'
+description: "深入学习 C# 文件操作，掌握文件读写、目录管理、路径处理、Stream 编程等核心技能。"
 tags:
   - C#
   - 文件操作
@@ -24,13 +24,13 @@ language: zh-CN
 
 ### 核心命名空间
 
-| 命名空间 | 说明 |
-|----------|------|
-| `System.IO` | 核心 I/O 类型 |
-| `System.IO.File` | 文件静态方法 |
-| `System.IO.Directory` | 目录静态方法 |
-| `System.IO.Path` | 路径操作工具 |
-| `System.IO.FileStream` | 文件流操作 |
+| 命名空间               | 说明          |
+| ---------------------- | ------------- |
+| `System.IO`            | 核心 I/O 类型 |
+| `System.IO.File`       | 文件静态方法  |
+| `System.IO.Directory`  | 目录静态方法  |
+| `System.IO.Path`       | 路径操作工具  |
+| `System.IO.FileStream` | 文件流操作    |
 
 ---
 
@@ -266,7 +266,7 @@ void PrintDirectory(string path, int indent = 0)
         Console.WriteLine($"{new string(' ', indent)}📁 {Path.GetFileName(dir)}");
         PrintDirectory(dir, indent + 2);
     }
-    
+
     foreach (var file in Directory.GetFiles(path))
     {
         Console.WriteLine($"{new string(' ', indent)}📄 {Path.GetFileName(file)}");
@@ -347,16 +347,20 @@ async Task WriteFileAsync(string path, string content)
 
 ### 异步 Stream 操作
 
+使用 `ReadAsync` 和 `WriteAsync` 进行非阻塞的文件流读写操作，适合大文件处理：
+
 ```csharp
 async Task ProcessLargeFileAsync(string path)
 {
+    // 以只读模式打开文件流
     using var stream = new FileStream(path, FileMode.Open, FileAccess.Read);
-    byte[] buffer = new byte[1024];
-    
+    byte[] buffer = new byte[1024];  // 1KB 读取缓冲区
+
+    // 循环读取直到文件末尾
     int bytesRead;
     while ((bytesRead = await stream.ReadAsync(buffer)) > 0)
     {
-        ProcessBuffer(buffer, bytesRead);
+        ProcessBuffer(buffer, bytesRead);  // 处理已读取的字节
     }
 }
 ```
@@ -368,7 +372,7 @@ async Task ReadWithCancellationAsync(string path, CancellationToken token)
 {
     using var stream = new FileStream(path, FileMode.Open);
     byte[] buffer = new byte[1024];
-    
+
     int bytesRead = await stream.ReadAsync(buffer, token);
 }
 ```
@@ -382,31 +386,38 @@ async Task ReadWithCancellationAsync(string path, CancellationToken token)
 ```csharp
 void WatchDirectory(string path)
 {
+    // 创建文件监视器，监控指定目录中的文件变化
     using var watcher = new FileSystemWatcher(path);
-    
-    watcher.NotifyFilter = NotifyFilters.LastWrite 
-                         | NotifyFilters.FileName 
+
+    // 设置需要监视的变更类型：文件内容修改、文件名、目录名
+    watcher.NotifyFilter = NotifyFilters.LastWrite
+                         | NotifyFilters.FileName
                          | NotifyFilters.DirectoryName;
-    
+
+    // 只监视 .txt 文件的变化
     watcher.Filter = "*.txt";
-    
-    watcher.Changed += (s, e) => 
+
+    // 监听文件内容被修改的事件
+    watcher.Changed += (s, e) =>
     {
         Console.WriteLine($"文件已更改: {e.FullPath}");
     };
-    
-    watcher.Created += (s, e) => 
+
+    // 监听新文件被创建的事件
+    watcher.Created += (s, e) =>
     {
         Console.WriteLine($"新文件: {e.FullPath}");
     };
-    
-    watcher.Deleted += (s, e) => 
+
+    // 监听文件被删除的事件
+    watcher.Deleted += (s, e) =>
     {
         Console.WriteLine($"已删除: {e.FullPath}");
     };
-    
+
+    // 开始监控（设为 true 启用事件通知）
     watcher.EnableRaisingEvents = true;
-    
+
     Console.WriteLine("监控中... 按任意键退出");
     Console.ReadKey();
 }
@@ -425,12 +436,12 @@ async Task SplitFileAsync(string sourcePath, string destFolder, int chunkSizeMB 
     long totalBytes = fileInfo.Length;
     int chunkSize = chunkSizeMB * 1024 * 1024;
     int chunkIndex = 0;
-    
+
     using var sourceStream = new FileStream(sourcePath, FileMode.Open, FileAccess.Read);
-    
+
     byte[] buffer = new byte[chunkSize];
     int bytesRead;
-    
+
     while ((bytesRead = await sourceStream.ReadAsync(buffer)) > 0)
     {
         string chunkPath = Path.Combine(destFolder, $"chunk_{chunkIndex:D4}.bin");
@@ -464,7 +475,7 @@ void CompressFile(string sourcePath, string destPath)
     using var sourceStream = new FileStream(sourcePath, FileMode.Open);
     using var destStream = new FileStream(destPath, FileMode.Create);
     using var gzipStream = new GZipStream(destStream, CompressionMode.Compress);
-    
+
     sourceStream.CopyTo(gzipStream);
 }
 
@@ -473,7 +484,7 @@ void DecompressFile(string sourcePath, string destPath)
     using var sourceStream = new FileStream(sourcePath, FileMode.Open);
     using var gzipStream = new GZipStream(sourceStream, CompressionMode.Decompress);
     using var destStream = new FileStream(destPath, FileMode.Create);
-    
+
     gzipStream.CopyTo(destStream);
 }
 ```
@@ -511,23 +522,23 @@ finally
 
 ### 应该做的事情
 
-| 实践 | 说明 |
-|------|------|
-| **使用 using** | 确保资源正确释放 |
-| **异常处理** | 处理文件操作可能的各种异常 |
-| **异步操作** | 大文件使用异步避免阻塞 |
+| 实践           | 说明                             |
+| -------------- | -------------------------------- |
+| **使用 using** | 确保资源正确释放                 |
+| **异常处理**   | 处理文件操作可能的各种异常       |
+| **异步操作**   | 大文件使用异步避免阻塞           |
 | **路径规范化** | 使用 Path.Combine 避免分隔符问题 |
-| **检查存在性** | 操作前检查文件/目录是否存在 |
+| **检查存在性** | 操作前检查文件/目录是否存在      |
 
 ### 不应该做的事情
 
-| 反模式 | 说明 |
-|--------|------|
-| **硬编码路径** | 使用相对路径或配置路径 |
-| **忘记 Dispose** | 可能导致文件锁定 |
-| **大文件读入内存** | 使用 Stream 分块处理 |
-| **忽略异常** | 至少记录日志 |
-| **并发写入同一文件** | 使用锁或队列 |
+| 反模式               | 说明                   |
+| -------------------- | ---------------------- |
+| **硬编码路径**       | 使用相对路径或配置路径 |
+| **忘记 Dispose**     | 可能导致文件锁定       |
+| **大文件读入内存**   | 使用 Stream 分块处理   |
+| **忽略异常**         | 至少记录日志           |
+| **并发写入同一文件** | 使用锁或队列           |
 
 ---
 

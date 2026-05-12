@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: csharp-data-types
-description: '全面介绍 C# 数据类型系统，包括值类型、引用类型、整型、浮点型、布尔型、字符型等内置类型，以及类型转换和默认值。'
+description: "全面介绍 C# 数据类型系统，包括值类型、引用类型、整型、浮点型、布尔型、字符型等内置类型，以及类型转换和默认值。"
 tags:
   - C#
   - 数据类型
@@ -24,11 +24,11 @@ C# 是一种强类型语言，每个变量和表达式都有一个确定的类�
 
 ### C# 类型系统
 
-| 类别 | 说明 |
-|------|------|
-| **值类型** | 直接存储数据值，包括简单类型和结构体 |
-| **引用类型** | 存储对数据的引用（内存地址） |
-| **指针类型** | 仅在不安全代码中使用 |
+| 类别         | 说明                                 |
+| ------------ | ------------------------------------ |
+| **值类型**   | 直接存储数据值，包括简单类型和结构体 |
+| **引用类型** | 存储对数据的引用（内存地址）         |
+| **指针类型** | 仅在不安全代码中使用                 |
 
 ---
 
@@ -38,18 +38,18 @@ C# 是一种强类型语言，每个变量和表达式都有一个确定的类�
 
 整型用于表示整数。C# 提供多种整型，以满足不同的内存和范围需求。
 
-| 类型 | 关键字 | .NET 类型 | 范围 | 大小 |
-|------|--------|-----------|------|------|
-| 有符号字节 | `sbyte` | System.SByte | -128 ~ 127 | 8 位 |
-| 无符号字节 | `byte` | System.Byte | 0 ~ 255 | 8 位 |
-| 短整型 | `short` | System.Int16 | -32,768 ~ 32,767 | 16 位 |
-| 无符号短整型 | `ushort` | System.UInt16 | 0 ~ 65,535 | 16 位 |
-| 整型 | `int` | System.Int32 | -2,147,483,648 ~ 2,147,483,647 | 32 位 |
-| 无符号整型 | `uint` | System.UInt32 | 0 ~ 4,294,967,295 | 32 位 |
-| 长整型 | `long` | System.Int64 | -9,223,372,036,854,775,808 ~ 9,223,372,036,854,775,807 | 64 位 |
-| 无符号长整型 | `ulong` | System.UInt64 | 0 ~ 18,446,744,073,709,551,615 | 64 位 |
-| 平台相关 | `nint` | System.IntPtr | 取决于平台 | 32/64 位 |
-| 平台相关 | `nuint` | System.UIntPtr | 取决于平台 | 32/64 位 |
+| 类型         | 关键字   | .NET 类型      | 范围                                                   | 大小     |
+| ------------ | -------- | -------------- | ------------------------------------------------------ | -------- |
+| 有符号字节   | `sbyte`  | System.SByte   | -128 ~ 127                                             | 8 位     |
+| 无符号字节   | `byte`   | System.Byte    | 0 ~ 255                                                | 8 位     |
+| 短整型       | `short`  | System.Int16   | -32,768 ~ 32,767                                       | 16 位    |
+| 无符号短整型 | `ushort` | System.UInt16  | 0 ~ 65,535                                             | 16 位    |
+| 整型         | `int`    | System.Int32   | -2,147,483,648 ~ 2,147,483,647                         | 32 位    |
+| 无符号整型   | `uint`   | System.UInt32  | 0 ~ 4,294,967,295                                      | 32 位    |
+| 长整型       | `long`   | System.Int64   | -9,223,372,036,854,775,808 ~ 9,223,372,036,854,775,807 | 64 位    |
+| 无符号长整型 | `ulong`  | System.UInt64  | 0 ~ 18,446,744,073,709,551,615                         | 64 位    |
+| 平台相关     | `nint`   | System.IntPtr  | 取决于平台                                             | 32/64 位 |
+| 平台相关     | `nuint`  | System.UIntPtr | 取决于平台                                             | 32/64 位 |
 
 ### 整型字面量
 
@@ -77,11 +77,11 @@ ulong bigUnsigned = 42UL;
 
 浮点型用于表示带小数点的数字。
 
-| 类型 | 关键字 | .NET 类型 | 精度 | 范围 |
-|------|--------|-----------|------|------|
-| 单精度 | `float` | System.Single | 约 6-9 位 | ±1.5×10⁻⁴⁵ ~ ±3.4×10³⁸ |
-| 双精度 | `double` | System.Double | 约 15-17 位 | ±5.0×10⁻³²⁴ ~ ±1.7×10³⁰⁸ |
-| 高精度 | `decimal` | System.Decimal | 28-29 位 | ±1.0×10⁻²⁸ ~ ±7.9×10²⁸ |
+| 类型   | 关键字    | .NET 类型      | 精度        | 范围                     |
+| ------ | --------- | -------------- | ----------- | ------------------------ |
+| 单精度 | `float`   | System.Single  | 约 6-9 位   | ±1.5×10⁻⁴⁵ ~ ±3.4×10³⁸   |
+| 双精度 | `double`  | System.Double  | 约 15-17 位 | ±5.0×10⁻³²⁴ ~ ±1.7×10³⁰⁸ |
+| 高精度 | `decimal` | System.Decimal | 28-29 位    | ±1.0×10⁻²⁸ ~ ±7.9×10²⁸   |
 
 ### 浮点型字面量
 
@@ -243,20 +243,23 @@ bool isNullOrWhiteSpace = string.IsNullOrWhiteSpace("   ");  // true
 
 ### StringBuilder
 
-对于频繁修改字符串的场景，使用 StringBuilder 更高效：
+对于频繁修改字符串的场景，使用 StringBuilder 更高效，避免每次拼接都创建新字符串：
 
 ```csharp
 using System.Text;
 
-var sb = new StringBuilder(); //StringBuilder 只修改内部缓冲区
-sb.Append("Hello");
-sb.AppendLine(" World!");  // 添加换行
-sb.AppendFormat("Count: {0}", 42);
-sb.Insert(5, ",");       // 在位置5插入
-sb.Remove(0, 6);          // 删除前6个字符
-sb.Replace("World", "C#");
+// 创建 StringBuilder 实例，内部维护可变字符缓冲区
+var sb = new StringBuilder();
+sb.Append("Hello");              // 追加字符串
+sb.AppendLine(" World!");        // 追加字符串并换行
+sb.AppendFormat("Count: {0}", 42); // 按格式追加
+sb.Insert(5, ",");                // 在指定位置插入字符
+sb.Remove(0, 6);                 // 删除前6个字符（Hello + 空格）
+sb.Replace("World", "C#");       // 替换字符串
 
-string result = sb.ToString(); // 最后一次才创建字符串
+// 最后一次性调用 ToString() 生成最终字符串
+string result = sb.ToString();
+Console.WriteLine(result);
 ```
 
 ---
@@ -272,13 +275,13 @@ public struct Point
 {
     public int X { get; set; }
     public int Y { get; set; }
-    
+
     public Point(int x, int y)
     {
         X = x;
         Y = y;
     }
-    
+
     public double DistanceTo(Point other)
     {
         int dx = X - other.X;
@@ -295,13 +298,13 @@ double dist = p1.DistanceTo(p2);  // 5
 
 ### 类与结构体的区别
 
-| 特性 | 类 (class) | 结构体 (struct) |
-|------|-----------|------------------|
-| 类型 | 引用类型 | 值类型 |
-| 存储位置 | 堆 | 栈（取决于情况） |
-| 默认值 | null | 成员默认值 |
-| 继承 | 支持 | 不支持（可实现接口） |
-| 构造函数 | 可以无参 | 必须有完整构造函数 |
+| 特性     | 类 (class) | 结构体 (struct)      |
+| -------- | ---------- | -------------------- |
+| 类型     | 引用类型   | 值类型               |
+| 存储位置 | 堆         | 栈（取决于情况）     |
+| 默认值   | null       | 成员默认值           |
+| 继承     | 支持       | 不支持（可实现接口） |
+| 构造函数 | 可以无参   | 必须有完整构造函数   |
 
 ### 元组 (Tuple)
 
@@ -506,14 +509,14 @@ bool success = int.TryParse("789", out _);
 
 每种类型都有默认值：
 
-| 类型 | 默认值 |
-|------|--------|
-| 数值类型 | 0 |
-| char | '\0' |
-| bool | false |
-| 引用类型 | null |
-| 枚举 | 0 |
-| 结构体 | 所有成员默认值 |
+| 类型     | 默认值         |
+| -------- | -------------- |
+| 数值类型 | 0              |
+| char     | '\0'           |
+| bool     | false          |
+| 引用类型 | null           |
+| 枚举     | 0              |
+| 结构体   | 所有成员默认值 |
 
 ```csharp
 int num = default;         // 0
@@ -589,13 +592,13 @@ string FormatSize(long bytes)
     string[] sizes = { "B", "KB", "MB", "GB", "TB" };
     int order = 0;
     double size = bytes;
-    
+
     while (size >= 1024 && order < sizes.Length - 1)
     {
         order++;
         size /= 1024;
     }
-    
+
     return $"{size:0.##} {sizes[order]}";
 }
 
@@ -676,16 +679,16 @@ int final2 = (b + 5) ?? 0;   // 15
 
 ## 总结
 
-| 类型类别 | 示例 | 特点 |
-|---------|------|------|
-| **整型** | int, long, byte | 表示整数 |
-| **浮点型** | float, double, decimal | 表示小数 |
-| **布尔型** | bool | true/false |
-| **字符型** | char | 单个字符 |
-| **字符串** | string | 字符序列 |
-| **结构体** | struct | 轻量值类型 |
-| **枚举** | enum | 命名常量 |
-| **可空类型** | int?, string? | 可为 null |
+| 类型类别     | 示例                   | 特点       |
+| ------------ | ---------------------- | ---------- |
+| **整型**     | int, long, byte        | 表示整数   |
+| **浮点型**   | float, double, decimal | 表示小数   |
+| **布尔型**   | bool                   | true/false |
+| **字符型**   | char                   | 单个字符   |
+| **字符串**   | string                 | 字符序列   |
+| **结构体**   | struct                 | 轻量值类型 |
+| **枚举**     | enum                   | 命名常量   |
+| **可空类型** | int?, string?          | 可为 null  |
 
 ---
 

@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-07T00:00:00.000+08:00
 modDatetime: 2026-05-07T00:00:00.000+08:00
 slug: csharp-nullable-types
-description: '深入学习 C# 可空类型，掌握可空值类型、空合并运算符、空条件运算符、可空引用类型等核心概念。'
+description: "深入学习 C# 可空类型，掌握可空值类型、空合并运算符、空条件运算符、可空引用类型等核心概念。"
 tags:
   - C#
   - 可空类型
@@ -23,13 +23,13 @@ language: zh-CN
 
 ### 核心概念
 
-| 概念 | 说明 |
-|------|------|
-| **可空值类型** | 在值类型后加 `?`，如 `int?` |
-| **null** | 表示「无值」或「不存在」 |
-| **空合并运算符** | `??` 提供默认值 |
-| **空条件运算符** | `?.` 安全地访问成员 |
-| **可空引用类型** | C# 8.0+ 特性 |
+| 概念             | 说明                        |
+| ---------------- | --------------------------- |
+| **可空值类型**   | 在值类型后加 `?`，如 `int?` |
+| **null**         | 表示「无值」或「不存在」    |
+| **空合并运算符** | `??` 提供默认值             |
+| **空条件运算符** | `?.` 安全地访问成员         |
+| **可空引用类型** | C# 8.0+ 特性                |
 
 ---
 
@@ -143,7 +143,7 @@ int timeout = GetConfig() ?? 30;
 ```csharp
 string? name = null;
 
-// 错误：会抛出 NullReferenceException   
+// 错误：会抛出 NullReferenceException
 int len = name.Length;
 
 // 正确：返回 null 而不是抛异常
@@ -306,11 +306,11 @@ string definitelyNotNull = input!;
 
 ### 可空上下文中控制 null 性
 
-| 语法 | 含义 |
-|------|------|
-| `string?` | 可为 null |
-| `string` | 不可为 null（根据上下文） |
-| `string!` | 强制认为不为 null |
+| 语法      | 含义                      |
+| --------- | ------------------------- |
+| `string?` | 可为 null                 |
+| `string`  | 不可为 null（根据上下文） |
+| `string!` | 强制认为不为 null         |
 
 ---
 
@@ -351,7 +351,7 @@ class AppConfig
     public string? LogDirectory { get; set; }
     public int? MaxRetryCount { get; set; }
     public bool? EnableDebugMode { get; set; }
-    
+
     public int GetRetryCount() => MaxRetryCount ?? 3;
     public string GetLogPath() => LogDirectory ?? "./logs";
 }
@@ -400,21 +400,21 @@ string? GetMonthName(int? month)
 
 ### 应该做的事情
 
-| 实践 | 说明 |
-|------|------|
-| **明确意图** | 使用 `?` 清楚表示值可能为空 |
-| **提供默认值** | 使用 `??` 提供合理的默认值 |
-| **安全访问** | 使用 `?.` 避免 NullReferenceException |
-| **检查后再用** | 先判断 HasValue 再访问 Value |
+| 实践           | 说明                                  |
+| -------------- | ------------------------------------- |
+| **明确意图**   | 使用 `?` 清楚表示值可能为空           |
+| **提供默认值** | 使用 `??` 提供合理的默认值            |
+| **安全访问**   | 使用 `?.` 避免 NullReferenceException |
+| **检查后再用** | 先判断 HasValue 再访问 Value          |
 
 ### 不应该做的事情
 
-| 反模式 | 说明 |
-|--------|------|
-| **滥用可空类型** | 如果值永远不为 null，就不要用 `?` |
-| **忽略 null 检查** | 不检查就直接访问 Value |
-| **过度使用 `!`** | 使用 null-forgiving 会隐藏潜在问题 |
-| **可空用于可选参数** | 应该用方法重载或可选参数 |
+| 反模式               | 说明                               |
+| -------------------- | ---------------------------------- |
+| **滥用可空类型**     | 如果值永远不为 null，就不要用 `?`  |
+| **忽略 null 检查**   | 不检查就直接访问 Value             |
+| **过度使用 `!`**     | 使用 null-forgiving 会隐藏潜在问题 |
+| **可空用于可选参数** | 应该用方法重载或可选参数           |
 
 ### 代码示例
 

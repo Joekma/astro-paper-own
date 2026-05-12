@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: csharp-async-programming
-description: '深入学习 C# 异步编程，掌握 async/await 关键字、Task 异步编程模型，以及如何编写高效的异步代码。'
+description: "深入学习 C# 异步编程，掌握 async/await 关键字、Task 异步编程模型，以及如何编写高效的异步代码。"
 tags:
   - C#
   - 异步编程
@@ -24,12 +24,12 @@ language: zh-CN
 
 ### 异步编程的优势
 
-| 优势 | 说明 |
-|------|------|
-| **响应性** | UI 应用程序不冻结，用户体验更好 |
-| **效率** | 更好地利用系统资源 |
-| **可扩展性** | 用更少的线程处理更多请求 |
-| **简洁** | async/await 让异步代码看起来像同步代码 |
+| 优势         | 说明                                   |
+| ------------ | -------------------------------------- |
+| **响应性**   | UI 应用程序不冻结，用户体验更好        |
+| **效率**     | 更好地利用系统资源                     |
+| **可扩展性** | 用更少的线程处理更多请求               |
+| **简洁**     | async/await 让异步代码看起来像同步代码 |
 
 ---
 
@@ -138,13 +138,13 @@ Console.WriteLine(task.Result); // 完成
 public async Task<MyResult> DoSomethingAsync()
 {
     // 1. 可能需要的准备工作
-    
+
     // 2. 调用异步操作
     var result = await SomeAsyncOperation();
-    
+
     // 3. 处理结果
     var processed = Process(result);
-    
+
     // 4. 返回结果
     return processed;
 }
@@ -175,10 +175,10 @@ async Task<List<Product>> GetProductsAsync()
     var products = new List<Product>();
     using var connection = new SqlConnection(connectionString);
     await connection.OpenAsync();
-    
+
     using var command = new SqlCommand("SELECT * FROM Products", connection);
     using var reader = await command.ExecuteReaderAsync();
-    
+
     while (await reader.ReadAsync())
     {
         products.Add(new Product
@@ -187,7 +187,7 @@ async Task<List<Product>> GetProductsAsync()
             Name = reader.GetString(1)
         });
     }
-    
+
     return products;
 }
 ```
@@ -203,10 +203,10 @@ async Task<List<Product>> GetProductsAsync()
 async Task<List<string>> DownloadAllAsync(string[] urls)
 {
     using var client = new HttpClient();
-    
+
     var tasks = urls.Select(url => client.GetStringAsync(url));
     string[] results = await Task.WhenAll(tasks);
-    
+
     return results.ToList();
 }
 ```
@@ -221,10 +221,10 @@ async Task ProcessAllAsync()
     var task1 = DoSomethingAsync();
     var task2 = DoAnotherAsync();
     var task3 = DoMoreAsync();
-    
+
     // 等待所有任务完成
     await Task.WhenAll(task1, task2, task3);
-    
+
     // 获取结果
     var result1 = await task1;
     var result2 = await task2;
@@ -241,10 +241,10 @@ async Task<string> GetFirstResultAsync()
 {
     var task1 = SlowOperationAsync();
     var task2 = AnotherSlowOperationAsync();
-    
+
     // 等待第一个完成的
     var completed = await Task.WhenAny(task1, task2);
-    
+
     return await completed;
 }
 ```
@@ -267,7 +267,7 @@ async Task ParallelAsync()
     var task1 = Operation1Async();
     var task2 = Operation2Async();
     var task3 = Operation3Async();
-    
+
     await Task.WhenAll(task1, task2, task3);
     // 总计: 1秒
 }
@@ -301,7 +301,7 @@ async Task MultiExceptionAsync()
     var task1 = Operation1Async();
     var task2 = Operation2Async();
     var task3 = Operation3Async();
-    
+
     try
     {
         await Task.WhenAll(task1, task2, task3);
@@ -310,14 +310,14 @@ async Task MultiExceptionAsync()
     {
         // 收集所有异常
         var exceptions = new List<Exception>();
-        
+
         if (task1.IsFaulted)
             exceptions.Add(task1.Exception!);
         if (task2.IsFaulted)
             exceptions.Add(task2.Exception!);
         if (task3.IsFaulted)
             exceptions.Add(task3.Exception!);
-        
+
         foreach (var ex in exceptions)
         {
             Console.WriteLine($"异常: {ex.Message}");
@@ -357,7 +357,7 @@ catch (Exception)
 async Task DownloadWithCancelAsync(CancellationToken token)
 {
     using var client = new HttpClient();
-    
+
     try
     {
         // 传递 CancellationToken
@@ -377,10 +377,10 @@ var cts = new CancellationTokenSource();
 try
 {
     var task = DownloadWithCancelAsync(cts.Token);
-    
+
     // 5秒后取消
     cts.CancelAfter(TimeSpan.FromSeconds(5));
-    
+
     await task;
 }
 catch (OperationCanceledException)
@@ -499,7 +499,7 @@ public class FileProcessor
     public async Task ProcessFilesAsync(string[] filePaths, IProgress<int>? progress = null)
     {
         int processed = 0;
-        
+
         foreach (var path in filePaths)
         {
             await ProcessFileAsync(path);
@@ -507,15 +507,15 @@ public class FileProcessor
             progress?.Report(processed * 100 / filePaths.Length);
         }
     }
-    
+
     private async Task ProcessFileAsync(string path)
     {
         // 读取文件
         string content = await File.ReadAllTextAsync(path);
-        
+
         // 处理内容
         var processed = content.ToUpperInvariant();
-        
+
         // 写入结果
         string resultPath = Path.ChangeExtension(path, ".processed.txt");
         await File.WriteAllTextAsync(resultPath, processed);
@@ -543,7 +543,7 @@ public async Task<T> RetryAsync<T>(
             await Task.Delay(delayMs * (i + 1));
         }
     }
-    
+
     return await operation(); // 最后一次尝试
 }
 
@@ -560,7 +560,7 @@ var result = await RetryAsync(async () =>
 public static async Task<T> WithTimeoutAsync<T>(Task<T> task, TimeSpan timeout)
 {
     using var cts = new CancellationTokenSource(timeout);
-    
+
     try
     {
         return await task.WaitAsync(cts.Token);
@@ -671,13 +671,13 @@ public async Task<IReadOnlyList<T>> GetItemsAsync(
     CancellationToken cancellationToken = default)
 {
     var items = new List<T>();
-    
+
     await foreach (var item in GetItemsAsync(cancellationToken))
     {
         cancellationToken.ThrowIfCancellationRequested();
         items.Add(item);
     }
-    
+
     return items;
 }
 ```
@@ -710,16 +710,16 @@ async Task DoEverythingAsync()
 
 ## 总结
 
-| 概念 | 说明 |
-|------|------|
-| `async` | 标记方法为异步 |
-| `await` | 等待异步操作完成 |
-| `Task` | 表示异步操作 |
-| `Task<T>` | 返回 T 的异步操作 |
-| `Task.WhenAll` | 等待所有任务 |
-| `Task.WhenAny` | 等待任一任务 |
-| `CancellationToken` | 取消操作 |
-| `ConfigureAwait` | 控制上下文切换 |
+| 概念                | 说明              |
+| ------------------- | ----------------- |
+| `async`             | 标记方法为异步    |
+| `await`             | 等待异步操作完成  |
+| `Task`              | 表示异步操作      |
+| `Task<T>`           | 返回 T 的异步操作 |
+| `Task.WhenAll`      | 等待所有任务      |
+| `Task.WhenAny`      | 等待任一任务      |
+| `CancellationToken` | 取消操作          |
+| `ConfigureAwait`    | 控制上下文切换    |
 
 ---
 

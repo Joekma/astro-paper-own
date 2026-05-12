@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: ddd-domain-driven-design
-description: '深入学习领域驱动设计（DDD）方法论，掌握实体、值对象、聚合、领域服务、仓储模式等核心概念，以及在 .NET 项目中的实践应用。'
+description: "深入学习领域驱动设计（DDD）方法论，掌握实体、值对象、聚合、领域服务、仓储模式等核心概念，以及在 .NET 项目中的实践应用。"
 tags:
   - DDD
   - 领域驱动设计
@@ -23,12 +23,12 @@ language: zh-CN
 
 ### 为什么要使用 DDD
 
-| 动因 | 说明 |
-|------|------|
+| 动因             | 说明                                       |
+| ---------------- | ------------------------------------------ |
 | **复杂业务逻辑** | 当业务逻辑复杂时，需要清晰的结构来组织代码 |
-| **团队协作** | 帮助开发者和业务专家建立共同语言 |
-| **可维护性** | 将业务规则封装在领域层，易于理解和修改 |
-| **可测试性** | 领域模型可独立于基础设施进行测试 |
+| **团队协作**     | 帮助开发者和业务专家建立共同语言           |
+| **可维护性**     | 将业务规则封装在领域层，易于理解和修改     |
+| **可测试性**     | 领域模型可独立于基础设施进行测试           |
 
 ---
 
@@ -86,16 +86,16 @@ public class Case : AuditableEntity
 {
     // 唯一标识
     public Guid Id { get; private set; }
-    
+
     // 业务属性
     public CaseNumber CaseNumber { get; private set; }
     public CustomerInfo Customer { get; private set; }
     public CaseStatus Status { get; private set; }
     public Money LoanAmount { get; private set; }
-    
+
     // 私有构造函数
     private Case() { }
-    
+
     // 工厂方法
     public static Case Create(CustomerInfo customer, Money loanAmount)
     {
@@ -108,22 +108,22 @@ public class Case : AuditableEntity
             LoanAmount = loanAmount
         };
     }
-    
+
     // 业务方法
     public void Submit()
     {
         if (Status != CaseStatus.Draft)
             throw new InvalidOperationException("只有草稿状态的案件才能提交");
-        
+
         Status = CaseStatus.Submitted;
         AddDomainEvent(new CaseSubmittedEvent(this));
     }
-    
+
     public void Approve()
     {
         if (Status != CaseStatus.Submitted)
             throw new InvalidOperationException("只有已提交的案件才能审批");
-        
+
         Status = CaseStatus.Approved;
         AddDomainEvent(new CaseApprovedEvent(this));
     }
@@ -140,15 +140,15 @@ public abstract class AuditableEntity
     public string CreatedBy { get; protected set; }
     public DateTime? ModifiedAt { get; protected set; }
     public string? ModifiedBy { get; protected set; }
-    
+
     private readonly List<DomainEvent> _domainEvents = new();
     public IReadOnlyList<DomainEvent> DomainEvents => _domainEvents.AsReadOnly();
-    
+
     protected void AddDomainEvent(DomainEvent eventItem)
     {
         _domainEvents.Add(eventItem);
     }
-    
+
     public void ClearDomainEvents()
     {
         _domainEvents.Clear();
@@ -176,16 +176,16 @@ public readonly struct Money : IEquatable<Money>
 {
     public decimal Amount { get; }
     public Currency Currency { get; }
-    
+
     public Money(decimal amount, Currency currency)
     {
         if (amount < 0)
             throw new ArgumentException("金额不能为负数");
-            
+
         Amount = amount;
         Currency = currency;
     }
-    
+
     // 值对象操作
     public Money Add(Money other)
     {
@@ -193,17 +193,17 @@ public readonly struct Money : IEquatable<Money>
             throw new InvalidOperationException("货币类型必须相同");
         return new Money(Amount + other.Amount, Currency);
     }
-    
+
     // 操作符重载
     public static Money operator +(Money a, Money b) => a.Add(b);
-    
+
     // 相等性
-    public bool Equals(Money other) => 
+    public bool Equals(Money other) =>
         Amount == other.Amount && Currency == other.Currency;
-        
-    public override bool Equals(object? obj) => 
+
+    public override bool Equals(object? obj) =>
         obj is Money other && Equals(other);
-        
+
     public override int GetHashCode() => HashCode.Combine(Amount, Currency);
 }
 ```
@@ -215,17 +215,17 @@ public readonly struct Money : IEquatable<Money>
 public readonly struct Email
 {
     public string Value { get; }
-    
+
     public Email(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
             throw new ArgumentException("邮箱不能为空");
         if (!IsValidEmail(value))
             throw new ArgumentException("邮箱格式不正确");
-            
+
         Value = value;
     }
-    
+
     private static bool IsValidEmail(string email)
     {
         return email.Contains("@");
@@ -237,7 +237,7 @@ public readonly struct PhoneNumber
 {
     public string CountryCode { get; }
     public string Number { get; }
-    
+
     public PhoneNumber(string countryCode, string number)
     {
         CountryCode = countryCode;
@@ -266,43 +266,43 @@ public class CaseAggregate
 {
     private readonly List<Document> _documents = new();
     private readonly List<Note> _notes = new();
-    
+
     public CaseAggregateId Id { get; private set; }
     public CaseInfo Info { get; private set; }
     public CaseStatus Status { get; private set; }
-    
+
     // 外部只能通过聚合根访问
     public IReadOnlyList<Document> Documents => _documents.AsReadOnly();
     public IReadOnlyList<Note> Notes => _notes.AsReadOnly();
-    
+
     // 添加文档（通过聚合根）
     public void AddDocument(Document document)
     {
         if (Status == CaseStatus.Closed)
             throw new InvalidOperationException("已关闭的案件不能添加文档");
-            
+
         _documents.Add(document);
     }
-    
+
     // 移除文档（通过聚合根）
     public void RemoveDocument(DocumentId documentId)
     {
         var document = _documents.FirstOrDefault(d => d.Id == documentId);
         if (document == null)
             throw new InvalidOperationException("文档不存在");
-            
+
         if (Status == CaseStatus.Closed)
             throw new InvalidOperationException("已关闭的案件不能移除文档");
-            
+
         _documents.Remove(document);
     }
-    
+
     // 业务规则在聚合根中
     public void Close()
     {
         if (_documents.Any(d => d.Status == DocumentStatus.Pending))
             throw new InvalidOperationException("存在待处理的文档");
-            
+
         Status = CaseStatus.Closed;
     }
 }
@@ -310,12 +310,12 @@ public class CaseAggregate
 
 ### 聚合的设计原则
 
-| 原则 | 说明 |
-|------|------|
-| **保持聚合小** | 聚合应保持精简，只包含必要对象 |
-| **引用其他聚合** | 通过 ID 而非直接引用 |
-| **事务边界** | 一个聚合对应一个事务 |
-| **最终一致性** | 聚合之间通过事件同步 |
+| 原则             | 说明                           |
+| ---------------- | ------------------------------ |
+| **保持聚合小**   | 聚合应保持精简，只包含必要对象 |
+| **引用其他聚合** | 通过 ID 而非直接引用           |
+| **事务边界**     | 一个聚合对应一个事务           |
+| **最终一致性**   | 聚合之间通过事件同步           |
 
 ---
 
@@ -335,10 +335,10 @@ public class LoanCalculationService
         var baseAmount = CalculateBaseAmount(application);
         var riskAdjustment = CalculateRiskAdjustment(application);
         var finalAmount = baseAmount * riskAdjustment;
-        
+
         return new LoanCalculationResult(finalAmount);
     }
-    
+
     private decimal CalculateRiskAdjustment(LoanApplication application)
     {
         // 风险调整逻辑
@@ -349,11 +349,11 @@ public class LoanCalculationService
 
 ### 领域服务 vs 实体方法
 
-| 领域服务 | 实体方法 |
-|-----------|----------|
+| 领域服务           | 实体方法       |
+| ------------------ | -------------- |
 | 涉及多个实体或聚合 | 只涉及单个实体 |
-| 无状态 | 有状态 |
-| 执行领域操作 | 维护实体完整性 |
+| 无状态             | 有状态         |
+| 执行领域操作       | 维护实体完整性 |
 
 ---
 
@@ -394,12 +394,12 @@ public interface ICaseRepository
     Task<Case?> GetByIdAsync(CaseAggregateId id);
     Task<IReadOnlyList<Case>> GetByCustomerAsync(CustomerId customerId);
     Task<IReadOnlyList<Case>> GetPendingCasesAsync();
-    
+
     // 命令
     Task AddAsync(Case case);
     Task UpdateAsync(Case case);
     Task DeleteAsync(CaseAggregateId id);
-    
+
     // 批量操作
     Task AddRangeAsync(IEnumerable<Case> cases);
 }
@@ -411,19 +411,19 @@ public interface ICaseRepository
 public class CaseRepository : ICaseRepository
 {
     private readonly ApplicationDbContext _context;
-    
+
     public CaseRepository(ApplicationDbContext context)
     {
         _context = context;
     }
-    
+
     public async Task<Case?> GetByIdAsync(CaseAggregateId id)
     {
         return await _context.Cases
             .Include(c => c.Documents)
             .FirstOrDefaultAsync(c => c.Id == id);
     }
-    
+
     public async Task AddAsync(Case case)
     {
         await _context.Cases.AddAsync(case);
@@ -452,7 +452,7 @@ public class CaseSubmittedEvent : DomainEvent
     public CaseAggregateId CaseId { get; }
     public CustomerId CustomerId { get; }
     public Money LoanAmount { get; }
-    
+
     public CaseSubmittedEvent(CaseAggregate case)
     {
         CaseId = case.Id;
@@ -468,8 +468,8 @@ public class CaseSubmittedEvent : DomainEvent
 public class CaseSubmittedEventHandler : INotificationHandler<CaseSubmittedEvent>
 {
     private readonly IEmailService _emailService;
-    
-    public async Task Handle(CaseSubmittedEvent notification, 
+
+    public async Task Handle(CaseSubmittedEvent notification,
         CancellationToken cancellationToken)
     {
         // 发送通知等
@@ -491,16 +491,16 @@ public class CaseApplicationService
 {
     private readonly ICaseRepository _caseRepository;
     private readonly IMediator _mediator;
-    
+
     public async Task<CaseDto> SubmitCaseAsync(SubmitCaseCommand command)
     {
         var customer = await _customerRepository.GetByIdAsync(command.CustomerId);
-        
+
         var case = Case.Create(customer, command.Amount);
-        
+
         await _caseRepository.AddAsync(case);
         await _mediator.Publish(new CaseSubmittedEvent(case));
-        
+
         return new CaseDto(case);
     }
 }
@@ -579,7 +579,7 @@ Claw.Infrastructure/
 public class Case
 {
     private Case() { }  // 私有构造函数
-    
+
     public static Case Create(Customer customer, Money amount)
     {
         return new Case
@@ -601,7 +601,7 @@ public void Submit()
     // 验证规则内聚在实体中
     if (CannotSubmit())
         throw new BusinessRuleException("无法提交");
-        
+
     Status = CaseStatus.Submitted;
 }
 ```
@@ -616,7 +616,7 @@ public interface ISpecification<T>
 
 public class PendingCasesSpecification : ISpecification<Case>
 {
-    public bool IsSatisfiedBy(Case entity) => 
+    public bool IsSatisfiedBy(Case entity) =>
         entity.Status == CaseStatus.Pending;
 }
 ```
@@ -627,11 +627,11 @@ public class PendingCasesSpecification : ISpecification<Case>
 
 ### 1. 贫血模型 vs 充血模型
 
-| 贫血模型 | 充血模型 |
-|-----------|----------|
-| 只有属性，没有行为 | 属性和行为都在领域对象中 |
+| 贫血模型               | 充血模型                 |
+| ---------------------- | ------------------------ |
+| 只有属性，没有行为     | 属性和行为都在领域对象中 |
 | 服务类处理所有业务逻辑 | 业务逻辑封装在领域对象中 |
-| 简单，但业务逻辑分散 | 封装良好，但复杂度较高 |
+| 简单，但业务逻辑分散   | 封装良好，但复杂度较高   |
 
 ### 2. 聚合边界设计
 
@@ -681,14 +681,14 @@ public class PendingCasesSpecification : ISpecification<Case>
 
 ## 总结
 
-| 概念 | 说明 | 关键点 |
-|------|------|--------|
-| **实体** | 有唯一标识的对象 | 生命周期内状态可变 |
-| **值对象** | 无标识的不可变对象 | 通过属性值相等 |
-| **聚合** | 一组对象的组合 | 有聚合根统一访问 |
-| **领域服务** | 不属于实体的行为 | 跨聚合操作 |
-| **仓储** | 持久化抽象 | 隔离数据访问 |
-| **领域事件** | 解耦机制 | 实现最终一致性 |
+| 概念         | 说明               | 关键点             |
+| ------------ | ------------------ | ------------------ |
+| **实体**     | 有唯一标识的对象   | 生命周期内状态可变 |
+| **值对象**   | 无标识的不可变对象 | 通过属性值相等     |
+| **聚合**     | 一组对象的组合     | 有聚合根统一访问   |
+| **领域服务** | 不属于实体的行为   | 跨聚合操作         |
+| **仓储**     | 持久化抽象         | 隔离数据访问       |
+| **领域事件** | 解耦机制           | 实现最终一致性     |
 
 ### DDD 核心价值
 

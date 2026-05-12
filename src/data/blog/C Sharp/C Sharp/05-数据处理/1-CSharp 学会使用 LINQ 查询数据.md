@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: csharp-linq-queries
-description: '深入学习 C# LINQ 查询，掌握查询语法、方法语法、标准查询运算符，以及如何查询各种数据源。'
+description: "深入学习 C# LINQ 查询，掌握查询语法、方法语法、标准查询运算符，以及如何查询各种数据源。"
 tags:
   - C#
   - LINQ
@@ -23,12 +23,12 @@ LINQ（Language-Integrated Query，语言集成查询）是 C# 中强大的数�
 
 ### LINQ 的优势
 
-| 优势 | 说明 |
-|------|------|
-| **统一语法** | 使用相同语法查询不同数据源 |
-| **编译时检查** | 类型安全，编译时发现错误 |
-| **智能提示** | IDE 提供完整的 IntelliSense 支持 |
-| **声明式编程** | 代码更简洁、更易读 |
+| 优势           | 说明                             |
+| -------------- | -------------------------------- |
+| **统一语法**   | 使用相同语法查询不同数据源       |
+| **编译时检查** | 类型安全，编译时发现错误         |
+| **智能提示**   | IDE 提供完整的 IntelliSense 支持 |
+| **声明式编程** | 代码更简洁、更易读               |
 
 ---
 
@@ -60,15 +60,15 @@ foreach (int num in query)
 
 ### 查询子句
 
-| 子句 | 说明 | 示例 |
-|------|------|------|
-| `from` | 指定数据源和范围变量 | `from n in numbers` |
-| `where` | 筛选条件 | `where n > 5` |
-| `select` | 指定返回元素 | `select n * 2` |
-| `orderby` | 排序 | `orderby n descending` |
-| `group` | 分组 | `group n by n % 2` |
-| `join` | 连接两个集合 | `join n2 in nums2 on n equals n2` |
-| `let` | 定义临时变量 | `let square = n * n` |
+| 子句      | 说明                 | 示例                              |
+| --------- | -------------------- | --------------------------------- |
+| `from`    | 指定数据源和范围变量 | `from n in numbers`               |
+| `where`   | 筛选条件             | `where n > 5`                     |
+| `select`  | 指定返回元素         | `select n * 2`                    |
+| `orderby` | 排序                 | `orderby n descending`            |
+| `group`   | 分组                 | `group n by n % 2`                |
+| `join`    | 连接两个集合         | `join n2 in nums2 on n equals n2` |
+| `let`     | 定义临时变量         | `let square = n * n`              |
 
 ---
 
@@ -282,18 +282,18 @@ var results = from word in words
 
 ### 分类
 
-| 类型 | 运算符 |
-|------|--------|
-| **限制** | `Where`、`Take`、`Skip`、`TakeWhile`、`SkipWhile` |
-| **投影** | `Select`、`SelectMany` |
-| **排序** | `OrderBy`、`ThenBy`、`OrderByDescending`、`ThenByDescending`、`Reverse` |
-| **分组** | `GroupBy`、`ToLookup` |
-| **集合** | `Distinct`、`Union`、`Intersect`、`Except` |
-| **转换** | `OfType`、`Cast` |
-| **元素** | `First`、`FirstOrDefault`、`Last`、`LastOrDefault`、`Single`、`ElementAt` |
-| **聚合** | `Count`、`Sum`、`Average`、`Min`、`Max`、`Aggregate` |
-| **限定符** | `Any`、`All`、`Contains` |
-| **生成** | `Range`、`Repeat`、`Empty` |
+| 类型       | 运算符                                                                    |
+| ---------- | ------------------------------------------------------------------------- |
+| **限制**   | `Where`、`Take`、`Skip`、`TakeWhile`、`SkipWhile`                         |
+| **投影**   | `Select`、`SelectMany`                                                    |
+| **排序**   | `OrderBy`、`ThenBy`、`OrderByDescending`、`ThenByDescending`、`Reverse`   |
+| **分组**   | `GroupBy`、`ToLookup`                                                     |
+| **集合**   | `Distinct`、`Union`、`Intersect`、`Except`                                |
+| **转换**   | `OfType`、`Cast`                                                          |
+| **元素**   | `First`、`FirstOrDefault`、`Last`、`LastOrDefault`、`Single`、`ElementAt` |
+| **聚合**   | `Count`、`Sum`、`Average`、`Min`、`Max`、`Aggregate`                      |
+| **限定符** | `Any`、`All`、`Contains`                                                  |
+| **生成**   | `Range`、`Repeat`、`Empty`                                                |
 
 ### Where - 筛选
 
@@ -569,11 +569,11 @@ var mixed = (from n in numbers
 
 ### 选择合适的方式
 
-| 场景 | 推荐语法 |
-|------|---------|
-| 简单筛选 | 方法语法 |
+| 场景            | 推荐语法 |
+| --------------- | -------- |
+| 简单筛选        | 方法语法 |
 | 复杂 join/group | 查询语法 |
-| 多步操作 | 混合语法 |
+| 多步操作        | 混合语法 |
 
 ---
 
@@ -713,17 +713,17 @@ int first = numbers.FirstOrDefault();  // 0
 
 ## 总结
 
-| 运算符 | 说明 |
-|--------|------|
-| `Where` | 筛选条件 |
-| `Select` | 投影转换 |
-| `OrderBy/ThenBy` | 排序 |
-| `GroupBy` | 分组 |
-| `Join` | 连接 |
-| `Any/All` | 限定符 |
-| `Count/Sum/Min/Max/Average` | 聚合 |
-| `Take/Skip` | 分页 |
-| `Distinct` | 去重 |
+| 运算符                      | 说明     |
+| --------------------------- | -------- |
+| `Where`                     | 筛选条件 |
+| `Select`                    | 投影转换 |
+| `OrderBy/ThenBy`            | 排序     |
+| `GroupBy`                   | 分组     |
+| `Join`                      | 连接     |
+| `Any/All`                   | 限定符   |
+| `Count/Sum/Min/Max/Average` | 聚合     |
+| `Take/Skip`                 | 分页     |
+| `Distinct`                  | 去重     |
 
 ---
 

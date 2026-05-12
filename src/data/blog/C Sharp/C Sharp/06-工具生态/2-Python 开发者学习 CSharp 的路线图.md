@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: python-to-csharp-learning-path
-description: '为 Python 开发者量身定制的 C# 学习路线图，对比两种语言的异同点，涵盖面向对象、类型系统、异步编程、LINQ 等核心概念。'
+description: "为 Python 开发者量身定制的 C# 学习路线图，对比两种语言的异同点，涵盖面向对象、类型系统、异步编程、LINQ 等核心概念。"
 tags:
   - C#
   - Python
@@ -19,15 +19,15 @@ language: zh-CN
 
 ## 概述
 
->C# 和 Python 具备类似的概念。如果你已经了解 Python，这些熟悉的构造可以帮助你学习 C#。本文档详细介绍两种语言的异同，帮助 Python 开发者平滑过渡到 C#。
+> C# 和 Python 具备类似的概念。如果你已经了解 Python，这些熟悉的构造可以帮助你学习 C#。本文档详细介绍两种语言的异同，帮助 Python 开发者平滑过渡到 C#。
 
 ### 学习收益
 
-| 技能提升 | 说明 |
-|---------|------|
+| 技能提升     | 说明                              |
+| ------------ | --------------------------------- |
 | **快速上手** | 利用已有的 Python 知识快速掌握 C# |
-| **深入理解** | 通过对比加深对两种语言的理解 |
-| **拓宽视野** | 掌握 .NET 生态系统开发能力 |
+| **深入理解** | 通过对比加深对两种语言的理解      |
+| **拓宽视野** | 掌握 .NET 生态系统开发能力        |
 
 ---
 
@@ -45,7 +45,7 @@ class Person:
     def __init__(self, name, age):
         self.name = name
         self.age = age
-    
+
     def greet(self):
         return f"Hello, I'm {self.name}"
 ```
@@ -56,13 +56,13 @@ class Person
 {
     public string Name { get; set; }
     public int Age { get; set; }
-    
+
     public Person(string name, int age)
     {
         Name = name;
         Age = age;
     }
-    
+
     public string Greet() => $"Hello, I'm {Name}";
 }
 ```
@@ -71,13 +71,13 @@ class Person
 
 Python 和 C# 都是跨平台语言。使用这两种语言中的任意一种编写的应用都可以在许多平台上运行。
 
-| 平台 | Python | C# (.NET) |
-|------|--------|-----------|
-| Windows | ✅ | ✅ |
-| macOS | ✅ | ✅ |
-| Linux | ✅ | ✅ |
-| 移动端 | Kivy, BeeWare | .NET MAUI |
-| Web | Django, Flask | Blazor, ASP.NET Core |
+| 平台    | Python        | C# (.NET)            |
+| ------- | ------------- | -------------------- |
+| Windows | ✅            | ✅                   |
+| macOS   | ✅            | ✅                   |
+| Linux   | ✅            | ✅                   |
+| 移动端  | Kivy, BeeWare | .NET MAUI            |
+| Web     | Django, Flask | Blazor, ASP.NET Core |
 
 ### 垃圾回收
 
@@ -192,11 +192,11 @@ if (x > 0)
 
 **主要区别：**
 
-| Python | C# |
-|--------|-----|
+| Python         | C#                      |
+| -------------- | ----------------------- |
 | 缩进定义代码块 | 大括号 `{ }` 定义代码块 |
-| 换行分隔语句 | 分号 `;` 分隔语句 |
-| 缩进必须一致 | 缩进仅用于可读性 |
+| 换行分隔语句   | 分号 `;` 分隔语句       |
+| 缩进必须一致   | 缩进仅用于可读性        |
 
 ### 静态类型语言
 
@@ -325,11 +325,11 @@ void MakeSpeak(ISpeakable animal)  // 必须实现接口
 
 C# 不具备读取-求值-打印循环 (REPL)，无法快速构建解决方案原型。
 
-| Python | C# 替代方案 |
-|--------|-------------|
-| `python` 交互式解释器 | `dotnet script` 工具 |
-| IPython/Jupyter | .NET Interactive Notebooks |
-| `python -c "..."` | `dotnet new console` + 运行 |
+| Python                | C# 替代方案                 |
+| --------------------- | --------------------------- |
+| `python` 交互式解释器 | `dotnet script` 工具        |
+| IPython/Jupyter       | .NET Interactive Notebooks  |
+| `python -c "..."`     | `dotnet new console` + 运行 |
 
 ### 空格敏感性
 
@@ -352,6 +352,7 @@ void Func()
     }
 }
 ```
+
 ---
 
 ## 相关资源

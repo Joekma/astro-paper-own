@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: mvvm-design-pattern
-description: '深入学习 MVVM 设计模式，掌握 Model、View、ViewModel 的职责分离，数据绑定、命令绑定，以及 CommunityToolkit.Mvvm 的使用。'
+description: "深入学习 MVVM 设计模式，掌握 Model、View、ViewModel 的职责分离，数据绑定、命令绑定，以及 CommunityToolkit.Mvvm 的使用。"
 tags:
   - MVVM
   - 设计模式
@@ -23,13 +23,13 @@ MVVM（Model-View-ViewModel）是一种软件架构模式，广泛应用于 WPF�
 
 ### MVVM 的核心价值
 
-| 价值 | 说明 |
-|------|------|
+| 价值         | 说明                                             |
+| ------------ | ------------------------------------------------ |
 | **职责分离** | View 负责 UI，ViewModel 负责逻辑，Model 负责数据 |
-| **可测试性** | ViewModel 可独立于 UI 进行单元测试 |
-| **可维护性** | 代码结构清晰，修改 UI 不影响逻辑 |
-| **团队协作** | 设计器与开发者可以并行工作 |
-| **数据绑定** | 自动同步 View 和 ViewModel 的数据 |
+| **可测试性** | ViewModel 可独立于 UI 进行单元测试               |
+| **可维护性** | 代码结构清晰，修改 UI 不影响逻辑                 |
+| **团队协作** | 设计器与开发者可以并行工作                       |
+| **数据绑定** | 自动同步 View 和 ViewModel 的数据                |
 
 ---
 
@@ -67,11 +67,11 @@ MVVM（Model-View-ViewModel）是一种软件架构模式，广泛应用于 WPF�
 
 ### 各层职责
 
-| 层 | 职责 | 包含内容 |
-|---|------|----------|
-| **View** | 用户界面展示 | XAML、样式、模板、资源字典 |
-| **ViewModel** | 界面逻辑与状态 | 属性、命令、导航逻辑 |
-| **Model** | 数据与业务规则 | 实体、值对象、服务、数据访问 |
+| 层            | 职责           | 包含内容                     |
+| ------------- | -------------- | ---------------------------- |
+| **View**      | 用户界面展示   | XAML、样式、模板、资源字典   |
+| **ViewModel** | 界面逻辑与状态 | 属性、命令、导航逻辑         |
+| **Model**     | 数据与业务规则 | 实体、值对象、服务、数据访问 |
 
 ---
 
@@ -94,27 +94,27 @@ View 是用户看到并与之交互的界面，主要职责包括：
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:MyApp.ViewModels"
         Title="用户管理">
-    
+
     <Window.DataContext>
         <vm:UserListViewModel/>
     </Window.DataContext>
-    
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        
+
         <!-- 搜索区域 -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10">
             <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                     Width="200"/>
-            <Button Content="搜索" 
+            <Button Content="搜索"
                     Command="{Binding SearchCommand}"
                     Margin="10,0,0,0"/>
         </StackPanel>
-        
+
         <!-- 用户列表 -->
         <DataGrid Grid.Row="1"
                   ItemsSource="{Binding Users}"
@@ -125,7 +125,7 @@ View 是用户看到并与之交互的界面，主要职责包括：
                 <DataGridTextColumn Header="状态" Binding="{Binding Status}"/>
             </DataGrid.Columns>
         </DataGrid>
-        
+
         <!-- 操作按钮 -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="10">
             <Button Content="新增" Command="{Binding AddCommand}"/>
@@ -162,17 +162,17 @@ public partial class UserListViewModel : ObservableObject
     // 可观察属性
     [ObservableProperty]
     private string _searchText = string.Empty;
-    
+
     [ObservableProperty]
     private User? _selectedUser;
-    
+
     [ObservableProperty]
     private bool _isLoading;
-    
+
     // 可观察集合
     [ObservableProperty]
     private ObservableCollection<User> _users = new();
-    
+
     // 命令
     [RelayCommand]
     private async Task LoadUsersAsync()
@@ -188,12 +188,12 @@ public partial class UserListViewModel : ObservableObject
             IsLoading = false;
         }
     }
-    
+
     [RelayCommand]
     private async Task DeleteUserAsync()
     {
         if (SelectedUser == null) return;
-        
+
         await _userService.DeleteUserAsync(SelectedUser.Id);
         Users.Remove(SelectedUser);
     }
@@ -230,9 +230,9 @@ public partial class UserListViewModel : ObservableObject
 public class UserViewModel : INotifyPropertyChanged
 {
     private string _name;
-    
+
     public event PropertyChangedEventHandler? PropertyChanged;
-    
+
     public string Name
     {
         get => _name;
@@ -245,7 +245,7 @@ public class UserViewModel : INotifyPropertyChanged
             }
         }
     }
-    
+
     protected virtual void OnPropertyChanged(string propertyName)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -312,12 +312,12 @@ Model 层
 
 ### 绑定模式
 
-| 模式 | 说明 | 使用场景 |
-|------|------|----------|
-| `OneWay` | ViewModel → View | 显示只读数据 |
-| `TwoWay` | 双向同步 | 表单输入 |
+| 模式             | 说明             | 使用场景     |
+| ---------------- | ---------------- | ------------ |
+| `OneWay`         | ViewModel → View | 显示只读数据 |
+| `TwoWay`         | 双向同步         | 表单输入     |
 | `OneWayToSource` | View → ViewModel | 用户输入场景 |
-| `OneTime` | 仅首次绑定 | 静态数据 |
+| `OneTime`        | 仅首次绑定       | 静态数据     |
 
 ### 绑定路径
 
@@ -340,13 +340,13 @@ Model 层
 ```csharp
 public class BoolToVisibilityConverter : IValueConverter
 {
-    public object Convert(object value, Type targetType, 
+    public object Convert(object value, Type targetType,
         object parameter, CultureInfo culture)
     {
         return value is bool b && b ? Visibility.Visible : Visibility.Collapsed;
     }
-    
-    public object ConvertBack(object value, Type targetType, 
+
+    public object ConvertBack(object value, Type targetType,
         object parameter, CultureInfo culture)
     {
         return value is Visibility v && v == Visibility.Visible;
@@ -386,21 +386,21 @@ public class RelayCommand : ICommand
 {
     private readonly Action<object?> _execute;
     private readonly Func<object?, bool>? _canExecute;
-    
+
     public RelayCommand(Action<object?> execute, Func<object?, bool>? canExecute = null)
     {
         _execute = execute ?? throw new ArgumentNullException();
         _canExecute = canExecute;
     }
-    
+
     public event EventHandler? CanExecuteChanged
     {
         add => CommandManager.RequerySuggested += value;
         remove => CommandManager.RequerySuggested -= value;
     }
-    
+
     public bool CanExecute(object? parameter) => _canExecute?.Invoke(parameter) ?? true;
-    
+
     public void Execute(object? parameter) => _execute(parameter);
 }
 ```
@@ -424,8 +424,8 @@ private void DeleteUser(User? user)
         <DataTemplate>
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="{Binding Name}"/>
-                <Button Content="删除" 
-                        Command="{Binding DataContext.DeleteUserCommand, 
+                <Button Content="删除"
+                        Command="{Binding DataContext.DeleteUserCommand,
                                 RelativeSource={RelativeSource AncestorType=ListBox}}"
                         CommandParameter="{Binding}"/>
             </StackPanel>
@@ -445,7 +445,7 @@ public partial class MainViewModel : ObservableObject
 {
     private readonly IUserService _userService;
     private readonly INavigationService _navigationService;
-    
+
     public MainViewModel(IUserService userService, INavigationService navigationService)
     {
         _userService = userService;
@@ -483,15 +483,15 @@ public class User : ObservableObject
 {
     [ObservableProperty]
     private int _id;
-    
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(FearchName))]
     private string _name = string.Empty;
-    
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(FearchName))]
     private string _email = string.Empty;
-    
+
     public string FearchName => $"{Name} ({Email})";
 }
 ```
@@ -503,21 +503,21 @@ public class User : ObservableObject
 public partial class UserListViewModel : ObservableObject
 {
     private readonly IUserService _userService;
-    
+
     public UserListViewModel(IUserService userService)
     {
         _userService = userService;
     }
-    
+
     [ObservableProperty]
     private ObservableCollection<User> _users = new();
-    
+
     [ObservableProperty]
     private User? _selectedUser;
-    
+
     [ObservableProperty]
     private bool _isLoading;
-    
+
     [RelayCommand]
     private async Task LoadUsersAsync()
     {
@@ -532,12 +532,12 @@ public partial class UserListViewModel : ObservableObject
             IsLoading = false;
         }
     }
-    
+
     [RelayCommand]
     private async Task DeleteUserAsync(User? user)
     {
         if (user == null) return;
-        
+
         await _userService.DeleteAsync(user.Id);
         Users.Remove(user);
     }
@@ -551,11 +551,11 @@ public partial class UserListViewModel : ObservableObject
 <UserControl x:Class="Views.UserListView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:vm="clr-namespace:MyApp.ViewModels">
-    
+
     <UserControl.DataContext>
         <vm:UserListViewModel/>
     </UserControl.DataContext>
-    
+
     <Grid>
         <!-- 用户列表 -->
         <DataGrid ItemsSource="{Binding Users}"
@@ -569,16 +569,16 @@ public partial class UserListViewModel : ObservableObject
                     <DataGridTemplateColumn>
                         <DataTemplate>
                             <Button Content="删除"
-                                    Command="{Binding DataContext.DeleteUserCommand, 
+                                    Command="{Binding DataContext.DeleteUserCommand,
                                             RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}"/>
                         </DataTemplate>
                     </DataGridTemplateColumn>
                 </DataGrid.Columns>
         </DataGrid>
-        
+
         <!-- 加载指示器 -->
-        <Border Background="#80000000" 
+        <Border Background="#80000000"
                 Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
             <ProgressBar IsIndeterminate="True" Width="100"/>
         </Border>
@@ -656,11 +656,11 @@ public interface INavigationService
 
 ## 总结
 
-| 组件 | 职责 | 关键技术 |
-|------|------|----------|
-| **View** | 用户界面展示 | XAML、数据绑定、样式 |
+| 组件          | 职责           | 关键技术                       |
+| ------------- | -------------- | ------------------------------ |
+| **View**      | 用户界面展示   | XAML、数据绑定、样式           |
 | **ViewModel** | 界面逻辑与状态 | ObservableObject、RelayCommand |
-| **Model** | 数据与业务 | 实体、服务、仓储 |
+| **Model**     | 数据与业务     | 实体、服务、仓储               |
 
 ### 核心要点
 

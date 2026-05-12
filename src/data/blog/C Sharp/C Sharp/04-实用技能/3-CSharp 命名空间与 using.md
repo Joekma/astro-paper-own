@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-07T00:00:00.000+08:00
 modDatetime: 2026-05-07T00:00:00.000+08:00
 slug: csharp-namespaces-using
-description: '深入学习 C# 命名空间和 using 语句，掌握命名空间组织、全局 using、文件作用域 using 等现代 C# 特性。'
+description: "深入学习 C# 命名空间和 using 语句，掌握命名空间组织、全局 using、文件作用域 using 等现代 C# 特性。"
 tags:
   - C#
   - 命名空间
@@ -23,12 +23,12 @@ language: zh-CN
 
 ### 核心概念
 
-| 概念 | 说明 |
-|------|------|
-| **命名空间** | 逻辑上组织类型的方式 |
-| **using** | 引入命名空间的指令 |
+| 概念           | 说明                   |
+| -------------- | ---------------------- |
+| **命名空间**   | 逻辑上组织类型的方式   |
+| **using**      | 引入命名空间的指令     |
 | **完全限定名** | 带命名空间前缀的类型名 |
-| **全局 using** | C# 10+ 项目级别导入 |
+| **全局 using** | C# 10+ 项目级别导入    |
 
 ---
 
@@ -106,7 +106,7 @@ namespace MyApp
         public void Demo()
         {
             // 不使用 using
-            System.Collections.Generic.List<string> names = 
+            System.Collections.Generic.List<string> names =
                 new System.Collections.Generic.List<string>();
             System.Console.WriteLine("Hello");
         }
@@ -134,16 +134,17 @@ public class Example
 }
 ```
 
-### 别名消除歧义
+### using 别名消除歧义
 
 当两个命名空间有同名类型时，别名可以消除冲突：
 
 ```csharp
-using Customer = CompanyA.Models.Customer;
-using Customer = CompanyB.Models.Customer;
+// 为不同命名空间的同名 Customer 类型创建别名
+using CustomerA = CompanyA.Models.Customer;
+using CustomerB = CompanyB.Models.Customer;
 
-// 使用时明确指定
-var custA = new Customer();
+// 使用时明确指定来源，避免类型冲突
+var custA = new CustomerA();
 custA.Name = "Company A Customer";
 ```
 
@@ -172,11 +173,11 @@ global using Microsoft.Extensions.DependencyInjection;
 
 ### 全局 using 特性
 
-| 特性 | 说明 |
-|------|------|
-| **一次性导入** | 所有文件自动拥有这些 using |
-| **隐式全局 using** | SDK 项目自动包含基础命名空间 |
-| **手动控制** | 通过 `global.json` 配置隐式 using |
+| 特性               | 说明                              |
+| ------------------ | --------------------------------- |
+| **一次性导入**     | 所有文件自动拥有这些 using        |
+| **隐式全局 using** | SDK 项目自动包含基础命名空间      |
+| **手动控制**       | 通过 `global.json` 配置隐式 using |
 
 ### 隐式 using
 
@@ -313,12 +314,12 @@ namespace MyProject.Infrastructure.Data;
 
 ### 规则建议
 
-| 建议 | 说明 |
-|------|------|
-| **命名空间与文件夹对应** | 便于快速定位文件 |
+| 建议                       | 说明                          |
+| -------------------------- | ----------------------------- |
+| **命名空间与文件夹对应**   | 便于快速定位文件              |
 | **不要使用过于通用的名称** | 避免 `Utility`、`Helper` 泛滥 |
-| **公司/项目前缀** | `Company.Project.Feature` |
-| **功能模块分组** | 按功能而非类型分类 |
+| **公司/项目前缀**          | `Company.Project.Feature`     |
+| **功能模块分组**           | 按功能而非类型分类            |
 
 ---
 
@@ -326,12 +327,12 @@ namespace MyProject.Infrastructure.Data;
 
 ### 命名规则
 
-| 规则 | 示例 |
-|------|------|
-| PascalCase | `System.Collections.Generic` |
-| 公司/组织前缀 | `Microsoft.AspNetCore` |
-| 项目名称 | `MyApp.Core` |
-| 避免复数 | `MyApp.Model` 而非 `MyApp.Models` |
+| 规则           | 示例                                   |
+| -------------- | -------------------------------------- |
+| PascalCase     | `System.Collections.Generic`           |
+| 公司/组织前缀  | `Microsoft.AspNetCore`                 |
+| 项目名称       | `MyApp.Core`                           |
+| 避免复数       | `MyApp.Model` 而非 `MyApp.Models`      |
 | 不包含技术名称 | `MyApp.Data` 而非 `MyApp.Repositories` |
 
 ### 常见模式
@@ -389,11 +390,11 @@ Core ← Infrastructure ← API
 
 ### 解决方案
 
-| 方案 | 说明 |
-|------|------|
-| **抽取接口到 Core** | 依赖接口而非具体实现 |
-| **依赖倒置** | 高层模块不依赖低层模块 |
-| **合并命名空间** | 确有需要时合并相关模块 |
+| 方案                | 说明                   |
+| ------------------- | ---------------------- |
+| **抽取接口到 Core** | 依赖接口而非具体实现   |
+| **依赖倒置**        | 高层模块不依赖低层模块 |
+| **合并命名空间**    | 确有需要时合并相关模块 |
 
 ---
 
@@ -443,8 +444,11 @@ InternalImpl internalObj = new();  // ❌
 
 ### 条件编译
 
+使用预处理指令在调试和发布版本中包含或排除代码：
+
 ```csharp
 #if DEBUG
+// 仅在调试模式编译的代码，常用于日志输出或开发阶段调试
 using DebugTools;
 #endif
 
@@ -453,6 +457,7 @@ public class MyClass
     void DebugMethod()
     {
 #if DEBUG
+        // 发布版本中这段代码不会被编译，提升安全性
         DebugTools.Log("Debug mode");
 #endif
     }
@@ -461,7 +466,10 @@ public class MyClass
 
 ### 静态 using
 
+使用 `using static` 可以直接调用静态类的成员，无需类名限定：
+
 ```csharp
+// 导入 Console 和 Math 的所有静态成员
 using static System.Console;
 using static System.Math;
 
@@ -469,8 +477,9 @@ class Program
 {
     static void Main()
     {
-        WriteLine(Sqrt(16));  // 直接调用 Console.WriteLine 和 Math.Sqrt
-        WriteLine(PI);
+        // 直接调用 WriteLine，无需 Console.WriteLine
+        WriteLine(Sqrt(16));  // 输出: 4（直接调用 Console.WriteLine 和 Math.Sqrt）
+        WriteLine(PI);        // 输出: 3.141592653589793（直接访问 Math.PI）
     }
 }
 ```
@@ -488,8 +497,10 @@ Razor 视图可以使用 `@using` 指令：
 
 ### 全局 using 与 NuGet 包
 
+在 `GlobalUsings.cs` 中全局引入常用 NuGet 包类型，整个项目无需重复 using：
+
 ```csharp
-// 全局引入常用 NuGet 包类型
+// 全局引入常用 NuGet 包类型，所有文件自动可用
 global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Logging;
 global using Newtonsoft.Json;
@@ -501,11 +512,11 @@ global using Newtonsoft.Json;
 
 ### Q: 什么时候应该创建命名空间？
 
-| 情况 | 建议 |
-|------|------|
+| 情况               | 建议               |
+| ------------------ | ------------------ |
 | 项目文件超过 10 个 | 按功能拆分命名空间 |
-| 多人协作 | 按模块分配命名空间 |
-| 公开库/API | 必须有命名空间 |
+| 多人协作           | 按模块分配命名空间 |
+| 公开库/API         | 必须有命名空间     |
 
 ### Q: 命名空间层级多深合适？
 
@@ -521,28 +532,34 @@ namespace Company.Project.Module.SubModule.Section.Part;
 
 ### Q: 如何处理类型名称冲突？
 
+当两个命名空间有同名类型时，可以通过完全限定名或别名解决：
+
 ```csharp
-// 方案1：完全限定名
+// 方案1：使用完全限定名明确指定类型来源
 var obj1 = new SomeLib.SomeClass();
 var obj2 = new OtherLib.SomeClass();
 
-// 方案2：别名
+// 方案2：使用 using 别名简化代码
 using SomeClass = SomeLib.SomeClass;
 using OtherClass = OtherLib.SomeClass;
+
+// 使用时更简洁清晰
+var obj3 = new SomeClass();
+var obj4 = new OtherClass();
 ```
 
 ---
 
 ## 最佳实践
 
-| 实践 | 说明 |
-|------|------|
+| 实践                     | 说明                              |
+| ------------------------ | --------------------------------- |
 | **使用有意义的命名空间** | `MyApp.Orders` 而非 `MyApp.Utils` |
-| **保持一致性** | 所有文件遵循相同的组织方式 |
-| **减少全局 using** | 只放真正全局需要的 |
-| **文件顶部放 using** | 命名空间之前 |
-| **按字母排序** | 方便查找 |
-| **避免重复 using** | 一个文件只引入一次 |
+| **保持一致性**           | 所有文件遵循相同的组织方式        |
+| **减少全局 using**       | 只放真正全局需要的                |
+| **文件顶部放 using**     | 命名空间之前                      |
+| **按字母排序**           | 方便查找                          |
+| **避免重复 using**       | 一个文件只引入一次                |
 
 ### 示例
 
@@ -560,7 +577,7 @@ namespace MyApp.Controllers;
 public class UserController
 {
     private readonly IUserService _userService;
-    
+
     public UserController(IUserService userService)
     {
         _userService = userService;

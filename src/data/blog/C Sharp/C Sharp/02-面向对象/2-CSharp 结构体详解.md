@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-07T00:00:00.000+08:00
 modDatetime: 2026-05-07T00:00:00.000+08:00
 slug: csharp-struct
-description: '深入学习 C# 结构体，掌握结构体与类的区别、readonly 结构体、记录类型等核心概念和使用场景。'
+description: "深入学习 C# 结构体，掌握结构体与类的区别、readonly 结构体、记录类型等核心概念和使用场景。"
 tags:
   - C#
   - 结构体
@@ -23,14 +23,14 @@ language: zh-CN
 
 ### 结构体 vs 类
 
-| 特性 | 结构体 | 类 |
-|------|--------|-----|
-| **类型** | 值类型 | 引用类型 |
-| **存储位置** | 栈（通常） | 堆 |
-| **复制方式** | 完整副本 | 引用传递 |
-| **默认构造函数** | 不允许自定义 | 允许 |
-| **继承** | 不支持 | 支持 |
-| **可以有析构函数** | 否 | 是 |
+| 特性               | 结构体       | 类       |
+| ------------------ | ------------ | -------- |
+| **类型**           | 值类型       | 引用类型 |
+| **存储位置**       | 栈（通常）   | 堆       |
+| **复制方式**       | 完整副本     | 引用传递 |
+| **默认构造函数**   | 不允许自定义 | 允许     |
+| **继承**           | 不支持       | 支持     |
+| **可以有析构函数** | 否           | 是       |
 
 ---
 
@@ -43,13 +43,13 @@ public struct Point
 {
     public double X { get; set; }
     public double Y { get; set; }
-    
+
     public Point(double x, double y)
     {
         X = x;
         Y = y;
     }
-    
+
     public double DistanceTo(Point other)
     {
         double dx = X - other.X;
@@ -137,7 +137,7 @@ Console.WriteLine(rect2.Width);  // 20
 struct InvalidStruct
 {
     public int Value;
-    
+
     // 错误：不能定义无参构造函数
     public InvalidStruct()
     {
@@ -167,7 +167,7 @@ struct ReadOnlyPoint : IEquatable<ReadOnlyPoint>
 {
     public double X { get; init; }
     public double Y { get; init; }
-    
+
     public bool Equals(ReadOnlyPoint other)
     {
         return X == other.X && Y == other.Y;
@@ -186,13 +186,13 @@ readonly struct ImmutablePoint
 {
     public double X { get; }
     public double Y { get; }
-    
+
     public ImmutablePoint(double x, double y)
     {
         X = x;
         Y = y;
     }
-    
+
     // 只能调用其他 readonly 成员
     public double DistanceToOrigin() => Math.Sqrt(X * X + Y * Y);
 }
@@ -206,7 +206,7 @@ readonly struct Color
     public byte R { get; }
     public byte G { get; }
     public byte B { get; }
-    
+
     public Color(byte r, byte g, byte b)
     {
         R = r; G = g; B = b;
@@ -233,7 +233,7 @@ ref struct 只能存在于栈上，不能装箱或作为类的字段：
 ref struct SpanExample
 {
     private Span<int> _data;
-    
+
     public SpanExample(int[] data)
     {
         _data = data;
@@ -264,22 +264,22 @@ Console.WriteLine(string.Join(", ", numbers));  // 2, 4, 6, 8, 10
 
 ### 适用场景
 
-| 场景 | 说明 |
-|------|------|
-| **小数据结构** | 只包含少量数据，如点、坐标、颜色 |
-| **不可变数据** | 创建后不希望被修改 |
-| **值语义** | 赋值时需要完整复制而不是引用 |
-| **性能关键** | 避免堆分配和垃圾回收开销 |
-| **频繁创建销毁** | 大量短期存在的轻量对象 |
+| 场景             | 说明                             |
+| ---------------- | -------------------------------- |
+| **小数据结构**   | 只包含少量数据，如点、坐标、颜色 |
+| **不可变数据**   | 创建后不希望被修改               |
+| **值语义**       | 赋值时需要完整复制而不是引用     |
+| **性能关键**     | 避免堆分配和垃圾回收开销         |
+| **频繁创建销毁** | 大量短期存在的轻量对象           |
 
 ### 不适用场景
 
-| 场景 | 说明 |
-|------|------|
-| **大型数据** | 结构体太大会导致拷贝开销大 |
-| **需要继承** | 必须用类 |
-| **需要持有大量实例** | 栈空间有限 |
-| **需要线程共享** | 需要引用语义 |
+| 场景                 | 说明                       |
+| -------------------- | -------------------------- |
+| **大型数据**         | 结构体太大会导致拷贝开销大 |
+| **需要继承**         | 必须用类                   |
+| **需要持有大量实例** | 栈空间有限                 |
+| **需要线程共享**     | 需要引用语义               |
 
 ### 经典示例
 
@@ -290,9 +290,9 @@ public readonly struct Vector3
     public float X { get; }
     public float Y { get; }
     public float Z { get; }
-    
+
     public Vector3(float x, float y, float z) => (X, Y, Z) = (x, y, z);
-    
+
     public float Length => MathF.Sqrt(X * X + Y * Y + Z * Z);
     public Vector3 Normalize() => this / Length;
     public static Vector3 operator *(Vector3 v, float scalar) => new(v.X * scalar, v.Y * scalar, v.Z * scalar);
@@ -367,9 +367,9 @@ interface IComparable<T>
 struct Temperature : IComparable<Temperature>
 {
     public double Celsius { get; }
-    
+
     public Temperature(double celsius) => Celsius = celsius;
-    
+
     public int CompareTo(Temperature other)
     {
         return Celsius.CompareTo(other.Celsius);
@@ -412,12 +412,12 @@ Person clone = person with { Age = 31 };  // 创建副本
 
 ### Record vs Struct
 
-| 特性 | Struct | Record |
-|------|--------|--------|
-| 不可变性 | 需要手动 readonly | 自动生成的 init 属性 |
-| 值相等 | 逐字段比较 | 逐字段比较 |
-| with 表达式 | C# 9+ 支持 | 原生支持 |
-| 继承 | 不支持 | 支持 |
+| 特性        | Struct            | Record               |
+| ----------- | ----------------- | -------------------- |
+| 不可变性    | 需要手动 readonly | 自动生成的 init 属性 |
+| 值相等      | 逐字段比较        | 逐字段比较           |
+| with 表达式 | C# 9+ 支持        | 原生支持             |
+| 继承        | 不支持            | 支持                 |
 
 ### 选择建议
 
@@ -439,13 +439,13 @@ public class User : Entity { }
 
 ### 设计原则
 
-| 建议 | 说明 |
-|------|------|
-| **保持小而轻量** | 结构体应小于 16 字节 |
-| **设计为不可变** | 使用 readonly，成员用 init |
-| **值语义** | 确保拷贝行为符合预期 |
-| **实现 IEquatable** | 支持正确的相等性比较 |
-| **实现 IComparable** | 支持排序操作 |
+| 建议                 | 说明                       |
+| -------------------- | -------------------------- |
+| **保持小而轻量**     | 结构体应小于 16 字节       |
+| **设计为不可变**     | 使用 readonly，成员用 init |
+| **值语义**           | 确保拷贝行为符合预期       |
+| **实现 IEquatable**  | 支持正确的相等性比较       |
+| **实现 IComparable** | 支持排序操作               |
 
 ### 代码示例
 
@@ -454,24 +454,24 @@ public readonly struct Fraction : IEquatable<Fraction>, IComparable<Fraction>
 {
     public int Numerator { get; }
     public int Denominator { get; }
-    
+
     public Fraction(int numerator, int denominator)
     {
         if (denominator == 0)
             throw new ArgumentException("分母不能为零", nameof(denominator));
-        
+
         Numerator = numerator;
         Denominator = denominator;
     }
-    
-    public bool Equals(Fraction other) => 
+
+    public bool Equals(Fraction other) =>
         Numerator == other.Numerator && Denominator == other.Denominator;
-    
+
     public override bool Equals(object? obj) => obj is Fraction f && Equals(f);
-    
+
     public override int GetHashCode() => HashCode.Combine(Numerator, Denominator);
-    
-    public int CompareTo(Fraction other) => 
+
+    public int CompareTo(Fraction other) =>
         (Numerator * other.Denominator).CompareTo(other.Numerator * Denominator);
 }
 ```

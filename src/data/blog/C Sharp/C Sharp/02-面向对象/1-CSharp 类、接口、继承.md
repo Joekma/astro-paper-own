@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: csharp-class-interface-inheritance
-description: '深入学习 C# 中的类定义、面向对象特性、接口实现和继承机制，掌握面向对象编程的核心概念。'
+description: "深入学习 C# 中的类定义、面向对象特性、接口实现和继承机制，掌握面向对象编程的核心概念。"
 tags:
   - C#
   - 类
@@ -23,13 +23,13 @@ language: zh-CN
 
 ### 核心概念速览
 
-| 概念 | 说明 |
-|------|------|
-| **类** | 引用类型，定义对象的模板 |
+| 概念     | 说明                      |
+| -------- | ------------------------- |
+| **类**   | 引用类型，定义对象的模板  |
 | **对象** | 类的实例，通过 `new` 创建 |
-| **继承** | 从基类派生新类 |
-| **接口** | 定义行为的契约 |
-| **多态** | 同一接口的不同实现 |
+| **继承** | 从基类派生新类            |
+| **接口** | 定义行为的契约            |
+| **多态** | 同一接口的不同实现        |
 
 ---
 
@@ -46,14 +46,14 @@ public class Person
     // 属性
     public string Name { get; set; }
     public int Age { get; set; }
-    
+
     // 构造函数
     public Person(string name, int age)
     {
         Name = name;
         Age = age;
     }
-    
+
     // 方法
     public void SayHello()
     {
@@ -76,14 +76,14 @@ public class Person
 
 ### 访问修饰符
 
-| 修饰符 | 说明 |
-|--------|------|
-| `public` | 公开访问，无限制 |
-| `private` | 私有访问，仅限本类 |
-| `protected` | 受保护访问，本类及派生类 |
-| `internal` | 内部访问，当前程序集 |
-| `protected internal` | 受保护或内部访问 |
-| `private protected` | 受保护且内部访问 |
+| 修饰符               | 说明                     |
+| -------------------- | ------------------------ |
+| `public`             | 公开访问，无限制         |
+| `private`            | 私有访问，仅限本类       |
+| `protected`          | 受保护访问，本类及派生类 |
+| `internal`           | 内部访问，当前程序集     |
+| `protected internal` | 受保护或内部访问         |
+| `private protected`  | 受保护且内部访问         |
 
 ---
 
@@ -140,7 +140,7 @@ var anonymous = new { Name = "Anonymous", Age = 20 };  // 不需要定义类,编
 public class Person
 {
     public string Name { get; set; }
-    
+
     // 默认构造函数
     public Person()
     {
@@ -148,6 +148,7 @@ public class Person
     }
 }
 ```
+
 - 当创建 `Person` 对象时，自动将 `Name` 初始化为 `"Unknown"`
 - 不需要显式调用，系统会自动执行默认构造函数
 
@@ -158,20 +159,20 @@ public class Person
 {
     public string Name { get; set; }
     public int Age { get; set; }
-    
+
     // 构造函数重载
     public Person()
     {
         Name = "Unknown";
         Age = 0;
     }
-    
+
     public Person(string name)
     {
         Name = name;
         Age = 0;
     }
-    
+
     public Person(string name, int age)
     {
         Name = name;
@@ -191,15 +192,15 @@ public class Person
     public string Name { get; set; }
     public int Age { get; set; }
     public string Address { get; set; }
-    
+
     public Person() : this("Unknown", 0, "未知地址")
     {
     }
-    
+
     public Person(string name, int age) : this(name, age, "未知地址")
     {
     }
-    
+
     public Person(string name, int age, string address)
     {
         Name = name;
@@ -223,7 +224,7 @@ public class Configuration
 {
     public static string AppName { get; set; }
     public static int Version { get; set; }
-    
+
     // 静态构造函数
     static Configuration()
     {
@@ -244,12 +245,12 @@ int version = Configuration.Version;   // 不会再执行
 Configuration config = new Configuration();  // 也会先执行静态构造函数
 ```
 
-|场景| 说明|
-|--------|------|
-|初始化静态字段|设置静态属性的初始值|
-|加载配置文件|从文件或数据库读取一次配置|
-|注册日志记录器|初始化日志系统|
-|创建连接池|数据库连接池等单次初始化|
+| 场景           | 说明                       |
+| -------------- | -------------------------- |
+| 初始化静态字段 | 设置静态属性的初始值       |
+| 加载配置文件   | 从文件或数据库读取一次配置 |
+| 注册日志记录器 | 初始化日志系统             |
+| 创建连接池     | 数据库连接池等单次初始化   |
 
 ---
 
@@ -275,14 +276,14 @@ public class Person
     public string Name // 公开属性 - 控制访问逻辑
     {
         get { return _name; }
-        set 
+        set
         {
             if (string.IsNullOrWhiteSpace(value))
                 throw new ArgumentException("姓名不能为空");
             _name = value;
         }
     }
-    
+
     private int _age; // 私有字段 - 存储实际数据
     public int Age // 公开属性 - 控制访问逻辑
     {
@@ -296,6 +297,7 @@ public class Person
     }
 }
 ```
+
 ### 简化写法（C# 7.0+）
 
 ```csharp
@@ -305,11 +307,11 @@ public class Person
     public string Name
     {
         get => _name;
-        set => _name = !string.IsNullOrWhiteSpace(value) 
-            ? value 
+        set => _name = !string.IsNullOrWhiteSpace(value)
+            ? value
             : throw new ArgumentException("姓名不能为空");
     }
-    
+
     private int _age;
     public int Age
     {
@@ -327,12 +329,12 @@ public class Person
 public class Circle
 {
     public double Radius { get; }
-    
+
     public Circle(double radius)
     {
         Radius = radius;
     }
-    
+
     public double Area => Math.PI * Radius * Radius;
 }
 ```
@@ -350,7 +352,7 @@ public class Circle
 public class Animal
 {
     public string Name { get; set; }
-    
+
     public void Eat()
     {
         Console.WriteLine($"{Name} 正在吃东西");
@@ -378,12 +380,12 @@ dog.Bark();  // Dog 特有
 
 ### 继承的特性
 
-| 特性 | 说明 |
-|------|------|
-| 单继承 | 类只能继承一个基类 |
+| 特性           | 说明                         |
+| -------------- | ---------------------------- |
+| 单继承         | 类只能继承一个基类           |
 | 构造函数不继承 | 派生类必须定义自己的构造函数 |
-| 所有成员被继承 | 字段、方法、属性都会被继承 |
-| 密封类 | 使用 `sealed` 防止被继承 |
+| 所有成员被继承 | 字段、方法、属性都会被继承   |
+| 密封类         | 使用 `sealed` 防止被继承     |
 
 ---
 
@@ -395,7 +397,7 @@ dog.Bark();  // Dog 特有
 public class Animal
 {
     public string Name { get; set; }
-    
+
     // 虚方法
     public virtual void MakeSound()  // 虚方法 - 可以被重写
     {
@@ -442,7 +444,7 @@ animal2.MakeSound();  // 输出: 咪咪 喵喵叫
 public abstract class Shape
 {
     public abstract double Area { get; }  // 抽象属性 - 必须在派生类中实现
-    
+
     public abstract void Draw();  // 抽象方法 - 必须在派生类中实现
 }
 
@@ -451,9 +453,9 @@ public class Rectangle : Shape
 {
     public double Width { get; set; }
     public double Height { get; set; }
-    
+
     public override double Area => Width * Height;
-    
+
     public override void Draw()
     {
         Console.WriteLine($"绘制矩形: {Width}x{Height}");
@@ -463,9 +465,9 @@ public class Rectangle : Shape
 public class Circle : Shape
 {
     public double Radius { get; set; }
-    
+
     public override double Area => Math.PI * Radius * Radius;
-    
+
     public override void Draw()
     {
         Console.WriteLine($"绘制圆形: 半径{Radius}");
@@ -511,7 +513,7 @@ public class Person : IComparable<Person>
 {
     public string Name { get; set; }
     public int Age { get; set; }
-    
+
     // 实现接口方法
     public int CompareTo(Person other)
     {
@@ -523,13 +525,13 @@ public class Person : IComparable<Person>
 
 ### 接口与类的区别
 
-| 特性 | 类 | 接口 |
-|------|-----|------|
-| 继承 | 单继承 | 多实现 |
-| 成员 | 可以有实现 | C# 8.0 前只能声明 |
-| 字段 | 可以有实例字段 | 不能有实例字段 |
-| 构造函数 | 可以有 | 不能有 |
-| 多态 | 通过继承实现 | 通过实现实现 |
+| 特性     | 类             | 接口              |
+| -------- | -------------- | ----------------- |
+| 继承     | 单继承         | 多实现            |
+| 成员     | 可以有实现     | C# 8.0 前只能声明 |
+| 字段     | 可以有实例字段 | 不能有实例字段    |
+| 构造函数 | 可以有         | 不能有            |
+| 多态     | 通过继承实现   | 通过实现实现      |
 
 ### 接口继承
 
@@ -556,12 +558,12 @@ public class TextFile : IFile
     {
         Console.WriteLine("读取文件");
     }
-    
+
     public void Write()
     {
         Console.WriteLine("写入文件");
     }
-    
+
     public void Delete()
     {
         Console.WriteLine("删除文件");
@@ -580,7 +582,7 @@ public class TextFile : IFile
 public sealed class Singleton
 {
     private static Singleton _instance;
-    
+
     public static Singleton Instance
     {
         get
@@ -590,7 +592,7 @@ public sealed class Singleton
             return _instance;
         }
     }
-    
+
     private Singleton() { }
 }
 
@@ -639,11 +641,11 @@ public partial class Customer
 public static class MathHelper
 {
     public static double PI => 3.14159;
-    
+
     public static int Max(int a, int b) => a > b ? a : b;
-    
+
     public static int Min(int a, int b) => a < b ? a : b;
-    
+
     public static bool IsPrime(int number)
     {
         if (number < 2) return false;
@@ -671,16 +673,16 @@ public abstract class BankAccount
 {
     public string AccountNumber { get; }
     public decimal Balance { get; protected set; }
-    
+
     protected BankAccount(string accountNumber, decimal initialBalance)
     {
         AccountNumber = accountNumber;
         Balance = initialBalance;
     }
-    
+
     public abstract void Deposit(decimal amount);
     public abstract void Withdraw(decimal amount);
-    
+
     public void PrintBalance()
     {
         Console.WriteLine($"账户 {AccountNumber} 余额: {Balance:C}");
@@ -690,13 +692,13 @@ public abstract class BankAccount
 public class SavingsAccount : BankAccount
 {
     public decimal InterestRate { get; }
-    
+
     public SavingsAccount(string accountNumber, decimal initialBalance, decimal interestRate)
         : base(accountNumber, initialBalance)
     {
         InterestRate = interestRate;
     }
-    
+
     public override void Deposit(decimal amount)
     {
         if (amount <= 0)
@@ -704,7 +706,7 @@ public class SavingsAccount : BankAccount
         Balance += amount;
         Console.WriteLine($"存款成功: {amount:C}");
     }
-    
+
     public override void Withdraw(decimal amount)
     {
         if (amount <= 0)
@@ -714,7 +716,7 @@ public class SavingsAccount : BankAccount
         Balance -= amount;
         Console.WriteLine($"取款成功: {amount:C}");
     }
-    
+
     public void CalculateInterest()
     {
         decimal interest = Balance * InterestRate;
@@ -737,7 +739,7 @@ public class Rectangle : IShape
 {
     public double Width { get; set; }
     public double Height { get; set; }
-    
+
     public double Area => Width * Height;
     public double Perimeter => 2 * (Width + Height);
 }
@@ -745,7 +747,7 @@ public class Rectangle : IShape
 public class Circle : IShape
 {
     public double Radius { get; set; }
-    
+
     public double Area => Math.PI * Radius * Radius;
     public double Perimeter => 2 * Math.PI * Radius;
 }
@@ -755,7 +757,7 @@ public class Triangle : IShape
     public double A { get; set; }
     public double B { get; set; }
     public double C { get; set; }
-    
+
     public double Area
     {
         get
@@ -764,7 +766,7 @@ public class Triangle : IShape
             return Math.Sqrt(s * (s - A) * (s - B) * (s - C));
         }
     }
-    
+
     public double Perimeter => A + B + C;
 }
 
@@ -836,16 +838,16 @@ Shape s = new Circle();  // ✅ 正确，使用派生类实例化
 
 ## 总结
 
-| 概念 | 说明 |
-|------|------|
-| **类** | 引用类型，定义对象模板 |
-| **对象** | 类的实例，通过 `new` 创建 |
-| **构造函数** | 初始化对象 |
-| **属性** | 封装字段的访问器 |
-| **继承** | 从基类派生新类 |
-| **虚方法** | 可被重写的方法 |
-| **抽象类** | 不能实例化的基类 |
-| **接口** | 行为的契约 |
+| 概念         | 说明                      |
+| ------------ | ------------------------- |
+| **类**       | 引用类型，定义对象模板    |
+| **对象**     | 类的实例，通过 `new` 创建 |
+| **构造函数** | 初始化对象                |
+| **属性**     | 封装字段的访问器          |
+| **继承**     | 从基类派生新类            |
+| **虚方法**   | 可被重写的方法            |
+| **抽象类**   | 不能实例化的基类          |
+| **接口**     | 行为的契约                |
 
 ---
 

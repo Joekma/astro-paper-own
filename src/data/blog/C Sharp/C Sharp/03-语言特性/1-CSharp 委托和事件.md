@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-06T00:00:00.000+08:00
 modDatetime: 2026-05-06T00:00:00.000+08:00
 slug: csharp-delegates-events
-description: '深入学习 C# 委托和事件，掌握委托定义、Lambda 表达式、多播委托、事件声明和处理程序。'
+description: "深入学习 C# 委托和事件，掌握委托定义、Lambda 表达式、多播委托、事件声明和处理程序。"
 tags:
   - C#
   - 委托
@@ -24,12 +24,12 @@ language: zh-CN
 
 ### 核心概念
 
-| 概念 | 说明 |
-|------|------|
-| **委托** | 封装方法的类型，类似于函数指针 |
-| **事件** | 基于委托的消息通知机制 |
-| **Lambda** | 匿名函数的简洁表示法 |
-| **多播委托** | 一次调用多个方法 |
+| 概念         | 说明                           |
+| ------------ | ------------------------------ |
+| **委托**     | 封装方法的类型，类似于函数指针 |
+| **事件**     | 基于委托的消息通知机制         |
+| **Lambda**   | 匿名函数的简洁表示法           |
+| **多播委托** | 一次调用多个方法               |
 
 ---
 
@@ -74,7 +74,7 @@ Predicate<string> isLong = s => s.Length > 10;
 
 ```csharp
 // 基本委托声明
-public delegate void MessageHandler(string message); 
+public delegate void MessageHandler(string message);
 // 访问修饰符 返回值类型 委托名称     参数类型
 public delegate T Transformer<T>(T input);
 public delegate bool Filter<T>(T item);
@@ -251,10 +251,10 @@ public class Publisher
 
     public void RaiseEvent(string message, int value)
     {
-        DataChanged?.Invoke(this, new MyEventArgs 
-        { 
-            Message = message, 
-            Value = value 
+        DataChanged?.Invoke(this, new MyEventArgs
+        {
+            Message = message,
+            Value = value
         });
     }
 }
@@ -566,14 +566,14 @@ public class ExtendedPublisher : Publisher
 
 ## 总结
 
-| 概念 | 说明 |
-|------|------|
-| **委托** | 封装方法的类型 |
-| **Func/Action** | 内置通用委托类型 |
-| **Lambda** | 匿名函数的简洁表示 |
-| **事件** | 基于委托的消息机制 |
-| **多播** | 一次调用多个方法 |
-| **+= / -=** | 订阅和取消订阅 |
+| 概念            | 说明               |
+| --------------- | ------------------ |
+| **委托**        | 封装方法的类型     |
+| **Func/Action** | 内置通用委托类型   |
+| **Lambda**      | 匿名函数的简洁表示 |
+| **事件**        | 基于委托的消息机制 |
+| **多播**        | 一次调用多个方法   |
+| **+= / -=**     | 订阅和取消订阅     |
 
 ---
 
