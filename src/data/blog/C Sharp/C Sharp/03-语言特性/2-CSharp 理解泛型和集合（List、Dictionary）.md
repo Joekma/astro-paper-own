@@ -584,6 +584,10 @@ linked.AddBefore(linked.Last!, 4);  // 在尾节点前添加
 // 结果: 1 → 2 → 4 → 5
 ```
 
+> **关于 `!`（空条件抑制运算符）**
+>
+> `linked.First!` 和 `linked.Last!` 中的 `!` 是 C# 8.0+ 的**空条件抑制运算符**（Null-forgiving operator）。`LinkedList<T>.First` 和 `LinkedList<T>.Last` 的类型是 `LinkedListNode<T>?`（可空），但实际业务中调用 `AddAfter`/`AddBefore` 时通常已知列表非空，因此用 `!` 告诉编译器："我确信这里不会是 null，请当作非空处理"。如果省略 `!`，需要写成空值判断：`if (linked.First != null) { linked.AddAfter(linked.First, 2); }`。`!` 仅用于可空引用类型的上下文中，不改变运行时行为。
+
 ### 遍历和访问
 
 ```csharp
