@@ -221,6 +221,9 @@ string quote = @"他说:""你好""";  // 他说:"你好"
 
 访问命名空间别名，优先级高于全局 using：
 
+- :: 会强制在其左侧查找命名空间或类型别名，不会查找普通类或变量
+- 即使有同名的局部变量或类型，:: 仍会正确找到别名
+
 ```csharp
 // 定义别名
 using Win = System.Windows.Forms;
@@ -229,6 +232,8 @@ using Col = System.Collections.Generic;
 // 使用别名（:: 确保不会与同名的类型/变量混淆）
 var list = new Col::List<string>();
 var form = new Win::Form();
+
+
 
 // global:: 始终指向全局命名空间（解决命名冲突）
 namespace MyNamespace
