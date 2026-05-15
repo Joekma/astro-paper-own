@@ -1002,6 +1002,17 @@ public T Create<T>() where T : new()
 var person = new Person();
 ```
 
+### 常见泛型约束类型
+| 约束 | 说明 | 示例 |
+|------|------|------|
+| where T : struct | 值类型 | int, bool, DateTime |
+| where T : class | 引用类型 | string, class, interface |
+| where T : new() | 有无参构造函数 | 必须可 new T() |
+| where T : BaseClass | 继承自某类 | T 必须是 BaseClass 的子类 |
+| where T : IInterface | 实现某接口 | T 必须实现 IDisposable |
+| where T : notnull | 非空类型 | C# 8.0+，排除 null |
+
+
 ---
 
 ## 异步关键字
