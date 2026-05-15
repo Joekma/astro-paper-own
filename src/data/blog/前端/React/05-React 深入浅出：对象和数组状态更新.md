@@ -30,6 +30,7 @@ React state 可以保存对象和数组，但官方文档强调：应该把 stat
 错误示例：
 
 ```jsx
+// 示例：为什么不能直接修改
 function Profile() {
   const [person, setPerson] = useState({ name: "Ada" });
 
@@ -48,6 +49,7 @@ function Profile() {
 正确方式是创建新对象。
 
 ```jsx
+// 示例：更新对象
 function Profile() {
   const [person, setPerson] = useState({
     name: "Ada",
@@ -70,6 +72,7 @@ function Profile() {
 ## 动态更新字段
 
 ```jsx
+// 示例：动态更新字段
 function UserForm() {
   const [user, setUser] = useState({ name: "", email: "" });
 
@@ -94,6 +97,7 @@ function UserForm() {
 嵌套对象需要逐层复制。
 
 ```jsx
+// 示例：更新嵌套对象
 function ArtworkForm() {
   const [person, setPerson] = useState({
     name: "Niki",
@@ -122,6 +126,7 @@ function ArtworkForm() {
 ## 更新数组：添加
 
 ```jsx
+// 示例：更新数组：添加
 function addTodo(text) {
   setTodos([...todos, { id: crypto.randomUUID(), text, done: false }]);
 }
@@ -132,6 +137,7 @@ function addTodo(text) {
 ## 更新数组：删除
 
 ```jsx
+// 示例：更新数组：删除
 function deleteTodo(id) {
   setTodos(todos.filter(todo => todo.id !== id));
 }
@@ -142,6 +148,7 @@ function deleteTodo(id) {
 ## 更新数组：修改
 
 ```jsx
+// 示例：更新数组：修改
 function toggleTodo(id) {
   setTodos(
     todos.map(todo => {
@@ -162,6 +169,7 @@ function toggleTodo(id) {
 `sort()` 会修改原数组，需要先复制。
 
 ```jsx
+// 示例：更新数组：排序
 function sortTodos() {
   const nextTodos = [...todos];
   nextTodos.sort((a, b) => a.text.localeCompare(b.text));
@@ -184,6 +192,7 @@ function sortTodos() {
 如果下一份 state 依赖上一份 state，推荐使用更新函数。
 
 ```jsx
+// 示例：使用更新函数
 function addTodo(text) {
   setTodos(currentTodos => [
     ...currentTodos,

@@ -1,332 +1,397 @@
-﻿---
-title: Vue组件系统
+---
+title: 'Vue 3 组件系统'
 series: Vue
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
-slug: vue-components
+modDatetime: 2026-05-15T00:00:00.000+08:00
+slug: vue3-component-system
 featured: false
 draft: false
 tags:
-  - Vue
+  - Vue3
   - 组件
-  - 前端
-  - JavaScript
-description: 'Vue组件详解，包含注册、props、emit、slot和状态管理'
+  - Props
+  - Slots
+  - Composition API
+description: '系统学习 Vue 3 组件拆分、Props、事件、插槽、依赖注入、组合式函数和 Pinia 状态协作。'
 ---
 
-> 组件是 Vue.js 最强大的功能之一，用于封装可复用的代码。
+> Vue 3 的组件系统以单文件组件和 Composition API 为核心。组件负责拆分界面，组合式函数负责复用逻辑，Pinia 或依赖注入负责跨层状态协作。
 
-## 组件注册
+## 组件基础
 
-### 全局注册
+一个典型组件由 `<script setup>`、`<template>` 和 `<style scoped>` 组成：
 
-```javascript
-Vue.component('my-button', {
-    template: '<button @click="handleClick">{{ text }}</button>',
-    data() {
-        return { text: '按钮' }
-    },
-    methods: {
-        handleClick() {
-            this.$emit('click')
-        }
-    }
-})
+```vue
+<script setup>
+const title = '用户资料'
+</script>
+
+<template>
+  <section class="profile-card">
+    <h2>{{ title }}</h2>
+  </section>
+</template>
+
+<style scoped>
+.profile-card {
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+}
+</style>
 ```
 
-### 局部注册
+## 组件导入与使用
 
-```javascript
-import MyButton from './MyButton.vue'
+在 `<script setup>` 中导入组件后，模板可以直接使用。
 
-export default {
-    components: {
-        MyButton
-    }
+```vue
+<script setup>
+import UserCard from '@/components/UserCard.vue'
+
+const user = {
+  id: 1,
+  name: 'Ada',
+  role: 'admin',
 }
+</script>
+
+<template>
+  <UserCard :user="user" />
+</template>
 ```
 
 ## Props
 
-### 父组件向子组件传值
+`defineProps` 用来声明父组件传入的数据。建议明确类型、默认值和必要校验。
 
-```javascript
-// 子组件
-export default {
-    props: {
-        title: String,
-        count: {
-            type: Number,
-            required: true,
-            default: 0
-        }
-    }
-}
-```
-
-```html
-<!-- 父组件 -->
-<child-component 
-    title="标题" 
-    :count="num"
-/>
-```
-
-### Props 验证
-
-```javascript
-props: {
-    // 基础类型
-    propA: Number,
-    
-    // 多个类型
-    propB: [String, Number],
-    
-    // 必填
-    propC: {
-        type: String,
-        required: true
+```vue
+<script setup>
+const props = defineProps({
+  user: {
+    type: Object,
+    required: true,
+  },
+  size: {
+    type: String,
+    default: 'medium',
+    validator(value) {
+      return ['small', 'medium', 'large'].includes(value)
     },
-    
-    // 默认值
-    propD: {
-        type: Object,
-        default() {
-            return { message: 'hello' }
-        }
-    },
-    
-    // 自定义验证
-    propE: {
-        validator(value) {
-            return ['success', 'warning', 'danger'].includes(value)
-        }
-    }
+  },
+})
+</script>
+
+<template>
+  <article :class="['user-card', `user-card--${props.size}`]">
+    <h3>{{ props.user.name }}</h3>
+    <p>{{ props.user.role }}</p>
+  </article>
+</template>
+```
+
+Props 应保持只读。组件内部需要编辑时，应复制为本地状态，或通过事件通知父组件更新。
+
+## 事件
+
+`defineEmits` 用来声明组件对外触发的事件。
+
+```vue
+<script setup>
+const emit = defineEmits({
+  save(payload) {
+    return typeof payload.title === 'string' && payload.title.length > 0
+  },
+  cancel: null,
+})
+
+function savePost() {
+  emit('save', {
+    title: 'Vue 3 组件系统',
+  })
 }
+</script>
+
+<template>
+  <button @click="savePost">保存</button>
+  <button @click="emit('cancel')">取消</button>
+</template>
 ```
 
-## Emit
+父组件监听事件：
 
-### 子组件向父组件传值
+```vue
+<script setup>
+import PostEditor from '@/components/PostEditor.vue'
 
-```javascript
-// 子组件
-export default {
-    methods: {
-        handleClick() {
-            this.$emit('update', this.value)
-            this.$emit('custom-event', { id: 1 })
-        }
-    }
+function handleSave(payload) {
+  console.log('保存文章：', payload.title)
 }
+</script>
+
+<template>
+  <PostEditor @save="handleSave" />
+</template>
 ```
 
-```html
-<!-- 父组件 -->
-<child-component 
-    @update="handleUpdate"
-    @custom-event="handleCustom"
-/>
+## 组件 v-model
+
+Vue 3 推荐使用 `defineModel` 实现组件双向绑定。
+
+```vue
+<script setup>
+const model = defineModel({
+  type: String,
+  default: '',
+})
+</script>
+
+<template>
+  <input v-model="model" placeholder="请输入标题" />
+</template>
 ```
 
-```javascript
-methods: {
-    handleUpdate(value) {
-        console.log('更新:', value)
-    }
-}
+父组件使用：
+
+```vue
+<script setup>
+import { ref } from 'vue'
+import TitleInput from '@/components/TitleInput.vue'
+
+const title = ref('')
+</script>
+
+<template>
+  <TitleInput v-model="title" />
+  <p>{{ title }}</p>
+</template>
 ```
 
-## Slot
+## 插槽
 
-### 插槽基础
+插槽让组件保留结构，同时把局部内容交给调用方决定。
 
-```html
-<!-- 子组件 -->
-<div class="card">
-    <slot></slot>
-</div>
+```vue
+<script setup>
+defineProps({
+  title: {
+    type: String,
+    required: true,
+  },
+})
+</script>
 
-<!-- 父组件 -->
-<card>
-    <h1>卡片标题</h1>
-    <p>卡片内容</p>
-</card>
+<template>
+  <section class="panel">
+    <header>
+      <slot name="header" :title="title">
+        <h2>{{ title }}</h2>
+      </slot>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer>
+      <slot name="footer" />
+    </footer>
+  </section>
+</template>
 ```
 
-### 具名插槽
+使用具名插槽和作用域插槽：
 
-```html
-<!-- 子组件 -->
-<div class="layout">
-    <header><slot name="header"></slot></header>
-    <main><slot></slot></main>
-    <footer><slot name="footer"></slot></footer>
-</div>
+```vue
+<script setup>
+import CardPanel from '@/components/CardPanel.vue'
+</script>
 
-<!-- 父组件 -->
-<layout>
-    <template #header>
-        <h1>标题</h1>
+<template>
+  <CardPanel title="订单详情">
+    <template #header="{ title }">
+      <h1>{{ title }}</h1>
     </template>
-    <p>主要内容</p>
+
+    <p>这里放订单内容。</p>
+
     <template #footer>
-        <p>底部</p>
+      <button>确认</button>
     </template>
-</layout>
+  </CardPanel>
+</template>
 ```
 
-### 作用域插槽
+## 依赖注入
 
-```html
-<!-- 子组件 -->
-<ul>
-    <li v-for="item in items" :key="item.id">
-        <slot :item="item">{{ item.name }}</slot>
-    </li>
-</ul>
+`provide` 和 `inject` 适合主题、配置、表单上下文等跨层级共享。
 
-<!-- 父组件 -->
-<my-list :items="list">
-    <template #default="{ item }">
-        <span :style="{ color: item.color }">{{ item.name }}</span>
-    </template>
-</my-list>
+```vue
+<script setup>
+import { provide, ref } from 'vue'
+
+const theme = ref('light')
+
+provide('theme', theme)
+</script>
+
+<template>
+  <slot />
+</template>
 ```
 
-## 组件通信
+子孙组件读取：
 
-### provide/inject
+```vue
+<script setup>
+import { inject } from 'vue'
+
+const theme = inject('theme', 'light')
+</script>
+
+<template>
+  <p>当前主题：{{ theme }}</p>
+</template>
+```
+
+## 组合式函数
+
+组件间复用逻辑时，优先抽成组合式函数，而不是把逻辑堆进组件或依赖全局事件。
 
 ```javascript
-// 祖先组件
-export default {
-    provide: {
-        theme: 'dark'
-    }
-}
+import { computed, ref } from 'vue'
 
-// 后代组件
-export default {
-    inject: ['theme']
+export function useCounter(initialValue = 0) {
+  const count = ref(initialValue)
+  const doubleCount = computed(() => count.value * 2)
+
+  function increment() {
+    count.value += 1
+  }
+
+  function reset() {
+    count.value = initialValue
+  }
+
+  return {
+    count,
+    doubleCount,
+    increment,
+    reset,
+  }
 }
 ```
 
-### Event Bus
+在组件中使用：
 
-```javascript
-// event-bus.js
-import Vue from 'vue'
-export const bus = new Vue()
+```vue
+<script setup>
+import { useCounter } from '@/composables/useCounter'
 
-// 组件 A
-import { bus } from './event-bus'
-bus.$emit('message', 'hello')
+const { count, doubleCount, increment, reset } = useCounter(1)
+</script>
 
-// 组件 B
-import { bus } from './event-bus'
-bus.$on('message', msg => console.log(msg))
+<template>
+  <button @click="increment">{{ count }} / {{ doubleCount }}</button>
+  <button @click="reset">重置</button>
+</template>
 ```
 
 ## 生命周期
 
-| 钩子 | 说明 |
-|------|------|
-| `beforeCreate` | 实例初始化 |
-| `created` | 实例创建完成 |
-| `beforeMount` | 挂载前 |
-| `mounted` | 挂载完成 |
-| `beforeUpdate` | 更新前 |
-| `updated` | 更新完成 |
-| `beforeDestroy` | 销毁前 |
-| `destroyed` | 销毁完成 |
+Vue 3 在 Composition API 中使用生命周期函数。
 
-## 组件状态管理
+```vue
+<script setup>
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 
-### Vuex
+const width = ref(window.innerWidth)
 
-```javascript
-// store/index.js
-import Vue from 'vue'
-import Vuex from 'vuex'
-
-Vue.use(Vuex)
-
-export default new Vuex.Store({
-    state: {
-        count: 0
-    },
-    mutations: {
-        increment(state) {
-            state.count++
-        }
-    },
-    actions: {
-        asyncIncrement({ commit }) {
-            setTimeout(() => {
-                commit('increment')
-            }, 1000)
-        }
-    },
-    getters: {
-        doubleCount: state => state.count * 2
-    }
-})
-```
-
-```javascript
-// 组件中使用
-export default {
-    computed: {
-        count() {
-            return this.$store.state.count
-        }
-    },
-    methods: {
-        increment() {
-            this.$store.commit('increment')
-        }
-    }
+function updateWidth() {
+  width.value = window.innerWidth
 }
+
+onMounted(() => {
+  window.addEventListener('resize', updateWidth)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateWidth)
+})
+</script>
+
+<template>
+  <p>窗口宽度：{{ width }}</p>
+</template>
 ```
 
-### Pinia（推荐）
+## Pinia 与组件协作
+
+跨页面、跨模块共享状态时，使用 Pinia 比层层传参更清晰。
 
 ```javascript
-// stores/counter.js
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
-export const useCounterStore = defineStore('counter', {
-    state: () => ({ count: 0 }),
-    getters: {
-        doubleCount: (state) => state.count * 2
-    },
-    actions: {
-        increment() {
-            this.count++
-        }
+export const useCartStore = defineStore('cart', () => {
+  const items = ref([])
+  const total = computed(() =>
+    items.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  )
+
+  function addItem(product) {
+    const existed = items.value.find(item => item.id === product.id)
+
+    if (existed) {
+      existed.quantity += 1
+      return
     }
+
+    items.value.push({
+      ...product,
+      quantity: 1,
+    })
+  }
+
+  return {
+    items,
+    total,
+    addItem,
+  }
 })
 ```
 
-```javascript
-// 组件中使用
-import { useCounterStore } from '@/stores/counter'
+组件中直接调用状态模块：
 
-export default {
-    setup() {
-        const counter = useCounterStore()
-        return { counter }
-    }
+```vue
+<script setup>
+import { useCartStore } from '@/stores/cart'
+
+const cart = useCartStore()
+
+function addDemoProduct() {
+  cart.addItem({
+    id: 1,
+    name: 'Vue 课程',
+    price: 99,
+  })
 }
+</script>
+
+<template>
+  <button @click="addDemoProduct">加入购物车</button>
+  <p>总价：{{ cart.total }}</p>
+</template>
 ```
+
+## 组件设计建议
+
+- Props 向下传递数据，事件向上传递意图。
+- 插槽用于开放局部结构，不要把所有布局都做成 Props。
+- 组件逻辑复杂时，优先抽成组合式函数。
+- 跨页面共享状态使用 Pinia，局部上下文共享使用 `provide` 和 `inject`。
+- 组件内部负责自己的交互状态，业务数据尽量由页面或状态模块统一管理。
 
 ## 小结
 
-- **注册**：全局注册和局部注册
-- **Props**：父组件向子组件传值，支持验证
-- **Emit**：子组件向父组件传值
-- **Slot**：内容分发，具名插槽和作用域插槽
-- **通信**：props/emit、provide/inject、Event Bus
-- **状态**：Vuex 和 Pinia
+Vue 3 组件系统的关键是职责清晰：组件呈现界面，Props 和事件定义边界，插槽开放扩展点，组合式函数复用逻辑，Pinia 管理跨模块状态。掌握这些模式后，组件会更容易测试、复用和维护。

@@ -250,8 +250,8 @@ const obj = {
 ### 创建
 
 ```javascript
-const reg = /pattern/flags
-const reg2 = new RegExp('pattern', 'flags')
+const reg = /pattern/g
+const reg2 = new RegExp('pattern', 'gi')
 ```
 
 ### 标志
@@ -267,7 +267,7 @@ const reg2 = new RegExp('pattern', 'flags')
 ### 方法
 
 ```javascript
-const str = 'Hello World'
+const str = 'Hello World';
 
 /hello/.test(str)            // false (大小写)
 /hello/i.test(str)           // true
@@ -282,19 +282,19 @@ str.split(/o/i)              // ['Hell', ' W', 'rld']
 
 ```javascript
 // 手机号
-/^1[3-9]\d{9}$/
+const phoneReg = /^1[3-9]\d{9}$/;
 
 // 邮箱
-/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+const emailReg = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 // URL
-/https?:\/\/[\w\-.]+(:\d+)?(\/[\w\-./?%&=]*)?/
+const urlReg = /https?:\/\/[\w\-.]+(:\d+)?(\/[\w\-./?%&=]*)?/;
 
 // 身份证
-/^[1-9]\d{5}(18|19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dXx]$/
+const idCardReg = /^[1-9]\d{5}(18|19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dXx]$/;
 
 // 密码强度
-/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/
+const passwordReg = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
 ```
 
 ## 数字 Number

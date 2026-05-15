@@ -41,6 +41,7 @@ React 更新 DOM
 React 组件本质上是返回 JSX 的 JavaScript 函数。
 
 ```jsx
+// 示例：第一个组件
 function MyButton() {
   return <button>我是按钮</button>;
 }
@@ -62,6 +63,7 @@ export default function App() {
 JSX 是 JavaScript 的语法扩展，用来在 JavaScript 中描述 UI。
 
 ```jsx
+// 示例：JSX 基础
 function Profile() {
   return (
     <section>
@@ -86,6 +88,7 @@ JSX 比 HTML 更严格：
 JSX 中使用 `{}` 嵌入 JavaScript 表达式。
 
 ```jsx
+// 示例：显示数据
 const user = {
   name: "Ada Lovelace",
   avatar: "/avatar.png",
@@ -108,6 +111,7 @@ function UserCard() {
 React 使用 JavaScript 条件语句表达不同 UI。
 
 ```jsx
+// 示例：条件渲染
 function Greeting({ isLoggedIn }) {
   if (isLoggedIn) {
     return <h1>欢迎回来</h1>;
@@ -120,6 +124,7 @@ function Greeting({ isLoggedIn }) {
 也可以使用三元表达式：
 
 ```jsx
+// 示例：条件渲染
 function Status({ online }) {
   return <p>{online ? "在线" : "离线"}</p>;
 }
@@ -130,6 +135,7 @@ function Status({ online }) {
 React 使用 `map()` 把数组转换成 JSX。
 
 ```jsx
+// 示例：列表渲染
 const products = [
   { id: 1, name: "苹果" },
   { id: 2, name: "香蕉" },
@@ -153,6 +159,7 @@ function ProductList() {
 事件处理函数通常定义在组件内部，并传给 JSX 属性。
 
 ```jsx
+// 示例：事件处理
 function SaveButton() {
   function handleClick() {
     alert("保存成功");
@@ -169,6 +176,7 @@ function SaveButton() {
 组件需要记住会变化的数据时，使用 `useState`。
 
 ```jsx
+// 示例：State
 import { useState } from "react";
 
 function Counter() {
@@ -185,6 +193,7 @@ function Counter() {
 如果多个组件需要共享同一份状态，应把状态移动到它们最近的共同父组件。
 
 ```jsx
+// 示例：共享数据
 function App() {
   const [count, setCount] = useState(0);
 

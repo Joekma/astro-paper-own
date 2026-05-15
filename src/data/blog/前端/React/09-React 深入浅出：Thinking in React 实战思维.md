@@ -42,6 +42,7 @@ Thinking in React 是 React 官方文档中非常经典的一篇教程。它讲�
 - 商品数据来自数组。
 
 ```js
+// 示例：示例需求
 const products = [
   { category: "水果", price: "¥6", stocked: true, name: "苹果" },
   { category: "水果", price: "¥8", stocked: true, name: "火龙果" },
@@ -73,6 +74,7 @@ FilterableProductTable
 先不要加交互，也不要加 state，只用 props 渲染数据。
 
 ```jsx
+// 示例：第二步：构建静态版本
 function ProductCategoryRow({ category }) {
   return (
     <tr>
@@ -100,6 +102,7 @@ function ProductRow({ product }) {
 表格组件：
 
 ```jsx
+// 示例：第二步：构建静态版本
 function ProductTable({ products }) {
   const rows = [];
   let lastCategory = null;
@@ -146,6 +149,7 @@ function ProductTable({ products }) {
 最小 state：
 
 ```jsx
+// 示例：第三步：找出最小 state
 const [filterText, setFilterText] = useState("");
 const [inStockOnly, setInStockOnly] = useState(false);
 ```
@@ -155,6 +159,7 @@ const [inStockOnly, setInStockOnly] = useState(false);
 搜索文本和库存筛选同时被 `SearchBar` 和 `ProductTable` 使用。它们最近的共同父组件是 `FilterableProductTable`，所以状态放在那里。
 
 ```jsx
+// 示例：第四步：确定状态位置
 function FilterableProductTable({ products }) {
   const [filterText, setFilterText] = useState("");
   const [inStockOnly, setInStockOnly] = useState(false);
@@ -177,6 +182,7 @@ function FilterableProductTable({ products }) {
 父组件把状态和修改函数传给子组件。
 
 ```jsx
+// 示例：第五步：添加反向数据流
 function FilterableProductTable({ products }) {
   const [filterText, setFilterText] = useState("");
   const [inStockOnly, setInStockOnly] = useState(false);
@@ -202,6 +208,7 @@ function FilterableProductTable({ products }) {
 `SearchBar` 使用受控组件：
 
 ```jsx
+// 示例：第五步：添加反向数据流
 function SearchBar({
   filterText,
   inStockOnly,

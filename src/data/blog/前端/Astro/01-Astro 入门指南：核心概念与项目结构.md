@@ -313,16 +313,23 @@ const techPosts = posts.filter(post =>
 
 ```astro
 ---
-// 静态生成（默认）
-const posts = await getCollection('blog');
----
+// src/pages/blog/[...slug].astro
+import { getCollection } from 'astro:content';
 
 export async function getStaticPaths() {
+  // 静态构建时为每篇文章生成一个路由。
+  const posts = await getCollection('blog');
+
   return posts.map(post => ({
     params: { slug: post.slug },
     props: { post },
   }));
 }
+
+const { post } = Astro.props;
+---
+
+<h1>{post.data.title}</h1>
 ```
 
 ### 动态路由
@@ -496,5 +503,3 @@ const SEO = ({ title, description }) => (
 <HeavyComponent client:visible />
 <InteractiveWidget client:idle />
 ```
-
-

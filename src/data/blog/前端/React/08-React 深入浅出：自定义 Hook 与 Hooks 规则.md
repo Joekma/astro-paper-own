@@ -30,6 +30,7 @@ Hooks 是 React 函数组件使用 React 能力的入口。`useState`、`useEffe
 Hook 是以 `use` 开头的函数，它可以让组件使用 React 特性。
 
 ```jsx
+// 示例：Hook 是什么
 import { useState } from "react";
 
 function Counter() {
@@ -60,6 +61,7 @@ function Counter() {
 错误示例：
 
 ```jsx
+// 示例：只在顶层调用 Hook
 function Form({ enabled }) {
   if (enabled) {
     const [name, setName] = useState("");
@@ -72,6 +74,7 @@ function Form({ enabled }) {
 正确示例：
 
 ```jsx
+// 示例：只在顶层调用 Hook
 function Form({ enabled }) {
   const [name, setName] = useState("");
 
@@ -94,6 +97,7 @@ Hook 只能在函数组件或自定义 Hook 中调用，不能在普通工具函
 自定义 Hook 是以 `use` 开头的函数，用来封装可复用状态逻辑。
 
 ```jsx
+// 示例：自定义 Hook
 function useToggle(initialValue = false) {
   const [value, setValue] = useState(initialValue);
 
@@ -108,6 +112,7 @@ function useToggle(initialValue = false) {
 使用：
 
 ```jsx
+// 示例：自定义 Hook
 function Panel() {
   const [open, toggleOpen] = useToggle(false);
 
@@ -125,6 +130,7 @@ function Panel() {
 每次调用自定义 Hook 都拥有独立状态。
 
 ```jsx
+// 示例：自定义 Hook 共享逻辑，不共享状态
 function App() {
   return (
     <>
@@ -149,6 +155,7 @@ function App() {
 ## 示例：在线状态
 
 ```jsx
+// 示例：示例：在线状态
 function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
@@ -177,6 +184,7 @@ function useOnlineStatus() {
 组件使用：
 
 ```jsx
+// 示例：示例：在线状态
 function StatusBar() {
   const isOnline = useOnlineStatus();
   return <p>{isOnline ? "在线" : "离线"}</p>;

@@ -32,6 +32,7 @@ React 官方文档把“描述 UI”作为学习 React 的第一大章节。原�
 组件是 React 应用的基本单元。一个组件可以表示按钮、头像、导航栏，也可以表示完整页面。
 
 ```jsx
+// 示例：组件是什么
 function Avatar() {
   return <img src="/avatar.png" alt="用户头像" />;
 }
@@ -40,6 +41,7 @@ function Avatar() {
 组件可以嵌套使用：
 
 ```jsx
+// 示例：组件是什么
 function Profile() {
   return (
     <section>
@@ -68,6 +70,7 @@ JSX 看起来像 HTML，但更严格。
 ### 返回一个根节点
 
 ```jsx
+// 示例：返回一个根节点
 function Article() {
   return (
     <>
@@ -83,6 +86,7 @@ function Article() {
 ### 标签必须闭合
 
 ```jsx
+// 示例：标签必须闭合
 function Logo() {
   return <img src="/logo.png" alt="Logo" />;
 }
@@ -91,6 +95,7 @@ function Logo() {
 ### 属性使用驼峰命名
 
 ```jsx
+// 示例：属性使用驼峰命名
 function Input() {
   return <input className="field" autoFocus />;
 }
@@ -101,6 +106,7 @@ function Input() {
 JSX 使用 `{}` 插入 JavaScript 表达式。
 
 ```jsx
+// 示例：JSX 中使用 JavaScript
 const title = "React 深入浅出";
 
 function Header() {
@@ -111,6 +117,7 @@ function Header() {
 动态属性也使用 `{}`：
 
 ```jsx
+// 示例：JSX 中使用 JavaScript
 function Avatar({ user }) {
   return <img src={user.avatar} alt={user.name} />;
 }
@@ -119,6 +126,7 @@ function Avatar({ user }) {
 内联样式使用对象：
 
 ```jsx
+// 示例：JSX 中使用 JavaScript
 function Box() {
   return <div style={{ padding: 16, backgroundColor: "#f5f5f5" }}>内容</div>;
 }
@@ -129,6 +137,7 @@ function Box() {
 Props 是父组件传给子组件的数据，类似函数参数。
 
 ```jsx
+// 示例：Props
 function Welcome({ name }) {
   return <h1>你好，{name}</h1>;
 }
@@ -155,6 +164,7 @@ Props 可以传递任何 JavaScript 值：
 子组件不能修改 props。Props 是父组件传入的只读输入。
 
 ```jsx
+// 示例：Props 是只读的
 function Counter({ count, onIncrement }) {
   return <button onClick={onIncrement}>{count}</button>;
 }
@@ -167,6 +177,7 @@ function Counter({ count, onIncrement }) {
 `children` 表示组件标签中间的内容。
 
 ```jsx
+// 示例：children 组合模式
 function Card({ children }) {
   return <div className="card">{children}</div>;
 }
@@ -190,6 +201,7 @@ React 官方强调组件应保持纯粹：相同输入应返回相同输出，�
 不推荐：
 
 ```jsx
+// 示例：保持组件纯粹
 let count = 0;
 
 function Cup() {
@@ -201,6 +213,7 @@ function Cup() {
 推荐：
 
 ```jsx
+// 示例：保持组件纯粹
 function Cup({ index }) {
   return <h2>第 {index} 个杯子</h2>;
 }

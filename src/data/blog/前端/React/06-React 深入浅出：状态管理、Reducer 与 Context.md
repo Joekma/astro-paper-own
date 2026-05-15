@@ -34,6 +34,7 @@ language: zh-CN
 React 推荐描述不同状态下的 UI，而不是命令式地操作 UI。
 
 ```jsx
+// 示例：用状态驱动 UI
 function Form() {
   const [status, setStatus] = useState("typing");
 
@@ -67,6 +68,7 @@ function Form() {
 不推荐：
 
 ```jsx
+// 示例：避免冗余状态
 const [firstName, setFirstName] = useState("");
 const [lastName, setLastName] = useState("");
 const [fullName, setFullName] = useState("");
@@ -75,6 +77,7 @@ const [fullName, setFullName] = useState("");
 推荐：
 
 ```jsx
+// 示例：避免冗余状态
 const [firstName, setFirstName] = useState("");
 const [lastName, setLastName] = useState("");
 const fullName = firstName + " " + lastName;
@@ -87,6 +90,7 @@ const fullName = firstName + " " + lastName;
 多个组件需要共享状态时，把状态移动到最近的共同父组件。
 
 ```jsx
+// 示例：状态提升
 function Accordion() {
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -121,6 +125,7 @@ function Panel({ title, isActive, onShow }) {
 React 会根据组件在树中的位置保留状态。如果希望切换数据时重置组件，可以使用不同的 `key`。
 
 ```jsx
+// 示例：使用 key 重置状态
 function Messenger({ contact }) {
   return <Chat key={contact.email} contact={contact} />;
 }
@@ -133,6 +138,7 @@ function Messenger({ contact }) {
 当状态更新逻辑复杂时，可以使用 `useReducer`。
 
 ```jsx
+// 示例：useReducer
 function tasksReducer(tasks, action) {
   switch (action.type) {
     case "added": {
@@ -163,6 +169,7 @@ Reducer 把“发生了什么”和“如何更新状态”分离。
 Context 用于跨层级传递数据，避免层层传 props。
 
 ```jsx
+// 示例：Context
 const ThemeContext = createContext("light");
 
 function App() {
@@ -186,6 +193,7 @@ function Button() {
 复杂页面可以组合 reducer 和 context：
 
 ```jsx
+// 示例：Reducer 与 Context 组合
 const TasksContext = createContext(null);
 const TasksDispatchContext = createContext(null);
 

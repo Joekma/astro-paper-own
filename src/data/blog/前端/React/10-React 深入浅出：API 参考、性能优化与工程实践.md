@@ -60,6 +60,7 @@ React 官方文档分为 Learn 和 Reference。Learn 适合建立概念，Refere
 React 本身负责组件模型，React DOM 负责把组件渲染到浏览器 DOM。
 
 ```jsx
+// 示例：React DOM
 import { createRoot } from "react-dom/client";
 import App from "./App";
 
@@ -79,6 +80,7 @@ createRoot(document.getElementById("root")).render(<App />);
 不推荐：
 
 ```jsx
+// 示例：组件和 Hooks 必须纯粹
 let nextId = 0;
 
 function Item() {
@@ -90,6 +92,7 @@ function Item() {
 推荐：
 
 ```jsx
+// 示例：组件和 Hooks 必须纯粹
 function Item({ id }) {
   return <div>{id}</div>;
 }
@@ -113,6 +116,7 @@ React 性能优化首先不是使用某个 API，而是减少不必要的复杂�
 `useMemo` 用来缓存计算结果。
 
 ```jsx
+// 示例：useMemo
 const visibleTodos = useMemo(() => {
   return todos.filter(todo => todo.text.includes(keyword));
 }, [todos, keyword]);
@@ -125,6 +129,7 @@ const visibleTodos = useMemo(() => {
 `useCallback` 用来缓存函数引用。
 
 ```jsx
+// 示例：useCallback
 const handleSubmit = useCallback(() => {
   submit(orderId);
 }, [orderId]);
@@ -137,6 +142,7 @@ const handleSubmit = useCallback(() => {
 `memo` 可以让组件在 props 没变化时跳过重新渲染。
 
 ```jsx
+// 示例：memo
 const ProductItem = memo(function ProductItem({ product }) {
   return <li>{product.name}</li>;
 });

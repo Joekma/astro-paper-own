@@ -219,7 +219,7 @@ ipcMain.handle('get-user', async (event, userId) => {
 ```javascript
 // ❌ 危险
 eval('console.log("hello")');
-new Function('return 'hello'')();
+new Function('return "hello"')();
 setTimeout('alert("xss")', 100);
 setInterval('alert("xss")', 100);
 

@@ -30,6 +30,7 @@ React 没有专门的模板指令。条件和列表都使用 JavaScript 本身�
 最直接的条件渲染方式是使用 `if`。
 
 ```jsx
+// 示例：条件渲染
 function LoginStatus({ isLoggedIn }) {
   if (isLoggedIn) {
     return <p>已登录</p>;
@@ -42,6 +43,7 @@ function LoginStatus({ isLoggedIn }) {
 也可以用变量保存 JSX：
 
 ```jsx
+// 示例：条件渲染
 function Dashboard({ role }) {
   let content;
 
@@ -60,6 +62,7 @@ function Dashboard({ role }) {
 适合二选一的简单场景。
 
 ```jsx
+// 示例：三元表达式
 function Status({ online }) {
   return <p>{online ? "在线" : "离线"}</p>;
 }
@@ -70,6 +73,7 @@ function Status({ online }) {
 只在条件满足时显示内容，可以使用 `&&`。
 
 ```jsx
+// 示例：逻辑与运算符
 function Notice({ count }) {
   return <div>{count > 0 && <p>你有 {count} 条新消息</p>}</div>;
 }
@@ -82,6 +86,7 @@ function Notice({ count }) {
 组件可以返回 `null` 表示什么都不渲染。
 
 ```jsx
+// 示例：返回 null
 function Warning({ visible }) {
   if (!visible) {
     return null;
@@ -96,6 +101,7 @@ function Warning({ visible }) {
 React 使用 `map()` 把数组转换成 JSX 数组。
 
 ```jsx
+// 示例：列表渲染
 const users = [
   { id: 1, name: "Ada" },
   { id: 2, name: "Grace" },
@@ -117,6 +123,7 @@ function UserList() {
 先筛选再渲染是常见模式。
 
 ```jsx
+// 示例：filter 与 map
 function OnlineUsers({ users }) {
   return (
     <ul>
@@ -137,12 +144,14 @@ function OnlineUsers({ users }) {
 推荐使用稳定 ID：
 
 ```jsx
+// 示例：key 的作用
 items.map(item => <li key={item.id}>{item.name}</li>);
 ```
 
 不推荐随机数：
 
 ```jsx
+// 示例：key 的作用
 items.map(item => <li key={Math.random()}>{item.name}</li>);
 ```
 
@@ -153,6 +162,7 @@ items.map(item => <li key={Math.random()}>{item.name}</li>);
 如果列表会排序、插入、删除，不推荐使用数组索引。
 
 ```jsx
+// 示例：什么时候不要用索引作为 key
 items.map((item, index) => <li key={index}>{item.name}</li>);
 ```
 
@@ -163,6 +173,7 @@ items.map((item, index) => <li key={index}>{item.name}</li>);
 `key` 是 React 内部使用的特殊属性，不会出现在 props 中。
 
 ```jsx
+// 示例：key 不会传给组件
 function Row({ id, name }) {
   return <li>{name}</li>;
 }

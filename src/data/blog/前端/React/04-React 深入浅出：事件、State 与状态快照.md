@@ -31,6 +31,7 @@ React 的交互建立在事件和状态之上。用户触发事件，事件处�
 ## 事件处理
 
 ```jsx
+// 示例：事件处理
 function Toolbar() {
   function handleClick() {
     alert("开始播放");
@@ -45,6 +46,7 @@ function Toolbar() {
 ## 事件对象
 
 ```jsx
+// 示例：事件对象
 function SearchBox() {
   function handleChange(event) {
     console.log(event.target.value);
@@ -59,6 +61,7 @@ React 事件命名使用驼峰形式，如 `onClick`、`onChange`、`onSubmit`�
 ## 阻止默认行为
 
 ```jsx
+// 示例：阻止默认行为
 function LoginForm() {
   function handleSubmit(event) {
     event.preventDefault();
@@ -79,6 +82,7 @@ function LoginForm() {
 ## State 是组件的记忆
 
 ```jsx
+// 示例：State 是组件的记忆
 import { useState } from "react";
 
 function Counter() {
@@ -113,6 +117,7 @@ React 更新 UI 可以理解为三个阶段：
 官方文档强调 state 像一次渲染中的快照。
 
 ```jsx
+// 示例：State 是快照
 function Counter() {
   const [count, setCount] = useState(0);
 
@@ -131,6 +136,7 @@ function Counter() {
 ## 多次更新
 
 ```jsx
+// 示例：多次更新
 function Counter() {
   const [score, setScore] = useState(0);
 
@@ -151,6 +157,7 @@ function Counter() {
 当下一次状态依赖上一次状态时，推荐使用更新函数。
 
 ```jsx
+// 示例：更新函数
 function Counter() {
   const [score, setScore] = useState(0);
 
@@ -171,6 +178,7 @@ React 会把更新函数放入队列，按顺序计算最终状态。
 当输入框值由 React state 控制时，它就是受控组件。
 
 ```jsx
+// 示例：受控组件
 function NameInput() {
   const [name, setName] = useState("");
 

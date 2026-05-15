@@ -34,6 +34,7 @@ React 官方文档把 Ref 和 Effect 称为 Escape Hatches，也就是“逃生�
 `useRef` 可以让组件在多次渲染之间记住一个值，但修改它不会触发重新渲染。
 
 ```jsx
+// 示例：Ref 是什么
 import { useRef } from "react";
 
 function Counter() {
@@ -62,6 +63,7 @@ function Counter() {
 ## 操作 DOM
 
 ```jsx
+// 示例：操作 DOM
 import { useRef } from "react";
 
 function SearchForm() {
@@ -87,6 +89,7 @@ React 会把真实 DOM 节点赋值给 `inputRef.current`。
 Effect 用于让组件和 React 外部系统同步。外部系统包括浏览器 API、网络连接、第三方插件、定时器、媒体对象等。
 
 ```jsx
+// 示例：Effect 是什么
 import { useEffect, useRef } from "react";
 
 function VideoPlayer({ isPlaying }) {
@@ -111,6 +114,7 @@ function VideoPlayer({ isPlaying }) {
 如果 Effect 建立订阅、连接、定时器等资源，应该返回清理函数。
 
 ```jsx
+// 示例：Effect 清理
 useEffect(() => {
   const id = setInterval(() => {
     console.log("tick");
@@ -129,6 +133,7 @@ useEffect(() => {
 不推荐用 Effect 计算派生数据：
 
 ```jsx
+// 示例：你可能不需要 Effect
 function Form({ firstName, lastName }) {
   const [fullName, setFullName] = useState("");
 
@@ -143,6 +148,7 @@ function Form({ firstName, lastName }) {
 推荐在渲染期间计算：
 
 ```jsx
+// 示例：你可能不需要 Effect
 function Form({ firstName, lastName }) {
   const fullName = firstName + " " + lastName;
   return <p>{fullName}</p>;
@@ -154,6 +160,7 @@ function Form({ firstName, lastName }) {
 Effect 依赖数组描述了 Effect 使用的响应式值。
 
 ```jsx
+// 示例：Effect 依赖
 useEffect(() => {
   const connection = createConnection(roomId);
   connection.connect();
@@ -168,6 +175,7 @@ useEffect(() => {
 不推荐：
 
 ```jsx
+// 示例：减少不必要依赖
 function ChatRoom({ roomId }) {
   const options = { roomId };
 
@@ -182,6 +190,7 @@ function ChatRoom({ roomId }) {
 推荐：
 
 ```jsx
+// 示例：减少不必要依赖
 function ChatRoom({ roomId }) {
   useEffect(() => {
     const options = { roomId };

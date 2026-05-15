@@ -1,368 +1,367 @@
 ---
-title: Vue cli脚手架与实战
+title: 'Vue 3 脚手架与实战：create-vue、Vite、Router 与 Pinia'
 series: Vue
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
-slug: vue-cli-scaffolding-tutorial
+modDatetime: 2026-05-15T00:00:00.000+08:00
+slug: vue3-create-vue-vite-router-pinia
 featured: false
 draft: false
 tags:
-  - Vue
-  - Vue CLI
-  - 前端
-  - 脚手架
-description: 'Vue CLI脚手架使用，包括项目创建、组件开发、路由配置和实战案例'
+  - Vue3
+  - create-vue
+  - Vite
+  - Pinia
+  - Vue Router
+description: '使用 Vue 3 官方脚手架 create-vue 搭建项目，并结合 Vite、Vue Router 4、Pinia 完成常见业务实战。'
 ---
 
-> Vue CLI 是 Vue.js 官方提供的脚手架工具，用于快速搭建 Vue 项目。
-
-## 安装
-
-```bash
-npm install -g @vue/cli
-vue --version
-```
+> Vue 3 新项目推荐使用 `create-vue` 创建 Vite 工程。它启动快、配置轻，并且天然支持 Vue Router 4、Pinia、TypeScript、Vitest 和 ESLint。
 
 ## 创建项目
 
 ```bash
-vue create my-project
-cd my-project
-npm run serve
+npm create vue@latest my-vue-app
+cd my-vue-app
+npm install
+npm run dev
 ```
 
-### 选择配置
+创建时可以按项目需要选择：
 
-```
-? Please pick a preset: (Use arrow keys)
-  Default ([Vue 3] babel, eslint)
-  Default ([Vue 2] babel, eslint)
-  Manually select features  // 选择这个可以自定义
-```
-
-### 手动选择
-
-```
-? Check the features needed for your project:
-  ◉ Choose Vue version
-  ◉ Babel
-  ◉ TypeScript
-  ◉ Progressive Web App (PWA) Support
-  ◉ Router
-  ◉ Vuex
-  ◉ CSS Pre-processors
-  ◉ Linter / Formatter
-  ◉ Unit Testing
-  ◉ E2E Testing
-```
+| 选项 | 建议 |
+|------|------|
+| TypeScript | 中大型项目建议开启 |
+| JSX | 只有明确需要 JSX 组件时开启 |
+| Vue Router | 多页面或单页应用路由必选 |
+| Pinia | 存在跨页面状态时建议开启 |
+| Vitest | 需要单元测试时开启 |
+| ESLint / Prettier | 团队项目建议开启 |
 
 ## 项目结构
 
-```
-my-project/
+```text
+my-vue-app/
 ├── public/
-│   └── index.html
 ├── src/
 │   ├── assets/
 │   ├── components/
-│   ├── views/
 │   ├── router/
 │   │   └── index.js
-│   ├── store/
-│   │   └── index.js
+│   ├── stores/
+│   │   └── counter.js
+│   ├── views/
 │   ├── App.vue
 │   └── main.js
+├── index.html
 ├── package.json
-└── vue.config.js
+└── vite.config.js
 ```
+
+常见目录职责：
+
+- `components`：可复用组件。
+- `views`：路由页面组件。
+- `router`：路由表和导航守卫。
+- `stores`：Pinia 状态模块。
+- `assets`：图片、字体、全局样式等静态资源。
+
+## 应用入口
+
+```javascript
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+
+import App from './App.vue'
+import router from './router'
+import './assets/main.css'
+
+const app = createApp(App)
+
+app.use(createPinia())
+app.use(router)
+
+app.mount('#app')
+```
+
+`createApp` 会创建应用实例，`app.use()` 用于安装路由、状态库、UI 组件库等插件。
 
 ## 组件开发
 
-### 创建组件
+Vue 3 推荐使用 `<script setup>` 编写单文件组件，它能减少样板代码，并让模板直接访问脚本中的变量和函数。
 
 ```vue
-<!-- src/components/HelloWorld.vue -->
-<template>
-    <div class="hello">
-        <h1>{{ msg }}</h1>
-        <p>{{ count }}</p>
-        <button @click="increment">+1</button>
-    </div>
-</template>
+<script setup>
+import { computed, ref } from 'vue'
 
-<script>
-export default {
-    name: 'HelloWorld',
-    props: {
-        msg: {
-            type: String,
-            default: 'Hello'
-        }
-    },
-    data() {
-        return {
-            count: 0
-        }
-    },
-    methods: {
-        increment() {
-            this.count++
-        }
-    }
+const count = ref(0)
+const label = computed(() => `当前计数：${count.value}`)
+
+function increment() {
+  count.value += 1
 }
 </script>
 
-<style scoped>
-.hello {
-    color: #42b983;
-}
-</style>
+<template>
+  <section class="counter">
+    <p>{{ label }}</p>
+    <button @click="increment">增加</button>
+  </section>
+</template>
 ```
 
-## 路由配置
+## Vue Router 4
 
-### 安装
-
-```bash
-npm install vue-router
-```
-
-### 路由文件
+### 路由配置
 
 ```javascript
-// src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
-import Home from '@/views/Home.vue'
-import About from '@/views/About.vue'
-
-const routes = [
-    {
-        path: '/',
-        name: 'Home',
-        component: Home
-    },
-    {
-        path: '/about',
-        name: 'About',
-        component: About
-    }
-]
+import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
-    history: createWebHistory(),
-    routes
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes: [
+    {
+      path: '/',
+      name: 'home',
+      component: HomeView,
+    },
+    {
+      path: '/posts/:id',
+      name: 'post-detail',
+      component: () => import('../views/PostDetailView.vue'),
+      props: true,
+    },
+  ],
 })
 
 export default router
 ```
 
-### 路由跳转
+### 页面跳转与参数读取
 
 ```vue
-<template>
-    <div>
-        <router-link to="/">首页</router-link>
-        <router-link to="/about">关于</router-link>
-        
-        <router-view></router-view>
-    </div>
-</template>
+<script setup>
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-<script>
-export default {
-    name: 'App'
+const route = useRoute()
+const router = useRouter()
+
+const postId = computed(() => route.params.id)
+
+function backHome() {
+  router.push({ name: 'home' })
 }
 </script>
+
+<template>
+  <article>
+    <h1>文章 {{ postId }}</h1>
+    <button @click="backHome">返回首页</button>
+  </article>
+</template>
 ```
 
-## 路由进阶
+## Pinia 状态管理
 
-### 动态路由
-
-```javascript
-{
-    path: '/user/:id',
-    name: 'User',
-    component: User
-}
-
-// 获取参数
-this.$route.params.id
-```
-
-### 嵌套路由
+Pinia 是 Vue 3 官方推荐的状态管理方案。它支持组合式写法、类型推断和模块拆分。
 
 ```javascript
-{
-    path: '/user',
-    component: UserLayout,
-    children: [
-        { path: 'profile', component: UserProfile },
-        { path: 'settings', component: UserSettings }
-    ]
-}
-```
+import { computed, ref } from 'vue'
+import { defineStore } from 'pinia'
 
-### 导航守卫
+export const useCounterStore = defineStore('counter', () => {
+  const count = ref(0)
+  const doubleCount = computed(() => count.value * 2)
 
-```javascript
-router.beforeEach((to, from, next) => {
-    const isAuthenticated = localStorage.getItem('token')
-    
-    if (to.meta.requiresAuth && !isAuthenticated) {
-        next('/login')
-    } else {
-        next()
-    }
+  function increment() {
+    count.value += 1
+  }
+
+  return {
+    count,
+    doubleCount,
+    increment,
+  }
 })
 ```
 
-## 状态管理 Vuex
+在组件中使用：
 
-### 安装
+```vue
+<script setup>
+import { useCounterStore } from '@/stores/counter'
+
+const counter = useCounterStore()
+</script>
+
+<template>
+  <button @click="counter.increment">
+    {{ counter.count }} / {{ counter.doubleCount }}
+  </button>
+</template>
+```
+
+## 实战：待办事项
+
+### 状态模块
+
+```javascript
+import { computed, ref } from 'vue'
+import { defineStore } from 'pinia'
+
+export const useTodoStore = defineStore('todo', () => {
+  const todos = ref([
+    { id: 1, title: '学习 Vue 3', done: true },
+    { id: 2, title: '完成待办实战', done: false },
+  ])
+
+  const unfinishedCount = computed(
+    () => todos.value.filter(todo => !todo.done).length
+  )
+
+  function addTodo(title) {
+    const nextTitle = title.trim()
+
+    if (!nextTitle) {
+      return
+    }
+
+    todos.value.push({
+      id: Date.now(),
+      title: nextTitle,
+      done: false,
+    })
+  }
+
+  function removeTodo(id) {
+    todos.value = todos.value.filter(todo => todo.id !== id)
+  }
+
+  return {
+    todos,
+    unfinishedCount,
+    addTodo,
+    removeTodo,
+  }
+})
+```
+
+### 页面组件
+
+```vue
+<script setup>
+import { ref } from 'vue'
+import { useTodoStore } from '@/stores/todo'
+
+const todoStore = useTodoStore()
+const todoTitle = ref('')
+
+function submitTodo() {
+  todoStore.addTodo(todoTitle.value)
+  todoTitle.value = ''
+}
+</script>
+
+<template>
+  <section>
+    <form @submit.prevent="submitTodo">
+      <input v-model.trim="todoTitle" placeholder="输入待办事项" />
+      <button type="submit">添加</button>
+    </form>
+
+    <p>未完成：{{ todoStore.unfinishedCount }}</p>
+
+    <ul>
+      <li v-for="todo in todoStore.todos" :key="todo.id">
+        <label>
+          <input v-model="todo.done" type="checkbox" />
+          <span :class="{ done: todo.done }">{{ todo.title }}</span>
+        </label>
+        <button @click="todoStore.removeTodo(todo.id)">删除</button>
+      </li>
+    </ul>
+  </section>
+</template>
+```
+
+## 实战：登录流程
+
+### 登录状态
+
+```javascript
+import { computed, ref } from 'vue'
+import { defineStore } from 'pinia'
+
+export const useAuthStore = defineStore('auth', () => {
+  const user = ref(null)
+
+  const isLoggedIn = computed(() => Boolean(user.value))
+
+  async function login(account) {
+    user.value = {
+      id: 1,
+      name: account.username,
+    }
+  }
+
+  function logout() {
+    user.value = null
+  }
+
+  return {
+    user,
+    isLoggedIn,
+    login,
+    logout,
+  }
+})
+```
+
+### 登录页面
+
+```vue
+<script setup>
+import { reactive } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+const router = useRouter()
+const auth = useAuthStore()
+
+const form = reactive({
+  username: '',
+  password: '',
+})
+
+async function submitLogin() {
+  await auth.login(form)
+  router.replace({ name: 'home' })
+}
+</script>
+
+<template>
+  <form @submit.prevent="submitLogin">
+    <input v-model.trim="form.username" autocomplete="username" />
+    <input v-model="form.password" autocomplete="current-password" type="password" />
+    <button type="submit">登录</button>
+  </form>
+</template>
+```
+
+## 构建与部署
 
 ```bash
-npm install vuex
+npm run build
+npm run preview
 ```
 
-### Store 配置
-
-```javascript
-// src/store/index.js
-import { createStore } from 'vuex'
-
-export default createStore({
-    state: {
-        user: null,
-        todos: []
-    },
-    mutations: {
-        SET_USER(state, user) {
-            state.user = user
-        },
-        ADD_TODO(state, todo) {
-            state.todos.push(todo)
-        }
-    },
-    actions: {
-        async login({ commit }, credentials) {
-            const user = await api.login(credentials)
-            commit('SET_USER', user)
-        }
-    },
-    getters: {
-        isLoggedIn: state => !!state.user
-    }
-})
-```
-
-## 实战案例
-
-### Todo 应用
-
-```vue
-<!-- src/views/Todo.vue -->
-<template>
-    <div class="todo">
-        <h1>待办事项</h1>
-        
-        <input 
-            v-model="newTodo" 
-            @keyup.enter="addTodo"
-            placeholder="添加新任务"
-        />
-        
-        <ul>
-            <li v-for="todo in todos" :key="todo.id">
-                <input 
-                    type="checkbox" 
-                    v-model="todo.done"
-                />
-                <span :class="{ done: todo.done }">
-                    {{ todo.text }}
-                </span>
-                <button @click="removeTodo(todo.id)">删除</button>
-            </li>
-        </ul>
-    </div>
-</template>
-
-<script>
-export default {
-    data() {
-        return {
-            newTodo: '',
-            todos: []
-        }
-    },
-    methods: {
-        addTodo() {
-            if (!this.newTodo.trim()) return
-            
-            this.todos.push({
-                id: Date.now(),
-                text: this.newTodo,
-                done: false
-            })
-            this.newTodo = ''
-        },
-        removeTodo(id) {
-            this.todos = this.todos.filter(t => t.id !== id)
-        }
-    }
-}
-</script>
-
-<style scoped>
-.done {
-    text-decoration: line-through;
-}
-</style>
-```
-
-### 用户登录
-
-```vue
-<template>
-    <div class="login">
-        <form @submit.prevent="handleLogin">
-            <input v-model="form.username" placeholder="用户名" />
-            <input v-model="form.password" type="password" placeholder="密码" />
-            <button type="submit">登录</button>
-        </form>
-    </div>
-</template>
-
-<script>
-export default {
-    data() {
-        return {
-            form: {
-                username: '',
-                password: ''
-            }
-        }
-    },
-    methods: {
-        async handleLogin() {
-            try {
-                await this.$store.dispatch('login', this.form)
-                this.$router.push('/')
-            } catch (error) {
-                alert('登录失败')
-            }
-        }
-    }
-}
-</script>
-```
+`npm run build` 会输出生产环境文件到 `dist`，`npm run preview` 可以在本地预览构建结果。
 
 ## 小结
 
-- **Vue CLI**：快速搭建项目
-- **项目结构**：components、views、router、store
-- **组件开发**：template、script、style
-- **路由**：vue-router 配置和导航守卫
-- **状态**：Vuex store 管理应用状态
-- **实战**：Todo 应用和登录功能示例
+- Vue 3 新项目使用 `create-vue` 和 Vite 创建。
+- 应用入口通过 `createApp` 挂载，通过 `app.use()` 安装插件。
+- 多页面导航使用 Vue Router 4，跨组件状态使用 Pinia。
+- 业务组件优先使用 `<script setup>`、组合式函数和单文件组件组织代码。

@@ -461,12 +461,20 @@ app.commandLine.appendSwitch('ignore-gpu-blocklist');
 ```javascript
 // ❌ 每个功能一个窗口
 function openSettings() {
-  const settingsWindow = new BrowserWindow({...});
+  const settingsWindow = new BrowserWindow({
+    width: 600,
+    height: 480,
+    title: 'Settings'
+  });
   settingsWindow.loadFile('settings.html');
 }
 
 function openHelp() {
-  const helpWindow = new BrowserWindow({...});
+  const helpWindow = new BrowserWindow({
+    width: 720,
+    height: 520,
+    title: 'Help'
+  });
   helpWindow.loadFile('help.html');
 }
 

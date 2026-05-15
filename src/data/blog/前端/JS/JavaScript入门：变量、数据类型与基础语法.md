@@ -32,29 +32,32 @@ const PI = 3.14159    // 常量
 
 ```javascript
 // 基本类型
-'字符串'
-123
-true
-undefined
-null
+const name = '字符串'
+const count = 123
+const isVisible = true
+let emptyValue = undefined
+const nullableValue = null
 
 // 引用类型
-{ name: '张三' }
-[1, 2, 3]
-function() {}
+const user = { name: '张三' }
+const numbers = [1, 2, 3]
+const greet = function() {
+  return '你好'
+}
 ```
 
 ## 运算符
 
 ```javascript
 // 算术
-+ - * / %
+const total = 10 + 2 - 3 * 4 / 2 % 3
 
 // 比较
-== === != !== > < >= <=
+const isSame = total === 6
+const isGreater = total > 3
 
 // 逻辑
-&& || !
+const canSubmit = isSame && !isGreater
 ```
 
 ## 控制结构

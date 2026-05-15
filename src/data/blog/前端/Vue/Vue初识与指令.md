@@ -1,262 +1,327 @@
-﻿---
-title: Vue初识与指令
+---
+title: 'Vue 3 初识与指令'
 series: Vue
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
-slug: vue-introduction-and-directives
-description: 'Vue.js入门，介绍Vue的基本概念、实例创建和常用指令'
-tags:
-  - Vue
-  - 前端
-  - JavaScript
-  - 框架
-category: 前端
+modDatetime: 2026-05-15T00:00:00.000+08:00
+slug: vue3-introduction-and-directives
+featured: false
 draft: false
-language: zh-CN
+tags:
+  - Vue3
+  - 前端框架
+  - Composition API
+  - 指令
+description: '从 Vue 3 的 createApp、响应式状态和常用模板指令入门，掌握现代 Vue 单文件组件写法。'
 ---
 
-> Vue.js 是一个渐进式 JavaScript 框架，用于构建用户界面。
+> Vue 3 是一个渐进式 JavaScript 框架，适合从简单交互逐步扩展到完整的单页应用。它的核心体验围绕 `createApp`、单文件组件和 Composition API 展开。
 
-## Vue 简介
+## Vue 3 的核心特点
 
-### 什么是 Vue
-
-**Vue.js** 是一个渐进式 JavaScript 框架，可以轻松构建交互式用户界面。
-
-### Vue 的特点
-
-| 特点 | 说明 |
+| 特性 | 说明 |
 |------|------|
-| **渐进式** | 可以从小到大，逐步引入 |
-| **数据绑定** | 双向数据绑定，简化 DOM 操作 |
-| **组件化** | 组件化开发，提高代码复用 |
-| **虚拟 DOM** | 提高 DOM 操作效率 |
+| 渐进式使用 | 可以从一个页面片段开始，也可以构建完整应用 |
+| 响应式系统 | 使用 `ref`、`reactive`、`computed`、`watch` 管理状态 |
+| 组件化 | 通过单文件组件拆分界面和逻辑 |
+| Composition API | 按业务能力组织逻辑，便于复用和维护 |
+| TypeScript 友好 | 对类型推断、组件参数和组合式函数支持更完整 |
 
-## Vue 基本使用
+## 快速开始
 
-### 1. 引入 Vue
+### CDN 方式
 
-```html
-<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-```
-
-### 2. 创建 Vue 实例
+适合演示、原型和给旧页面补充少量交互：
 
 ```html
 <div id="app">
-    <h1>{{ message }}</h1>
+  <p>{{ message }}</p>
+  <button @click="count++">点击 {{ count }} 次</button>
 </div>
 
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 <script>
-    var app = new Vue({
-        el: '#app',
-        data: {
-            message: 'Hello Vue!'
-        }
-    });
+  const { createApp, ref } = Vue
+
+  createApp({
+    setup() {
+      const message = ref('你好，Vue 3')
+      const count = ref(0)
+
+      return {
+        message,
+        count,
+      }
+    },
+  }).mount('#app')
 </script>
 ```
 
-## Vue 实例选项
+### 单文件组件方式
 
-### el - 挂载点
+新项目推荐使用 Vite 和单文件组件，模板、逻辑和样式可以聚合在一个 `.vue` 文件中：
 
-```javascript
-new Vue({
-    el: '#app',      // 挂载点
-    el: '.container',
-    el: document.getElementById('app')
-})
+```vue
+<script setup>
+import { ref } from 'vue'
+
+const message = ref('你好，Vue 3')
+const count = ref(0)
+</script>
+
+<template>
+  <section class="demo">
+    <p>{{ message }}</p>
+    <button @click="count++">点击 {{ count }} 次</button>
+  </section>
+</template>
+
+<style scoped>
+.demo {
+  display: grid;
+  gap: 12px;
+}
+</style>
 ```
 
-> **注意**：不要挂在到 `html` 或 `body` 上。
+## 响应式状态
 
-### data - 数据
+### ref
 
-```javascript
-new Vue({
-    el: '#app',
-    data: {
-        message: 'Hello Vue',
-        count: 0,
-        user: { name: '张三', age: 25 },
-        items: ['苹果', '香蕉', '橙子']
-    }
-})
+`ref` 适合字符串、数字、布尔值，也可以包裹对象。模板中会自动解包，脚本中需要通过 `.value` 读取或修改。
+
+```vue
+<script setup>
+import { ref } from 'vue'
+
+const count = ref(0)
+
+function increment() {
+  count.value += 1
+}
+</script>
+
+<template>
+  <button @click="increment">当前次数：{{ count }}</button>
+</template>
 ```
 
-### methods - 方法
+### reactive
 
-```javascript
-new Vue({
-    el: '#app',
-    data: {
-        count: 0
-    },
-    methods: {
-        addCount() {
-            this.count++;
-        },
-        sayHello(name) {
-            return `Hello, ${name}`;
-        }
-    }
+`reactive` 适合结构稳定的对象状态。
+
+```vue
+<script setup>
+import { reactive } from 'vue'
+
+const form = reactive({
+  username: '',
+  email: '',
 })
+</script>
+
+<template>
+  <label>
+    用户名
+    <input v-model.trim="form.username" />
+  </label>
+  <label>
+    邮箱
+    <input v-model.trim="form.email" />
+  </label>
+</template>
 ```
 
-### computed - 计算属性
+### computed 与 watch
 
-```javascript
-new Vue({
-    el: '#app',
-    data: {
-        firstName: '张',
-        lastName: '三'
-    },
-    computed: {
-        fullName() {
-            return this.firstName + this.lastName;
-        }
-    }
+`computed` 用来声明派生值，`watch` 用来处理状态变化带来的副作用。
+
+```vue
+<script setup>
+import { computed, ref, watch } from 'vue'
+
+const keyword = ref('')
+const items = ref(['Vue', 'Vite', 'Pinia', 'Router'])
+
+const filteredItems = computed(() =>
+  items.value.filter(item =>
+    item.toLowerCase().includes(keyword.value.toLowerCase())
+  )
+)
+
+watch(keyword, value => {
+  console.log('搜索关键词变为：', value)
 })
-```
+</script>
 
-### watch - 侦听器
-
-```javascript
-new Vue({
-    el: '#app',
-    data: {
-        question: ''
-    },
-    watch: {
-        question(newVal, oldVal) {
-            console.log(`问题从 ${oldVal} 变为 ${newVal}`);
-        }
-    }
-})
+<template>
+  <input v-model.trim="keyword" placeholder="搜索技术栈" />
+  <ul>
+    <li v-for="item in filteredItems" :key="item">{{ item }}</li>
+  </ul>
+</template>
 ```
 
 ## 常用指令
 
-### v-text / v-html
+### 文本渲染
 
-```html
-<!-- 纯文本 -->
-<span v-text="message"></span>
-<span>{{ message }}</span>
+```vue
+<script setup>
+const title = 'Vue 3 指令'
+const safeHtml = '<strong>只渲染可信 HTML</strong>'
+</script>
 
-<!-- HTML -->
-<div v-html="htmlContent"></div>
+<template>
+  <h2 v-text="title"></h2>
+  <p v-html="safeHtml"></p>
+</template>
 ```
 
-### v-model - 双向绑定
+`v-html` 会把字符串作为 HTML 插入页面，只能用于可信内容，不能直接渲染用户输入。
 
-```html
-<input v-model="message">
+### 条件渲染
 
-<!-- 修饰符 -->
-<input v-model.number="age">      <!-- 自动转换为数字 -->
-<input v-model.trim="username">   <!-- 去除首尾空格 -->
-<input v-model.lazy="message">   <!-- 失去焦点时更新 -->
+```vue
+<script setup>
+import { ref } from 'vue'
+
+const isLoggedIn = ref(false)
+const isLoading = ref(false)
+</script>
+
+<template>
+  <p v-if="isLoading">加载中...</p>
+  <p v-else-if="isLoggedIn">欢迎回来</p>
+  <p v-else>请先登录</p>
+
+  <button v-show="!isLoading">可见性由 CSS 控制</button>
+</template>
 ```
 
-### v-show / v-if
+`v-if` 会创建或销毁节点，适合切换频率低的场景。`v-show` 只是切换 `display`，适合频繁显示隐藏。
 
-```html
-<!-- v-show: display 控制 -->
-<div v-show="isShow">显示</div>
+### 列表渲染
 
-<!-- v-if: 条件渲染 -->
-<div v-if="type === 'A'">A</div>
-<div v-else-if="type === 'B'">B</div>
-<div v-else>C</div>
-```
+```vue
+<script setup>
+const users = [
+  { id: 1, name: 'Ada', role: 'admin' },
+  { id: 2, name: 'Lin', role: 'editor' },
+]
+</script>
 
-### v-for - 循环
-
-```html
-<!-- 数组 -->
-<ul>
-    <li v-for="(item, index) in items" :key="index">
-        {{ index }} - {{ item }}
+<template>
+  <ul>
+    <li v-for="user in users" :key="user.id">
+      {{ user.name }} - {{ user.role }}
     </li>
-</ul>
-
-<!-- 对象 -->
-<div v-for="(value, key, index) in user" :key="key">
-    {{ index }}. {{ key }}: {{ value }}
-</div>
+  </ul>
+</template>
 ```
 
-### v-on - 事件绑定
+列表必须提供稳定的 `key`，优先使用业务唯一 ID。
 
-```html
-<button v-on:click="handleClick">点击</button>
-<button @click="handleClick">点击</button>
+### 表单绑定
 
-<!-- 传参 -->
-<button @click="handleClick('arg1', $event)">点击</button>
+```vue
+<script setup>
+import { ref } from 'vue'
 
-<!-- 修饰符 -->
-<button @click.stop="handleClick">阻止冒泡</button>
-<button @click.prevent="handleSubmit">阻止默认行为</button>
-<input @keyup.enter="handleEnter">回车键
+const username = ref('')
+const agree = ref(false)
+const level = ref('basic')
+</script>
+
+<template>
+  <input v-model.trim="username" placeholder="用户名" />
+
+  <label>
+    <input v-model="agree" type="checkbox" />
+    同意协议
+  </label>
+
+  <select v-model="level">
+    <option value="basic">基础</option>
+    <option value="pro">专业</option>
+  </select>
+</template>
 ```
 
-### v-bind - 属性绑定
+常见修饰符包括 `trim`、`number` 和 `lazy`。
 
-```html
-<img v-bind:src="imageSrc">
-<img :src="imageSrc">
+### 事件绑定
 
-<!-- 对象语法 -->
-<div :class="{ active: isActive, 'text-danger': hasError }"></div>
+```vue
+<script setup>
+import { ref } from 'vue'
 
-<!-- 数组语法 -->
-<div :class="[activeClass, errorClass]"></div>
+const count = ref(0)
 
-<!-- 样式 -->
-<div :style="{ color: textColor, fontSize: fontSize + 'px' }"></div>
+function submit() {
+  console.log('提交表单')
+}
+</script>
+
+<template>
+  <button @click="count++">增加</button>
+
+  <form @submit.prevent="submit">
+    <button type="submit">提交</button>
+  </form>
+
+  <input @keyup.enter="submit" placeholder="按 Enter 提交" />
+</template>
 ```
 
-## 条件渲染
+`@click` 是 `v-on:click` 的缩写，`.prevent`、`.stop`、`.enter` 等修饰符能让模板更清晰。
 
-### v-if vs v-show
+### 属性绑定
 
-| 特性 | v-if | v-show |
-|------|------|--------|
-| **原理** | DOM 操作 | display 控制 |
-| **切换开销** | 高（重建 DOM） | 低（仅切换显示） |
-| **初始开销** | 低（条件为 false 不渲染） | 高（始终渲染） |
-| **适用场景** | 很少切换 | 频繁切换 |
+```vue
+<script setup>
+import { computed, ref } from 'vue'
 
-## 事件处理
+const isActive = ref(true)
+const imageUrl = '/images/avatar.png'
 
-### 事件修饰符
+const buttonClass = computed(() => ({
+  active: isActive.value,
+  muted: !isActive.value,
+}))
+</script>
 
-| 修饰符 | 说明 |
-|--------|------|
-| `.stop` | 阻止冒泡 |
-| `.prevent` | 阻止默认行为 |
-| `.capture` | 使用捕获模式 |
-| `.self` | 仅触发自身 |
-| `.once` | 只触发一次 |
-
-### 按键修饰符
-
-```html
-<input @keyup.enter="handleEnter">
-<input @keyup.esc="handleEsc">
-<input @keyup.up="handleUp">
-<input @keyup.ctrl.enter="handleCtrlEnter">
+<template>
+  <img :src="imageUrl" alt="头像" />
+  <button :class="buttonClass" :disabled="!isActive">保存</button>
+</template>
 ```
+
+`:` 是 `v-bind:` 的缩写，适合动态绑定属性、类名、样式和组件参数。
+
+## 自定义指令
+
+自定义指令适合封装直接操作 DOM 的小能力，例如自动聚焦：
+
+```vue
+<script setup>
+const vFocus = {
+  mounted(element) {
+    element.focus()
+  },
+}
+</script>
+
+<template>
+  <input v-focus placeholder="打开页面后自动聚焦" />
+</template>
+```
+
+在 `<script setup>` 中，以 `v` 开头的对象可以直接作为局部自定义指令使用。
 
 ## 小结
 
-- **Vue 实例**：`el`、`data`、`methods`、`computed`、`watch`
-- **指令**：`v-text`、`v-html`、`v-model`、`v-show`、`v-if`、`v-for`、`v-on`、`v-bind`
-- **双向绑定**：`v-model` 实现表单输入与应用状态的双向绑定
-- **条件渲染**：`v-if` vs `v-show`
-- **列表渲染**：`v-for` with `:key`
+- 使用 `createApp` 挂载 Vue 3 应用。
+- 新项目优先采用 Vite、单文件组件和 `<script setup>`。
+- 用 `ref`、`reactive`、`computed`、`watch` 管理状态和派生逻辑。
+- 熟悉 `v-if`、`v-show`、`v-for`、`v-model`、`v-on`、`v-bind` 等指令后，就能完成大多数基础交互。

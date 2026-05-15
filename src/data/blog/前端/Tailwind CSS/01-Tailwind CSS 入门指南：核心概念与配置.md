@@ -19,6 +19,8 @@ language: zh-CN
 
 Tailwind CSS 是一个**实用优先**（Utility-First）的 CSS 框架，它提供了大量低级工具类，可以直接在 HTML 中组合使用，快速构建自定义设计。
 
+本文以 Tailwind CSS 4 的 CSS-first 配置为主，同时保留 `tailwind.config.js` 给 v3 或迁移项目参考。
+
 ### 为什么选择 Tailwind CSS？
 
 | 特性 | 说明 |
@@ -38,6 +40,32 @@ Tailwind CSS 是一个**实用优先**（Utility-First）的 CSS 框架，它提
 | **Bootstrap** | 组件库 | 低 |
 | **MUI** | Material Design | 中等 |
 | **纯 CSS** | 手写样式 | 高 |
+
+## 快速安装
+
+### Vite 项目
+
+```bash
+npm install tailwindcss @tailwindcss/vite
+```
+
+```javascript
+// vite.config.js
+import { defineConfig } from 'vite'
+import tailwindcss from '@tailwindcss/vite'
+
+export default defineConfig({
+  plugins: [
+    // Tailwind CSS 4 推荐通过 Vite 插件接入。
+    tailwindcss(),
+  ],
+})
+```
+
+```css
+/* src/style.css */
+@import "tailwindcss";
+```
 
 ## 核心概念
 
@@ -327,9 +355,10 @@ Tailwind CSS 是一个**实用优先**（Utility-First）的 CSS 框架，它提
 </button>
 
 <!-- 焦点 -->
-<input class="focus:ring-2 focus:ring-blue-500 focus:outline-none">
-  焦点样式
-</input>
+<label class="block">
+  <span>焦点样式</span>
+  <input class="focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+</label>
 
 <!-- 活动 -->
 <button class="active:bg-blue-700">
@@ -400,7 +429,22 @@ Tailwind CSS 是一个**实用优先**（Utility-First）的 CSS 框架，它提
 
 ## 自定义配置
 
-### Tailwind.config.js
+### CSS-first 主题变量（Tailwind CSS 4）
+
+```css
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #eff6ff;
+  --color-brand-500: #3b82f6;
+  --color-brand-900: #1e3a8a;
+  --spacing-page: 2rem;
+}
+```
+
+定义后可以直接使用 `bg-brand-500`、`text-brand-900`、`p-page` 等工具类。
+
+### Tailwind.config.js（v3 或迁移项目）
 
 ```javascript
 /** @type {import('tailwindcss').Config} */
@@ -485,5 +529,3 @@ export default {
   </button>
 </div>
 ```
-
-
