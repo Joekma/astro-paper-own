@@ -41,12 +41,16 @@ public class SampleClass
 }
 
 // 使用 DllImportAttribute 声明外部方法
-[System.Runtime.InteropServices.DllImport("user32.dll")]
-extern static void SampleMethod();
+[DllImport("user32.dll")]
+private static extern void SampleMethod();
 
 // 多个特性可以应用于同一声明
-void MethodA([In][Out] ref double x) { }
-void MethodB([In, Out] ref double x) { }
+[method: Obsolete]
+[Conditional("DEBUG")]
+void MethodA() { }
+
+// 特性还可以应用于泛型类型参数
+void GenericMethod<[Nullable] T>() { }
 ```
 
 ### 命名约定
@@ -276,7 +280,7 @@ public class Product
 {
     public int Id { get; set; }
     
-    [NonSerialized]  // 标记不参与序列化
+    [field: NonSerialized]  // 标记不参与序列化
     private string _cache;
 }
 ```
