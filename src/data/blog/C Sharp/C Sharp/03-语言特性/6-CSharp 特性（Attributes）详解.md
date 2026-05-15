@@ -316,6 +316,150 @@ public class UserModel
 }
 ```
 
+## 常见特性分类速查
+
+### 序列化与JSON
+
+| 特性 | 用途 | 命名空间 |
+|------|------|----------|
+| `[Serializable]` | 标记类型可序列化 | System |
+| `[NonSerialized]` | 标记字段不参与序列化 | System |
+| `[JsonProperty]` | JSON序列化属性名 | System.Text.Json.Serialization |
+| `[JsonIgnore]` | 序列化时忽略属性 | System.Text.Json.Serialization |
+
+```csharp
+[Serializable]
+public class Person
+{
+    public string Name { get; set; }
+    
+    [NonSerialized]
+    private string _internalCache;
+    
+    [JsonProperty("user_email")]
+    public string Email { get; set; }
+    
+    [JsonIgnore]
+    public string Password { get; set; }
+}
+```
+
+### 数据验证
+
+| 特性 | 用途 | 命名空间 |
+|------|------|----------|
+| `[Required]` | 必填字段 | System.ComponentModel.DataAnnotations |
+| `[StringLength]` | 字符串长度限制 | System.ComponentModel.DataAnnotations |
+| `[Range]` | 数值范围限制 | System.ComponentModel.DataAnnotations |
+| `[EmailAddress]` | 邮箱格式验证 | System.ComponentModel.DataAnnotations |
+| `[Phone]` | 电话号码格式验证 | System.ComponentModel.DataAnnotations |
+| `[RegularExpression]` | 正则表达式验证 | System.ComponentModel.DataAnnotations |
+
+```csharp
+public class RegisterModel
+{
+    [Required(ErrorMessage = "用户名不能为空")]
+    [StringLength(20, MinimumLength = 3, ErrorMessage = "用户名长度为3-20")]
+    public string UserName { get; set; }
+    
+    [Required(ErrorMessage = "邮箱不能为空")]
+    [EmailAddress(ErrorMessage = "邮箱格式不正确")]
+    public string Email { get; set; }
+    
+    [Range(18, 100, ErrorMessage = "年龄必须在18-100之间")]
+    public int Age { get; set; }
+}
+```
+
+### ASP.NET Core Web API
+
+| 特性 | 用途 | 命名空间 |
+|------|------|----------|
+| `[HttpGet]` | GET请求路由 | Microsoft.AspNetCore.Mvc |
+| `[HttpPost]` | POST请求路由 | Microsoft.AspNetCore.Mvc |
+| `[HttpPut]` | PUT请求路由 | Microsoft.AspNetCore.Mvc |
+| `[HttpDelete]` | DELETE请求路由 | Microsoft.AspNetCore.Mvc |
+| `[Route]` | 自定义路由模板 | Microsoft.AspNetCore.Mvc |
+| `[FromBody]` | 从请求体获取参数 | Microsoft.AspNetCore.Mvc |
+| `[FromQuery]` | 从查询字符串获取参数 | Microsoft.AspNetCore.Mvc |
+| `[FromRoute]` | 从路由获取参数 | Microsoft.AspNetCore.Mvc |
+
+```csharp
+[ApiController]
+[Route("api/[controller]")]
+public class UsersController : ControllerBase
+{
+    [HttpGet]
+    public List<User> GetUsers([FromQuery] int page = 1) { /* ... */ }
+    
+    [HttpGet("{id}")]
+    public User GetUser(int id) { /* ... */ }
+    
+    [HttpPost]
+    public User CreateUser([FromBody] CreateUserRequest request) { /* ... */ }
+    
+    [HttpPut("{id}")]
+    public User UpdateUser(int id, [FromBody] UpdateUserRequest request) { /* ... */ }
+    
+    [HttpDelete("{id}")]
+    public void DeleteUser(int id) { /* ... */ }
+}
+```
+
+### EF Core 数据注解
+
+| 特性 | 用途 | 命名空间 |
+|------|------|----------|
+| `[Key]` | 主键 | System.ComponentModel.DataAnnotations |
+| `[Table]` | 指定表名 | System.ComponentModel.DataAnnotations |
+| `[Column]` | 指定列名 | System.ComponentModel.DataAnnotations |
+| `[DatabaseGenerated]` | 数据库生成策略 | System.ComponentModel.DataAnnotations |
+| `[NotMapped]` | 不映射到数据库 | System.ComponentModel.DataAnnotations |
+
+```csharp
+[Table("Users")]
+public class User
+{
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public int Id { get; set; }
+    
+    [Column("UserName")]
+    public string Name { get; set; }
+    
+    [NotMapped]
+    public string FullName => $"{FirstName} {LastName}";
+}
+```
+
+### 调试与诊断
+
+| 特性 | 用途 | 命名空间 |
+|------|------|----------|
+| `[Conditional]` | 条件编译 | System.Diagnostics |
+| `[Obsolete]` | 标记过时 | System |
+| `[DebuggerStepThrough]` | 调试时跳过方法 | System.Diagnostics |
+| `[CallerMemberName]` | 自动填充成员名 | System.Runtime.CompilerServices |
+| `[CallerFilePath]` | 自动填充文件路径 | System.Runtime.CompilerServices |
+| `[CallerLineNumber]` | 自动填充行号 | System.Runtime.CompilerServices |
+
+### 依赖注入
+
+| 特性 | 用途 | 命名空间 |
+|------|------|----------|
+| `[Inject]` | 注入服务 | Microsoft.DependencyInjection |
+| `[FromServices]` | 注入服务到Action | Microsoft.AspNetCore.Mvc |
+| `[FromHeader]` | 从HTTP头获取 | Microsoft.AspNetCore.Mvc |
+
+### COM互操作与平台调用
+
+| 特性 | 用途 | 命名空间 |
+|------|------|----------|
+| `[DllImport]` | 声明外部DLL方法 | System.Runtime.InteropServices |
+| `[StructLayout]` | 结构体布局 | System.Runtime.InteropServices |
+| `[MarshalAs]` | 指定数据类型封送 | System.Runtime.InteropServices |
+| `[ComVisible]` | COM可见性 | System.Runtime.InteropServices |
+
 ## 总结
 
 | 特性 | 用途 | 版本 |
