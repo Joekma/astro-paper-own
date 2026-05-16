@@ -29,8 +29,7 @@ class Employee(models.Model):
 
 Employee.objects.filter(name="alex")
 
-# 等价SQL
-SELECT * FROM employee WHERE name='alex';
+# 等价 SQL：SELECT * FROM employee WHERE name='alex';
 ```
 
 ## 模型定义

@@ -33,6 +33,7 @@ Django作为一个完美主义者的终极框架，当然也会想到用户的�
 
 ```python
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 
 # 用户认证
 user = authenticate(username='lqz', password='123')
@@ -45,7 +46,7 @@ logout(request)
 # request.user就是匿名用户
 
 # 校验是否通过认证（是否登录）
-request.user.is_authenticated()
+request.user.is_authenticated
 
 # 创建普通用户
 User.objects.create_user(username='lqz')
@@ -62,8 +63,10 @@ user.check_password(password)
 
 # 登录认证装饰器（没有登录的时候跳转）
 @login_required(login_url='/login/')
+def profile(request):
+    ...
 
-# 全局配置（在setting中配置）
+# 全局配置（在 settings.py 中配置）
 LOGIN_URL = '/login/'
 ```
 
@@ -140,7 +143,7 @@ def logout_view(request):
 
 ```python
 def my_view(request):
-    if not request.user.is_authenticated():
+    if not request.user.is_authenticated:
         return redirect('%s?next=%s' % (settings.LOGIN_URL, request.path))
 ```
 
@@ -175,7 +178,7 @@ auth提供的一个创建新用户的方法，需要提供必要参数（usernam
 ```python
 from django.contrib.auth.models import User
 
-user = User.objects.create_user(username='用户名', password='密码', email='邮箱', ...)
+user = User.objects.create_user(username='用户名', email='邮箱', password='密码')
 ```
 
 ### create_superuser()
@@ -187,7 +190,7 @@ auth提供的一个创建新的超级用户的方法，需要提供必要参数�
 ```python
 from django.contrib.auth.models import User
 
-user = User.objects.create_superuser(username='用户名', password='密码', email='邮箱', ...)
+user = User.objects.create_superuser(username='用户名', email='邮箱', password='密码')
 ```
 
 ### check_password(password)
@@ -261,6 +264,7 @@ AUTH_USER_MODEL = 'app名.User'
 ```python
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 

@@ -14,6 +14,8 @@ tags:
 description: "Django+nginx+uwsgi 部署教程（centos7+ubuntu16.4）"
 ---
 
+> 维护提示：CentOS 7、Ubuntu 16.04 和 Python 3.6 都已属于历史环境。本文保留为旧服务器迁移参考；新项目建议使用受支持的 Linux 发行版、Python 3.12+、Django 5.2 LTS/6.x，并优先考虑 Gunicorn 或 ASGI 服务器配合 Nginx 部署。
+
 ## 原理介绍
 
 ### 组件说明

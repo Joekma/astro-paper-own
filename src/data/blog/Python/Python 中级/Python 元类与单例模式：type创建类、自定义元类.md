@@ -22,7 +22,6 @@ language: zh-CN
 
 一切源自于一句话：python中一切皆为对象。让我们先定义一个类，然后逐步分析
 ```python
-
 class Teather(object):
     school='xindongfang'
     def __init__(self,name,age):
@@ -31,18 +30,17 @@ class Teather(object):
 
     def say(self):
         print('%s says welcome to the xindongfang to learn cook'%self.name)
-
 ```
 所有的对象都是实例化或者说调用类而得到的（调用类的过程称为类的实例化），比如对象te1是调用类Teacher得到的
 ```python
 te1=Teather('shahuhu',35)
-print(type(te1))    [[查看对象的类是]]<class '__main__.Teather'>
+print(type(te1))  # <class '__main__.Teather'>
 ```
 如果一切皆为对象，那么类Teacher本质也是一个对象，既然所有的对象都是调用类得到的，那么Teacher必然也是调用了一个类得到的，这个类称为元类
 
 **于是我们可以推导出=== >产生Teacher的过程一定发生了：Teacher=元类(...)**
 ```python
-print(type(Teacher)) # 结果为<class 'type'>，证明是调用了type这个元类而产生的Teacher，即默认的元类为type　
+print(type(Teacher)) # 结果为<class 'type'>，证明是调用了type这个元类而产生的Teacher，即默认的元类为type
 ```
 ## class关键字创建类的流程分析
 
@@ -83,7 +81,6 @@ m=300
 
 print(g) #{'x': 100, 'y': 2,'z':200,......}
 print(l) #{'m': 300}
-
 ```
 ## 自定义元类控制类Teacher的创建
 
@@ -144,7 +141,7 @@ class Foo:
 obj=Foo()
 # 1、要想让obj这个对象变成一个可调用的对象，需要在该对象的类中定义一个方法__call__方法，该方法会在调用对象时自动触发
 # 2、调用obj的返回值就是__call__方法的返回值
-res=obj(1,2,3,x=1,y=2) 
+res=obj(1,2,3,x=1,y=2)
 print(res)
 ```
 
@@ -171,7 +168,6 @@ class Teacher(object,metaclass=Mymeta):
 te1=Teacher('shahuhu',35)
 
 print(te1) #123
-
 ```
 默认地，调用te1=Teacher('shahuhu',35)会做三件事
 
@@ -289,7 +285,7 @@ class OldboyTeacher(Foo,metaclass=Mymeta):
     # def __new__(cls, *args, **kwargs):
     #     print('OldboyTeacher.__new__')
 
-OldboyTeacher('egon',18) [[触发OldboyTeacher的类中的__call__方法的执行，进而执行self]].__new__开始查找
+OldboyTeacher('egon', 18)  # 触发 OldboyTeacher 类中的 __call__ 方法，进而查找 self.__new__
 
 ```
 
@@ -314,7 +310,7 @@ class Mymeta(type): #只有继承了type类才能称之为一个元类，否则�
     def __init__(self,class_name,class_bases,class_dic):
         print('run。。。')
 
-class OldboyTeacher(object,metaclass=Mymeta): [[OldboyTeacher]]=Mymeta('OldboyTeacher',(object),{...})
+class OldboyTeacher(object, metaclass=Mymeta):  # OldboyTeacher = Mymeta('OldboyTeacher', (object,), {...})
     n=111
 
     school='oldboy'
@@ -332,7 +328,7 @@ print(type(Mymeta)) #<class 'type'>
 # class type:
 #     def __call__(self, *args, **kwargs): [[self]]=<class '__main__.Mymeta'>
 #         obj=self.__new__(self,*args,**kwargs) # 产生Mymeta的一个对象
-#         self.__init__(obj,*args,**kwargs) 
+#         self.__init__(obj,*args,**kwargs)
 #         return obj
 
 ```
@@ -362,14 +358,14 @@ class Mysql:
 
 obj1=Mysql('1.1.1.2',3306)
 obj2=Mysql('1.1.1.3',3307)
-print(obj1 is obj2) [[False]]
+print(obj1 is obj2)  # False
 
 obj3=Mysql.singleton()
 obj4=Mysql.singleton()
-print(obj3 is obj4) [[True]]
+print(obj3 is obj4)  # True
 
 # 方式二:定义一个装饰器实现单例模式
-import settings   [[在此之前写过的一个配置文件]]
+import settings  # 在此之前写过的一个配置文件
 
 def singleton(cls): # cls=Mysql
     _instance=cls(settings.HOST,settings.PORT)
@@ -411,7 +407,7 @@ class Mymeta(type):
             self.__init__(obj)
             self.__instance = obj
         return self.__instance
- 
+
 class Mysql(object,metaclass=Mymeta):
     '''必须有注释'''
     def __init__(self):
@@ -421,7 +417,7 @@ class Mysql(object,metaclass=Mymeta):
         pass
     def execute(self):
         pass
- 
+
 obj1 =Mysql()
 obj2 =Mysql()
 obj3 =Mysql()
@@ -481,7 +477,7 @@ print(obj2)
 <__main__.Foo object at 0x000001A7C4B97B70>
 '''
 
-# 方式六:基于__new__方法。Python中类是通过__new__来创建实例的   
+# 方式六:基于__new__方法。Python中类是通过__new__来创建实例的
 class Singleton(object):
     def __new__(cls,*args,**kwargs):
         if not hasattr(cls,'_inst'):
@@ -513,8 +509,7 @@ singleton=singleton()
 
 ```
 ### 应用场景
-```
-
+```python
 需要频繁实例化然后销毁的对象。
 
 创建对象时耗时过多或者耗资源过多，但又经常用到的对象。
@@ -526,11 +521,9 @@ singleton=singleton()
 单个对象占用的资源过多，如数据库等
 系统全局统一管理，如Windows下的Task Manager
 网站计数器
-
 ```
 ### 单例优缺点
-```
-
+```python
 优点：
 在内存中只有一个对象，节省内存空间。
 避免频繁的创建销毁对象，可以提高性能。
@@ -544,7 +537,6 @@ singleton=singleton()
 使用单例对象（尤其在类库中定义的对象）时，开发人员必须记住自己不能使用 new关键字实例化对象。因为可能无法访问库源代码，因此应用程序开发人员可能会意外发现自己无法直接实例化此类。
 对象生存期
 不能解决删除单个对象的问题。在提供内存管理的语言中（例如基于.NET Framework的语言），只有单例类能够导致实例被取消分配，因为它包含对该实例的私有引用。在某些语言中（如 C++），其他类可以删除对象实例，但这样会导致单例类中出现悬浮引用。
-
 ```
 ### 单例模式注意事项
 
@@ -575,10 +567,10 @@ class Chinese(metaclass=Mymetaclass):
 print(Chinese.__dict__)
 '''
 {'__module__': '__main__',
- 'COUNTRY': 'China', 
+ 'COUNTRY': 'China',
  'TAG': 'Legend of the Dragon',
  'walk': <function Chinese.walk at 0x0000000001E7B950>,
- '__dict__': <attribute '__dict__' of 'Chinese' objects>,                                         
+ '__dict__': <attribute '__dict__' of 'Chinese' objects>,
  '__weakref__': <attribute '__weakref__' of 'Chinese' objects>,
  '__doc__': None}
 '''
@@ -606,7 +598,7 @@ class Mymetaclass(type):
     def __call__(self, *args, **kwargs):
         if args:
             raise TypeError('must use keyword argument for key function')
-        obj = object.__new__(self) [[创建对象，self为类Foo]]
+        obj = object.__new__(self)  # 创建对象，self 为类 Foo
 
         for k,v in kwargs.items():
             obj.__dict__[k.upper()]=v

@@ -2,9 +2,9 @@
 title: Docker 下载安装与配置：Nginx 和 MySQL 实例
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-16T00:00:00.000+08:00
 slug: docker-download-install-examples
-description: '详细讲解Docker中安装和配置Nginx、MySQL等常用服务的方法。'
+description: '通过 Nginx 和 MySQL 示例讲解 Docker 镜像拉取、Dockerfile 构建、端口映射、数据卷和环境变量配置。'
 tags:
   - Docker
   - Nginx
@@ -16,117 +16,161 @@ language: zh-CN
 
 ## 概述
 
-Docker 容器化技术已成为现代应用部署的标准方式。本教程将详细介绍如何在 Docker 中安装和配置 Nginx、MySQL 等常用服务，帮助你快速上手容器化部署。
+在 Docker 中“安装服务”通常不是进入容器手动安装软件，而是选择合适的镜像、配置运行参数，并把需要持久保存的数据放到卷中。
 
-## 安装 Nginx
+本文以 Nginx 和 MySQL 为例，演示两种常见方式：
 
-### 方法一：docker pull（推荐）
+1. 直接使用官方镜像。
+2. 编写 Dockerfile 构建自定义镜像。
 
-首先，查找 Docker Hub 上的 nginx 镜像：
+## Nginx 示例
 
-```bash
-docker search nginx
-```
-
-拉取官方镜像：
+### 拉取官方镜像
 
 ```bash
-docker pull nginx
-```
-
-等待下载完成后，查看本地镜像：
-
-```bash
+docker pull nginx:1.27-alpine
 docker images nginx
 ```
 
-### 方法二：通过 Dockerfile 构建
-
-创建目录结构：
+### 直接运行容器
 
 ```bash
-mkdir -p ~/nginx/www ~/nginx/logs ~/nginx/conf
+docker run -d --name my-nginx \
+  -p 8080:80 \
+  nginx:1.27-alpine
 ```
 
-| 目录 | 用途 |
-|------|------|
-| `www` | 映射为容器虚拟目录 |
-| `logs` | 映射为容器日志目录 |
-| `conf` | 配置文件映射 |
-
-### 运行 Nginx 容器
+访问验证：
 
 ```bash
-docker run -p 80:80 --name mynginx \
-  -v $PWD/www:/www \
-  -v $PWD/conf/nginx.conf:/etc/nginx/nginx.conf \
-  -v $PWD/logs:/wwwlogs \
-  -d nginx
+curl http://localhost:8080
 ```
 
-| 参数 | 说明 |
-|------|------|
-| `-p 80:80` | 将容器端口映射到主机 |
-| `--name mynginx` | 容器命名 |
-| `-v $PWD/www:/www` | 挂载网站目录 |
-| `-v $PWD/conf/nginx.conf:/etc/nginx/nginx.conf` | 挂载配置文件 |
-| `-v $PWD/logs:/wwwlogs` | 挂载日志目录 |
-| `-d` | 后台运行 |
-
-### 查看容器状态
-
-```bash
-docker ps
-```
-
-## 安装 MySQL
-
-### 方法一：docker pull
-
-查找镜像：
-
-```bash
-docker search mysql
-```
-
-拉取指定版本：
-
-```bash
-docker pull mysql:5.6
-```
-
-### 方法二：通过 Dockerfile 构建
+### 挂载静态文件
 
 创建目录：
 
 ```bash
-mkdir -p ~/mysql/data ~/mysql/logs ~/mysql/conf
+mkdir -p nginx-demo/html nginx-demo/conf.d
 ```
 
-| 目录 | 用途 |
-|------|------|
-| `data` | 数据文件存放路径 |
-| `logs` | 日志目录 |
-| `conf` | 配置文件 |
+`nginx-demo/html/index.html` 示例：
 
-### 运行 MySQL 容器
+```html
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>Nginx on Docker</title>
+  </head>
+  <body>
+    <h1>Hello Docker</h1>
+  </body>
+</html>
+```
+
+运行：
 
 ```bash
-docker run -p 3306:3306 --name mysql \
-  -v $PWD/data:/var/lib/mysql \
-  -v $PWD/conf:/etc/mysql \
-  -v $PWD/logs:/var/log/mysql \
-  -e MYSQL_ROOT_PASSWORD=123456 \
-  -d mysql:5.6
+docker run -d --name my-nginx \
+  -p 8080:80 \
+  -v "$PWD/nginx-demo/html:/usr/share/nginx/html:ro" \
+  nginx:1.27-alpine
+```
+
+| 参数 | 说明 |
+|------|------|
+| `-p 8080:80` | 主机 `8080` 映射到容器 `80` |
+| `-v ...:ro` | 只读挂载静态文件目录 |
+| `--name my-nginx` | 指定容器名称 |
+| `-d` | 后台运行 |
+
+### 使用 Dockerfile 构建
+
+`Dockerfile`：
+
+```dockerfile
+FROM nginx:1.27-alpine
+COPY ./html/ /usr/share/nginx/html/
+```
+
+构建并运行：
+
+```bash
+docker build -t my-nginx:1.0 .
+docker run -d --name my-nginx -p 8080:80 my-nginx:1.0
+```
+
+如果只是替换静态文件，Dockerfile 比挂载目录更适合交付；如果是本地开发调试，挂载目录更方便。
+
+## MySQL 示例
+
+### 拉取官方镜像
+
+```bash
+docker pull mysql:8.4
+```
+
+MySQL 8.4 是长期支持版本，更适合作为新示例。除非维护历史系统，否则不建议再用 MySQL 5.6 作为教程默认版本。
+
+### 使用命名卷运行
+
+```bash
+docker volume create mysql-data
+
+docker run -d --name mysql-demo \
+  -p 3306:3306 \
+  -v mysql-data:/var/lib/mysql \
+  -e MYSQL_ROOT_PASSWORD='change_me_to_a_strong_password' \
+  -e MYSQL_DATABASE=app \
+  mysql:8.4
 ```
 
 | 参数 | 说明 |
 |------|------|
 | `-p 3306:3306` | 映射 MySQL 默认端口 |
-| `-e MYSQL_ROOT_PASSWORD=123456` | 设置 root 密码 |
-| `-v $PWD/data:/var/lib/mysql` | 挂载数据目录 |
-| `-v $PWD/conf:/etc/mysql` | 挂载配置目录 |
-| `-v $PWD/logs:/var/log/mysql` | 挂载日志目录 |
+| `-v mysql-data:/var/lib/mysql` | 使用命名卷持久化数据 |
+| `MYSQL_ROOT_PASSWORD` | 设置 root 密码，示例值必须替换 |
+| `MYSQL_DATABASE` | 初始化时创建数据库 |
+
+查看日志：
+
+```bash
+docker logs -f mysql-demo
+```
+
+连接测试：
+
+```bash
+docker exec -it mysql-demo mysql -uroot -p
+```
+
+### 使用自定义配置
+
+创建配置目录：
+
+```bash
+mkdir -p mysql-demo/conf.d
+```
+
+`mysql-demo/conf.d/custom.cnf`：
+
+```ini
+[mysqld]
+character-set-server=utf8mb4
+collation-server=utf8mb4_0900_ai_ci
+```
+
+运行时挂载配置：
+
+```bash
+docker run -d --name mysql-demo \
+  -p 3306:3306 \
+  -v mysql-data:/var/lib/mysql \
+  -v "$PWD/mysql-demo/conf.d:/etc/mysql/conf.d:ro" \
+  -e MYSQL_ROOT_PASSWORD='change_me_to_a_strong_password' \
+  mysql:8.4
+```
 
 ## 常用操作命令
 
@@ -134,30 +178,25 @@ docker run -p 3306:3306 --name mysql \
 # 查看运行中的容器
 docker ps
 
-# 查看所有容器（包括已停止）
+# 查看所有容器
 docker ps -a
 
 # 停止容器
-docker stop mynginx
+docker stop my-nginx mysql-demo
 
 # 启动容器
-docker start mynginx
+docker start my-nginx mysql-demo
 
-# 进入容器
-docker exec -it mynginx /bin/bash
+# 查看日志
+docker logs -f my-nginx
 
-# 查看容器日志
-docker logs -f mynginx
+# 删除已停止容器
+docker rm my-nginx
 
-# 删除容器
-docker rm mynginx
+# 查看数据卷
+docker volume ls
 ```
 
 ## 小结
 
-通过 Docker，我们可以快速部署 Nginx、MySQL 等常用服务。关键点：
-
-- 使用 `-p` 参数进行端口映射
-- 使用 `-v` 参数进行目录挂载，实现数据持久化
-- 使用 `-e` 参数设置环境变量
-- 使用 `-d` 参数后台运行容器
+Docker 部署服务时要分清三件事：镜像负责软件环境，容器负责运行实例，数据卷负责持久化数据。Nginx 这类无状态服务可以很轻量地替换镜像；MySQL 这类有状态服务必须明确数据卷、密码和备份策略。

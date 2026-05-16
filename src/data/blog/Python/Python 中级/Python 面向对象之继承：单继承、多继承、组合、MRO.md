@@ -54,9 +54,9 @@ class SubClass2(ParentClass1, ParentClass2):  # python支持多继承，用逗�
 ### 查看基类，父类
 
 ```python
->>> SubClass1.__bases__  # __base__只查看从左到右继承的第一个父类，__bases__则是查看所有继承的父类
+SubClass1.__bases__  # __base__只查看从左到右继承的第一个父类，__bases__则是查看所有继承的父类
 (<class '__main__.ParentClass1'>,)
->>> SubClass2.__bases__
+SubClass2.__bases__
 (<class '__main__.ParentClass1'>, <class '__main__.ParentClass2'>)
 ```
 

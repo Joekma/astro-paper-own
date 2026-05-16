@@ -1,11 +1,11 @@
 ---
 title: Milvus 入门指南：核心概念与架构
-series: 'Milvus'
+series: "Milvus"
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00
 slug: milvus-getting-started
-description: '详细介绍Milvus向量数据库的核心概念、架构组件和应用场景，帮助读者快速入门。'
+description: "详细介绍Milvus向量数据库的核心概念、架构组件和应用场景，帮助读者快速入门。"
 tags:
   - Milvus
   - 向量数据库
@@ -21,14 +21,14 @@ Milvus 是 LF AI & Data Foundation 旗下的开源向量数据库，专为处理
 
 ### 为什么选择 Milvus？
 
-| 特性 | 说明 |
-|------|------|
-| **高性能** | 支持十亿级向量检索，毫秒级查询延迟 |
-| **可扩展** | 原生支持分布式水平扩展 |
-| **多索引** | 支持 IVF、HNSW、DiskANN 等多种索引 |
-| **多语言** | 提供 Python、Java、Go、RESTful 等 SDK |
-| **云原生** | 支持 Kubernetes 部署 |
-| **开源免费** | Apache 2.0 许可证 |
+| 特性         | 说明                                  |
+| ------------ | ------------------------------------- |
+| **高性能**   | 支持十亿级向量检索，毫秒级查询延迟    |
+| **可扩展**   | 原生支持分布式水平扩展                |
+| **多索引**   | 支持 IVF、HNSW、DiskANN 等多种索引    |
+| **多语言**   | 提供 Python、Java、Go、RESTful 等 SDK |
+| **云原生**   | 支持 Kubernetes 部署                  |
+| **开源免费** | Apache 2.0 许可证                     |
 
 ### 向量数据库 vs 传统数据库
 
@@ -154,27 +154,27 @@ Shard 将数据水平分片，提高写入吞吐量：
 
 ### 组件职责
 
-| 组件 | 职责 |
-|------|------|
-| **Root Coord** | 元数据管理、ID 生成、时间戳分配 |
-| **Index Coord** | 索引管理、调度 |
-| **Query Coord** | 查询调度、负载均衡 |
-| **Data Coord** | 数据管理、压缩 |
-| **Data Node** | 数据写入、持久化 |
-| **Query Node** | 向量检索 |
-| **Index Node** | 索引构建 |
+| 组件            | 职责                            |
+| --------------- | ------------------------------- |
+| **Root Coord**  | 元数据管理、ID 生成、时间戳分配 |
+| **Index Coord** | 索引管理、调度                  |
+| **Query Coord** | 查询调度、负载均衡              |
+| **Data Coord**  | 数据管理、压缩                  |
+| **Data Node**   | 数据写入、持久化                |
+| **Query Node**  | 向量检索                        |
+| **Index Node**  | 索引构建                        |
 
 ## 索引类型
 
 ### 索引类型对比
 
-| 索引类型 | 适用场景 | 优点 | 缺点 |
-|----------|----------|------|------|
-| **FLAT** | 小数据量 | 精确搜索 | 慢 |
-| **IVF** | 中等数据 | 快速 | 精度损失 |
-| **HNSW** | 大规模数据 | 极快 | 内存占用高 |
-| **DiskANN** | 超大规模 | 可扩展 | 需要 SSD |
-| **ANNOY** | 内存受限 | 内存友好 | 查询较慢 |
+| 索引类型    | 适用场景   | 优点     | 缺点       |
+| ----------- | ---------- | -------- | ---------- |
+| **FLAT**    | 小数据量   | 精确搜索 | 慢         |
+| **IVF**     | 中等数据   | 快速     | 精度损失   |
+| **HNSW**    | 大规模数据 | 极快     | 内存占用高 |
+| **DiskANN** | 超大规模   | 可扩展   | 需要 SSD   |
+| **ANNOY**   | 内存受限   | 内存友好 | 查询较慢   |
 
 ### IVF 索引
 
@@ -213,11 +213,11 @@ index_params = {
 
 ### 度量类型
 
-| 度量 | 说明 | 适用场景 |
-|------|------|----------|
-| **L2** | 欧氏距离 | 图像、音频 |
-| **IP** | 内积 | 归一化向量 |
-| **HAMMING** | 汉明距离 | 二值向量 |
+| 度量        | 说明       | 适用场景   |
+| ----------- | ---------- | ---------- |
+| **L2**      | 欧氏距离   | 图像、音频 |
+| **IP**      | 内积       | 归一化向量 |
+| **HAMMING** | 汉明距离   | 二值向量   |
 | **JACCARD** | 杰卡德距离 | 集合相似度 |
 
 ```python
@@ -244,17 +244,17 @@ index_params = {
 def semantic_search(query_text, collection_name):
     # 1. 将查询文本转换为向量
     query_vector = embed_model.encode([query_text])
-    
+
     # 2. 在 Milvus 中搜索
     search_params = {"metric_type": "IP", "params": {"ef": 100}}
-    
+
     results = collection.search(
         data=[query_vector],
         anns_field="text_vector",
         param=search_params,
         limit=10
     )
-    
+
     return results
 ```
 
@@ -265,7 +265,7 @@ def semantic_search(query_text, collection_name):
 def image_search(query_image_path):
     # 1. 提取图像特征向量
     image_vector = image_model.extract_features(query_image_path)
-    
+
     # 2. 搜索相似图像
     results = collection.search(
         data=[image_vector],
@@ -273,7 +273,7 @@ def image_search(query_image_path):
         param={"metric_type": "L2", "params": {}},
         limit=20
     )
-    
+
     return results
 ```
 
@@ -289,7 +289,7 @@ def recommend_items(user_vector, n=10):
         param={"metric_type": "IP", "params": {"ef": 128}},
         limit=n
     )
-    
+
     return [item.id for item in results[0]]
 ```
 
@@ -426,5 +426,3 @@ from pymilvus import utility
 is_connected = utility活的_connection("default")
 print(f"连接状态: {is_connected}")
 ```
-
-

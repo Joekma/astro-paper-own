@@ -1,11 +1,11 @@
 ---
 title: Qdrant Python SDK 使用指南
-series: 'Qdrant'
+series: "Qdrant"
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00
 slug: qdrant-python-sdk
-description: '详细介绍Qdrant Python SDK的使用方法，包括Collection操作、向量CRUD、搜索过滤等。'
+description: "详细介绍Qdrant Python SDK的使用方法，包括Collection操作、向量CRUD、搜索过滤等。"
 tags:
   - Qdrant
   - Python
@@ -315,13 +315,13 @@ while True:
         limit=batch_size,
         offset=offset
     )
-    
+
     if not batch:
         break
-    
+
     all_results.extend(batch)
     offset += batch_size
-    
+
     if len(batch) < batch_size:
         break
 
@@ -480,7 +480,7 @@ def batch_upsert(vectors, payloads, batch_size=1000):
                 payload=payload
             )
             for j, (vec, payload) in enumerate(vectors[i:i+batch_size])
-        
+
         client.upsert(
             collection_name="my_collection",
             points=batch,
@@ -519,14 +519,14 @@ import numpy as np
 class QdrantManager:
     def __init__(self, host="localhost", port=6333):
         self.client = QdrantClient(host, port=port)
-    
+
     def setup_collection(self, name, dim):
         """创建 Collection"""
         self.client.recreate_collection(
             collection_name=name,
             vectors_config=VectorParams(size=dim, distance=Distance.COSINE)
         print(f"Created collection: {name}")
-    
+
     def add_documents(self, collection, documents):
         """批量添加文档"""
         points = [
@@ -537,17 +537,17 @@ class QdrantManager:
             )
             for i, doc in enumerate(documents)
         ]
-        
+
         self.client.upsert(
             collection_name=collection,
             points=points
         )
         print(f"Added {len(documents)} documents")
-    
+
     def search_similar(self, collection, query, top_k=5):
         """搜索相似文档"""
         query_vector = np.random.rand(768).tolist()
-        
+
         return self.client.search(
             collection_name=collection,
             query_vector=query_vector,
@@ -560,5 +560,3 @@ manager.setup_collection("docs", 768)
 manager.add_documents("docs", ["文档1", "文档2", "文档3"])
 results = manager.search_similar("docs", "query")
 ```
-
-

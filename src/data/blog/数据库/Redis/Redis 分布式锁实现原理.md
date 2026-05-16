@@ -1,10 +1,10 @@
-﻿---
+---
 title: Redis 分布式锁实现原理
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: redis-distributed-lock
-description: '深入讲解Redis实现分布式锁的原理和代码实现。'
+description: "深入讲解Redis实现分布式锁的原理和代码实现。"
 tags:
   - Redis
   - 分布式锁

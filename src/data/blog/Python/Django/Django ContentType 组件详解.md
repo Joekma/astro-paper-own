@@ -203,7 +203,7 @@ signals.post_save.connect(post_post_save, sender=Post)
 
 利用`connect`这个函数来注册监听器：
 
-```python
+```text
 def connect(self, receiver, sender=None, weak=True, dispatch_uid=None):
 ```
 

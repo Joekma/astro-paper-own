@@ -12,7 +12,7 @@ tags:
   - 数据库
   - 分页
   - 优化
-description: 'MySQL大数据分页优化方案，解决深度分页性能问题'
+description: "MySQL大数据分页优化方案，解决深度分页性能问题"
 ---
 
 > 大数据量分页需要优化。
@@ -52,7 +52,7 @@ SELECT * FROM orders WHERE id > 1000000 LIMIT 10;
 ### 方案三：范围查询
 
 ```sql
-SELECT * FROM orders 
+SELECT * FROM orders
 WHERE id BETWEEN 1000000 AND 1000010;
 ```
 

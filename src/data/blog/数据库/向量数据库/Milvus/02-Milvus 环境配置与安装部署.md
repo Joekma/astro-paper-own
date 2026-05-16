@@ -1,11 +1,11 @@
 ---
 title: Milvus 环境配置与安装部署
-series: 'Milvus'
+series: "Milvus"
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00
 slug: milvus-installation
-description: '详细介绍Milvus单机部署和分布式部署的安装配置方法。'
+description: "详细介绍Milvus单机部署和分布式部署的安装配置方法。"
 tags:
   - Milvus
   - 向量数据库
@@ -21,24 +21,24 @@ Milvus 支持多种部署方式，从单机测试到大规模生产环境。本�
 
 ### 部署方式对比
 
-| 方式 | 适用场景 | 优点 | 缺点 |
-|------|----------|------|------|
-| **Docker Compose** | 开发测试 | 快速简单 | 不适合生产 |
-| **Helm Chart** | 生产环境 | 可扩展 | 配置复杂 |
-| **Kubernetes** | 大规模部署 | 高可用 | 需要 K8s 经验 |
-| **源码编译** | 定制需求 | 灵活 | 耗时 |
+| 方式               | 适用场景   | 优点     | 缺点          |
+| ------------------ | ---------- | -------- | ------------- |
+| **Docker Compose** | 开发测试   | 快速简单 | 不适合生产    |
+| **Helm Chart**     | 生产环境   | 可扩展   | 配置复杂      |
+| **Kubernetes**     | 大规模部署 | 高可用   | 需要 K8s 经验 |
+| **源码编译**       | 定制需求   | 灵活     | 耗时          |
 
 ## Docker Compose 部署
 
 ### 环境要求
 
-| 要求 | 最小配置 | 推荐配置 |
-|------|----------|----------|
-| **CPU** | 4 核 | 8+ 核 |
-| **内存** | 8 GB | 16+ GB |
-| **磁盘** | 50 GB | 100+ GB SSD |
-| **Docker** | 20.10+ | 最新版 |
-| **Docker Compose** | 1.29+ | 最新版 |
+| 要求               | 最小配置 | 推荐配置    |
+| ------------------ | -------- | ----------- |
+| **CPU**            | 4 核     | 8+ 核       |
+| **内存**           | 8 GB     | 16+ GB      |
+| **磁盘**           | 50 GB    | 100+ GB SSD |
+| **Docker**         | 20.10+   | 最新版      |
+| **Docker Compose** | 1.29+    | 最新版      |
 
 ### 安装 Docker 和 Docker Compose
 
@@ -87,7 +87,7 @@ docker-compose logs -f milvus-standalone
 
 ```yaml
 # docker-compose.yml
-version: '3.8'
+version: "3.8"
 
 services:
   etcd:
@@ -123,8 +123,8 @@ services:
     volumes:
       - milvus_data:/var/lib/milvus
     ports:
-      - "19530:19530"      # Milvus 服务端口
-      - "9091:9091"        # Prometheus 端口
+      - "19530:19530" # Milvus 服务端口
+      - "9091:9091" # Prometheus 端口
     depends_on:
       - etcd
       - minio
@@ -331,7 +331,7 @@ common:
 dataCoord:
   # 数据段配置
   segment:
-    maxSize: 512      # MB
+    maxSize: 512 # MB
     sealProportion: 0.25
 
 queryCoord:
@@ -349,7 +349,7 @@ from pymilvus import connections, Collection
 
 class MilvusClient:
     """Milvus 连接管理类"""
-    
+
     def __init__(self, host='localhost', port='19530'):
         self.connections = connections
         self.connections.connect(
@@ -357,13 +357,13 @@ class MilvusClient:
             port=port,
             alias='default'
         )
-    
+
     def __enter__(self):
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.connections.disconnect('default')
-    
+
     def get_collection(self, name):
         return Collection(name)
 
@@ -392,12 +392,12 @@ kubectl port-forward svc/grafana 3000:3000
 
 ### 监控指标
 
-| 指标 | 说明 |
-|------|------|
-| **QueryNode_query_vectors** | 查询向量数 |
-| **DataNode_insert_vectors** | 插入向量数 |
+| 指标                           | 说明       |
+| ------------------------------ | ---------- |
+| **QueryNode_query_vectors**    | 查询向量数 |
+| **DataNode_insert_vectors**    | 插入向量数 |
 | **QueryCoord_search_requests** | 搜索请求数 |
-| **IndexNode_build_index** | 索引构建数 |
+| **IndexNode_build_index**      | 索引构建数 |
 
 ## 备份和恢复
 
@@ -461,5 +461,3 @@ docker system prune -a
 # 扩展存储卷
 docker volume create milvus_data
 ```
-
-

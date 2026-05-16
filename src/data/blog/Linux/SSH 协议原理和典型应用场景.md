@@ -1,11 +1,11 @@
-﻿---
+---
 title: SSH 协议原理和典型应用场景
 series: Linux
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-16T00:00:00.000+08:00
 slug: ssh-protocol-applications
-description: '深入讲解SSH协议原理和典型应用场景。'
+description: '讲解 SSH 协议的加密机制、连接过程、常用命令、密钥管理、端口转发和安全配置。'
 tags:
   - SSH
   - 远程登录
@@ -16,7 +16,7 @@ language: zh-CN
 
 ## 概述
 
-SSH（Secure Shell）是一种加密的网络传输协议，用于在不安全的网络中提供安全的远程登录和其他安全网络服务。主要用于 Linux/Unix 系统的远程管理。
+SSH（Secure Shell）是一种加密网络协议，常用于远程登录、远程执行命令、文件传输和安全隧道。它解决的核心问题是：即使网络不可信，也能验证服务器身份、保护认证凭据和加密传输内容。
 
 ## SSH 工作原理
 
@@ -24,29 +24,27 @@ SSH（Secure Shell）是一种加密的网络传输协议，用于在不安全�
 
 | 类型 | 说明 |
 |------|------|
-| **对称加密** | 使用同一密钥加密解密，效率高 |
-| **非对称加密** | 公钥加密、私钥解密，用于密钥交换 |
-| **Hash 验证** | 数据完整性验证 |
+| **密钥交换** | 双方协商会话密钥，常见算法包括 Diffie-Hellman 和 ECDH |
+| **主机密钥** | 客户端用它验证服务器身份，防止中间人攻击 |
+| **对称加密** | 使用会话密钥加密后续数据，效率高 |
+| **消息认证** | 使用 MAC 或 AEAD 验证数据完整性 |
+| **用户认证** | 使用密码、公钥、证书或多因素方式认证用户 |
+
+非对称加密在 SSH 中主要用于身份验证和密钥交换过程，并不是用来加密整个会话数据。
 
 ### 连接过程
 
-```
-客户端 ──▶ 服务端
-    │          │
-    │◀─ 服务端发送公钥 ──│
-    │                   │
-    │──▶ 客户端验证公钥   │
-    │                   │
-    │◀─ 协商会话密钥 ──│
-    │                   │
-    │──▶ 加密传输开始 ──│
+```text
+客户端                         服务端
+  | -------- 版本协商 --------> |
+  | <------ 算法列表 ---------- |
+  | ---- 密钥交换与主机验证 ---> |
+  | <------ 建立会话密钥 ------ |
+  | ---- 用户身份认证 --------> |
+  | <====== 加密会话开始 =====> |
 ```
 
-1. **版本协商**：协商 SSH 版本
-2. **密钥交换**：Diffie-Hellman 交换密钥
-3. **算法协商**：协商加密算法
-4. **身份认证**：密码或密钥认证
-5. **会话加密**：建立加密通道
+首次连接新主机时，客户端会把主机指纹写入 `~/.ssh/known_hosts`。如果之后指纹变化，应先确认服务器是否重装或更换密钥，不要直接忽略警告。
 
 ## SSH 命令详解
 
@@ -59,8 +57,8 @@ ssh user@hostname
 # 指定端口
 ssh -p 2222 user@hostname
 
-# 使用密钥登录
-ssh -i ~/.ssh/my_key.pem user@hostname
+# 使用指定私钥
+ssh -i ~/.ssh/my_key user@hostname
 ```
 
 ### 文件传输
@@ -75,9 +73,11 @@ scp -r /path/local/folder user@host:/path/remote/
 # 从远程下载
 scp user@host:/path/remote/file.txt /path/local/
 
-# 指定端口传输
+# 指定端口传输，scp 使用大写 -P
 scp -P 2222 file.txt user@host:/path/
 ```
+
+OpenSSH 新版本中的 `scp` 默认行为已有变化。需要交互式传输或批量管理文件时，可以优先使用 `sftp` 或 `rsync -e ssh`。
 
 ### 远程执行
 
@@ -88,117 +88,120 @@ ssh user@host "ls -la /home"
 # 执行多条命令
 ssh user@host "cd /tmp && ls"
 
-# 远程执行脚本
-ssh user@host < script.sh
+# 远程执行本地脚本
+ssh user@host 'bash -s' < script.sh
 ```
 
 ### 端口转发
 
 ```bash
-# 本地端口转发
+# 本地端口转发：访问本机 8080，转到远程内网服务
 ssh -L 8080:remote_host:80 user@gateway
 
-# 远程端口转发
-ssh -R 8080:local_host:80 user@gateway
+# 远程端口转发：远程 8080 转到本地服务
+ssh -R 8080:localhost:80 user@gateway
 
-# 动态端口转发（SOCKS 代理）
+# 动态端口转发：创建 SOCKS 代理
 ssh -D 1080 user@host
 ```
 
-### 远程拷贝（sftp）
-
-```bash
-# 进入 sftp 交互界面
-sftp user@host
-
-# 上传文件
-put /local/file.txt /remote/path/
-
-# 下载文件
-get /remote/file.txt /local/path/
-
-# 批量上传
-mput *.txt
-```
+端口转发常用于临时访问内网服务。生产环境应配合防火墙、审计和最小权限策略。
 
 ## SSH 密钥管理
 
 ### 生成密钥对
 
 ```bash
-# 生成 RSA 密钥
-ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
-
-# 生成 ED25519 密钥（推荐）
+# 推荐：生成 ED25519 密钥
 ssh-keygen -t ed25519 -C "your_email@example.com"
 
-# 生成时指定存放位置
+# 兼容旧系统：生成 RSA 4096 位密钥
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+
+# 指定存放位置
 ssh-keygen -t ed25519 -f ~/.ssh/my_key
 ```
 
-### 密钥配置
+私钥应设置强口令并妥善保管，不要把私钥发送给他人或提交到代码仓库。
+
+### ssh-agent
 
 ```bash
-# 添加密钥到 ssh-agent
+# 启动 agent 后添加密钥
+eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/my_key
 
 # 查看已添加的密钥
 ssh-add -l
 
-# 删除所有密钥
+# 删除所有已添加密钥
 ssh-add -D
 ```
 
-### 远程主机配置
+### 客户端配置
 
 编辑 `~/.ssh/config`：
 
-```bash
+```text
 Host myserver
     HostName 192.168.1.100
     User admin
     Port 22
     IdentityFile ~/.ssh/my_key
-    ForwardAgent yes
+    IdentitiesOnly yes
+    ServerAliveInterval 60
 
 Host server2
     HostName example.com
     User ubuntu
     Port 2222
-    ServerAliveInterval 60
 ```
 
-### 公钥分发
+不建议默认写 `ForwardAgent yes`。Agent 转发会让远程主机在会话期间使用你的本地 agent，如果远程主机不可信，会扩大风险。确实需要时，只对单个可信 Host 开启。
+
+```text
+Host trusted-jump
+    HostName jump.example.com
+    User admin
+    ForwardAgent yes
+```
+
+## 公钥分发
+
+推荐使用 `ssh-copy-id`：
 
 ```bash
-# 方法一：ssh-copy-id
 ssh-copy-id -i ~/.ssh/my_key.pub user@host
-
-# 方法二：手动复制
-cat ~/.ssh/id_rsa.pub | ssh user@host "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
-
-# 方法三：使用 sshd
-ssh user@host "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys"
 ```
+
+手动方式：
+
+```bash
+cat ~/.ssh/my_key.pub | ssh user@host 'umask 077; mkdir -p ~/.ssh; cat >> ~/.ssh/authorized_keys'
+```
+
+原理是把本地公钥追加到远程用户的 `~/.ssh/authorized_keys`。不要把私钥复制到服务器上。
 
 ## SSH 安全配置
 
-### 服务端配置
-
-编辑 `/etc/ssh/sshd_config`：
+服务端配置文件通常是 `/etc/ssh/sshd_config`。修改前先备份并检查语法：
 
 ```bash
-# 禁用密码登录（推荐）
+sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak.$(date +%F)
+sudo sshd -t
+```
+
+常见配置：
+
+```text
+# 禁用密码登录，确认密钥可用后再启用
 PasswordAuthentication no
 
-# 禁用 root 登录
+# 禁用 root 直接登录
 PermitRootLogin no
 
-# 限制密钥
+# 启用公钥认证
 PubkeyAuthentication yes
-
-# 更改默认端口
-Port 2222
 
 # 禁用空密码
 PermitEmptyPasswords no
@@ -207,40 +210,39 @@ PermitEmptyPasswords no
 ClientAliveInterval 300
 ClientAliveCountMax 2
 
-# 限制用户
+# 限制用户或用户组
 AllowUsers user1 user2
 AllowGroups sshusers
 ```
 
-### 常用安全建议
+重启服务：
 
-1. **禁用密码登录**：使用密钥认证
-2. **更改默认端口**：避免端口扫描
-3. **限制登录用户**：最小权限原则
-4. **禁用 root 登录**：使用普通用户 sudo
-5. **限制 IP 访问**：通过防火墙限制
-6. **定期更换密钥**：降低密钥泄露风险
+```bash
+sudo sshd -t
+sudo systemctl restart sshd
+```
 
 ## 常见问题
 
 ### 连接超时
 
-```bash
-# 编辑 SSH 配置
+```text
 Host *
     ServerAliveInterval 60
     ServerAliveCountMax 3
     ConnectTimeout 10
 ```
 
+还应检查服务器安全组、防火墙、监听端口和路由。
+
 ### 权限问题
 
 ```bash
-# 修复密钥权限
 chmod 700 ~/.ssh
-chmod 600 ~/.ssh/id_rsa
-chmod 644 ~/.ssh/id_rsa.pub
+chmod 600 ~/.ssh/id_ed25519
+chmod 644 ~/.ssh/id_ed25519.pub
 chmod 600 ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/config
 ```
 
 ### known_hosts 问题
@@ -249,15 +251,12 @@ chmod 600 ~/.ssh/authorized_keys
 # 移除旧主机记录
 ssh-keygen -R hostname
 
-# 禁用 host 检查（不推荐）
-StrictHostKeyChecking no
+# 重新连接并核对指纹
+ssh user@hostname
 ```
+
+不要为了省事长期配置 `StrictHostKeyChecking no`，它会削弱主机身份验证。
 
 ## 小结
 
-SSH 核心要点：
-
-- **加密传输**：保障通信安全
-- **密钥认证**：无需密码登录
-- **端口转发**：安全隧道
-- **安全配置**：禁用密码、更改端口、限制用户
+SSH 的安全性来自主机身份验证、密钥交换、加密会话和用户认证共同配合。日常使用中，应优先使用密钥登录、保护私钥、谨慎使用 Agent 转发，并在修改服务端配置前保留可回滚入口。

@@ -29,7 +29,7 @@ language: zh-CN
 
 ### 常见语法错误
 
-```python
+```text
 # 语法错误示例
 if  # 缺少条件
 def test  # 缺少冒号
@@ -117,8 +117,10 @@ while True:
 # 基本语法
 try:
     # 被检测的代码块
-except 异常类型:
+    pass
+except Exception as exc:
     # try 中一旦检测到异常，就执行这个位置的逻辑
+    print(exc)
 
 # 示例
 try:

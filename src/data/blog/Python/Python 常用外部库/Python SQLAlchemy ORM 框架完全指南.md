@@ -98,7 +98,7 @@ for i in range(20):
 ```python
 import datetime
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, UniqueConstraint, Index
 
 Base = declarative_base()
@@ -670,7 +670,7 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 # 关联子查询: correlate(Group)表示跟Group表做关联，as_scalar相当于对该sql加括号，用于放在后面当子查询
-subqry = session.query(func.count(Server.id).label("sid")).filter(Server.id == Group.id).correlate(Group).as_scalar()
+subqry = session.query(func.count(Server.id).label("sid")).filter(Server.id == Group.id).correlate(Group).scalar_subquery()
 result = session.query(Group.name, subqry)
 
 """

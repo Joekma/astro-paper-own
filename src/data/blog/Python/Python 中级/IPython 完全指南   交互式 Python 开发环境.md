@@ -55,7 +55,7 @@ pip install ipython[all]
 
 ### 启动 IPython
 
-```
+```python
 # 启动 IPython
 ipython
 
@@ -65,7 +65,7 @@ ipython3
 
 ### 基本配置
 
-```
+```bash
 # 在 IPython 中执行以下命令
 # 查看配置文件位置
 %config
@@ -75,7 +75,8 @@ ipython3
 
 # 编辑配置文件
 !ipython profile edit
-```yaml
+```
+
 
 ##  基础功能
 
@@ -116,7 +117,7 @@ np.*array*  # 搜索包含 array 的属性
 
 IPython 提供了便捷的输入输出引用机制，可以方便地访问之前的计算结果。
 
-```yaml
+```python
 In [28]: 3+2
 Out[28]: 5
 
@@ -175,7 +176,7 @@ Jupyter Notebook（原 IPython Notebook）是基于 Web 的交互式计算环境
 
 ### 安装 Jupyter
 
-```
+```bash
 # 安装完整的 Jupyter 套件
 pip install jupyter
 
@@ -188,7 +189,7 @@ pip install notebook
 
 ### 启动 Jupyter
 
-```
+```bash
 # 启动 Jupyter Notebook
 jupyter notebook
 

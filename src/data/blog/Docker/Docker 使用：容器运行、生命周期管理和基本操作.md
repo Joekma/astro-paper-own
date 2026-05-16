@@ -2,9 +2,9 @@
 title: Docker 使用：容器运行、生命周期管理和基本操作
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-16T00:00:00.000+08:00
 slug: docker-usage-tutorial
-description: '深入讲解Docker容器运行、生命周期管理和基本操作方法。'
+description: '讲解 Docker 容器运行、生命周期、端口映射、日志查看和进入容器等基础操作。'
 tags:
   - Docker
 draft: false
@@ -14,129 +14,136 @@ language: zh-CN
 
 ## 概述
 
-Docker 允许在容器内运行应用程序，本教程介绍容器的基本操作和管理。
+容器是镜像的运行实例。学习 Docker 的第一步，是理解 `docker run` 如何从镜像创建容器，以及容器启动、停止、删除、查看日志和端口映射的基本流程。
 
 ## Hello World
 
-使用 `docker run` 命令在容器内运行应用程序：
+```bash
+docker run --rm hello-world
+```
+
+这个命令会拉取 `hello-world` 镜像，创建一个临时容器并输出验证信息。`--rm` 表示容器退出后自动删除，适合一次性测试。
+
+## 运行交互式容器
 
 ```bash
-docker run ubuntu:15.10 /bin/echo "Hello world"
+docker run --rm -it ubuntu:24.04 bash
 ```
 
 | 参数 | 说明 |
 |------|------|
-| `docker` | Docker 的二进制执行文件 |
-| `run` | 运行一个容器 |
-| `ubuntu:15.10` | 指定要运行的镜像 |
-| `/bin/echo` | 在容器里执行的命令 |
+| `--rm` | 容器退出后自动删除 |
+| `-i` | 保持标准输入打开 |
+| `-t` | 分配伪终端 |
+| `ubuntu:24.04` | 指定要运行的镜像和标签 |
+| `bash` | 容器启动后执行的命令 |
 
-## 交互式容器
-
-通过 `-i -t` 参数，让容器实现"对话"能力：
+退出容器：
 
 ```bash
-docker run -i -t ubuntu:15.10 /bin/bash
+exit
 ```
-
-| 参数 | 说明 |
-|------|------|
-| `-t` | 在容器内指定伪终端 |
-| `-i` | 允许对容器标准输入进行交互 |
-
-> 使用 `exit` 或 `Ctrl+D` 退出容器。
 
 ## 后台运行容器
 
-创建以后台进程方式运行的容器：
-
 ```bash
-docker run -d ubuntu:15.10 /bin/sh -c "while true; do echo hello world; sleep 1; done"
+docker run -d --name demo-nginx nginx:1.27-alpine
 ```
 
-| 参数 | 说明 |
-|------|------|
-| `-d` | 后台运行 |
-
-### 查看容器
+查看运行中的容器：
 
 ```bash
-# 查看运行中的容器
 docker ps
-
-# 查看容器日志
-docker logs <容器ID/名称>
-
-# 实时查看日志
-docker logs -f <容器ID/名称>
 ```
 
-## 停止与启动容器
+查看所有容器，包括已停止的容器：
+
+```bash
+docker ps -a
+```
+
+查看日志：
+
+```bash
+docker logs demo-nginx
+docker logs -f demo-nginx
+```
+
+## 停止、启动与删除
 
 ```bash
 # 停止容器
-docker stop <容器ID/名称>
+docker stop demo-nginx
 
 # 启动已停止的容器
-docker start <容器ID/名称>
+docker start demo-nginx
 
 # 重启容器
-docker restart <容器ID/名称>
+docker restart demo-nginx
+
+# 删除已停止的容器
+docker rm demo-nginx
 ```
 
-## Web 应用
+如果容器仍在运行，删除前需要先停止，或使用 `docker rm -f` 强制删除。强制删除会直接终止容器进程，应谨慎使用。
 
-### 运行 Web 应用
+## 运行 Web 应用
 
-拉取镜像并运行 Python Flask 应用：
+### 随机端口映射
 
 ```bash
-docker pull training/webapp
-docker run -d -P training/webapp python app.py
+docker run -d --name web-demo -P nginx:1.27-alpine
+docker port web-demo
 ```
 
-| 参数 | 说明 |
-|------|------|
-| `-d` | 后台运行 |
-| `-P` | 将容器内部端口映射到主机 |
+`-P` 会把镜像声明的暴露端口映射到主机随机端口。
 
-### 查看端口映射
+### 指定端口映射
 
 ```bash
-# 查看运行中的容器
-docker ps
-
-# 查看具体端口映射
-docker port <容器ID/名称>
+docker run -d --name web-demo -p 8080:80 nginx:1.27-alpine
 ```
 
-`PORTS` 显示格式：`0.0.0.0:32769->5000/tcp`
-
-### 自定义端口映射
+访问：
 
 ```bash
-docker run -d -p 5000:5000 training/webapp python app.py
+curl http://localhost:8080
 ```
 
-## 容器管理
+`-p 8080:80` 表示主机 `8080` 端口转发到容器内 `80` 端口。
+
+## 进入容器
 
 ```bash
-# 查看容器进程
-docker top <容器名称>
-
-# 查看容器详细信息
-docker inspect <容器名称>
-
-# 进入容器
-docker exec -it <容器名称> /bin/bash
+docker exec -it web-demo sh
 ```
 
-## Docker 帮助
+不同镜像内置的 Shell 不同。`nginx:alpine` 通常使用 `sh`，Ubuntu/Debian 系镜像通常可以使用 `bash`。
+
+## 查看容器信息
 
 ```bash
-# 查看所有命令
-docker
+# 查看容器内进程
+docker top web-demo
 
-# 查看具体命令帮助
-docker <command> --help
+# 查看容器详细配置
+docker inspect web-demo
+
+# 查看容器资源使用
+docker stats web-demo
 ```
+
+## 容器生命周期小结
+
+常见流程是：
+
+```bash
+docker pull nginx:1.27-alpine
+docker run -d --name web-demo -p 8080:80 nginx:1.27-alpine
+docker logs -f web-demo
+docker exec -it web-demo sh
+docker stop web-demo
+docker rm web-demo
+```
+
+容器默认不等于持久数据存储。数据库、上传文件和业务状态应放在数据卷或外部存储中，不要只保存在容器可写层里。

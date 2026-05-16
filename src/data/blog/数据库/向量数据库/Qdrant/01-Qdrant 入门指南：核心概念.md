@@ -1,11 +1,11 @@
 ---
 title: Qdrant 入门指南：核心概念
-series: 'Qdrant'
+series: "Qdrant"
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00
 slug: qdrant-getting-started
-description: '详细介绍Qdrant向量数据库的核心概念、架构特点和应用场景。'
+description: "详细介绍Qdrant向量数据库的核心概念、架构特点和应用场景。"
 tags:
   - Qdrant
   - 向量数据库
@@ -21,25 +21,25 @@ Qdrant 是一个开源的高性能向量搜索数据库和向量相似度搜索�
 
 ### 为什么选择 Qdrant？
 
-| 特性 | 说明 |
-|------|------|
-| **高性能** | HNSW 图索引，毫秒级查询 |
-| **灵活过滤** | 支持复杂条件过滤 |
-| **多语言** | Python、Rust、Go、JavaScript 等 |
-| **云原生** | Docker、Kubernetes 友好 |
-| **实时更新** | 支持在线数据更新 |
-| **混合搜索** | 向量 + 关键词组合搜索 |
+| 特性         | 说明                            |
+| ------------ | ------------------------------- |
+| **高性能**   | HNSW 图索引，毫秒级查询         |
+| **灵活过滤** | 支持复杂条件过滤                |
+| **多语言**   | Python、Rust、Go、JavaScript 等 |
+| **云原生**   | Docker、Kubernetes 友好         |
+| **实时更新** | 支持在线数据更新                |
+| **混合搜索** | 向量 + 关键词组合搜索           |
 
 ### Qdrant vs Milvus
 
-| 特性 | Qdrant | Milvus |
-|------|---------|--------|
-| **索引类型** | HNSW | HNSW, IVF, ANNOY |
-| **过滤** | 强大的 DSL | 表达式过滤 |
-| **API** | REST + gRPC | REST + gRPC |
-| **部署** | 轻量级 | 可分布式 |
-| **客户端** | 多语言 SDK | 多语言 SDK |
-| **云服务** | Qdrant Cloud | Zilliz Cloud |
+| 特性         | Qdrant       | Milvus           |
+| ------------ | ------------ | ---------------- |
+| **索引类型** | HNSW         | HNSW, IVF, ANNOY |
+| **过滤**     | 强大的 DSL   | 表达式过滤       |
+| **API**      | REST + gRPC  | REST + gRPC      |
+| **部署**     | 轻量级       | 可分布式         |
+| **客户端**   | 多语言 SDK   | 多语言 SDK       |
+| **云服务**   | Qdrant Cloud | Zilliz Cloud     |
 
 ## 核心概念
 
@@ -163,24 +163,24 @@ client.upsert(
 
 ### 组件说明
 
-| 组件 | 说明 |
-|------|------|
-| **REST API** | HTTP 接口，方便调试和集成 |
-| **gRPC API** | 高性能二进制协议 |
-| **HNSW 索引** | 图索引，快速近似搜索 |
-| **Payload 索引** | 字段索引，快速过滤 |
-| **WAL** | 预写日志，保证数据持久性 |
+| 组件             | 说明                      |
+| ---------------- | ------------------------- |
+| **REST API**     | HTTP 接口，方便调试和集成 |
+| **gRPC API**     | 高性能二进制协议          |
+| **HNSW 索引**    | 图索引，快速近似搜索      |
+| **Payload 索引** | 字段索引，快速过滤        |
+| **WAL**          | 预写日志，保证数据持久性  |
 
 ## 距离度量
 
 ### 支持的距离类型
 
-| 距离类型 | 说明 | 适用场景 |
-|----------|------|----------|
-| **Cosine** | 余弦相似度 | NLP、文本相似度 |
-| **Euclid** | 欧氏距离 | 图像、特征向量 |
-| **Dot** | 点积 | 推荐系统、嵌入向量 |
-| **Manhattan** | 曼哈顿距离 | 特定场景 |
+| 距离类型      | 说明       | 适用场景           |
+| ------------- | ---------- | ------------------ |
+| **Cosine**    | 余弦相似度 | NLP、文本相似度    |
+| **Euclid**    | 欧氏距离   | 图像、特征向量     |
+| **Dot**       | 点积       | 推荐系统、嵌入向量 |
+| **Manhattan** | 曼哈顿距离 | 特定场景           |
 
 ```python
 from qdrant_client.models import Distance
@@ -228,10 +228,10 @@ client.create_collection(
 
 ### HNSW 参数调优
 
-| 参数 | 说明 | 推荐值 |
-|------|------|----------|
-| m | 每层最大连接数 | 8-32 |
-| ef_construction | 索引构建时搜索宽度 | 64-512 |
+| 参数                | 说明               | 推荐值   |
+| ------------------- | ------------------ | -------- |
+| m                   | 每层最大连接数     | 8-32     |
+| ef_construction     | 索引构建时搜索宽度 | 64-512   |
 | full_scan_threshold | 启用全表扫描的阈值 | 10K-100K |
 
 ## 过滤条件
@@ -296,13 +296,13 @@ results = client.search(
 
 ### 过滤操作符
 
-| 操作符 | 说明 | 示例 |
-|--------|------|------|
-| **MatchValue** | 精确匹配 | `category == "electronics"` |
-| **Range** | 范围比较 | `price >= 100 AND price <= 500` |
-| **MatchAny** | 任意匹配 | `tags IN ["A", "B"]` |
-| **MatchExcept** | 排除匹配 | `tags NOT IN ["expired"]` |
-| **Nested** | 嵌套字段 | `user.name == "John"` |
+| 操作符          | 说明     | 示例                            |
+| --------------- | -------- | ------------------------------- |
+| **MatchValue**  | 精确匹配 | `category == "electronics"`     |
+| **Range**       | 范围比较 | `price >= 100 AND price <= 500` |
+| **MatchAny**    | 任意匹配 | `tags IN ["A", "B"]`            |
+| **MatchExcept** | 排除匹配 | `tags NOT IN ["expired"]`       |
+| **Nested**      | 嵌套字段 | `user.name == "John"`           |
 
 ## 应用场景
 
@@ -312,7 +312,7 @@ results = client.search(
 def semantic_search(query_text, collection_name="documents"):
     # 1. 将查询文本向量化
     query_vector = embed_model.encode(query_text)
-    
+
     # 2. 搜索相似文档
     results = client.search(
         collection_name=collection_name,
@@ -327,7 +327,7 @@ def semantic_search(query_text, collection_name="documents"):
         ),
         limit=5
     )
-    
+
     return [result.payload['text'] for result in results]
 ```
 
@@ -341,14 +341,14 @@ def recommend_items(user_vector, user_preferences, limit=10):
         query_vector=user_vector,
         limit=100
     )
-    
+
     # 2. 应用业务规则过滤
     filtered = [
         r for r in base_results
         if r.payload['category'] in user_preferences['categories']
         and r.payload['price'] <= user_preferences['max_price']
     ]
-    
+
     return filtered[:limit]
 ```
 
@@ -358,7 +358,7 @@ def recommend_items(user_vector, user_preferences, limit=10):
 def rag_retrieve(query, collection_name="documents", top_k=5):
     # 1. 向量化查询
     query_vector = embedding_model.encode(query)
-    
+
     # 2. 检索相关文档
     results = client.search(
         collection_name=collection_name,
@@ -373,12 +373,12 @@ def rag_retrieve(query, collection_name="documents", top_k=5):
         ),
         limit=top_k
     )
-    
+
     # 3. 构建上下文
     context = "\n\n".join([
         r.payload['text'] for r in results
     ])
-    
+
     return context
 ```
 
@@ -531,5 +531,3 @@ curl http://localhost:6333/collections/test
 # 查看指标
 curl http://localhost:6333/metrics
 ```
-
-

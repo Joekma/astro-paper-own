@@ -13,7 +13,7 @@ tags:
   - 视图
   - 触发器
   - 事务
-description: 'MySQL视图、触发器、事务、存储过程和函数的使用方法'
+description: "MySQL视图、触发器、事务、存储过程和函数的使用方法"
 ---
 
 > MySQL 高级特性包括视图、触发器、事务、存储过程等。
@@ -86,12 +86,12 @@ COMMIT;  -- 提交
 SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
 ```
 
-| 级别 | 说明 |
-|------|------|
-| READ UNCOMMITTED | 脏读 |
-| READ COMMITTED | 不可重复读 |
-| REPEATABLE READ | 可重复读 |
-| SERIALIZABLE | 串行化 |
+| 级别             | 说明       |
+| ---------------- | ---------- |
+| READ UNCOMMITTED | 脏读       |
+| READ COMMITTED   | 不可重复读 |
+| REPEATABLE READ  | 可重复读   |
+| SERIALIZABLE     | 串行化     |
 
 ## 存储过程
 

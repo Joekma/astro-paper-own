@@ -154,7 +154,7 @@ def index(request):
 ```python
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    ...
+    # 其他中间件...
     'app名.middleware.Md1',
     'app名.middleware.Md2',
 ]
@@ -242,7 +242,7 @@ class AuthMiddleware(MiddlewareMixin):
             return None
 
         # 检查用户是否登录
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             return redirect('/login/')
 
         return None

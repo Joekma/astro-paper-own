@@ -40,7 +40,7 @@ language: zh-CN
 x = 10
 name = 'joek'
 age = 18
-salary = 15k
+salary = '15k'
 ```
 
 定义一个变量分为三部分：

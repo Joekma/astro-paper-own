@@ -999,15 +999,18 @@ print(df)
 
 # 默认排名（method='average'）
 print("\n默认排名:")
-print(df['rank'] = df['score'].rank())
+df['rank'] = df['score'].rank()
+print(df['rank'])
 
 # method='min' - 最小排名
 print("\n最小排名:")
-print(df['rank_min'] = df['score'].rank(method='min'))
+df['rank_min'] = df['score'].rank(method='min')
+print(df['rank_min'])
 
 # method='dense' - 紧凑排名
 print("\n紧凑排名:")
-print(df['rank_dense'] = df['score'].rank(method='dense'))
+df['rank_dense'] = df['score'].rank(method='dense')
+print(df['rank_dense'])
 ```
 
 ## 数据清洗

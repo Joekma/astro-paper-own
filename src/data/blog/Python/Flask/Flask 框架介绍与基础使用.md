@@ -242,6 +242,8 @@ Flask 支持多种路由参数类型：
 @app.route('/post/<float:post_id>')          # 浮点数
 @app.route('/path/<path:subpath>')           # 路径
 @app.route('/login', methods=['GET', 'POST']) # 支持多种 HTTP 方法
+def route_example(**kwargs):
+    ...
 ```
 
 ### 请求与响应

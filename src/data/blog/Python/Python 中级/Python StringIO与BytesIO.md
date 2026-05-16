@@ -26,27 +26,24 @@ StringIO顾名思义就是在内存中读写str。
 
 要把str写入StringIO，我们需要先创建一个StringIO，然后，像文件一样写入即可：
 ```python
-
->>> from io import StringIO
->>> f = StringIO()
->>> f.write('hello') # 5
->>> f.write(' ') # 1
->>> f.write('world!') # 6
->>> print(f.getvalue()) # hello world!
-
+from io import StringIO
+f = StringIO()
+f.write('hello') # 5
+f.write(' ') # 1
+f.write('world!') # 6
+print(f.getvalue()) # hello world!
 ```
 `getvalue()`方法用于获得写入后的str。
 
 要读取StringIO，可以用一个str初始化StringIO，然后，像读文件一样读取：
 ```python
->>> from io import StringIO
->>> f = StringIO('Hello!\nHi!\nGoodbye!')
->>> while True:
-...     s = f.readline()
-...     if s == '':
-...         break
-...     print(s.strip())
-
+from io import StringIO
+f = StringIO('Hello!\nHi!\nGoodbye!')
+while True:
+    s = f.readline()
+    if s == '':
+        break
+    print(s.strip())
 ```
 ## BytesIO
 
@@ -54,19 +51,19 @@ StringIO操作的只能是str，如果要操作二进制数据，就需要使用
 
 BytesIO实现了在内存中读写bytes，我们创建一个BytesIO，然后写入一些bytes：
 ```python
->>> from io import BytesIO
->>> f = BytesIO()
->>> f.write('中文'.encode('utf-8')) # 6
->>> print(f.getvalue()) # b'\xe4\xb8\xad\xe6\x96\x87'
+from io import BytesIO
+f = BytesIO()
+f.write('中文'.encode('utf-8')) # 6
+print(f.getvalue()) # b'\xe4\xb8\xad\xe6\x96\x87'
 
 ```
 请注意，写入的不是str，而是经过UTF-8编码的bytes。
 
 和StringIO类似，可以用一个bytes初始化BytesIO，然后，像读文件一样读取：
 ```python
->>> from io import BytesIO
->>> f = BytesIO(b'\xe4\xb8\xad\xe6\x96\x87')
->>> f.read() # b'\xe4\xb8\xad\xe6\x96\x87'
+from io import BytesIO
+f = BytesIO(b'\xe4\xb8\xad\xe6\x96\x87')
+print(f.read()) # b'\xe4\xb8\xad\xe6\x96\x87'
 ```
 StringIO和BytesIO是在内存中操作str和bytes的方法，使得和读写文件具有一致的接口。
 
@@ -113,12 +110,12 @@ class TestGreet:
         # 创建内存缓冲区捕获输出
         captured_output = StringIO()
         sys.stdout = captured_output  # 重定向标准输出
-        
+
         greet("Alice")
-        
+
         sys.stdout = sys.__stdout__  # 恢复标准输出
         output = captured_output.getvalue()
-        
+
         assert output == "Hello, Alice!\n"
 ```
 
@@ -133,12 +130,12 @@ def filter_words(text, remove_words):
     """过滤文本中的指定词语"""
     stream = StringIO(text)
     result = []
-    
+
     for line in stream:
         words = line.split()
         filtered = [w for w in words if w not in remove_words]
         result.append(' '.join(filtered))
-    
+
     return '\n'.join(result)
 
 text = "This is a simple text with some simple words"

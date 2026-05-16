@@ -1,4 +1,4 @@
-﻿---
+---
 title: Redis管理实战
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -10,7 +10,7 @@ tags:
   - Redis
   - 数据库
   - 运维
-description: 'Redis管理运维实战经验，包含配置优化、监控和安全'
+description: "Redis管理运维实战经验，包含配置优化、监控和安全"
 series: Redis
 language: zh-CN
 ---
@@ -261,13 +261,13 @@ stop-writes-on-bgsave-error yes
 
 ### 关键指标
 
-| 指标 | 说明 | 告警阈值 |
-|------|------|----------|
-| used_memory | 已使用内存 | > maxmemory 80% |
-| connected_clients | 连接数 | > maxclients 80% |
-| blocked_clients | 阻塞客户端 | > 0 |
-| evicted_keys | 淘汰key数 | > 0 |
-| replication_lag | 复制延迟 | > 5秒 |
+| 指标              | 说明       | 告警阈值         |
+| ----------------- | ---------- | ---------------- |
+| used_memory       | 已使用内存 | > maxmemory 80%  |
+| connected_clients | 连接数     | > maxclients 80% |
+| blocked_clients   | 阻塞客户端 | > 0              |
+| evicted_keys      | 淘汰key数  | > 0              |
+| replication_lag   | 复制延迟   | > 5秒            |
 
 ### Python 监控脚本
 
@@ -303,10 +303,10 @@ def monitor_redis(host='localhost', port=6379):
 
 ## 小结
 
-| 类别 | 关键配置 |
-|------|----------|
-| **内存** | maxmemory、淘汰策略 |
-| **持久化** | RDB 快照、AOF 日志 |
-| **安全** | 密码、IP 白名单 |
-| **性能** | 连接数、慢查询 |
-| **监控** | 内存、命中率、延迟 |
+| 类别       | 关键配置            |
+| ---------- | ------------------- |
+| **内存**   | maxmemory、淘汰策略 |
+| **持久化** | RDB 快照、AOF 日志  |
+| **安全**   | 密码、IP 白名单     |
+| **性能**   | 连接数、慢查询      |
+| **监控**   | 内存、命中率、延迟  |

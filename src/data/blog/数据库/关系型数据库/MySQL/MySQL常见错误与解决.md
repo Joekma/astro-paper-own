@@ -12,7 +12,7 @@ tags:
   - 数据库
   - 报错解决
   - 高可用
-description: 'MySQL常见错误与解决方案汇总'
+description: "MySQL常见错误与解决方案汇总"
 ---
 
 > MySQL 常见错误与解决方案汇总。
@@ -78,6 +78,37 @@ SHOW PROCESSLIST;
 SET GLOBAL max_connections = 500;
 ```
 
+### 查询慢或索引缺失
+
+```sql
+-- 查看执行计划
+EXPLAIN SELECT * FROM users;
+
+-- 查看索引
+SHOW INDEX FROM users;
+
+-- 查看当前连接和耗时 SQL
+SHOW FULL PROCESSLIST;
+```
+
+处理思路：
+
+- **先定位慢 SQL**：通过慢查询日志或 `SHOW FULL PROCESSLIST` 找到具体语句。
+- **再看执行计划**：重点检查 `type`、`key`、`rows`、`Extra`。
+- **最后补索引或改 SQL**：避免函数包裹索引列、避免无条件大表扫描。
+
+## 数据问题
+
+### 重复数据清理
+
+```sql
+DELETE FROM users WHERE id NOT IN (
+    SELECT MIN(id) FROM users GROUP BY name
+);
+```
+
+生产环境建议先 `SELECT` 验证影响范围，再在事务中执行删除。
+
 ## 备份恢复错误
 
 ### 1062 - 重复键错误
@@ -93,3 +124,4 @@ mysqlimport --ignore
 - **配置错误**：检查日志
 - **主从错误**：重新定位复制位置
 - **性能错误**：优化连接数
+- **数据问题**：先查询确认，再清理重复数据

@@ -1,11 +1,11 @@
-﻿---
+---
 title: Linux 必备知识：系统结构、基础命令和网络管理
 series: Linux
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-03T00:00:00.000+08:00
+modDatetime: 2026-05-16T00:00:00.000+08:00
 slug: linux-essential-knowledge
-description: '深入讲解Linux必备知识，包括系统架构、目录结构、文件操作、权限管理、用户管理、进程管理、系统服务、磁盘管理、网络管理和防火墙配置。'
+description: '讲解 Linux 系统结构、目录结构、文件操作、权限、用户、进程、systemd、磁盘、网络和防火墙基础。'
 tags:
   - Linux
   - 系统管理
@@ -18,97 +18,98 @@ language: zh-CN
 
 ## Linux 简介
 
-Linux 是开源的 Unix-like 操作系统内核，由林纳斯·托瓦兹于 1991 年发布。
-
-### 核心优势
-
-| 特性 | 说明 |
-|------|------|
-| **开源免费** | 遵循 GPL 协议 |
-| **安全稳定** | 企业级可靠性 |
-| **性能优异** | 高效利用系统资源 |
-| **社区支持** | 庞大开发者社区 |
-| **定制灵活** | 可按需定制 |
+Linux 是开源的 Unix-like 操作系统内核，由 Linus Torvalds 于 1991 年发布。日常所说的 Linux 系统一般是 Linux 内核加 GNU 工具、系统服务、包管理器和发行版配置共同组成的操作系统。
 
 ## 系统架构
 
-```
+```text
 ┌──────────────────────────────────────┐
 │           用户应用程序               │
 ├──────────────────────────────────────┤
-│         Shell (命令行解释器)           │
+│         Shell / 图形界面              │
 ├──────────────────────────────────────┤
-│           系统调用接口                │
+│       系统库与系统调用接口           │
 ├──────────────────────────────────────┤
-│      GNU C Library (glibc)           │
+│             Linux 内核               │
 ├──────────────────────────────────────┤
-│           Linux 内核                 │
-├──────────────────────────────────────┤
-│         硬件抽象层                   │
-├──────────────────────────────────────┤
-│           物理硬件                   │
+│             硬件设备                 │
 └──────────────────────────────────────┘
 ```
+
+Shell 负责解释命令，内核负责进程、内存、文件系统、网络和设备管理。
 
 ## 目录结构
 
 | 目录 | 说明 |
 |------|------|
 | `/` | 根目录，文件系统起点 |
-| `/bin` | 基本命令（二进制文件） |
+| `/bin` | 基本用户命令 |
 | `/sbin` | 系统管理命令 |
 | `/etc` | 系统配置文件 |
 | `/home` | 普通用户家目录 |
 | `/root` | root 用户家目录 |
-| `/var` | 可变数据（日志、缓存） |
+| `/var` | 可变数据，例如日志、缓存、队列 |
 | `/tmp` | 临时文件目录 |
-| `/usr` | 用户程序和文档 |
-| `/proc` | 虚拟文件系统 |
-| `/dev` | 设备文件目录 |
+| `/usr` | 用户程序、库和文档 |
+| `/proc` | 内核和进程信息的虚拟文件系统 |
+| `/dev` | 设备文件 |
 | `/mnt` | 临时挂载点 |
-| `/opt` | 可选应用软件 |
+| `/opt` | 第三方或可选应用 |
 
 ## 文件操作
 
 ### 目录操作
 
 ```bash
-ls -la                    # 列出目录详细内容
-cd /path/to/directory     # 切换目录
-pwd                       # 显示当前目录
-mkdir directory_name       # 创建目录
-rmdir directory_name       # 删除空目录
-rm -rf directory_name      # 删除目录及内容
+ls -la
+cd /path/to/directory
+pwd
+mkdir directory_name
+rmdir empty_directory
 ```
+
+删除目录前先确认路径：
+
+```bash
+rm -ri directory_name
+```
+
+`rm -rf` 会递归强制删除，适合脚本中的受控路径，不应作为初学者默认删除命令。
 
 ### 文件操作
 
 ```bash
-touch filename            # 创建空文件
-cp source dest            # 复制文件
-cp -r source dest         # 递归复制目录
-mv source dest            # 移动或重命名
-rm filename               # 删除文件
-cat filename              # 查看文件内容
-head -n 10 filename      # 查看前10行
-tail -n 10 filename      # 查看后10行
-tail -f filename          # 实时查看
+touch filename
+cp source dest
+cp -r source_dir dest_dir
+mv source dest
+rm filename
+cat filename
+less filename
+head -n 10 filename
+tail -n 10 filename
+tail -f filename
 ```
+
+大文件查看优先使用 `less`、`head`、`tail`，不要直接 `cat` 巨大日志。
 
 ### 文件搜索
 
 ```bash
-find /path -name "*.txt"  # 按名称搜索
-grep "pattern" file        # 内容搜索
-locate filename            # 快速定位
-which command              # 查找命令位置
+find /path -name "*.txt"
+grep -R "pattern" /path
+locate filename
+which command
+command -v command
 ```
+
+`locate` 依赖索引数据库，结果可能不是实时的。
 
 ## 文件权限
 
 ### 权限表示
 
-```
+```text
 drwxr-xr-x
 │└─┬─┘│ └──┘
 │   │    └── 其他用户权限
@@ -120,113 +121,141 @@ drwxr-xr-x
 |------|------|
 | `d` | 目录 |
 | `-` | 普通文件 |
-| `r` | 读权限 (4) |
-| `w` | 写权限 (2) |
-| `x` | 执行权限 (1) |
+| `r` | 读权限，数字值 4 |
+| `w` | 写权限，数字值 2 |
+| `x` | 执行权限，数字值 1 |
 
 ### 修改权限
 
 ```bash
-chmod 755 filename        # 数字方式
-chmod u+x filename        # 符号方式
-chown user:group filename  # 改变所有者
+chmod 755 script.sh
+chmod u+x script.sh
+chown user:group filename
 ```
+
+不要为了省事使用 `chmod 777`。它会给所有用户读、写、执行权限，通常会扩大安全风险。
 
 ## 用户管理
 
-### 用户命令
-
 ```bash
-useradd username          # 创建用户
-userdel username          # 删除用户
-usermod -aG group user   # 添加到组
-passwd username           # 设置密码
-su - username             # 切换用户
-sudo command             # 以 root 执行
+sudo useradd username
+sudo passwd username
+sudo usermod -aG group username
+sudo userdel username
+su - username
+sudo command
 ```
 
-### 查看用户
+查看当前身份：
 
 ```bash
-whoami                    # 当前用户名
-who                       # 登录用户
-id                        # 用户 ID 信息
+whoami
+who
+id
+groups
 ```
+
+涉及系统用户和 sudo 权限的修改，建议先确认发行版约定。例如 Debian/Ubuntu 常用 `sudo` 组，RHEL/CentOS 系常用 `wheel` 组。
 
 ## 进程管理
 
 ### 查看进程
 
 ```bash
-ps aux                    # 所有进程
-ps -ef                    # 进程详情
-top                       # 实时监控
-htop                      # 高级监控
+ps aux
+ps -ef
+top
+htop
 ```
+
+`htop` 不是所有系统默认安装。
 
 ### 操作进程
 
 ```bash
-kill PID                  # 终止进程
-kill -9 PID               # 强制终止
-killall processname        # 按名称终止
-command &                  # 后台运行
-nohup command &           # 忽略挂起运行
+kill PID
+kill -TERM PID
+kill -9 PID
+killall processname
+command &
+nohup command &
 ```
+
+优先使用默认的 `SIGTERM` 优雅停止。`kill -9` 会跳过进程清理逻辑，只应在进程无法正常退出时使用。
 
 ## 系统服务
 
-### systemd（CentOS 7+）
+多数现代 Linux 发行版使用 systemd：
 
 ```bash
-systemctl start servicename      # 启动
-systemctl stop servicename       # 停止
-systemctl restart servicename     # 重启
-systemctl status servicename      # 状态
-systemctl enable servicename      # 开机自启
+systemctl start servicename
+systemctl stop servicename
+systemctl restart servicename
+systemctl status servicename
+systemctl enable servicename
+systemctl disable servicename
+journalctl -u servicename
 ```
+
+查看服务失败原因时，`systemctl status` 和 `journalctl -u` 通常一起使用。
 
 ## 磁盘管理
 
 ```bash
-df -h                     # 磁盘使用
-du -sh /path              # 目录大小
-lsblk                     # 块设备
-mount /dev/sdb1 /mnt      # 挂载
-umount /mnt               # 卸载
+df -h
+du -sh /path
+lsblk
+blkid
+mount /dev/sdb1 /mnt
+umount /mnt
 ```
+
+挂载生产磁盘前，应确认设备名、文件系统类型和是否已有数据。设备名如 `/dev/sdb` 可能随启动顺序变化，长期配置建议使用 UUID。
 
 ## 网络管理
 
-### 查看配置
+### 查看网络
 
 ```bash
-ip addr                   # 查看 IP
-netstat -tuln            # 监听端口
-ss -tuln                 # 推荐使用
-ping -c 4 8.8.8.8        # 连通性测试
+ip addr
+ip route
+ss -tuln
+ping -c 4 8.8.8.8
+curl -I https://example.com
 ```
 
-### 网络配置
+`ip` 和 `ss` 是现代系统中更推荐的工具。`ifconfig`、`netstat` 在很多发行版中属于兼容工具或需要额外安装。
+
+### 临时配置 IP
 
 ```bash
-ifconfig eth0 192.168.1.100  # 临时设置 IP
+sudo ip addr add 192.168.1.100/24 dev eth0
+sudo ip link set eth0 up
 ```
+
+临时配置重启后会丢失。永久配置需要使用发行版的网络管理方式，例如 NetworkManager、netplan 或系统网络配置文件。
 
 ## 防火墙
 
 ### firewalld
 
 ```bash
-firewall-cmd --state             # 状态
-firewall-cmd --list-all          # 规则列表
-firewall-cmd --add-port=80/tcp   # 添加端口
-firewall-cmd --reload            # 重载配置
+sudo firewall-cmd --state
+sudo firewall-cmd --list-all
+sudo firewall-cmd --permanent --add-service=http
+sudo firewall-cmd --permanent --add-port=8080/tcp
+sudo firewall-cmd --reload
 ```
 
 ### iptables
 
 ```bash
-iptables -L                      # 列出规则
-iptables -A INPUT -p tcp --dport 80 -j ACCEPT  # 添加规则
+sudo iptables -L -n -v
+sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
 ```
+
+iptables 命令直接影响防火墙规则。生产环境修改前应确认现有规则和持久化方式，避免断开 SSH 连接。
+
+## 小结
+
+Linux 入门应先掌握目录结构、权限、用户、进程、服务、磁盘和网络这些基础概念。执行删除、权限、防火墙、磁盘挂载等命令前，先确认目标对象和回滚方式。

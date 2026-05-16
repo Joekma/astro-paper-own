@@ -1,4 +1,4 @@
-﻿---
+---
 title: Redis安装、配置和数据操作
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -11,12 +11,22 @@ tags:
   - 数据库
   - NoSQL
   - 缓存
-description: 'Redis安装配置和基本数据操作'
+description: "Redis安装配置和基本数据操作"
 series: Redis
 language: zh-CN
 ---
 
 > Redis 是高性能的内存键值存储数据库，广泛用于缓存、消息队列、排行榜等场景。
+
+## Redis 特性
+
+| 特性             | 说明                                |
+| ---------------- | ----------------------------------- |
+| **高性能**       | 基于内存读写，延迟低                |
+| **数据类型丰富** | String、Hash、List、Set、Sorted Set |
+| **持久化**       | 支持 RDB、AOF 和混合持久化          |
+| **高可用**       | 支持主从复制、Sentinel 和 Cluster   |
+| **发布订阅**     | 可用于轻量消息通知                  |
 
 ## 安装部署
 
@@ -38,6 +48,24 @@ docker run -d \
   -v redis-data:/data \
   redis:7-alpine \
   redis-server --appendonly yes
+```
+
+### Docker Compose
+
+```yaml
+version: "3"
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: always
+
+volumes:
+  redis-data:
 ```
 
 ### 配置文件
@@ -68,6 +96,15 @@ redis-cli --no-raw
 
 # 认证
 redis-cli -a password
+```
+
+### Python 连接池
+
+```python
+import redis
+
+pool = redis.ConnectionPool(host='localhost', port=6379, db=0)
+r = redis.Redis(connection_pool=pool)
 ```
 
 ### 配置命令

@@ -199,7 +199,7 @@ for event, elem in ET.iterparse(sys.argv[1]):
 
 ### 六、ElementTree 对象方法
 
-```python
+```text
 class xml.etree.ElementTree.ElementTree(element=None, file=None)
 ```
 

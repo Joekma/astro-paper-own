@@ -225,14 +225,14 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4
 
 ```python
 import jwt
-import datetime
+from datetime import datetime, timedelta, timezone
 
 def create_token(user_id, username):
     payload = {
         'sub': user_id,
         'username': username,
-        'iat': datetime.datetime.utcnow(),
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+        'iat': datetime.now(timezone.utc),
+        'exp': datetime.now(timezone.utc) + timedelta(hours=24)
     }
     return jwt.encode(payload, 'secret_key', algorithm='HS256')
 
@@ -259,38 +259,38 @@ app.config['SECRET_KEY'] = 'your_secret_key'
 def login():
     username = request.json.get('username')
     password = request.json.get('password')
-    
+
     # 验证用户（实际应查数据库）
     if username == 'admin' and password == '123456':
         token = create_token(1, username)
         return jsonify({'token': token})
-    
+
     return jsonify({'error': '认证失败'}), 401
 
 @app.route('/protected')
 def protected():
     auth = request.headers.get('Authorization')
-    
+
     if not auth or not auth.startswith('Bearer '):
         return jsonify({'error': '缺少Token'}), 401
-    
+
     token = auth.split(' ')[1]
     payload = verify_token(token)
-    
+
     if not payload:
         return jsonify({'error': 'Token无效'}), 401
-    
+
     return jsonify({'user': payload})
 
 @app.route('/refresh', methods=['POST'])
 def refresh():
     old_token = request.json.get('token')
     payload = verify_token(old_token)
-    
+
     if payload:
         new_token = create_token(payload['sub'], payload['username'])
         return jsonify({'token': new_token})
-    
+
     return jsonify({'error': '刷新失败'}), 401
 ```
 
@@ -353,11 +353,11 @@ def sensitive_operation_required(func):
     def wrapper(*args, **kwargs):
         token = request.headers.get('Authorization')
         payload = verify_token(token)
-        
+
         # 敏感操作需要验证密码
         if not verify_password(payload['sub'], request.json.get('password')):
             return jsonify({'error': '身份验证失败'}), 403
-        
+
         return func(*args, **kwargs)
     return wrapper
 ```

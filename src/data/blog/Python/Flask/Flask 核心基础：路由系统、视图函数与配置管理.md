@@ -222,6 +222,8 @@ class TestingConfig(Config):
 @app.route('/post/<float:post_id>')
 @app.route('/post/<path:path>')
 @app.route('/login', methods=['GET', 'POST'])
+def route_example(**kwargs):
+    ...
 ```
 
 ### 常用路由系统有以上五种，所有的路由系统都是基于以下对应关系来处理

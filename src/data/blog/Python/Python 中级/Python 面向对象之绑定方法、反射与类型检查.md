@@ -308,26 +308,26 @@ class MySQL:
     def __init__(self,host,port):
         self.host=host
         self.port=port
- 
+
     @staticmethod
     def from_conf():
         return MySQL(settings.HOST,settings.PORT)
- 
+
     # @classmethod [[哪个类来调用]],就将哪个类当做第一个参数传入
     # def from_conf(cls):
     #     return cls(settings.HOST,settings.PORT)
- 
+
     def __str__(self):
         return '就不告诉你'
- 
+
 class Mariadb(MySQL):
     def __str__(self):
         return '<%s:%s>' %(self.host,self.port)
- 
- 
+
+
 m=Mariadb.from_conf()
 print(m) # 我们的意图是想触发Mariadb.__str__,但是结果触发了MySQL.__str__的执行，打印就不告诉你：
- 
+
 mariadb是mysql
 
 ```
@@ -339,18 +339,18 @@ Python 是双面向的,既可以面向函数编程,也可以面向对象编程,�
 ```python
 class Foo(object):
     '''类三种方法语法形式'''
-        [[在类中定义普通方法，在定义普通方法的时候，必须添加self]]  
+    # 在类中定义普通方法时，必须添加 self
     def instance_method(self):
         print("是类{}的实例方法，只能被实例对象调用".format(Foo))
-　　# 在类中定义静态方法，在定义静态方法的时候，不需要传递任何类的东西 
+    # 在类中定义静态方法时，不需要传递类或实例
     @staticmethod
     def static_method():
         print("是静态方法")
-　　# 在类中定义类方法，在定义类方法的时候，需要传递参数cls  cls即为类本身
+    # 在类中定义类方法时，需要传递 cls，cls 即类本身
     @classmethod
     def class_method(cls):
         print("是类{}的类方法，只能被类对象调用".format(Foo))
- 
+
 foo = Foo()
 foo.instance_method()
 foo.class_method()
@@ -361,7 +361,7 @@ Foo.class_method()
 ```
 可以看出：
 
-实例方法只能被实例对象调用，静态方法(由@staticmethod装饰的方法)、类方法(由@classmethod装饰的方法)，可以被类或类的实例对象调用。  
+实例方法只能被实例对象调用，静态方法(由@staticmethod装饰的方法)、类方法(由@classmethod装饰的方法)，可以被类或类的实例对象调用。
 实例方法，第一个参数必须要默认传实例对象，一般习惯用self。对象方法中有self参数，类方法有cls参数，静态方法是不需要这些附加参数（在c++中，是没有类这个概念）
 
 静态函数（@staticmethod）:即静态方法，静态方法是一类特殊的方法，有时候你可能需要填写一个属于这个类的方法，但是这些代码完全不会使用到实例对象本身。它主要处理这个类的逻辑关联，如验证数据；而且对参数没有要求。
@@ -395,15 +395,15 @@ Foo.class_method()
 由于python类中只能有一个初始化方法，不能按照不同的情况初始化类，举例如下：
 ```python
 class book(object):
- 
+
     def __init__(self,title):
         self.title = title
- 
+
     @classmethod
     def creat(cls,title):
         book = cls(title=title)
         return book
- 
+
 book1=book("python")
 book2 = book.creat("python is my work")
 print(book1)
@@ -418,19 +418,19 @@ print(book2.title)
 class foo(object):
     x =1
     u =1
- 
+
     @staticmethod
     def average(*mixes):
         return sum(mixes)/len(mixes)
- 
+
     @staticmethod
     def static_method():
         return foo.average(foo.x,foo.u)
- 
+
     @classmethod
     def class_method(cls):
         return cls.average(cls.x,cls.u)
- 
+
 a = foo()
 print(a.static_method())
 print(a.class_method())
@@ -534,13 +534,15 @@ print(hasattr(obj, 'age'))  # False
 # 删除不存在的属性会报错
 # delattr(obj, 'nonexistent')  # AttributeError
 ```
+
+```python
 print(hasattr(obj,'name'))
 print(hasattr(obj,'talk'))
 print(hasattr(obj,'age'))
-# 结果：
-# True
-# True
-# True　
+结果：
+True
+True
+True
 ```
 **getattr(object, name, default=None) 获取object中有没有对应的方法和属性**
 
@@ -576,7 +578,7 @@ print(getattr(obj,'ads',None))
 def setattr(x, y, v): # real signature unknown; restored from __doc__
     """
     Sets the named attribute on the given object to the specified value.
- 
+
     setattr(x, 'y', v) is equivalent to ``x.y = v''
     """
     pass
@@ -601,7 +603,7 @@ print(obj.sex)
 def delattr(x, y): # real signature unknown; restored from __doc__
     """
     Deletes the named attribute from the given object.
- 
+
     delattr(x, 'y') is equivalent to ``del x.y''
     """
     pass
@@ -612,12 +614,12 @@ class People:
         self.age = age
     def talk(self):
         print('%s is talking'%self.name)
- 
+
 obj = People('huard', 18)
 delattr(obj, 'age')
 print(obj.__dict__)
 # 结果：
-# {'name': 'huard'}　
+# {'name': 'huard'}
 ```
 **四个方法的使用演示**
 ```python
@@ -626,33 +628,33 @@ class BlackMedium:
     def __init__(self,name,addr):
         self.name=name
         self.addr=addr
- 
+
     def sell_house(self):
         print('%s 黑中介卖房子啦,,但是谁能证明自己不mai' %self.name)
     def rent_house(self):
         print('%s 黑中介租房子啦,才租呢' %self.name)
- 
+
 b1=BlackMedium('万成置地','回龙观天露园')
- 
+
 # 检测是否含有某属性
-print(hasattr(b1,'name'))   [[True]]
-print(hasattr(b1,'sell_house')) [[True]]
- 
+print(hasattr(b1, 'name'))  # True
+print(hasattr(b1, 'sell_house'))  # True
+
 # 获取属性
 print(b1.name)
 print(b1.addr)
 n=getattr(b1,'name')
-print(n)  [[万成置地]]
+print(n)  # 万成置地
 func=getattr(b1,'rent_house')
-func()   [[万成置地]] 黑中介租房子啦,才租呢
- 
-# getattr(b1,'aaaaaaaa') [[报错]]
-'''    getattr(b1,'aaaaaaaa') [[报错]]
+func()  # 万成置地 黑中介租房子啦,才租呢
+
+# getattr(b1, 'aaaaaaaa')  # 报错
+'''    getattr(b1, 'aaaaaaaa')  # 报错
 AttributeError: 'BlackMedium' object has no attribute 'aaaaaaaa'
 '''
 # 为了不让报错，我们提前设置异常处理，如果没有的话 直接读取的是我们设置的默认值
-print(getattr(b1,'aaaaaaaa','不存在啊'))  [[不存在啊]]
- 
+print(getattr(b1, 'aaaaaaaa', '不存在啊'))  # 不存在啊
+
 # 设置属性
 setattr(b1,'sb',True)
 setattr(b1,'show_name',lambda self:self.name+'sb')
@@ -660,12 +662,12 @@ print(b1.__dict__)
 # {'name': '万成置地', 'addr': '回龙观天露园', 'sb': True, 'show_name': <function <lambda> at 0x000001A26A0E56A8>}
 print(b1.show_name(b1))
 # 万成置地sb
- 
+
 # 删除属性
 delattr(b1,'addr')
 delattr(b1,'show_name')
 # delattr(b1,'show_name111')#不存在,则报错AttributeError: show_name111
- 
+
 print(b1.__dict__) #{'name': '万成置地', 'sb': True}
 
 ```
@@ -673,37 +675,37 @@ print(b1.__dict__) #{'name': '万成置地', 'sb': True}
 ```python
 class Foo(object):
     staticField = "old boy"
- 
+
     def __init__(self):
         self.name = 'wupeiqi'
- 
+
     def func(self):
         return 'func'
- 
+
     @staticmethod
     def bar():
         return 'bar'
- 
+
 print(getattr(Foo, 'staticField'))
 print(getattr(Foo, 'func'))
 print(getattr(Foo, 'bar'))
 # old boy
 # <function Foo.func at 0x00000240E3205A60>
-# <function Foo.bar at 0x00000240E3205AE8>　
+# <function Foo.bar at 0x00000240E3205AE8>
 
 ```
 **反射当前模块成员**
 ```python
 import sys
- 
+
 def s1():
     print('s1')
- 
+
 def s2():
     print('s2')
- 
+
 this_module = sys.modules[__name__]
- 
+
 print(hasattr(this_module, 's1'))
 print(getattr(this_module, 's2'))
 # True
@@ -714,11 +716,11 @@ print(getattr(this_module, 's2'))
 ```python
 
 import module_test as obj
- 
+
 obj.test()
- 
+
 print(hasattr(obj,'test'))
- 
+
 getattr(obj,'test')()
 # True
 # from the test
@@ -729,7 +731,7 @@ getattr(obj,'test')()
 
 # _*_ coding: utf-8 _*_
 def test():
-    print('from the test')　
+    print('from the test')
 
 ```
 ### 为什么用反射？（反射的好处）
@@ -769,32 +771,32 @@ class Foo:
     x=1
     def __init__(self,y):
         self.y=y
- 
+
     def __getattr__(self, item):
         print('----> from getattr:你找的属性不存在')
- 
- 
+
+
     def __setattr__(self, key, value):
         print('----> from setattr')
         # self.key=value [[这就无限递归了]],你好好想想
         # self.__dict__[key]=value [[应该使用它]]
- 
+
     def __delattr__(self, item):
         print('----> from delattr')
         # del self.item [[无限递归了]]
         self.__dict__.pop(item)
- 
+
 # __setattr__添加/修改属性会触发它的运行
 f1=Foo(10)
 print(f1.__dict__) # 因为你重写了__setattr__,凡是赋值操作都会触发它的运行,你啥都没写,就是根本没赋值,除非你直接操作属性字典,否则永远无法赋值
 f1.z=3
 print(f1.__dict__)
- 
+
 # __delattr__删除属性的时候会触发它的运行
 f1.__dict__['a']=3#我们可以直接修改属性字典,来完成添加/修改属性的操作
 del f1.a
 print(f1.__dict__)
- 
+
 # __getattr__只有在使用点调用属性且属性不存在的时候才会触发它的运行
 f1.xxxxxx
 

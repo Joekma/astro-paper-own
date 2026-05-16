@@ -1,4 +1,4 @@
-﻿---
+---
 title: Redis主从复制
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -10,7 +10,9 @@ tags:
   - Redis
   - 数据库
   - 主从复制
-description: 'Redis主从复制配置、原理和实战'
+  - 高可用
+  - Sentinel
+description: "Redis主从复制、读写分离和Sentinel高可用方案"
 series: Redis
 language: zh-CN
 ---
@@ -94,7 +96,7 @@ docker run -d --name redis-slave \
 ## Docker Compose 部署
 
 ```yaml
-version: '3'
+version: "3"
 services:
   master:
     image: redis:7
@@ -132,12 +134,12 @@ services:
 
 ### 复制过程
 
-| 阶段 | 说明 |
-|------|------|
-| **连接建立** | 从节点发送 PING，主节点返回 PONG |
-| **权限验证** | 如果有密码，验证 masterauth |
+| 阶段         | 说明                                  |
+| ------------ | ------------------------------------- |
+| **连接建立** | 从节点发送 PING，主节点返回 PONG      |
+| **权限验证** | 如果有密码，验证 masterauth           |
 | **同步数据** | 全量同步（RDB）或增量同步（命令传播） |
-| **命令传播** | 主节点命令实时同步到从节点 |
+| **命令传播** | 主节点命令实时同步到从节点            |
 
 ### 全量同步（RDB）
 
@@ -275,6 +277,33 @@ class ReadWriteRedis:
         return self.master.set(key, value)
 ```
 
+## Sentinel 高可用
+
+Sentinel 在主从复制基础上提供监控、故障判断、自动故障转移和客户端服务发现能力。
+
+| 组件         | 说明                       |
+| ------------ | -------------------------- |
+| **Master**   | 写入主节点                 |
+| **Replica**  | 从节点，接收复制数据       |
+| **Sentinel** | 监控节点状态并触发主从切换 |
+
+### Sentinel 配置
+
+```bash
+sentinel monitor mymaster 127.0.0.1 6379 2
+sentinel down-after-milliseconds mymaster 5000
+sentinel failover-timeout mymaster 60000
+sentinel parallel-syncs mymaster 1
+```
+
+### 故障转移流程
+
+1. Sentinel 主观下线检测到 master 不可达。
+2. 多个 Sentinel 投票形成客观下线。
+3. Sentinel 从 replica 中选出新 master。
+4. 其他 replica 自动改为复制新 master。
+5. 客户端通过 Sentinel 获取新的 master 地址。
+
 ## 常见问题
 
 ### 问题一：复制延迟
@@ -318,21 +347,21 @@ REPLICAOF master_ip master_port
 
 ## 小结
 
-| 配置项 | 说明 |
-|--------|------|
-| **replicaof** | 指定主节点 |
-| **replica-read-only** | 从节点只读 |
-| **masterauth** | 主节点密码 |
-| **repl-backlog-size** | 复制缓冲区大小 |
-| **repl-diskless-sync** | 无盘复制 |
+| 配置项                 | 说明           |
+| ---------------------- | -------------- |
+| **replicaof**          | 指定主节点     |
+| **replica-read-only**  | 从节点只读     |
+| **masterauth**         | 主节点密码     |
+| **repl-backlog-size**  | 复制缓冲区大小 |
+| **repl-diskless-sync** | 无盘复制       |
 
-| 同步方式 | 触发条件 | 数据范围 |
-|---------|---------|---------|
-| **全量同步** | 从节点首次连接 | 全部数据 |
-| **增量同步** | 断开重连 | offset 之后的数据 |
+| 同步方式     | 触发条件       | 数据范围          |
+| ------------ | -------------- | ----------------- |
+| **全量同步** | 从节点首次连接 | 全部数据          |
+| **增量同步** | 断开重连       | offset 之后的数据 |
 
-| 优势 | 说明 |
-|------|------|
+| 优势         | 说明                 |
+| ------------ | -------------------- |
 | **数据冗余** | 数据备份，提高安全性 |
 | **读写分离** | 分散读压力，提升性能 |
-| **故障恢复** | 从节点提升为主节点 |
+| **故障恢复** | 从节点提升为主节点   |

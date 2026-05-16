@@ -66,7 +66,6 @@ goods_instance.print_name()
 # 输出: apple
 ```
 
-```
 goods类定义完成之后就产生了一个全局的类对象，可以通过类对象来访问类中的属性和方法了。
 
 在上面代码中注释的很清楚了，name是一个属性，printName( )是一个方法，与某个对象进行绑定的函数称作为方法。一般在类里面定义的函数与类对象或者实例对象绑定了，所以称作为方法；而在类外定义的函数一般没有同对象进行绑定，就称为函数。
@@ -85,7 +84,7 @@ goods类定义完成之后就产生了一个全局的类对象，可以通过类
 ### 更好的理解类对象
 ```python
 class goods:
-    name = 'apple'       [[定义了一个属性]]
+    name = 'apple'  # 定义了一个属性
     def __init__(self,name):
          self.name=name
 # 类对象产生，其实goods默认继承了object类，类对象的产生与object里面的内置方法有关系
@@ -94,36 +93,36 @@ print(goods.__dict__)
 sdsd=goods('scscs')
 print(goods.__dict__)
 
-{'__module__': '__main__', 'name': 'apple', '__init__': <function goods.__init__ at 0x00000237D68798C8>, '__dict__': <attribute '__dict__' of 'goods' objects>, '__weakref__': <attribute '__weakref__' of 'goods' objects>, '__doc__': None}
-{'__module__': '__main__', 'name': 'apple', '__init__': <function goods.__init__ at 0x00000237D68798C8>, '__dict__': <attribute '__dict__' of 'goods' objects>, '__weakref__': <attribute '__weakref__' of 'goods' objects>, '__doc__': None}
+# 输出示例：{'__module__': '__main__', 'name': 'apple', ...}
+# 输出示例：{'__module__': '__main__', 'name': 'apple', ...}
 # 可以看出来类里面的__init__只是初始化类的实例化结果，类的名称空间不发生变化
 # 如果变量name没有被初始化，对象sdsd也可以使用父类的name变量
 
 print(sdsd.__dict__)
-{'name': 'scscs'}
+# {'name': 'scscs'}
 
 ```
 ## 属性
 ```python
-class people:  
-    name = 'jack'  
-    age = 12  
- 
-p = people()  
+class people:
+    name = 'jack'
+    age = 12
+
+p = people()
 print(p.name,p.age)
 # 定义了一个people类，里面定义了name和age属性，默认值分别为'jack'和12。在定义了类之后，就可以用来产生实例化对象了，这句p = people( )实例化了一个对象p，然后就可以通过p来读取属性了。这里的name和age都是公有的，可以直接在类外通过对象名访问，如果想定义成私有的，则需在前面加2个下划线 ' __'
-class people:  
-    __name = 'jack'  
-    __age = 12  
-  
-p = people()  
+class people:
+    __name = 'jack'
+    __age = 12
+
+p = people()
 print(p.__name,p.__age)
 ```
 程序运行会报错
-```
-Traceback (most recent call last):  
-  File "C:/PycharmProjects/FirstProject/oop.py", line 6, in <module>  
-    print p.__name,p.__age  
+```python
+Traceback (most recent call last):
+  File "C:/PycharmProjects/FirstProject/oop.py", line 6, in <module>
+    print p.__name,p.__age
 AttributeError: people instance has no attribute '__name
 ```
 提示找不到该属性，因为私有属性是不能够在类外通过对象名来进行访问的。在Python中没有像C++中public和private这些关键字来区别公有属性和私有属性，它是以属性命名方式来区分，如果在属性名前面加了2个下划线'__'，则表明该属性是私有属性，否则为公有属性（方法也是一样，方法名前面加了2个下划线的话表示该方法是私有的，否则为公有的）
@@ -133,34 +132,34 @@ AttributeError: people instance has no attribute '__name
 python中一切皆为对象，且python3中类与类型是一个概念，类型就是类
 ```python
 # 类型dict就是类dict
->>> list
+list
 <class 'list'>
 
 # 实例化的到3个对象l1,l2,l3
->>> l1=list()
->>> l2=list()
->>> l3=list()
+l1=list()
+l2=list()
+l3=list()
 
 # 三个对象都有绑定方法append,是相同的功能,但内存地址不同
->>> l1.append
+l1.append
 <built-in method append of list object at 0x10b482b48>
->>> l2.append
+l2.append
 <built-in method append of list object at 0x10b482b88>
->>> l3.append
+l3.append
 <built-in method append of list object at 0x10b482bc8>
 
 # 操作绑定方法l1.append(3),就是在往l1添加3,绝对不会将3添加到l2或l3
->>> l1.append(3)
->>> l1
+l1.append(3)
+l1
 [3]
->>> l2
+l2
 []
->>> l3
+l3
 []
 # 调用类list.append(l3,111)等同于l3.append(111)
->>> list.append(l3,111) l3.append(111)
->>> l3
-[111] 
+list3.append(111)
+l3
+[111]
 ```
 补充: 我们都知道Python一切皆对象，那么Python究竟是怎么管理对象的呢？
 
@@ -175,15 +174,15 @@ python中一切皆为对象，且python3中类与类型是一个概念，类型�
 num = 3
 ll = []
 dd = {}
-print num.__dict__
-print ll.__dict__
-print dd.__dict__
+print(num.__dict__)
+print(ll.__dict__)
+print(dd.__dict__)
 ```
 3、发生继承时候的__dict__属性
 
 子类有自己的__dict__, 父类也有自己的__dict__,子类的全局变量和函数放在子类的dict中，父类的放在父类dict中
 1）每个类的类变量、函数名都放在自己的__dict__中
-2）子类对象可以用父类的__dict__里面的值    
+2）子类对象可以用父类的__dict__里面的值
 
 总结：
 1） 内置的数据类型没有__dict__属性
@@ -195,17 +194,17 @@ print dd.__dict__
 在类中可以根据需要定义一些方法，定义方法采用def关键字，在类中定义的方法至少会有一个参数，一般以名为'self'的变量作为该参数（用其他名称也可以），而且需要作为第一个参数。下面看个例子：
 
 ```python
-class people:  
-    __name = 'jack'  
-    __age = 12  
-  
-    def getName(self):  
-        return self.__name  
-    def getAge(self):  
-        return self.__age  
-  
-p = people()  
-print p.getName(),p.getAge()  
+class people:
+    __name = 'jack'
+    __age = 12
+
+    def getName(self):
+        return self.__name
+    def getAge(self):
+        return self.__age
+
+p = people()
+print(p.getName(), p.getAge())
 ```
 
 ## 类属性 vs 实例属性
@@ -320,22 +319,21 @@ print(dog.species)  # '动物' - 在父类 Animal 的 __dict__ 中找到
 ```
 
 ```python
-# Filename: class_init.py  
-class Person:  
-    def __init__(self, name):  
-        self.name = name  
-    def sayHi(self):  
-        print 'Hello, my name is', self.name  
-  
-p = Person('Swaroop')  
-p.sayHi()  
-  
-输出：  
-Hello, my name is Swaroop 
+# Filename: class_init.py
+class Person:
+    def __init__(self, name):
+        self.name = name
+    def sayHi(self):
+        print('Hello, my name is', self.name)
+
+p = Person('Swaroop')
+p.sayHi()
+
+# 输出：Hello, my name is Swaroop
 
 # __init__的必须注意的点
-1、该方法内可以有任意的python代码
-2、一定不能有返回值
+# 1. 该方法内可以有任意 Python 代码
+# 2. 一定不能有返回值
 ```
 
 ## 总结

@@ -29,8 +29,8 @@ app.config.from_pyfile('settings.py')
 
 # 方式三：从环境变量加载
 import os
-os.environ['FLAKS-SETTINGS'] = 'settings.py'
-app.config.from_envvar('FLAKS-SETTINGS')
+os.environ['FLASK_SETTINGS'] = 'settings.py'
+app.config.from_envvar('FLASK_SETTINGS')
 
 # 方式四（推荐）：使用对象方式
 app.config.from_object('settings.DevConfig')
@@ -237,7 +237,7 @@ def func(num):
 
 ## 工作原理
 
-```python
+```text
 # Flask 内部使用 LocalStack 管理请求上下文
 {
     协程ID: { 'stack': [request, session, g], ... },

@@ -24,7 +24,7 @@ language: zh-CN
 ```python
 import datetime
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy_utils import ChoiceType
@@ -125,18 +125,18 @@ session.remove()
 2. 导入：
 
 ```python
-from flask_migrate import Migrate, MigrateCommand
+from flask_migrate import Migrate
 from app import db, app
 ```
 
 3. 创建实例：`migrate = Migrate(app, db)`
-4. 创建命令：`manager.add_command("db", MigrateCommand)`
+4. 使用 Flask-Migrate 自动注册的 `flask db` 命令
 5. 执行命令：
 
 ```bash
-python manage.py db init  # 只执行第一次
-python manage.py db migrate
-python manage.py db upgrade
+flask --app app db init  # 只执行第一次
+flask --app app db migrate
+flask --app app db upgrade
 ```
 
 在执行命令之前，得先连接数据库，他才会知道把表放在哪里。
@@ -224,9 +224,9 @@ db.init_app(app)
 
 用于把session保存在其他地方。
 
-### Flask-Script
+### Flask CLI
 
-生成命令。
+Flask 内置命令行系统，用于注册自定义命令和运行 `flask db` 等扩展命令。
 
 ### Flask-Migrate
 
@@ -260,11 +260,9 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_session import Session
-from flask_script import Manager
 
 db = SQLAlchemy()
 migrate = Migrate()
-manager = Manager()
 
 def create_app(config_name='development'):
     app = Flask(__name__)
@@ -277,7 +275,6 @@ def create_app(config_name='development'):
     db.init_app(app)
     migrate.init_app(app, db)
     Session(app)
-    manager.__init__(app)
 
     # 注册蓝图
     from .views import bp
@@ -286,30 +283,28 @@ def create_app(config_name='development'):
     return app
 
 # manage.py
-from app import create_app, db, manager
-from flask_migrate import MigrateCommand
+from app import create_app, db
 
 app = create_app()
-manager.add_command('db', MigrateCommand)
 
 if __name__ == '__main__':
-    manager.run()
+    app.run()
 ```
 
 ## 命令行操作
 
 ```bash
 # 初始化数据库迁移
-python manage.py db init
+flask --app manage:app db init
 
 # 创建迁移脚本
-python manage.py db migrate
+flask --app manage:app db migrate
 
 # 执行迁移
-python manage.py db upgrade
+flask --app manage:app db upgrade
 
 # 回滚
-python manage.py db downgrade
+flask --app manage:app db downgrade
 ```
 
 ## 常见问题

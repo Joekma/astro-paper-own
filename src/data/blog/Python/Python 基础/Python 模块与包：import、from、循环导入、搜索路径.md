@@ -314,7 +314,7 @@ sys.path.insert(0, '/x/y/z')
 
 `sys.path` 中还可能包含 .zip 归档文件和 .egg 文件：
 
-```python
+```bash
 # 制作归档文件
 zip module.zip foo.py bar.py
 
@@ -333,7 +333,7 @@ import foo, bar
 
 ### 编译命令
 
-```python
+```bash
 # 编译成 pyc 文件
 python -m py_compile file.py
 python -m py_compile /path/to/file.py

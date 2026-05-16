@@ -84,8 +84,8 @@ print(user_json)
 Pydantic 支持所有标准 Python 类型：
 
 ```python
-from pydantic import BaseModel
-from typing import List, Dict, Optional, Union
+from pydantic import BaseModel, Field
+from typing import Any, List, Dict, Optional, Union
 from datetime import datetime
 from uuid import UUID
 
@@ -95,17 +95,17 @@ class DataTypesModel(BaseModel):
     age: int            # 整数
     height: float       # 浮点数
     is_active: bool    # 布尔值
-    
+
     # 可选类型
     nickname: Optional[str] = None  # 可选字符串，默认 None
     bio: Optional[str] = None       # 可选字符串
-    
+
     # 容器类型
-    tags: List[str] = []           # 字符串列表
-    metadata: Dict[str, any] = {}  # 字典类型
-    
+    tags: List[str] = Field(default_factory=list)   # 字符串列表
+    metadata: Dict[str, Any] = Field(default_factory=dict)  # 字典类型
+
     # 特殊类型
-    created_at: datetime = datetime.now()  # 日期时间
+    created_at: datetime = Field(default_factory=datetime.now)  # 日期时间
     user_id: UUID = UUID("12345678-1234-1234-1234-123456789012")  # UUID
 
 # 创建实例
@@ -133,17 +133,17 @@ class Employee(BaseModel):
     # 必填字段：没有默认值
     employee_id: int
     name: str
-    
+
     # 可选字段：使用 Optional 或默认值
     department: Optional[str] = None  # None 作为默认值
     salary: float = 0.0               # 0.0 作为默认值
-    
+
     # 使用 Field 自定义默认值
     hire_date: Optional[date] = Field(default=None, description="入职日期")
-    
+
     # 带有默认值列表
     skills: List[str] = Field(default_factory=list, description="技能列表")
-    
+
     # 带有默认值字典
     contact_info: Dict[str, str] = Field(default_factory=dict)
 
@@ -187,27 +187,27 @@ class Product(BaseModel):
         max_length=100,      # 最大长度
         description="产品名称"
     )
-    
+
     # 数值范围限制
     price: float = Field(
         gt=0,               # 大于 0
         le=1000000,         # 小于等于 1000000
         description="产品价格"
     )
-    
+
     # 整数范围限制
     quantity: int = Field(
         ge=0,               # 大于等于 0
         le=10000,          # 小于等于 10000
         default=0          # 默认值
     )
-    
+
     # 字符串正则表达式
     product_code: str = Field(
         pattern=r"^[A-Z]{3}-\d{4}$",  # 格式: ABC-1234
         description="产品代码"
     )
-    
+
     # 列表长度限制
     images: List[str] = Field(
         min_length=1,       # 至少 1 张图片
@@ -245,10 +245,10 @@ from pydantic import BaseModel, Field, AliasChoices
 class UserModel(BaseModel):
     # 使用别名
     user_name: str = Field(alias="userName", validation_alias=AliasChoices("userName", "username", "name"))
-    
+
     # 多个别名
     email_address: str = Field(alias="email", validation_alias=AliasChoices("email", "emailAddress", "mail"))
-    
+
     # 保留原始字段名但接受别名输入
     phone: str = Field(alias="phoneNumber", serialization_alias="phone_number")
 
@@ -282,49 +282,49 @@ class RegisterForm(BaseModel):
     password: str
     email: str
     age: int
-    
+
     @field_validator("username")
     @classmethod
     def validate_username(cls, v):
         # 检查用户名长度
         if len(v) < 3:
             raise ValueError("用户名至少需要3个字符")
-        
+
         # 检查是否只包含字母数字
         if not v.isalnum():
             raise ValueError("用户名只能包含字母和数字")
-        
+
         return v.lower()  # 转换为小写
-    
+
     @field_validator("password")
     @classmethod
     def validate_password(cls, v):
         # 检查密码长度
         if len(v) < 8:
             raise ValueError("密码至少需要8个字符")
-        
+
         # 检查是否包含数字
         if not any(c.isdigit() for c in v):
             raise ValueError("密码必须包含至少一个数字")
-        
+
         return v
-    
+
     @field_validator("email")
     @classmethod
     def validate_email(cls, v):
         # 检查是否包含 @
         if "@" not in v:
             raise ValueError("邮箱格式不正确")
-        
+
         return v.lower()  # 转换为小写
-    
+
     @field_validator("age")
     @classmethod
     def validate_age(cls, v):
         # 检查年龄范围
         if v < 0 or v > 150:
             raise ValueError("年龄必须在 0-150 之间")
-        
+
         return v
 
 # 测试验证
@@ -352,17 +352,17 @@ class OrderModel(BaseModel):
     start_date: str
     end_date: str
     status: str
-    
+
     @model_validator(mode="after")
     def validate_dates(self) -> Self:
         # 检查日期顺序
         if self.start_date > self.end_date:
             raise ValueError("结束日期必须在开始日期之后")
-        
+
         # 检查订单状态与日期的逻辑关系
         if self.status == "completed" and self.end_date > "2024-12-31":
             raise ValueError("已完成订单的结束日期不能超过2024年")
-        
+
         return self
 
 # 有效的订单
@@ -391,13 +391,14 @@ except ValueError as e:
 
 ```python
 from pydantic import BaseModel, model_validator, ValidationError
+from typing import Optional, Self
 
 class SubscriptionModel(BaseModel):
     plan: str
     monthly_price: float
     yearly_price: float
     discount_code: Optional[str] = None
-    
+
     @model_validator(mode="after")
     def validate_pricing(self) -> Self:
         # 计算折扣
@@ -408,11 +409,11 @@ class SubscriptionModel(BaseModel):
                 raise ValueError(
                     f"年付价格过高，应低于 {expected_yearly:.2f}"
                 )
-        
+
         # 检查折扣码
         if self.plan in ["yearly", "premium"] and not self.discount_code:
             raise ValueError("年付和高级套餐需要折扣码")
-        
+
         return self
 
 # 有效订阅
@@ -440,7 +441,7 @@ except ValidationError as e:
 ### 定义嵌套模型
 
 ```python
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 
 # 基础模型：地址
@@ -462,13 +463,13 @@ class Employee(BaseModel):
     employee_id: str
     name: str
     department: str
-    
+
     # 嵌套模型字段
     address: Address
-    
+
     # 嵌套模型列表
-    skills: List[Skill] = []
-    
+    skills: List[Skill] = Field(default_factory=list)
+
     # 可选的嵌套模型
     manager: Optional["Employee"] = None
 
@@ -498,25 +499,19 @@ print(f"第一个技能: {employee.skills[0].name}")
 ### 自引用模型
 
 ```python
-from pydantic import BaseModel
-from typing import Optional, List, ForwardRef
+from __future__ import annotations
 
-# 使用字符串延迟定义
-EmployeeRef = ForwardRef("EmployeeWithRef")
+from pydantic import BaseModel, Field
 
 class EmployeeWithRef(BaseModel):
     employee_id: str
     name: str
-    
-    # 自引用字段
-    supervisor: Optional["EmployeeWithRef"] = None
-    
-    # 自引用列表（团队成员）
-    team_members: List["EmployeeWithRef"] = []
 
-    class Config:
-        # 允许循环引用
-        arbitrary_types_allowed = True
+    # 自引用字段
+    supervisor: EmployeeWithRef | None = None
+
+    # 自引用列表（团队成员）
+    team_members: list[EmployeeWithRef] = Field(default_factory=list)
 
 # 创建实例
 ceo = EmployeeWithRef(
@@ -557,17 +552,17 @@ class UserConfig(BaseModel):
     model_config = ConfigDict(
         # 允许额外字段
         extra="ignore",  # 或 "forbid", "allow"
-        
+
         # 案例转换
         str_to_lower=True,        # 字符串转小写
         str_to_upper=False,       # 字符串转大写
-        
+
         # 别名使用
         populate_by_name=True,    # 允许使用原始字段名
-        
+
         # 浮点数精度
         float_precision=2,        # 保留2位小数
-        
+
         # JSON Schema 配置
         json_schema_extra={
             "example": {
@@ -576,7 +571,7 @@ class UserConfig(BaseModel):
             }
         }
     )
-    
+
     name: str
     age: int
     email: str
@@ -595,32 +590,26 @@ print(user.email)  # 输出: test@example.com
 ### 使用 ConfigDict 的高级配置
 
 ```python
-from pydantic import BaseModel, ConfigDict
-from pydantic.functional_serializers import serializer
-from pydantic.functional_validators import before
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 class AdvancedConfig(BaseModel):
     model_config = ConfigDict(
         # 验证配置
         validate_assignment=True,  # 赋值时验证
         strict=True,                # 严格模式
-        
-        # JSON 配置
-        json_encoders={             # 自定义 JSON 编码器
-            "datetime": lambda v: v.isoformat(),
-            "Decimal": lambda v: float(v)
-        },
-        
+        extra="forbid",             # 禁止未声明字段
+
         # 别名配置
         populate_by_name=True,
-        alias_priority=("validation_alias", "alias", "field_name"),
-        
+
         # 文档配置
         title="用户模型",
-        description="用户信息数据模型",
-        version="1.0.0"
+        json_schema_extra={
+            "description": "用户信息数据模型",
+            "version": "1.0.0",
+        },
     )
-    
+
     user_id: str
     name: str
     created_at: str
@@ -701,7 +690,7 @@ print(f"格式化 JSON: {product_json_formatted}")
 ### 自定义序列化器
 
 ```python
-from pydantic import BaseModel, field_serializer, serializer
+from pydantic import BaseModel, field_serializer
 from datetime import datetime, date
 from typing import List
 
@@ -710,20 +699,20 @@ class Order(BaseModel):
     amount: float
     created_at: datetime
     items: List[str]
-    
+
     # 使用 field_serializer 序列化单个字段
     @field_serializer("amount")
     def serialize_amount(self, amount: float) -> str:
         # 将金额格式化为货币字符串
         return f"¥{amount:,.2f}"
-    
+
     @field_serializer("created_at")
     def serialize_datetime(self, dt: datetime) -> str:
         # 将日期时间格式化为字符串
         return dt.strftime("%Y-%m-%d %H:%M:%S")
-    
-    # 序列化整个模型
-    @serializer("items")
+
+    # 序列化列表字段
+    @field_serializer("items")
     def serialize_items(self, items: List[str]) -> str:
         # 将列表序列化为逗号分隔的字符串
         return ", ".join(items)
@@ -756,7 +745,7 @@ from pydantic import BaseModel, ConfigDict
 # 基类：基础信息
 class BaseInfo(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
-    
+
     id: str
     name: str
     created_at: str
@@ -772,7 +761,7 @@ class User(UserBase):
     age: int
     address: str
     is_active: bool = True
-    
+
     # 新增验证器
     @field_validator("age")
     @classmethod
@@ -827,7 +816,7 @@ class Address(BaseModel):
 class Contact(BaseModel):
     phone: str
     email: str
-    
+
     @field_validator("email")
     @classmethod
     def validate_email(cls, v):
@@ -878,7 +867,7 @@ print(f"邮箱: {employee.contact.email}")
 
 ```python
 # 导入 Settings 类
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
 # 定义应用配置
@@ -886,22 +875,18 @@ class Settings(BaseSettings):
     # 必填配置
     app_name: str
     database_url: str
-    
+
     # 可选配置（带默认值）
     debug: bool = False
     port: int = 8000
     host: str = "localhost"
-    
-    # 环境变量前缀
-    class Config:
-        env_prefix = "APP_"  # 环境变量前缀：APP_DEBUG, APP_PORT
-        
-        # 环境变量文件
-        env_file = ".env"      # .env 文件路径
-        env_file_encoding = "utf-8"
-        
-        # 区分大小写
-        case_sensitive = False
+
+    model_config = SettingsConfigDict(
+        env_prefix="APP_",  # 环境变量前缀：APP_DEBUG, APP_PORT
+        env_file=".env",  # .env 文件路径
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+    )
 
 # 从环境变量加载配置
 # 导出 APP_APP_NAME=myapp
@@ -918,7 +903,8 @@ print(f"端口: {settings.port}")
 ### 嵌套 Settings
 
 ```python
-from pydantic_settings import BaseSettings
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List, Optional
 
 # 数据库配置
@@ -928,9 +914,8 @@ class DatabaseSettings(BaseSettings):
     name: str = "mydb"
     user: str
     password: str
-    
-    class Config:
-        env_prefix = "DB_"
+
+    model_config = SettingsConfigDict(env_prefix="DB_")
 
 # Redis 配置
 class RedisSettings(BaseSettings):
@@ -938,9 +923,8 @@ class RedisSettings(BaseSettings):
     port: int = 6379
     db: int = 0
     password: Optional[str] = None
-    
-    class Config:
-        env_prefix = "REDIS_"
+
+    model_config = SettingsConfigDict(env_prefix="REDIS_")
 
 # 邮件配置
 class EmailSettings(BaseSettings):
@@ -949,27 +933,27 @@ class EmailSettings(BaseSettings):
     smtp_user: str
     smtp_password: str
     from_email: str
-    
-    class Config:
-        env_prefix = "EMAIL_"
+
+    model_config = SettingsConfigDict(env_prefix="EMAIL_")
 
 # 应用完整配置
 class AppSettings(BaseSettings):
     app_name: str = "MyApp"
     debug: bool = False
-    
+
     # 嵌套配置
-    database: DatabaseSettings = DatabaseSettings()
-    redis: RedisSettings = RedisSettings()
-    email: EmailSettings = EmailSettings()
-    
+    database: DatabaseSettings = Field(default_factory=DatabaseSettings)
+    redis: RedisSettings = Field(default_factory=RedisSettings)
+    email: EmailSettings = Field(default_factory=EmailSettings)
+
     # API 配置
-    api_keys: List[str] = []
-    cors_origins: List[str] = ["http://localhost:3000"]
-    
-    class Config:
-        env_file = ".env"
-        env_nested_delimiter = "__"  # 使用 __ 分隔嵌套配置
+    api_keys: List[str] = Field(default_factory=list)
+    cors_origins: List[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_nested_delimiter="__",  # 使用 __ 分隔嵌套配置
+    )
 
 # 环境变量示例：
 # DB_USER=myuser
@@ -999,7 +983,7 @@ Base = declarative_base()
 # SQLAlchemy 模型
 class ProductORM(Base):
     __tablename__ = "products"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     price = Column(Float, nullable=False)
@@ -1008,7 +992,7 @@ class ProductORM(Base):
 # Pydantic 模型（用于创建/更新）
 class ProductCreate(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     name: str
     price: float
     in_stock: bool = True
@@ -1016,7 +1000,7 @@ class ProductCreate(BaseModel):
 # Pydantic 模型（用于读取）
 class ProductRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     name: str
     price: float
@@ -1037,7 +1021,7 @@ def create_product(db: Session, product: ProductCreate):
     db.add(db_product)
     db.commit()
     db.refresh(db_product)
-    
+
     # 转换为 Pydantic 模型
     return ProductRead.model_validate(db_product)
 
@@ -1061,7 +1045,7 @@ class UserModel(BaseModel):
     name: str
     email: str
     age: int
-    
+
     @field_validator("email")
     @classmethod
     def validate_email(cls, v):
@@ -1090,7 +1074,7 @@ class FormModel(BaseModel):
     email: str
     password: str
     confirm_password: str
-    
+
     @field_validator("name", "email", "password")
     @classmethod
     def validate_fields(cls, v, info):
@@ -1139,15 +1123,15 @@ def validate_phone_number(v: str) -> str:
     """验证并格式化手机号"""
     # 移除非数字字符
     digits = "".join(filter(str.isdigit, v))
-    
+
     # 验证长度
     if len(digits) != 11:
         raise ValueError("手机号必须是11位")
-    
+
     # 验证开头
     if not digits.startswith("1"):
         raise ValueError("手机号必须以1开头")
-    
+
     return f"{digits[:3]}-{digits[3:7]}-{digits[7:]}"
 
 # 使用 Annotated 和 BeforeValidator
@@ -1176,7 +1160,7 @@ print(f"手机号2: {contact2.phone}")
 ### 模型提取和排除
 
 ```python
-from pydantic import BaseModel, model_copy
+from pydantic import BaseModel
 
 class User(BaseModel):
     id: int
@@ -1301,7 +1285,7 @@ class RegisterForm(BaseModel):
     email: str
     password: str
     confirm_password: str
-    
+
     # 字段级别验证
     @field_validator("username")
     @classmethod
@@ -1309,14 +1293,14 @@ class RegisterForm(BaseModel):
         if len(v) < 3:
             raise ValueError("用户名至少3个字符")
         return v
-    
+
     @field_validator("email")
     @classmethod
     def validate_email(cls, v):
         if "@" not in v:
             raise ValueError("邮箱格式不正确")
         return v
-    
+
     # 模型级别验证（跨字段）
     @field_validator("confirm_password")
     @classmethod
@@ -1332,7 +1316,7 @@ class RegisterForm(BaseModel):
 
 ```python
 from fastapi import FastAPI
-from pydantic import BaseModel, field_validator, HttpUrl
+from pydantic import BaseModel, ConfigDict, Field, field_validator, HttpUrl
 from typing import Optional, List
 
 app = FastAPI()
@@ -1342,8 +1326,8 @@ class ItemCreate(BaseModel):
     name: str
     description: Optional[str] = None
     price: float
-    tags: List[str] = []
-    
+    tags: List[str] = Field(default_factory=list)
+
     @field_validator("price")
     @classmethod
     def validate_price(cls, v):
@@ -1358,9 +1342,8 @@ class Item(BaseModel):
     description: Optional[str] = None
     price: float
     tags: List[str]
-    
-    class Config:
-        from_attributes = True  # 支持 ORM 模式
+
+    model_config = ConfigDict(from_attributes=True)  # 支持 ORM 模式
 
 # URL 模型
 class Website(BaseModel):
@@ -1413,15 +1396,15 @@ print(order.status.value)  # 输出: pending
 ### Q2：如何处理日期时间？
 
 ```python
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime, date
 
 class Event(BaseModel):
     event_name: str
     start_date: date
     end_date: date
-    created_at: datetime = datetime.now()
-    
+    created_at: datetime = Field(default_factory=datetime.now)
+
     @field_validator("end_date")
     @classmethod
     def validate_dates(cls, v, info):
@@ -1443,25 +1426,20 @@ print(f"开始日期: {event.start_date}")
 ### Q3：如何处理循环引用？
 
 ```python
-from pydantic import BaseModel, ConfigDict
-from typing import Optional, TYPE_CHECKING
+from __future__ import annotations
 
-if TYPE_CHECKING:
-    from __future__ import annotations
+from pydantic import BaseModel, Field
 
 class Comment(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    
     comment_id: str
     content: str
-    # 使用字符串延迟引用
-    replies: list["Comment"] = []
+    replies: list[Comment] = Field(default_factory=list)
 
 # 或者使用 model_rebuild
 class Post(BaseModel):
     post_id: str
     title: str
-    comments: list["Comment"] = []
+    comments: list[Comment] = Field(default_factory=list)
 
 # 在定义后调用 model_rebuild
 Post.model_rebuild()

@@ -78,11 +78,7 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 
-**注意：** Django 1.6.x及以下的版本需要用以下命令：
-
-```bash
-python manage.py syncdb
-```
+**注意：** `syncdb` 是 Django 1.6 及更早版本的历史命令，现代 Django 项目统一使用 `makemigrations` 和 `migrate`。
 
 可以看到：
 
@@ -176,20 +172,15 @@ class Article(models.Model):
 
 加了一个`__str__`函数，刷新后台网页，会看到文章标题显示正常了。
 
-**推荐定义Model的时候写一个`__str__`函数（或`__unicode__`函数）**
+**推荐定义 Model 的时候写一个 `__str__` 函数。**
 
-## 兼容Python2.x和Python3.x
+## Python 3 写法
 
 示例如下：
 
 ```python
-# coding:utf-8
-from __future__ import unicode_literals
-
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 
-@python_2_unicode_compatible
 class Article(models.Model):
     title = models.CharField('标题', max_length=256)
     content = models.TextField('内容')
@@ -363,7 +354,7 @@ class ArticleAdmin(admin.ModelAdmin):
 ## 最佳实践
 
 1. 始终为Model定义`__str__`方法
-2. 使用装饰器`@python_2_unicode_compatible`保持兼容性
+2. 使用 `__str__` 提供清晰的后台对象显示名称
 3. 为Admin配置合理的list_display
 4. 使用list_filter进行数据筛选
 5. 使用search_fields进行全文搜索

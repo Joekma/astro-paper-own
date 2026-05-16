@@ -1,4 +1,4 @@
-﻿---
+---
 title: Redis Cluster集群配置、原理和运维
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -10,7 +10,7 @@ tags:
   - Redis Cluster
   - 数据库
   - 集群
-description: 'Redis Cluster集群配置、原理和运维'
+description: "Redis Cluster集群配置、原理和运维"
 series: Redis
 language: zh-CN
 ---
@@ -49,10 +49,10 @@ M = Master 节点  S = Slave 节点
 
 ### 16384 个槽位
 
-| 槽位范围 | 节点 |
-|----------|------|
-| 0 - 5460 | 节点 1 (Master) |
-| 5461 - 10922 | 节点 2 (Master) |
+| 槽位范围      | 节点            |
+| ------------- | --------------- |
+| 0 - 5460      | 节点 1 (Master) |
+| 5461 - 10922  | 节点 2 (Master) |
 | 10923 - 16383 | 节点 3 (Master) |
 
 ### 槽位计算
@@ -88,14 +88,14 @@ cluster-require-full-coverage yes
 
 ### 参数说明
 
-| 参数 | 说明 | 默认值 |
-|------|------|--------|
-| **cluster-enabled** | 开启集群模式 | no |
-| **cluster-config-file** | 集群节点配置文件 | nodes.conf |
-| **cluster-node-timeout** | 节点超时时间(ms) | 15000 |
-| **cluster-replica-validity-factor** | 从节点有效因子 | 10 |
-| **cluster-migration-barrier** | 迁移障碍 | 1 |
-| **cluster-require-full-coverage** | 槽位全覆盖要求 | yes |
+| 参数                                | 说明             | 默认值     |
+| ----------------------------------- | ---------------- | ---------- |
+| **cluster-enabled**                 | 开启集群模式     | no         |
+| **cluster-config-file**             | 集群节点配置文件 | nodes.conf |
+| **cluster-node-timeout**            | 节点超时时间(ms) | 15000      |
+| **cluster-replica-validity-factor** | 从节点有效因子   | 10         |
+| **cluster-migration-barrier**       | 迁移障碍         | 1          |
+| **cluster-require-full-coverage**   | 槽位全覆盖要求   | yes        |
 
 ## 集群创建
 
@@ -135,7 +135,7 @@ redis-cli --cluster create \
 ### 方式二：Docker Compose
 
 ```yaml
-version: '3'
+version: "3"
 services:
   redis-node1:
     image: redis:7
@@ -409,22 +409,22 @@ CONFIG SET cluster-require-full-coverage no
 
 ## 小结
 
-| 特性 | 说明 |
-|------|------|
-| **数据分片** | 16384 个槽位自动分配 |
-| **高可用** | 主从复制 + 自动故障转移 |
-| **节点通信** | Gossip 协议 |
-| **一致性** | 最终一致性 |
+| 特性         | 说明                    |
+| ------------ | ----------------------- |
+| **数据分片** | 16384 个槽位自动分配    |
+| **高可用**   | 主从复制 + 自动故障转移 |
+| **节点通信** | Gossip 协议             |
+| **一致性**   | 最终一致性              |
 
-| 部署要求 | 说明 |
-|---------|------|
+| 部署要求     | 说明                |
+| ------------ | ------------------- |
 | **最少节点** | 3 主 3 从（6 节点） |
-| **槽位覆盖** | 所有槽位需有主节点 |
-| **选主条件** | 超过半数主节点在线 |
+| **槽位覆盖** | 所有槽位需有主节点  |
+| **选主条件** | 超过半数主节点在线  |
 
-| 命令 | 说明 |
-|------|------|
-| **CLUSTER INFO** | 查看集群信息 |
-| **CLUSTER NODES** | 查看节点列表 |
-| **CLUSTER SLOTS** | 查看槽位分配 |
+| 命令                 | 说明         |
+| -------------------- | ------------ |
+| **CLUSTER INFO**     | 查看集群信息 |
+| **CLUSTER NODES**    | 查看节点列表 |
+| **CLUSTER SLOTS**    | 查看槽位分配 |
 | **CLUSTER FAILOVER** | 手动故障转移 |

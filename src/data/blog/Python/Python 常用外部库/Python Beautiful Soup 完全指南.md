@@ -305,7 +305,7 @@ import re
 print(soup.find_all(re.compile('^b')))  # 返回body和b标签
 
 # 查找包含特定文本的标签
-print(soup.find_all(text=re.compile('Dormouse')))
+print(soup.find_all(string=re.compile('Dormouse')))
 ```
 
 #### 列表过滤器
@@ -359,7 +359,7 @@ print(soup.find_all(name=True))  # 查找所有标签
 ```python
 # 按属性查找
 print(soup.find_all(id=re.compile('my')))  # id包含'my'的标签
-print(soup.find_all(href=re.compile('lacie'), id=re.compile('\d')))  # 多条件
+print(soup.find_all(href=re.compile('lacie'), id=re.compile(r'\d')))  # 多条件
 print(soup.find_all(id=True))  # 有id属性的标签
 
 # 注意：class是Python关键字，要使用class_
@@ -387,14 +387,14 @@ print(soup.find_all('p', attrs={'class': 'story'}))
 print(soup.find_all(attrs={'id': 'link1', 'class': 'sister'}))
 ```
 
-#### text 参数
+#### string 参数
 
 ```python
 # 按文本内容查找
-print(soup.find_all(text='Elsie'))  # 文本为'Elsie'的节点
-print(soup.find_all('a', text='Elsie'))  # 文本为'Elsie'的a标签
-print(soup.find_all(text=re.compile('story')))  # 文本包含'story'的节点
-print(soup.find_all(text=['Elsie', 'Lacie']))  # 文本为任一值的节点
+print(soup.find_all(string='Elsie'))  # 文本为'Elsie'的节点
+print(soup.find_all('a', string='Elsie'))  # 文本为'Elsie'的a标签
+print(soup.find_all(string=re.compile('story')))  # 文本包含'story'的节点
+print(soup.find_all(string=['Elsie', 'Lacie']))  # 文本为任一值的节点
 ```
 
 #### limit 参数

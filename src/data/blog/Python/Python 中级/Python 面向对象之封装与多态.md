@@ -408,7 +408,7 @@ def func(obj):
     obj.talk()
 ```
 
-```python
+```text
 >>> class Cat(Animal):  # 属于动物的另外一种形态：猫
 ...     def talk(self):
 ...         print('say miao')
@@ -568,4 +568,3 @@ class DiskFile:
 ### 实践建议
 
 > **提示**：Python 的多态是动态语言特性，无需显式声明接口。遵循"如果它走起来像鸭子，叫起来像鸭子，那它就是鸭子"的原则设计你的代码。使用 property 装饰器可以让你的类提供更清晰的接口，同时保护内部数据。
-

@@ -1,11 +1,11 @@
-﻿---
+---
 title: CentOS 7 系统优化：内核参数、安全配置和性能调优
 series: Linux
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-03T00:00:00.000+08:00
+modDatetime: 2026-05-16T00:00:00.000+08:00
 slug: centos7-optimization
-description: '深入讲解CentOS 7系统优化，包含内核参数调优、安全配置（SSH、用户权限、防火墙）、性能优化（CPU、内存、磁盘IO、网络TCP BBR）和自动化脚本。'
+description: '讲解 CentOS 7 存量系统的安全加固、内核参数、资源限制、磁盘 IO、网络和防火墙调优，并强调 EOL 风险与回滚策略。'
 tags:
   - Linux
   - CentOS
@@ -18,263 +18,298 @@ draft: false
 language: zh-CN
 ---
 
+## 先说明：CentOS 7 已停止维护
+
+CentOS Linux 7 已在 2024 年 6 月 30 日停止维护。新系统不建议继续部署 CentOS 7，应优先迁移到 RHEL、CentOS Stream、Rocky Linux、AlmaLinux、Ubuntu LTS 或 Debian 等仍在维护的发行版。
+
+本文只适合维护存量 CentOS 7 服务器时参考。调优前务必备份配置、记录变更、准备回滚，并先在测试环境验证。
+
 ## 优化原则
 
 | 原则 | 说明 |
 |------|------|
-| **安全第一** | 关闭不必要的服务和端口 |
-| **性能优先** | 提高响应速度 |
-| **稳定可靠** | 避免过度优化 |
-| **可维护性** | 记录所有修改 |
+| **先安全后性能** | 不用关闭安全防护换取微小性能收益 |
+| **按场景调优** | Web、数据库、缓存、网关的参数不同 |
+| **可观测再修改** | 根据监控、日志和压测结果调整 |
+| **保留回滚路径** | 每次只改少量参数，并记录原值 |
 
-## 内核参数优化
+## 内核参数管理
 
-### 网络参数
+建议把自定义参数放在独立文件中，避免直接堆到 `/etc/sysctl.conf`：
 
 ```bash
-# 编辑配置文件
-vim /etc/sysctl.conf
-
-# 使配置生效
-sysctl -p
+sudo cp /etc/sysctl.conf /etc/sysctl.conf.bak.$(date +%F)
+sudo vi /etc/sysctl.d/99-local-tuning.conf
 ```
 
-### 常用参数
+加载并验证：
 
 ```bash
-# 内存交换
+sudo sysctl --system
+sysctl net.core.somaxconn
+```
+
+### 常见网络参数
+
+```ini
+# 提高监听队列上限，适合高并发 Web 服务
+net.core.somaxconn = 4096
+net.ipv4.tcp_max_syn_backlog = 8192
+
+# 缩短 FIN-WAIT-2 等待时间，需要结合业务连接特征测试
+net.ipv4.tcp_fin_timeout = 30
+
+# 降低交换倾向，适合内存较充足的应用服务器
 vm.swappiness = 10
 
-# 网络队列
-net.core.netdev_max_backlog = 65535
-net.core.somaxconn = 65535
-net.ipv4.tcp_max_syn_backlog = 65535
-
-# TCP 连接
-net.ipv4.tcp_tw_reuse = 1
-net.ipv4.tcp_fin_timeout = 15
-
-# 文件描述符
-fs.file-max = 6553560
+# 提高系统可分配文件句柄上限
+fs.file-max = 1048576
 ```
 
-### 内存参数
+不要直接照抄超大值。参数过大可能掩盖应用泄漏、增加内存压力或让故障排查更困难。
+
+### 关于 `tcp_tw_reuse`
+
+CentOS 7 内核较旧，`net.ipv4.tcp_tw_reuse = 1` 在部分出站连接密集场景可能有帮助，但不应作为通用默认值。涉及 NAT、负载均衡或长连接业务时，必须压测验证。
+
+## SSH 安全配置
+
+编辑前先备份：
 
 ```bash
-kernel.shmmax = 68719476736
-kernel.shmall = 4294967296
-kernel.shmmni = 4096
-kernel.sem = 5010 641280 10020 5010
-kernel.msgmnb = 65536
-kernel.msgmax = 65536
-kernel.threads-max = 65535
-kernel.pid_max = 65535
+sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak.$(date +%F)
+sudo vi /etc/ssh/sshd_config
 ```
 
-## 安全优化
+推荐项：
 
-### 禁用不必要的服务
+| 配置项 | 建议值 | 说明 |
+|--------|--------|------|
+| `PermitRootLogin` | `no` | 禁止 root 直接登录 |
+| `PasswordAuthentication` | `no` | 仅在密钥登录确认可用后再关闭密码 |
+| `PubkeyAuthentication` | `yes` | 启用公钥认证 |
+| `MaxAuthTries` | `3` | 限制认证尝试次数 |
+| `ClientAliveInterval` | `300` | 空闲连接保活间隔 |
+| `UseDNS` | `no` | 避免反向解析导致登录慢 |
+
+重启前先检查语法：
 
 ```bash
-systemctl stop postfix        # 邮件服务
-systemctl disable postfix
-systemctl stop cups           # 打印服务
-systemctl disable cups
+sudo sshd -t
+sudo systemctl restart sshd
 ```
 
-### SSH 安全配置
-
-```bash
-vim /etc/ssh/sshd_config
-```
-
-**推荐配置：**
-
-| 配置项 | 值 | 说明 |
-|--------|-----|------|
-| `Port` | 2222 | 更改默认端口 |
-| `PermitRootLogin` | no | 禁止 root 登录 |
-| `PasswordAuthentication` | no | 禁用密码认证 |
-| `PubkeyAuthentication` | yes | 启用密钥认证 |
-| `MaxAuthTries` | 3 | 最大认证尝试次数 |
-| `ClientAliveInterval` | 300 | 连接超时 |
-| `UseDNS` | no | 禁用 DNS 反向解析 |
-
-### 重启服务
-
-```bash
-systemctl restart sshd
-```
+不要在没有备用会话或控制台访问的情况下关闭密码登录，否则可能把自己锁在服务器外。
 
 ## 用户权限
 
-### 限制 sudo
+### sudo 权限
+
+使用 `visudo` 修改 sudo 配置，避免语法错误：
 
 ```bash
-visudo
+sudo visudo
+```
 
-# 添加（示例）
-username ALL=(ALL) ALL
+示例：
+
+```text
 %wheel ALL=(ALL) ALL
 ```
 
-### 限制 su
+把用户加入 `wheel` 组：
 
 ```bash
-echo "auth required pam_wheel.so use_uid" >> /etc/pam.d/su
-usermod -aG wheel username
+sudo usermod -aG wheel username
 ```
 
-## 文件系统优化
+### su 限制
 
-### 资源限制
+不要用 `echo >> /etc/pam.d/su` 直接追加配置。先备份并编辑：
 
 ```bash
-vim /etc/security/limits.conf
+sudo cp /etc/pam.d/su /etc/pam.d/su.bak.$(date +%F)
+sudo vi /etc/pam.d/su
 ```
 
+确认或添加：
+
+```ini
+auth required pam_wheel.so use_uid
+```
+
+然后只允许 `wheel` 组用户切换：
+
 ```bash
+sudo usermod -aG wheel username
+```
+
+## 文件描述符与进程限制
+
+编辑独立配置文件：
+
+```bash
+sudo vi /etc/security/limits.d/99-local-limits.conf
+```
+
+示例：
+
+```ini
 * soft nofile 65535
 * hard nofile 65535
 * soft nproc 65535
 * hard nproc 65535
-* soft core unlimited
-* hard core unlimited
 ```
 
-### 使配置生效
+验证：
 
 ```bash
-ulimit -n 65535
+ulimit -n
+ulimit -u
+```
+
+systemd 服务还需要在 unit 中设置：
+
+```ini
+[Service]
+LimitNOFILE=65535
+LimitNPROC=65535
+```
+
+修改后执行：
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart servicename
 ```
 
 ## 磁盘 IO
 
-### 查看调度算法
+查看调度器：
 
 ```bash
 cat /sys/block/sda/queue/scheduler
 ```
 
-### 设置调度器
+CentOS 7 常见机械盘可测试 `deadline`，SSD/NVMe 环境未必适合照搬。临时设置：
 
 ```bash
-# deadline 适合数据库和 Web 服务器
-echo deadline > /sys/block/sda/queue/scheduler
-
-# 永久生效
-echo "echo deadline > /sys/block/sda/queue/scheduler" >> /etc/rc.d/rc.local
-chmod +x /etc/rc.d/rc.local
+echo deadline | sudo tee /sys/block/sda/queue/scheduler
 ```
 
-### 优化预读
+如果验证有效，再通过 udev 规则或启动配置持久化，不建议直接把命令追加到 `/etc/rc.d/rc.local`。
+
+预读设置也应按负载测试：
 
 ```bash
-blockdev --setra 4096 /dev/sda
+sudo blockdev --getra /dev/sda
+sudo blockdev --setra 4096 /dev/sda
 ```
 
-## CPU 优化
+## CPU 与安全缓解
 
-### 性能模式
+查看 CPU 调速策略：
 
 ```bash
 cpupower frequency-info
-cpupower frequency-set -g performance
 ```
 
-### GRUB 优化
+设置性能模式：
 
 ```bash
-vim /etc/default/grub
-
-# 添加到 GRUB_CMDLINE_LINUX
-GRUB_CMDLINE_LINUX="crashkernel=auto rhgb quiet mitigations=off"
+sudo cpupower frequency-set -g performance
 ```
 
-> `mitigations=off` 可提升性能，但存在安全风险。
+不建议把 `mitigations=off` 作为默认优化项。它会关闭部分 CPU 漏洞缓解措施，可能显著降低安全性。只有在隔离、可信、经过风险评估的性能敏感环境中，才应考虑使用，并必须记录审批和回滚方法。
 
-### 重新生成配置
+## 内存与写回参数
 
-```bash
-grub2-mkconfig -o /boot/grub2/grub.cfg
-```
+示例：
 
-## 内存优化
-
-```bash
-vim /etc/sysctl.conf
-
+```ini
 vm.dirty_ratio = 15
 vm.dirty_background_ratio = 5
 vm.vfs_cache_pressure = 50
-vm.overcommit_memory = 1
 vm.swappiness = 10
 ```
 
-## 网络优化
+这些参数会影响缓存回收和脏页写回。数据库服务器通常还需要结合数据库自身缓冲池、文件系统和 IO 延迟一起调优。
 
-### 连接跟踪
+## TCP BBR
 
-```bash
-net.netfilter.nf_conntrack_max = 1048576
-net.netfilter.nf_conntrack_tcp_timeout_established = 3600
-```
+BBR 需要内核支持。CentOS 7 默认内核通常较旧，未必原生支持 BBR。
 
-### TCP BBR
+检查可用算法：
 
 ```bash
-# 启用 BBR
-sysctl -w net.ipv4.tcp_congestion_control=bbr
-
-# 持久化
-echo "net.ipv4.tcp_congestion_control = bbr" >> /etc/sysctl.conf
-echo "net.core.default_qdisc = fq" >> /etc/sysctl.conf
+sysctl net.ipv4.tcp_available_congestion_control
 ```
+
+如果输出包含 `bbr`，可以测试启用：
+
+```bash
+sudo sysctl -w net.core.default_qdisc=fq
+sudo sysctl -w net.ipv4.tcp_congestion_control=bbr
+```
+
+确认有效：
+
+```bash
+sysctl net.ipv4.tcp_congestion_control
+```
+
+验证收益后再写入 `/etc/sysctl.d/99-local-tuning.conf`。如果内核不支持，不要为了 BBR 随意更换生产内核。
 
 ## 防火墙配置
 
 ### firewalld
 
 ```bash
-systemctl start firewalld
-systemctl enable firewalld
-
-firewall-cmd --permanent --add-port=80/tcp
-firewall-cmd --reload
+sudo systemctl enable --now firewalld
+sudo firewall-cmd --state
+sudo firewall-cmd --permanent --add-service=http
+sudo firewall-cmd --reload
 ```
 
 ### iptables
 
+CentOS 7 默认使用 firewalld。只有在确有兼容需求时才切换到 iptables-services，避免两套防火墙工具规则互相干扰。
+
 ```bash
-yum install -y iptables-services
-systemctl enable iptables
-systemctl start iptables
+sudo yum install -y iptables-services
+sudo systemctl disable --now firewalld
+sudo systemctl enable --now iptables
 ```
 
-## 自动化脚本
+## 自动化脚本建议
+
+不要使用“无条件追加配置”的一键优化脚本。更安全的自动化方式应满足：
+
+- 每个配置文件先备份。
+- 写入独立配置文件，而不是反复追加到系统主配置。
+- 执行前输出将要修改的内容。
+- 支持回滚。
+- 变更后执行语法检查和状态验证。
+
+最小示例：
 
 ```bash
-#!/bin/bash
-# 系统优化脚本
+#!/usr/bin/env bash
+set -euo pipefail
 
-# 内核参数
-cat >> /etc/sysctl.conf << EOF
+backup="/etc/sysctl.conf.bak.$(date +%F-%H%M%S)"
+sudo cp /etc/sysctl.conf "$backup"
+
+sudo tee /etc/sysctl.d/99-local-tuning.conf > /dev/null <<'EOF'
 vm.swappiness = 10
-net.core.somaxconn = 65535
-fs.file-max = 6553560
+net.core.somaxconn = 4096
+fs.file-max = 1048576
 EOF
 
-sysctl -p
-
-# 文件描述符
-echo "* soft nofile 65535" >> /etc/security/limits.conf
-echo "* hard nofile 65535" >> /etc/security/limits.conf
-
-# 禁用不必要的服务
-for service in postfix cups; do
-    systemctl stop $service
-    systemctl disable $service
-done
-
-echo "优化完成！"
+sudo sysctl --system
+echo "完成，原配置备份在 $backup"
 ```
+
+## 小结
+
+CentOS 7 调优的重点不是堆参数，而是控制风险：先确认系统仍有安全维护路径，再按业务场景逐项验证。所有涉及 SSH、PAM、防火墙、内核和资源限制的修改，都应有备份、验证和回滚。

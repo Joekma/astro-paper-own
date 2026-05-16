@@ -241,7 +241,7 @@ image.save('code.jpg', 'jpeg')
 
 如果运行的时候报错：
 
-```python
+```text
 IOError: cannot open resource
 ```
 

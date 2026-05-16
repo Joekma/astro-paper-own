@@ -1,11 +1,11 @@
 ---
 title: Qdrant 环境配置与部署
-series: 'Qdrant'
+series: "Qdrant"
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00
 slug: qdrant-installation
-description: '详细介绍Qdrant的Docker部署、Kubernetes配置和性能优化。'
+description: "详细介绍Qdrant的Docker部署、Kubernetes配置和性能优化。"
 tags:
   - Qdrant
   - 向量数据库
@@ -21,23 +21,23 @@ Qdrant 支持多种部署方式，从轻量级的单机部署到生产级别的�
 
 ### 部署方式
 
-| 方式 | 适用场景 | 优点 |
-|------|----------|------|
-| **Docker** | 开发测试 | 快速简单 |
-| **Docker Compose** | 单机生产 | 配置灵活 |
-| **Kubernetes** | 大规模部署 | 高可用 |
-| **源码编译** | 定制需求 | 灵活 |
+| 方式               | 适用场景   | 优点     |
+| ------------------ | ---------- | -------- |
+| **Docker**         | 开发测试   | 快速简单 |
+| **Docker Compose** | 单机生产   | 配置灵活 |
+| **Kubernetes**     | 大规模部署 | 高可用   |
+| **源码编译**       | 定制需求   | 灵活     |
 
 ## Docker 部署
 
 ### 环境要求
 
-| 要求 | 最小 | 推荐 |
-|------|------|------|
-| CPU | 2 核 | 4+ 核 |
-| 内存 | 2 GB | 8+ GB |
-| 磁盘 | 10 GB | 50+ GB SSD |
-| Docker | 20.10+ | 最新版 |
+| 要求   | 最小   | 推荐       |
+| ------ | ------ | ---------- |
+| CPU    | 2 核   | 4+ 核      |
+| 内存   | 2 GB   | 8+ GB      |
+| 磁盘   | 10 GB  | 50+ GB SSD |
+| Docker | 20.10+ | 最新版     |
 
 ### 快速启动
 
@@ -71,14 +71,14 @@ docker rm qdrant
 
 ```yaml
 # docker-compose.yml
-version: '3.8'
+version: "3.8"
 
 services:
   qdrant:
     image: qdrant/qdrant:latest
     ports:
-      - "6333:6333"  # REST API
-      - "6334:6334"  # gRPC API
+      - "6333:6333" # REST API
+      - "6334:6334" # gRPC API
     volumes:
       - qdrant_data:/qdrant/storage
     environment:
@@ -110,23 +110,23 @@ docker-compose logs -f
 service:
   # HTTP 服务端口
   http_port: 6333
-  
+
   # gRPC 服务端口
   grpc_port: 6334
-  
+
   # 并发限制
   max_request_size_mb: 32
-  
+
   # 超时设置
   request_timeout_ms: 5000
 
 storage:
   # 存储路径
   storage_path: /qdrant/storage
-  
+
   # 快照路径
   snapshots_path: /qdrant/snapshots
-  
+
   # 优化参数
   on_disk_payload: true
   memmap_threshold_kb: 20000
@@ -139,16 +139,16 @@ storage:
 hnsw_index:
   # 内存映射阈值
   on_disk: true
-  
+
   # M 参数（连接数）
   m: 16
-  
+
   # 构建参数
   ef_construct: 100
-  
+
   # 全扫描阈值
   full_scan_threshold: 10000
-  
+
   # 跳过默认索引
   skip_default_index: false
 ```
@@ -219,7 +219,7 @@ replicaCount: 5
 config:
   service:
     max_request_size_mb: 128
-  
+
   storage:
     memmap_threshold_kb: 20000
     on_disk_payload: true
@@ -363,12 +363,12 @@ from qdrant_client import AsyncQdrantClient
 async def batch_insert(points):
     # 异步客户端
     async_client = AsyncQdrantClient("localhost", port=6333)
-    
+
     await async_client.upsert(
         collection_name="test",
         points=points
     )
-    
+
     await async_client.close()
 
 # 使用
@@ -507,5 +507,3 @@ client.optimize(
     )
 )
 ```
-
-

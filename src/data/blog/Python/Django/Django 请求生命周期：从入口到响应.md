@@ -159,7 +159,7 @@ def handle(self, *args, **options):
             elif self.use_ipv6 and not _fqdn:
                 raise CommandError('"%s" is not a valid IPv6 address.' % self.addr)
     if not self.addr:
-        self.addr = '::1' if self.use_ipv6 else '127.0.0.1' [[如果没有设置ip地址使用127]].0.0.1代替
+        self.addr = '::1' if self.use_ipv6 else '127.0.0.1'  # 未设置 IP 地址时使用本地地址
         self._raw_ipv6 = self.use_ipv6
     self.run(**options) # 运行命令
 
@@ -242,7 +242,7 @@ def serve_forever(self, poll_interval=0.5):
     """
     处理一个 http 请求直到关闭
     """
-    [[__is_shut_down为一个初始化的threading]].Event()的句柄，用于线程间通信
+    # __is_shut_down 是 threading.Event() 句柄，用于线程间通信
     self.__is_shut_down.clear() #.clear()将标识设置为false
     try:
         with _ServerSelector() as selector:
@@ -258,7 +258,7 @@ def serve_forever(self, poll_interval=0.5):
                 self.service_actions()
     finally:
         self.__shutdown_request = False
-        self.__is_shut_down.set() [[将标识设置为true]]
+        self.__is_shut_down.set()  # 将标识设置为 true
 
 ```
 当发现有请求后，就调用 `_handle_request_noblock` 进行处理:
@@ -272,7 +272,7 @@ def _handle_request_noblock(self):
         return
     if self.verify_request(request, client_address): # 验证请求合法性
         try:
-            [[真正的处理连接请求的地方，调用了self]].finish_request(request, client_address)
+            self.finish_request(request, client_address)  # 真正处理连接请求
             self.process_request(request, client_address)
         except Exception:
             self.handle_error(request, client_address)
@@ -312,7 +312,7 @@ def handle(self):
         self.command = ''
         self.send_error(414)
         return
-    [[传入的参数，读，写，错误，环境变量。在其父类SimpleHandler中进行了初始化，并且打开了多线程和多进程选项]]
+    # 传入读、写、错误和环境变量；父类 SimpleHandler 中完成初始化
     handler = ServerHandler(
         self.rfile, self.wfile, self.get_stderr(), self.get_environ()
     )

@@ -11,7 +11,7 @@ tags:
   - MySQL
   - 数据库
   - 客户端
-description: 'MySQL客户端工具及SQL命令'
+description: "MySQL客户端工具及SQL命令"
 ---
 
 ## 概述
@@ -126,16 +126,25 @@ mysqlbinlog --start-datetime='2024-01-01 10:00:00' binlog.000001
 mysqlbinlog binlog.000001 > output.sql
 ```
 
+## 日志类型
+
+| 类型            | 作用               | 常见用途                     |
+| --------------- | ------------------ | ---------------------------- |
+| **binlog**      | 记录数据变更       | 主从复制、误操作恢复、审计   |
+| **slowlog**     | 记录慢查询         | 性能分析、索引优化           |
+| **errorlog**    | 记录启动和运行错误 | 排查启动失败、崩溃、权限问题 |
+| **general log** | 记录所有客户端请求 | 临时审计，生产环境谨慎开启   |
+
 ## GUI 工具
 
-| 工具 | 平台 | 价格 | 特点 |
-|------|------|------|------|
-| **MySQL Workbench** | 全平台 | 免费 | 官方工具，ER图设计 |
-| **Navicat** | 全平台 | 付费 | 功能强大，界面美观 |
-| **DBeaver** | 全平台 | 免费开源 | 通用数据库客户端 |
-| **phpMyAdmin** | Web | 免费 | Web 界面，操作简单 |
-| **DataGrip** | 全平台 | 付费 | JetBrains 出品，智能提示 |
-| **HeidiSQL** | Windows | 免费 | 轻量级，功能实用 |
+| 工具                | 平台    | 价格     | 特点                     |
+| ------------------- | ------- | -------- | ------------------------ |
+| **MySQL Workbench** | 全平台  | 免费     | 官方工具，ER图设计       |
+| **Navicat**         | 全平台  | 付费     | 功能强大，界面美观       |
+| **DBeaver**         | 全平台  | 免费开源 | 通用数据库客户端         |
+| **phpMyAdmin**      | Web     | 免费     | Web 界面，操作简单       |
+| **DataGrip**        | 全平台  | 付费     | JetBrains 出品，智能提示 |
+| **HeidiSQL**        | Windows | 免费     | 轻量级，功能实用         |
 
 ## SQL 基础命令
 
@@ -283,11 +292,11 @@ SHOW ENGINE INNODB STATUS;
 
 ## 小结
 
-| 工具 | 用途 |
-|------|------|
-| **mysql** | 命令行客户端 |
-| **mysqladmin** | 服务管理 |
-| **mysqldump** | 数据备份 |
-| **mysqlbinlog** | 日志分析 |
-| **Workbench** | 可视化设计 |
-| **Navicat** | 图形化管理 |
+| 工具            | 用途         |
+| --------------- | ------------ |
+| **mysql**       | 命令行客户端 |
+| **mysqladmin**  | 服务管理     |
+| **mysqldump**   | 数据备份     |
+| **mysqlbinlog** | 日志分析     |
+| **Workbench**   | 可视化设计   |
+| **Navicat**     | 图形化管理   |

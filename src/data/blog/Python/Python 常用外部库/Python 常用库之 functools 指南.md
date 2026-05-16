@@ -226,7 +226,7 @@ print(test.__doc__)
 
 输出结果：
 
-```python
+```text
 note something
 I am test
 wrapper function
@@ -264,7 +264,7 @@ print(test.__doc__)
 
 输出结果：
 
-```python
+```text
 note something
 I am test
 test function
@@ -282,7 +282,7 @@ test function
 
 所以在写装饰器时，一个非常实用的习惯是：
 
-```python
+```text
 @functools.wraps(func)
 ```
 

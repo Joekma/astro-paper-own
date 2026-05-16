@@ -2,9 +2,9 @@
 title: Kubernetes 集群管理：架构、组件与部署
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-16T00:00:00.000+08:00
 slug: kubernetes-deployment-guide
-description: '深入讲解Kubernetes集群管理工具，包括架构、组件和部署方法。'
+description: '讲解 Kubernetes 控制平面、工作节点、CRI 运行时、核心对象和常用 kubectl 操作。'
 tags:
   - Docker
   - Kubernetes
@@ -16,100 +16,86 @@ language: zh-CN
 
 ## 概述
 
-Kubernetes（K8S）是 Google 于 2014 年开源的容器集群管理系统，使用 Go 语言开发。它基于 Google 内部的 Borg 系统，用于自动化部署、扩展和管理容器应用。
+Kubernetes（K8s）是容器编排平台，用于自动化部署、扩缩容和管理容器化应用。它关注的不是单个容器命令，而是通过声明式配置维护集群的期望状态。
 
-### 核心功能
+需要注意：Kubernetes 已移除 dockershim，不再把 Docker Engine 作为内置容器运行时接口。生产集群通常使用符合 CRI 的运行时，例如 `containerd` 或 `CRI-O`。
 
-| 功能 | 说明 |
+## 核心能力
+
+| 能力 | 说明 |
 |------|------|
-| **数据卷** | Pod 中容器之间共享数据 |
-| **健康检查** | 监控检查策略保证应用健壮性 |
-| **副本控制** | 维护 Pod 副本数量 |
-| **弹性伸缩** | 根据指标自动缩放 Pod 副本数 |
-| **服务发现** | 环境变量或 DNS 服务 |
-| **负载均衡** | 一组 Pod 副本分配集群 IP |
-| **滚动更新** | 逐个更新 Pod，不中断服务 |
-| **资源监控** | 集成 cAdvisor 资源收集 |
+| **声明式配置** | 使用 YAML 描述期望状态 |
+| **副本管理** | 维持指定数量的 Pod |
+| **自愈能力** | Pod 异常退出后自动重建 |
+| **滚动更新** | 逐步发布新版本并支持回滚 |
+| **服务发现** | 通过 Service 和 DNS 访问应用 |
+| **负载均衡** | 在多个 Pod 副本之间分发流量 |
+| **配置管理** | 使用 ConfigMap 和 Secret 管理配置 |
+| **弹性伸缩** | 根据指标自动调整副本数 |
 
 ## 架构与组件
 
-### Master 组件
+### 控制平面组件
+
+过去很多资料把控制平面称为 Master。现在更推荐使用“控制平面”这一术语。
 
 | 组件 | 说明 |
 |------|------|
-| `kube-apiserver` | 资源操作的唯一入口 |
-| `kube-controller-manager` | 维护集群状态 |
-| `kube-scheduler` | 资源调度，分配 Pod 到节点 |
+| `kube-apiserver` | Kubernetes API 入口 |
 | `etcd` | 分布式键值存储，保存集群状态 |
+| `kube-scheduler` | 为 Pod 选择合适节点 |
+| `kube-controller-manager` | 运行各类控制器，维护期望状态 |
+| `cloud-controller-manager` | 对接云厂商负载均衡、节点和存储资源 |
 
-### Node 组件
+### 工作节点组件
 
 | 组件 | 说明 |
 |------|------|
-| `kubelet` | 管理 Pod 和容器生命周期 |
-| `kube-proxy` | 提供服务发现和负载均衡 |
-| `docker/rkt` | 运行容器 |
+| `kubelet` | 节点代理，负责创建和管理 Pod |
+| `kube-proxy` | 维护 Service 网络转发规则 |
+| `containerd` / `CRI-O` | 符合 CRI 的容器运行时 |
+| CNI 插件 | 提供 Pod 网络，例如 Calico、Cilium、Flannel |
 
-### 插件
+### 常见集群插件
 
 | 插件 | 说明 |
 |------|------|
-| `kube-dns` | 为集群提供 DNS 服务 |
-| `Ingress Controller` | 提供外网入口 |
-| `Heapster` | 资源监控 |
-| `Dashboard` | GUI 管理界面 |
+| CoreDNS | 集群 DNS 服务，替代旧的 kube-dns |
+| Metrics Server | 为 HPA 和 `kubectl top` 提供资源指标 |
+| Ingress Controller | 提供 HTTP/HTTPS 入口能力 |
+| CSI Driver | 对接存储系统，提供持久卷 |
+| Dashboard | Web 管理界面，通常只用于受控内网环境 |
 
-## 基本对象概念
+Heapster 已被 Metrics Server 等组件取代，不应再作为新集群监控方案。
 
-### 核心对象
-
-| 对象 | 说明 |
-|------|------|
-| **Pod** | 最小部署单元，包含一个或多个容器 |
-| **Service** | 应用服务抽象，定义 Pod 逻辑集合 |
-| **Volume** | 数据卷，共享容器数据 |
-| **Namespace** | 命名空间，多租户隔离 |
-| **Label** | 标签，用于区分对象 |
-
-### 高级对象
+## 核心对象
 
 | 对象 | 说明 |
 |------|------|
-| **Deployment** | 管理 ReplicaSets 和 Pod |
-| **StatefulSet** | 持久化应用，有唯一网络标识 |
-| **DaemonSet** | 所有节点运行同一个 Pod |
-| **Job** | 一次性任务 |
+| **Pod** | Kubernetes 调度的最小单元，包含一个或多个容器 |
+| **Deployment** | 管理无状态应用的副本和滚动更新 |
+| **ReplicaSet** | 维持 Pod 副本数，通常由 Deployment 管理 |
+| **StatefulSet** | 管理有稳定身份和存储需求的有状态应用 |
+| **DaemonSet** | 保证每个目标节点运行一个 Pod |
+| **Service** | 为一组 Pod 提供稳定访问入口 |
+| **Ingress** | 管理集群入口 HTTP/HTTPS 路由 |
+| **ConfigMap** | 保存非敏感配置 |
+| **Secret** | 保存敏感配置，仍需结合加密和权限控制 |
+| **Namespace** | 对资源进行逻辑隔离 |
 
-## 重要概念
+## Pod
 
-### Cluster
+Pod 中的容器共享网络命名空间和部分存储。一个 Pod 会拥有自己的 IP，同一 Pod 内的容器可以通过 `localhost` 通信。
 
-Cluster 是计算、存储和网络资源的集合，Kubernetes 利用这些资源运行基于容器的应用。
+常见用法：
 
-### Master
+- 一个主业务容器。
+- 一个主业务容器加一个 sidecar，例如日志采集或代理。
+- 多个强耦合容器共享同一生命周期。
 
-集群管理节点，负责管理集群，提供资源数据访问入口。
+不要把多个无关服务硬塞进同一个 Pod。它们应该拆成不同 Deployment，并通过 Service 通信。
 
-### Node
-
-工作节点，运行 Pod 的服务节点，运行关键进程：
-
-| 进程 | 说明 |
-|------|------|
-| `kubelet` | 创建和管理 Pod |
-| `kube-proxy` | Service 通信与负载均衡 |
-| `Docker` | 容器创建和管理 |
-
-### Pod
-
-Pod 是 Kubernetes 调度的最小单位，可以包含一个或多个共享网络和存储的容器。
-
-**Pod 特点：**
-- 共享同一网络命名空间（相同 IP 和端口）
-- 可以共享存储
-- 紧密耦合的容器组合
-
-### Deployment 示例
+## Deployment 示例
 
 ```yaml
 apiVersion: apps/v1
@@ -127,13 +113,27 @@ spec:
         app: nginx
     spec:
       containers:
-      - name: nginx
-        image: nginx:1.19
-        ports:
-        - containerPort: 80
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
 ```
 
-### Service 示例
+应用配置：
+
+```bash
+kubectl apply -f deployment.yaml
+kubectl get deployments
+kubectl get pods -l app=nginx
+```
+
+## Service 示例
 
 ```yaml
 apiVersion: v1
@@ -144,40 +144,38 @@ spec:
   selector:
     app: nginx
   ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 80
-  type: LoadBalancer
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
 ```
+
+`ClusterIP` 只在集群内部暴露服务。需要外部访问时，可根据环境选择 `Ingress`、`LoadBalancer` 或 `NodePort`。
 
 ## 常用命令
 
 ```bash
-# 集群操作
-kubectl cluster-info              # 查看集群信息
-kubectl get nodes                 # 查看节点
+# 集群信息
+kubectl cluster-info
+kubectl get nodes
 
 # Pod 操作
-kubectl get pods                  # 查看 Pod
-kubectl describe pod <name>       # 查看 Pod 详情
-kubectl logs <pod-name>           # 查看日志
-kubectl exec -it <pod-name> -- /bin/bash  # 进入容器
+kubectl get pods
+kubectl describe pod <pod-name>
+kubectl logs <pod-name>
+kubectl exec -it <pod-name> -- sh
 
 # Deployment 操作
-kubectl get deployments           # 查看 Deployment
-kubectl apply -f <file.yaml>      # 应用配置
-kubectl scale deployment nginx --replicas=3  # 扩缩容
+kubectl get deployments
+kubectl rollout status deployment/nginx-deployment
+kubectl scale deployment nginx-deployment --replicas=5
+kubectl rollout undo deployment/nginx-deployment
 
 # Service 操作
-kubectl get services              # 查看 Service
-kubectl delete service <name>     # 删除 Service
+kubectl get services
+kubectl describe service nginx-service
 ```
 
 ## 小结
 
-Kubernetes 是容器编排领域的标杆，它的：
-
-- **声明式配置**：通过 YAML 文件定义期望状态
-- **自愈能力**：自动恢复失败的容器
-- **弹性伸缩**：根据负载自动调整副本数
-- **服务发现**：内置 DNS 和负载均衡
+Kubernetes 的核心思路是“声明期望状态，由控制器持续调谐”。学习时应先分清控制平面、工作节点、CRI 运行时和核心对象，再逐步理解网络、存储、监控和安全策略。

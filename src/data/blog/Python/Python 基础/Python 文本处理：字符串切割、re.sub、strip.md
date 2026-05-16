@@ -30,7 +30,7 @@ from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By # 按照什么方式查找，By.ID,By.CSS_SELECTOR
 from selenium.webdriver.common.keys import Keys # 键盘按键操作
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.wait import WebDriverWait # 等待页面加载某些元素  
+from selenium.webdriver.support.wait import WebDriverWait # 等待页面加载某些元素
 import time
 
 def get_goods(driver):
@@ -68,7 +68,7 @@ def spider(url,keyword):
         driver.close()
 
 if __name__ == '__main__':
-    spider('https://www.jd.com/',keyword='iPhone8手机')　
+    spider('https://www.jd.com/',keyword='iPhone8手机')
 ```
 ### 文本处理代码
 ```python
@@ -89,7 +89,7 @@ file_write_obj = open("222.txt", 'w',encoding='utf-8')
 for var in new:
     file_write_obj.writelines(var)
     # file_write_obj.writelines('\n')
-file_write_obj.close()　
+file_write_obj.close()
 ```
 
 ## replace()
@@ -97,10 +97,10 @@ file_write_obj.close()　
 ```python
 # 对象.replace(rgExp, replaceText, max)
 
-  * rgExp，replaceText是必须要有的，max是可选的参数，可以不加
-  * 在对象的每个rgExp都替换成replaceText，从左到右最多max次
+# rgExp、replaceText 是必须参数，max 是可选参数
+# 将对象中的 rgExp 从左到右最多替换 max 次
 
-比如：
+# 比如：
 class Solution:
     def replace_space(self, s):
         if not s:
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     s = Solution()
 
     print(s.replace_space(strings))
->>> We20%Are20%Happy
+# 输出：We20%Are20%Happy
 ```
 ## re.sub---substitute，进行相对复杂的字符串替换
 

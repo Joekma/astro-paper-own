@@ -294,13 +294,13 @@ re.match('abc', 'abcdef')  # 从开头匹配
 re.search('abc', 'defabc')  # 全局搜索
 
 # 分割
-re.split('[0-9]', 'a1b2c3')  # ['a', 'b', 'c', '']
+re.split(r'[0-9]', 'a1b2c3')  # ['a', 'b', 'c', '']
 
 # 替换
-re.sub('\d', 'X', 'a1b2c3')  # aXbXcX
+re.sub(r'\d', 'X', 'a1b2c3')  # aXbXcX
 
 # 编译
-pattern = re.compile('\d+')
+pattern = re.compile(r'\d+')
 pattern.findall('a1b2c3')  # ['1', '2', '3']
 ```
 
@@ -310,19 +310,19 @@ pattern.findall('a1b2c3')  # ['1', '2', '3']
 import re
 
 # findall: 返回所有匹配
-print(re.findall('\d+', 'a1b22c333'))
+print(re.findall(r'\d+', 'a1b22c333'))
 
 # match: 从开头匹配
 print(re.match('abc', 'abcdef'))
 
 # search: 全局搜索第一个
-print(re.search('\d+', 'abc123def456'))
+print(re.search(r'\d+', 'abc123def456'))
 
 # sub: 替换
-print(re.sub('\d+', 'X', 'a1b2c3'))  # aXbXcX
+print(re.sub(r'\d+', 'X', 'a1b2c3'))  # aXbXcX
 
 # split: 分割
-print(re.split('[0-9]+', 'a1b2c3'))  # ['a', 'b', 'c', '']
+print(re.split(r'[0-9]+', 'a1b2c3'))  # ['a', 'b', 'c', '']
 ```
 
 ### 常用正则符号
@@ -349,10 +349,10 @@ print(re.split('[0-9]+', 'a1b2c3'))  # ['a', 'b', 'c', '']
 import re
 
 # 贪婪匹配（默认）
-print(re.findall('\d+', 'a123b456'))  # ['123', '456']
+print(re.findall(r'\d+', 'a123b456'))  # ['123', '456']
 
 # 非贪婪匹配
-print(re.findall('\d+?', 'a123b456'))  # ['1', '2', '3', '4', '5', '6']
+print(re.findall(r'\d+?', 'a123b456'))  # ['1', '2', '3', '4', '5', '6']
 ```
 
 ## collections 模块

@@ -35,12 +35,12 @@ Task result store用来存储Worker执行的任务的结果，Celery支持以不
 
 ## 版本支持情况
 
-**Celery version 4.0 运行环境：**
+**现代 Celery 运行环境：**
 
-- Python 2.7, 3.4, 3.5
-- PyPy 5.4, 5.5
+- 建议使用 Python 3.10+ 的受支持版本
+- 新项目优先选择 Celery 5.x 及更新版本
 
-这是最后一个支持Python 2.7的版本，从下一个版本（Celery 5.x）开始需要Python 3.5或更新版本。
+Celery 4.x 和 Python 2 相关组合只适合维护历史项目，新项目不建议再选择。
 
 **如果你运行的是较旧的Python版本，需要运行较旧的Celery版本：**
 
@@ -125,19 +125,19 @@ if __name__ == '__main__':
 from celery.result import AsyncResult
 from celery_app_task import cel
 
-async = AsyncResult(id="e919d97d-2938-4d0f-9265-fd8237dc2aa3", app=cel)
+task_result = AsyncResult(id="e919d97d-2938-4d0f-9265-fd8237dc2aa3", app=cel)
 
-if async.successful():
-    result = async.get()
+if task_result.successful():
+    result = task_result.get()
     print(result)
     # result.forget()  # 将结果删除
-elif async.failed():
+elif task_result.failed():
     print('执行失败')
-elif async.status == 'PENDING':
+elif task_result.status == 'PENDING':
     print('任务等待中被执行')
-elif async.status == 'RETRY':
+elif task_result.status == 'RETRY':
     print('任务异常后正在重试')
-elif async.status == 'STARTED':
+elif task_result.status == 'STARTED':
     print('任务已经开始被执行')
 ```
 
@@ -211,21 +211,21 @@ def test_celery2(res):
 from celery.result import AsyncResult
 from celery_task.celery import cel
 
-async = AsyncResult(id="08eb2778-24e1-44e4-a54b-56990b3519ef", app=cel)
+task_result = AsyncResult(id="08eb2778-24e1-44e4-a54b-56990b3519ef", app=cel)
 
-if async.successful():
-    result = async.get()
+if task_result.successful():
+    result = task_result.get()
     print(result)
     # result.forget()  # 将结果删除, 执行完成，结果不会自动删除
-    # async.revoke(terminate=True)  # 无论现在是什么时候，都要终止
-    # async.revoke(terminate=False)  # 如果任务还没有开始执行呢，那么就可以终止。
-elif async.failed():
+    # task_result.revoke(terminate=True)  # 无论现在是什么时候，都要终止
+    # task_result.revoke(terminate=False)  # 如果任务还没有开始执行呢，那么就可以终止。
+elif task_result.failed():
     print('执行失败')
-elif async.status == 'PENDING':
+elif task_result.status == 'PENDING':
     print('任务等待中被执行')
-elif async.status == 'RETRY':
+elif task_result.status == 'RETRY':
     print('任务异常后正在重试')
-elif async.status == 'STARTED':
+elif task_result.status == 'STARTED':
     print('任务已经开始被执行')
 ```
 
@@ -322,71 +322,159 @@ cel.conf.beat_schedule = {
 
 ## Django中使用Celery
 
-### 在项目目录下创建celeryconfig.py
+旧的 `django-celery` / `djcelery` 已经不适合新项目。Celery 3.1 之后就内置支持 Django，现代项目通常直接使用 Celery 实例、`CELERY_` 命名空间配置和 `@shared_task`。
 
-```python
-import djcelery
-djcelery.setup_loader()
-CELERY_IMPORTS=(
-    'app01.tasks',
-)
-# 有些情况可以防止死锁
-CELERYD_FORCE_EXECV=True
-# 设置并发worker数量
-CELERYD_CONCURRENCY=4
-# 允许重试
-CELERY_ACKS_LATE=True
-# 每个worker最多执行100个任务被销毁，可以防止内存泄漏
-CELERYD_MAX_TASKS_PER_CHILD=100
-# 超时时间
-CELERYD_TASK_TIME_LIMIT=12*30
+参考：[Celery 官方 Django 集成文档](https://docs.celeryq.dev/en/latest/django/first-steps-with-django.html)
+
+### 安装
+
+```bash
+pip install celery redis
 ```
 
-### 在app01目录下创建tasks.py
+如果需要在 Django Admin 中管理定时任务，再安装：
 
-```python
-from celery import task
-
-@task
-def add(a,b):
-    with open('a.text', 'a', encoding='utf-8') as f:
-        f.write('a')
-    print(a+b)
+```bash
+pip install django-celery-beat
 ```
 
-### 视图函数views.py
+如果需要 Web 监控界面，再安装：
 
-```python
-from django.shortcuts import render, HttpResponse
-from app01.tasks import add
-from datetime import datetime
-
-def test(request):
-    # result=add.delay(2,3)
-    ctime = datetime.now()
-    # 默认用utc时间
-    utc_ctime = datetime.utcfromtimestamp(ctime.timestamp())
-    from datetime import timedelta
-    time_delay = timedelta(seconds=5)
-    task_time = utc_ctime + time_delay
-    result = add.apply_async(args=[4, 3], eta=task_time)
-    print(result.id)
-    return HttpResponse('ok')
+```bash
+pip install flower
 ```
 
-### settings.py
+### 项目结构
+
+```text
+proj/
+  manage.py
+  proj/
+    __init__.py
+    celery.py
+    settings.py
+  users/
+    tasks.py
+    views.py
+```
+
+### 创建 `proj/celery.py`
 
 ```python
-INSTALLED_APPS = [
-    ...
-    'djcelery',
-    'app01'
+import os
+
+from celery import Celery
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "proj.settings")
+
+app = Celery("proj")
+app.config_from_object("django.conf:settings", namespace="CELERY")
+app.autodiscover_tasks()
+
+
+@app.task(bind=True, ignore_result=True)
+def debug_task(self):
+    print(f"Request: {self.request!r}")
+```
+
+### 在 `proj/__init__.py` 中加载 Celery
+
+```python
+from .celery import app as celery_app
+
+__all__ = ("celery_app",)
+```
+
+这样 Django 启动时会同时加载 Celery app，后续各个应用中的 `@shared_task` 就能绑定到同一个 Celery 实例。
+
+### 在 `settings.py` 中配置
+
+```python
+INSTALLED_APPS += [
+    "django_celery_beat",
 ]
 
-...
-
-from djcelery import celeryconfig
-BROKER_BACKEND='redis'
-BROKER_URL='redis://127.0.0.1:6379/1'
-CELERY_RESULT_BACKEND='redis://127.0.0.1:6379/2'
+CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
+CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/1"
+CELERY_TIMEZONE = "Asia/Shanghai"
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 100
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 ```
+
+如果使用 `django-celery-beat`，需要执行迁移：
+
+```bash
+python manage.py migrate django_celery_beat
+```
+
+### 创建任务
+
+```python
+from celery import shared_task
+from django.contrib.auth import get_user_model
+from django.core.mail import send_mail
+
+
+@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
+def send_welcome_email(self, user_id):
+    user = get_user_model().objects.get(pk=user_id)
+    send_mail(
+        subject="Welcome",
+        message=f"Hello, {user.username}",
+        from_email="noreply@example.com",
+        recipient_list=[user.email],
+    )
+```
+
+### 在视图中调用任务
+
+如果任务依赖刚写入数据库的数据，建议在事务提交后再投递，避免 worker 先执行却查不到数据。
+
+```python
+from django.db import transaction
+from django.http import JsonResponse
+
+from users.tasks import send_welcome_email
+
+
+def register_done(request, user):
+    transaction.on_commit(lambda: send_welcome_email.delay(user.id))
+    return JsonResponse({"status": "queued"})
+```
+
+普通异步调用可以直接使用：
+
+```python
+result = send_welcome_email.delay(user_id=1)
+print(result.id)
+```
+
+### 定时任务
+
+简单固定计划可以直接写在配置中：
+
+```python
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    "send-report-every-morning": {
+        "task": "reports.tasks.send_daily_report",
+        "schedule": crontab(hour=8, minute=0),
+        "args": (),
+    },
+}
+```
+
+如果运营或后台人员需要动态调整任务频率，优先使用 `django-celery-beat`，通过 Django Admin 管理 `PeriodicTask`。
+
+### 启动命令
+
+```bash
+celery -A proj worker -l INFO
+celery -A proj beat -l INFO
+celery -A proj flower --basic_auth=admin:strong-password
+```
+
+生产环境通常用 systemd、Supervisor、Docker Compose 或 Kubernetes 托管 worker 和 beat。不要让多个 beat 实例同时调度同一套周期任务，否则可能重复投递。

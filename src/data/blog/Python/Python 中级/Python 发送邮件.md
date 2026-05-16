@@ -172,10 +172,10 @@ EMAIL_HOST_USER = '123456@qq.com'  # 帐号
 EMAIL_HOST_PASSWORD = '***'  # 密码
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 # 这样收到的邮件，收件人处就会这样显示
-DEFAULT_FROM_EMAIL = 'abc<'123456@qq.com>'
+DEFAULT_FROM_EMAIL = 'abc <123456@qq.com>'
 EMAIL_USE_SSL = True   # 使用ssl
 # EMAIL_USE_TLS = False # 使用tls
-EMAIL_USE_SSL 和 EMAIL_USE_TLS 是互斥的，即只能有一个为 True
+# EMAIL_USE_SSL 和 EMAIL_USE_TLS 是互斥的，即只能有一个为 True
 
 ```
 #### view视图函数

@@ -1,4 +1,4 @@
-﻿---
+---
 title: Redis作为缓存的使用方法和最佳实践
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -10,7 +10,7 @@ tags:
   - Redis
   - 数据库
   - 缓存
-description: 'Redis作为缓存的使用方法和最佳实践'
+description: "Redis作为缓存的使用方法和最佳实践"
 series: Redis
 language: zh-CN
 ---
@@ -19,11 +19,11 @@ language: zh-CN
 
 ## 缓存策略
 
-| 策略 | 说明 |
-|------|------|
-| **Cache-Aside** | 应用自行管理 |
-| **Read-Through** | 缓存自动加载 |
-| **Write-Through** | 同步写缓存 |
+| 策略              | 说明         |
+| ----------------- | ------------ |
+| **Cache-Aside**   | 应用自行管理 |
+| **Read-Through**  | 缓存自动加载 |
+| **Write-Through** | 同步写缓存   |
 
 ## 示例
 
@@ -34,7 +34,7 @@ def get_user(user_id):
     user = r.get(cache_key)
     if user:
         return json.loads(user)
-    
+
     user = db.query(user_id)
     r.setex(cache_key, 3600, json.dumps(user))
     return user

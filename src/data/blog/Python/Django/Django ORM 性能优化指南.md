@@ -37,7 +37,7 @@ Django的文档中有那么一节，详细的描述了[DB部分优化](https://d
 
 理解`django.db.connection`，这个对象可以用来记录当前查询花费的时间：
 
-```python
+```text
 >>> from django.db import connection
 >>> connection.queries
 []
@@ -55,7 +55,7 @@ Django的文档中有那么一节，详细的描述了[DB部分优化](https://d
 python manage.py shell_plus --print-sql
 ```
 
-```python
+```text
 >>> Author.objects.all()
 SELECT "library_author"."id", "library_author"."name" FROM "library_author" LIMIT 21
 Execution time: 0.001393s [Database: default]
@@ -117,17 +117,17 @@ do_stuff_with_author_id(book.author_id)
 
 ```python
 # 如果要使用查询结果，不要浪费查询
-books = Book.objects.filter(..)
+books = Book.objects.filter(...)
 if books:
     do_stuff_with_books(books)
 
 # 如果不使用查询结果，使用exist
-books = Book.objects.filter(..)
+books = Book.objects.filter(...)
 if books.exists():
     do_some_stuff()
 
 # 但永远不要这样
-if Book.objects.filter(..):
+if Book.objects.filter(...):
     do_some_stuff()
 ```
 
@@ -135,17 +135,17 @@ if Book.objects.filter(..):
 
 ```python
 # 如果要使用查询结果，不要浪费查询
-books = Book.objects.filter(..)
+books = Book.objects.filter(...)
 if len(books) > 5:
     do_stuff_with_books(books)
 
 # 如果不使用查询结果，使用count
-books = Book.objects.filter(..)
+books = Book.objects.filter(...)
 if books.count() > 5:
     do_some_stuff()
 
 # 但永远不要这样
-if len(Book.objects.filter(..)) > 5:
+if len(Book.objects.filter(...)) > 5:
     do_some_stuff()
 ```
 
@@ -153,7 +153,7 @@ if len(Book.objects.filter(..)) > 5:
 
 默认情况下，ORM查询的时候会把数据库记录对应的所有列取出来，然后转换成Python对象，这无疑是个很大的浪费（有时候只想要一两个列的）。当你只需要某些列的时候可以使用`values`或者`values_list`，它们不是把数据转换成复杂的python对象，而是dicts、tuples等：
 
-```python
+```text
 # 检索值作为字典
 >>> Book.objects.values('title', 'author__name')
 <QuerySet [{'author__name': 'Nikolai Gogol', 'title': 'The Overcoat'}, {'author__name': 'Leo Tolstoy', 'title': 'War and Peace'}]>

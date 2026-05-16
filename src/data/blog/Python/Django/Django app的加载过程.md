@@ -133,7 +133,7 @@ def import_models(self, all_models):
 
 > 最终 `self.models` 以 `OrderedDict` 形式存储加载的模型对象
 
-```python
+```text
 OrderedDict([
     ('permission', <class 'django.contrib.auth.models.Permission'>),
     ('group', <class 'django.contrib.auth.models.Group'>),

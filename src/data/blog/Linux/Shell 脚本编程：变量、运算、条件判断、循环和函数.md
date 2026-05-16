@@ -1,11 +1,11 @@
-﻿---
+---
 title: Shell 脚本编程：变量、运算、条件判断、循环和函数
 series: Linux
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-03T00:00:00.000+08:00
+modDatetime: 2026-05-16T00:00:00.000+08:00
 slug: shell-scripting
-description: '深入讲解Shell脚本编程，包含变量、运算、条件判断、循环、函数、字符串处理、数组、输入输出和管道重定向，包含大量实战示例。'
+description: '讲解 Bash 脚本中的变量、运算、条件判断、循环、函数、字符串、数组、输入输出和重定向，并补充安全写法。'
 tags:
   - Shell
   - Bash
@@ -18,49 +18,48 @@ language: zh-CN
 
 ## 简介
 
-Shell 是 Unix/Linux 系统的命令行解释器，是用户与操作系统内核之间的接口。
+Shell 是用户与操作系统交互的命令解释器。Linux 自动化脚本通常使用 Bash 编写，因此本文示例默认使用 Bash。
 
-### Shell 类型
+## 脚本开头
 
-| 类型 | 说明 |
-|------|------|
-| **Bash** | Bourne Again Shell，最常用 |
-| **Zsh** | 功能强大的 Shell |
-| **Fish** | 用户友好的 Shell |
-| **Sh** | 原始 Bourne Shell |
-
-### 脚本首行
+推荐写法：
 
 ```bash
-#!/bin/bash
 #!/usr/bin/env bash
+set -euo pipefail
 ```
+
+| 选项 | 说明 |
+|------|------|
+| `-e` | 命令失败时退出脚本 |
+| `-u` | 使用未定义变量时报错 |
+| `-o pipefail` | 管道中任意命令失败时让整个管道失败 |
+
+这些选项适合多数自动化脚本，但如果脚本需要主动处理失败命令，应局部使用 `if` 或 `|| true` 明确表达意图。
 
 ## 变量
 
-### 基本定义
+### 定义与使用
 
 ```bash
-name="John"        # 普通变量
+name="John"
 age=25
-readonly PI=3.14159  # 只读变量
-```
+readonly PI="3.14159"
 
-### 使用变量
-
-```bash
-echo "Name: $name"
+echo "Name: ${name}"
 echo "Age: ${age}"
 ```
+
+变量赋值时等号两边不能有空格。读取变量时建议使用 `"${var}"`，避免空格和通配符导致意外拆分。
 
 ### 环境变量
 
 ```bash
-echo $PATH
-echo $HOME
-echo $USER
+echo "${PATH}"
+echo "${HOME}"
+echo "${USER}"
 
-export VAR_NAME="value"
+export APP_ENV="production"
 ```
 
 ### 特殊变量
@@ -68,87 +67,100 @@ export VAR_NAME="value"
 | 变量 | 说明 |
 |------|------|
 | `$0` | 脚本名称 |
-| `$1-$9` | 第1-9个参数 |
+| `$1` ... `$9` | 第 1 到第 9 个参数 |
 | `$#` | 参数个数 |
-| `$*` | 所有参数（单个字符串） |
-| `$@` | 所有参数（独立字符串） |
+| `$*` | 所有参数，双引号中会合成一个字符串 |
+| `$@` | 所有参数，双引号中保留独立参数 |
 | `$?` | 上一条命令退出状态 |
-| `$$` | 当前进程 ID |
+| `$$` | 当前 Shell 进程 ID |
+
+遍历参数时优先使用：
+
+```bash
+for arg in "$@"; do
+  echo "arg=${arg}"
+done
+```
 
 ## 运算
 
-### 算术运算
+### 整数运算
 
 ```bash
 a=10
 b=5
 
-echo $((a + b))    # 加法：15
-echo $((a - b))    # 减法：5
-echo $((a * b))    # 乘法：50
-echo $((a / b))    # 除法：2
-echo $((a % b))    # 取余：0
+echo "$((a + b))"
+echo "$((a - b))"
+echo "$((a * b))"
+echo "$((a / b))"
+echo "$((a % b))"
 
-((a++))            # 自增
-((a += 5))         # 加法赋值
+((a++))
+((a += 5))
 ```
+
+Bash 原生算术只支持整数。
 
 ### 浮点运算
 
 ```bash
 echo "scale=2; 10 / 3" | bc
-awk 'BEGIN {printf "%.2f\n", 10/3}'
-```
-
-### 逻辑运算
-
-```bash
-# 字符串比较
-[[ "abc" == "abc" ]]
-[[ -z "$str" ]]      # 字符串为空
-[[ -n "$str" ]]      # 字符串非空
-
-# 数字比较
-[[ $a -eq $b ]]      # 相等
-[[ $a -gt $b ]]      # 大于
-[[ $a -lt $b ]]      # 小于
-
-# 文件测试
-[[ -e file ]]        # 文件存在
-[[ -f file ]]        # 普通文件
-[[ -d file ]]        # 目录
-[[ -r file ]]        # 可读
-[[ -w file ]]        # 可写
-[[ -x file ]]        # 可执行
+awk 'BEGIN {printf "%.2f\n", 10 / 3}'
 ```
 
 ## 条件判断
 
+### 字符串、数字和文件测试
+
+```bash
+str=""
+a=10
+b=20
+
+[[ "${str}" == "" ]]
+[[ -z "${str}" ]]
+[[ -n "${str}" ]]
+
+[[ "${a}" -lt "${b}" ]]
+[[ "${a}" -eq 10 ]]
+
+[[ -e file ]]
+[[ -f file ]]
+[[ -d dir ]]
+[[ -r file ]]
+[[ -w file ]]
+[[ -x script.sh ]]
+```
+
+在 Bash 中优先使用 `[[ ... ]]`，它比传统 `[ ... ]` 更不容易受到空变量和模式匹配影响。
+
 ### if 语句
 
 ```bash
-if [ $a -gt $b ]; then
-    echo "a > b"
-elif [ $a -eq $b ]; then
-    echo "a == b"
+if [[ "${a}" -gt "${b}" ]]; then
+  echo "a > b"
+elif [[ "${a}" -eq "${b}" ]]; then
+  echo "a == b"
 else
-    echo "a < b"
+  echo "a < b"
 fi
 ```
 
 ### case 语句
 
 ```bash
-case $variable in
-    value1)
-        echo "值是1"
-        ;;
-    value2)
-        echo "值是2"
-        ;;
-    *)
-        echo "其他值"
-        ;;
+case "${1:-}" in
+  start)
+    echo "启动"
+    ;;
+  stop)
+    echo "停止"
+    ;;
+  *)
+    echo "用法: $0 {start|stop}"
+    exit 1
+    ;;
 esac
 ```
 
@@ -157,20 +169,17 @@ esac
 ### for 循环
 
 ```bash
-# 基本循环
 for i in 1 2 3 4 5; do
-    echo "Number: $i"
+  echo "Number: ${i}"
 done
 
-# C 风格
-for ((i=0; i<10; i++)); do
-    echo "Count: $i"
+for ((i = 0; i < 10; i++)); do
+  echo "Count: ${i}"
 done
 
-# 遍历数组
 arr=(apple banana orange)
 for fruit in "${arr[@]}"; do
-    echo "Fruit: $fruit"
+  echo "Fruit: ${fruit}"
 done
 ```
 
@@ -178,25 +187,27 @@ done
 
 ```bash
 i=1
-while [ $i -le 5 ]; do
-    echo "Count: $i"
-    ((i++))
+while [[ "${i}" -le 5 ]]; do
+  echo "Count: ${i}"
+  ((i++))
 done
+```
 
-# 无限循环
-while true; do
-    echo "Running..."
-    sleep 1
-done
+读取文件时避免 `cat file | while ...` 造成子 Shell 变量作用域问题：
+
+```bash
+while IFS= read -r line; do
+  echo "${line}"
+done < file.txt
 ```
 
 ### until 循环
 
 ```bash
 i=1
-until [ $i -gt 5 ]; do
-    echo "Count: $i"
-    ((i++))
+until [[ "${i}" -gt 5 ]]; do
+  echo "Count: ${i}"
+  ((i++))
 done
 ```
 
@@ -205,8 +216,8 @@ done
 ### 定义函数
 
 ```bash
-function hello() {
-    echo "Hello, $1"
+hello() {
+  echo "Hello, $1"
 }
 
 hello "World"
@@ -214,21 +225,38 @@ hello "World"
 
 ### 返回值
 
+Shell 函数的 `return` 只能返回 0 到 255 的退出状态，不适合返回普通计算结果。需要返回数据时，用标准输出：
+
 ```bash
-function add() {
-    return $(($1 + $2))
+add() {
+  local left="$1"
+  local right="$2"
+  echo "$((left + right))"
 }
 
-add 3 5
-echo $?  # 输出: 8
+result="$(add 3 5)"
+echo "${result}"
+```
+
+用退出状态表达成功或失败：
+
+```bash
+is_file() {
+  local path="$1"
+  [[ -f "${path}" ]]
+}
+
+if is_file "/etc/hosts"; then
+  echo "文件存在"
+fi
 ```
 
 ### 局部变量
 
 ```bash
-function demo() {
-    local var="局部变量"
-    echo $var
+demo() {
+  local var="局部变量"
+  echo "${var}"
 }
 ```
 
@@ -237,35 +265,29 @@ function demo() {
 ```bash
 str="Hello World"
 
-# 长度
-echo ${#str}
-
-# 子串
-echo ${str:0:5}    # Hello
-echo ${str:6}      # World
-
-# 替换
-echo ${str/World/Shell}
-
-# 切除
-echo ${str#Hello}   # World
-echo ${str%World}  # Hello
+echo "${#str}"          # 长度
+echo "${str:0:5}"       # Hello
+echo "${str:6}"         # World
+echo "${str/World/Shell}"
+echo "${str#Hello }"    # World
+echo "${str% World}"    # Hello
 ```
 
 ## 数组
 
-### 基本操作
-
 ```bash
 arr=(one two three)
-echo ${arr[0]}      # one
-echo ${arr[@]}       # 全部元素
-echo ${#arr[@]}      # 数组长度
 
-arr[0]="ONE"        # 修改元素
-arr+=(four five)    # 追加元素
-unset arr[1]        # 删除元素
+echo "${arr[0]}"
+printf '%s\n' "${arr[@]}"
+echo "${#arr[@]}"
+
+arr[0]="ONE"
+arr+=(four five)
+unset 'arr[1]'
 ```
+
+遍历数组时使用 `"${arr[@]}"`，可以保留包含空格的元素。
 
 ## 输入输出
 
@@ -276,41 +298,54 @@ echo "Hello"
 printf "Name: %s, Age: %d\n" "Tom" 25
 ```
 
+格式化输出优先使用 `printf`，可移植性和可控性更好。
+
 ### read
 
 ```bash
-read -p "请输入姓名: " name
-read -s -p "请输入密码: " password
+read -r -p "请输入姓名: " name
+read -r -s -p "请输入密码: " password
+printf '\n'
 ```
+
+`-r` 可以避免反斜杠被解释。
 
 ### 重定向
 
 ```bash
-command > file       # 输出重定向
-command >> file      # 追加
-command < file       # 输入重定向
-command 2> file      # 错误重定向
-command &> file       # 所有输出
+command > file        # 覆盖输出
+command >> file       # 追加输出
+command < file        # 输入重定向
+command 2> error.log  # 错误输出
+command > all.log 2>&1
 ```
+
+`&>` 是 Bash 支持的简写，但在追求 POSIX sh 兼容时不要使用。
 
 ### 管道
 
 ```bash
-cat file.txt | grep "pattern"
+grep "pattern" file.txt | sort | uniq -c
 ls -la | head -n 10
 ```
+
+简单过滤文件时不需要 `cat file | grep pattern`，直接用 `grep "pattern" file` 更清晰。
 
 ## 常用命令
 
 | 命令 | 说明 |
 |------|------|
+| `grep` | 模式匹配 |
 | `sed` | 流编辑器 |
 | `awk` | 文本处理 |
 | `cut` | 字段提取 |
 | `sort` | 排序 |
 | `uniq` | 去重 |
 | `wc` | 统计 |
-| `xargs` | 参数构建 |
+| `xargs` | 构建参数列表 |
 | `find` | 文件查找 |
-| `grep` | 模式匹配 |
 | `tr` | 字符转换 |
+
+## 小结
+
+写 Shell 脚本时，最重要的是处理好失败、空格和输入边界。建议默认使用 `set -euo pipefail`、引用变量、用 `[[ ... ]]` 判断、用标准输出传递函数结果，并在危险命令前打印将要执行的对象。
