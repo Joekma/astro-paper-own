@@ -58,7 +58,7 @@ dotnet add package FlaUI.UIA3       # UIA3 实现
 
 ### 基本项目结构
 
-```
+```text
 UIAutomationProject/
 ├── UIAutomationProject/
 │   ├── Program.cs           # 主程序
@@ -474,7 +474,7 @@ if (element.TryGetCurrentPattern(
 
 ### 项目结构
 
-```
+```text
 UIAutomation/
 ├── Core/                    # 核心自动化类
 │   ├── ElementFinder.cs

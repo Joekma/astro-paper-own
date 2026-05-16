@@ -1,13 +1,14 @@
 ---
-title: win32com 文件系统与注册表
-series: win32com
+title: pywin32 文件系统与注册表
+series: pywin32
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00
 slug: win32com-filesystem-registry
-description: '详细介绍使用win32com进行文件系统操作和Windows注册表管理。'
+description: '详细介绍使用 pywin32 进行文件系统操作和 Windows 注册表管理。'
 tags:
-  - win32com
+  - pywin32
+  - Win32 API
   - RPA
   - 文件系统
   - 注册表

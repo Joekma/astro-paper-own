@@ -322,3 +322,9 @@ HTTP 核心要点：
 - **明文传输**：HTTP/1.x 不加密（使用 HTTPS）
 - **幂等性**：GET/PUT/DELETE 幂等，POST/PATCH 非幂等
 - **缓存机制**：通过 Cache-Control 和 ETag 控制
+
+> 相关阅读：
+> - [HTTPS 协议原理与 SSL/TLS 加密机制](/网络/HTTPS-协议原理与-SSL-TLS-加密机制) - HTTPS 加密详解
+> - [HTTP/3 与 QUIC 协议](/网络/HTTP3-与-QUIC-协议) - HTTP 最新版本
+> - [WebSocket 协议原理和使用方法](/网络/WebSocket-协议原理和使用方法) - 实时双向通信
+> - [DNS 协议：域名系统工作原理](/网络/DNS-协议：域名系统工作原理) - DNS 解析

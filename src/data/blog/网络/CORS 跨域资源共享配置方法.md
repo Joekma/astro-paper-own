@@ -2,12 +2,13 @@
 title: CORS 跨域资源共享配置方法
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-16T00:00:00.000+08:00
 slug: cors-cross-origin-solution
-description: 'CORS跨域资源共享的配置方法和实践。'
+description: '跨域请求解决方案：JSONP、CORS、代理服务器、postMessage 等'
 tags:
   - CORS
   - 跨域
+  - JSONP
   - 前端
   - Web
 draft: false
@@ -50,6 +51,103 @@ http://example.com:8080/page.html ✗ 端口不同
 | 跨域读取 DOM | 受限制 |
 | 跨域发送请求 | 受限制（但可以发送） |
 | 跨域获取响应 | 受限制 |
+
+## 其他跨域方案
+
+### JSONP
+
+JSONP 利用 script 标签不受同源策略限制的特性实现跨域，虽然已逐渐被 CORS 取代，但在某些老旧系统中仍有使用：
+
+```javascript
+function jsonp(url, callback) {
+    const callbackName = 'jsonp_callback_' + Date.now()
+
+    window[callbackName] = (data) => {
+        callback(data)
+        delete window[callbackName]
+    }
+
+    const script = document.createElement('script')
+    script.src = `${url}?callback=${callbackName}`
+    document.body.appendChild(script)
+
+    script.onload = () => script.remove()
+}
+
+jsonp('http://api.example.com/data', (data) => {
+    console.log(data)
+})
+```
+
+```python
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+@app.route('/data')
+def get_data():
+    callback = request.args.get('callback')
+    data = {'message': 'Hello'}
+
+    if callback:
+        return f"{callback}({json.dumps(data)})"
+
+    return jsonify(data)
+```
+
+**JSONP 限制**：
+- 仅支持 GET 请求
+- 存在 XSS 安全风险
+- 无法获取响应头
+- 需要服务端配合
+
+### 代理服务器
+
+通过同源服务器转发请求，绕过后端 CORS 限制：
+
+```nginx
+location /api/ {
+    proxy_pass http://target-server/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+}
+```
+
+```javascript
+// 前端请求同源代理
+fetch('/api/data')
+    .then(res => res.json())
+    .then(data => console.log(data))
+```
+
+**代理方式优点**：
+- 不需要修改后端代码
+- 可以隐藏真实 API 地址
+- 可以做统一的认证和限流
+
+### postMessage
+
+用于 iframe 或多窗口间的通信：
+
+```javascript
+// 发送消息
+window.parent.postMessage({
+    type: 'auth',
+    token: 'xxx'
+}, 'https://parent.com')
+
+// 接收消息
+window.addEventListener('message', (event) => {
+    if (event.origin !== 'https://parent.com') return
+
+    console.log(event.data)
+})
+```
+
+**postMessage 使用场景**：
+- 嵌入第三方 iframe
+- 多窗口间数据传递
+- 微前端场景下的通信
 
 ## CORS 机制
 
@@ -377,6 +475,13 @@ def is_allowed_origin(origin):
 
 ## 小结
 
+跨域请求方案：
+
+- **CORS**：现代标准，推荐方案，通过 HTTP 头部控制
+- **JSONP**：古老方案，仅支持 GET，存在安全风险
+- **代理服务器**：绕过的常用方式，不需要修改后端
+- **postMessage**：页面间通信，适用于 iframe 和多窗口
+
 CORS 核心要点：
 
 - **同源策略**：浏览器安全机制，限制跨域请求
@@ -384,3 +489,7 @@ CORS 核心要点：
 - **预检请求**：非简单请求先发送 OPTIONS
 - **凭证处理**：需要 `Access-Control-Allow-Credentials`
 - **安全优先**：使用具体域名而非 `*`
+
+> 相关阅读：
+> - [HTTP 协议：请求方法、状态码、头部字段](/网络/HTTP-协议：请求方法、状态码、头部字段) - HTTP 协议基础
+> - [WebSocket 协议原理和使用方法](/网络/WebSocket-协议原理和使用方法) - 实时通信

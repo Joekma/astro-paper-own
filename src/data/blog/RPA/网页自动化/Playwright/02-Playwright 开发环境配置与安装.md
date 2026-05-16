@@ -181,7 +181,7 @@ if __name__ == "__main__":
 
 运行结果：
 
-```
+```text
 🔍 开始验证 Playwright 安装...
 
 ✅ Chromium:
@@ -284,7 +284,7 @@ pytest -v -s
 
 ### 推荐的项目结构
 
-```
+```text
 my-playwright-project/
 ├── playwright_env/          # 虚拟环境
 ├── tests/                   # 测试文件

@@ -523,7 +523,7 @@ pytest -m "smoke or integration"
 
 ### 项目结构
 
-```
+```text
 tests/
 ├── __init__.py
 ├── conftest.py              # pytest 配置和 fixtures

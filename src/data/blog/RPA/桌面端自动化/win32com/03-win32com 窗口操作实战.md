@@ -1,13 +1,14 @@
 ---
-title: win32com 窗口操作实战
-series: win32com
+title: pywin32 窗口操作实战
+series: pywin32
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00
 slug: win32com-window-operations
-description: '详细介绍使用win32com进行窗口操作的各种实战技巧，包括窗口查找、控件操作、消息发送等。'
+description: '详细介绍使用 pywin32 进行窗口操作的实战技巧，包括窗口查找、控件操作、消息发送等。'
 tags:
-  - win32com
+  - pywin32
+  - Win32 API
   - RPA
   - 窗口操作
   - 桌面自动化
@@ -21,7 +22,7 @@ language: zh-CN
 
 ### 窗口操作类型
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                    窗口操作类型                               │
 ├─────────────────────────────────────────────────────────────┤

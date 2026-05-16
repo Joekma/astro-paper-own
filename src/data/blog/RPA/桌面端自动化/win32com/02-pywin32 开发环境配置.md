@@ -1,13 +1,14 @@
 ---
 title: pywin32 开发环境配置
-series: win32com
+series: pywin32
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00
 slug: pywin32-installation
-description: '详细介绍pywin32库的各种模块安装、配置和使用方法。'
+description: '详细介绍 pywin32 库的安装、环境配置、常用 Win32 API 模块和 COM 自动化使用方法。'
 tags:
-  - win32com
+  - pywin32
+  - Win32 API
   - RPA
   - 安装配置
   - Python
@@ -178,7 +179,7 @@ print(f"WM_RBUTTONDOWN: {win32con.WM_RBUTTONDOWN}")
 
 ### 推荐目录结构
 
-```
+```text
 pywin32-project/
 ├── src/
 │   ├── __init__.py
@@ -198,7 +199,7 @@ pywin32-project/
 
 ### requirements.txt
 
-```
+```text
 pywin32==306
 Pillow>=9.0.0
 psutil>=5.9.0

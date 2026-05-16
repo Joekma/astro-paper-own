@@ -217,7 +217,7 @@ var complexCondition = new AndCondition(
 
 ### 层级说明
 
-```
+```text
 Root (Desktop)
 └── Children (直接子窗口)
     ├── Window1

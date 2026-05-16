@@ -78,7 +78,21 @@ pip install selenium
 
 ### ChromeDriver 安装
 
-#### 方式一：从官网下载
+#### 方式一：使用 Selenium Manager（推荐）
+
+Selenium 4.6 之后内置 Selenium Manager，常见场景下可以自动发现浏览器并管理驱动。只要浏览器已安装，通常直接创建 WebDriver 即可：
+
+```python
+from selenium import webdriver
+
+driver = webdriver.Chrome()
+driver.get("https://example.com")
+driver.quit()
+```
+
+这也是新项目的默认选择；只有在离线环境、企业代理、固定驱动版本或需要自定义驱动路径时，才需要手动管理驱动。
+
+#### 方式二：从官网下载
 
 1. 访问 [ChromeDriver 下载页面](https://chromedriver.chromium.org/downloads)
 2. 选择与你的 Chrome 浏览器版本匹配的驱动
@@ -90,9 +104,9 @@ pip install selenium
 # macOS/Linux: /usr/local/bin/ 或 ~/bin/
 ```
 
-#### 方式二：使用 webdriver-manager（推荐）
+#### 方式三：使用 webdriver-manager
 
-webdriver-manager 可以自动管理驱动版本：
+webdriver-manager 适合需要显式控制下载缓存、镜像源或兼容旧项目的场景：
 
 ```bash
 pip install webdriver-manager
@@ -205,7 +219,7 @@ python verify_selenium.py
 
 输出示例：
 
-```
+```text
 🔍 开始验证 Selenium 安装...
 
 ✅ Chrome:
@@ -442,7 +456,7 @@ pytest -s
 
 ### 推荐的目录结构
 
-```
+```text
 selenium-project/
 ├── tests/                    # 测试文件
 │   ├── __init__.py
@@ -481,7 +495,7 @@ allure-pytest==2.13.2
 
 ### 问题 1：驱动版本不匹配
 
-```
+```text
 SessionNotCreatedException: This version of ChromeDriver only supports Chrome version XX
 ```
 
@@ -497,7 +511,7 @@ pip install webdriver-manager
 
 ### 问题 2：权限错误（Linux/macOS）
 
-```
+```text
 PermissionError: [Errno 13] Permission denied
 ```
 
@@ -513,7 +527,7 @@ sudo mv chromedriver /usr/local/bin/
 
 ### 问题 3：无法启动浏览器
 
-```
+```text
 WebDriverException: chrome not reachable
 ```
 
@@ -527,7 +541,7 @@ driver = webdriver.Chrome(options=options)
 
 ### 问题 4：超时错误
 
-```
+```text
 TimeoutException: Message: timeout
 ```
 

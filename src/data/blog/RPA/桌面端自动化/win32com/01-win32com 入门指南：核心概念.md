@@ -1,13 +1,14 @@
 ---
-title: win32com 入门指南：核心概念
-series: win32com
+title: pywin32 入门指南：核心概念
+series: pywin32
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00
 slug: win32com-getting-started
-description: '详细介绍Python pywin32库的核心概念，包括COM组件、窗口句柄、进程管理等基础知识。'
+description: '详细介绍 Python pywin32 库的核心概念，包括 COM 组件、窗口句柄、Win32 API 和进程管理等基础知识。'
 tags:
-  - win32com
+  - pywin32
+  - Win32 API
   - RPA
   - 桌面自动化
   - Python

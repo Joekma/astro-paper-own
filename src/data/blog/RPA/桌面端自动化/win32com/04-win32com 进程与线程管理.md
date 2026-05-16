@@ -1,13 +1,14 @@
 ---
-title: win32com 进程与线程管理
-series: win32com
+title: pywin32 进程与线程管理
+series: pywin32
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00
 slug: win32com-process-thread
-description: '详细介绍使用win32com进行进程和线程管理，包括进程创建、终止、监控等。'
+description: '详细介绍使用 pywin32 进行进程和线程管理，包括进程创建、终止、监控等。'
 tags:
-  - win32com
+  - pywin32
+  - Win32 API
   - RPA
   - 进程管理
   - 线程管理
@@ -21,7 +22,7 @@ language: zh-CN
 
 ### 进程 vs 线程
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                  进程 vs 线程                                │
 ├─────────────────────────────────────────────────────────────┤

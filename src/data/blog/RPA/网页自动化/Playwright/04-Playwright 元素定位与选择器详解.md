@@ -121,7 +121,7 @@ def xpath_examples():
 
 Playwright 推荐使用 Locator 而非 ElementHandle：
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                        ElementHandle                        │
 ├─────────────────────────────────────────────────────────────┤
@@ -477,10 +477,10 @@ def explicit_waiting():
 
 从高到低：
 
-1. **Test ID** (`data-testid`) - 最稳定，专门为测试设计
-2. **Role + Name** (`role=button[name='Submit']`) - 语义化，可访问性友好
-3. **Label + Input** (`label:has-text('Username')`) - 表单最佳选择
-4. **Text** (`text=Submit`) - 适合按钮和链接
+1. **Test ID** (`get_by_test_id()`) - 最稳定，专门为测试设计
+2. **Role + Name** (`get_by_role("button", name="Submit")`) - 语义化，可访问性友好
+3. **Label + Input** (`get_by_label("Username")`) - 表单最佳选择
+4. **Text** (`get_by_text("Submit")`) - 适合按钮和链接
 5. **CSS Class/ID** (`#submit-btn`) - 通用但可能变化
 6. **XPath** (`xpath=...`) - 灵活但脆弱
 
@@ -489,13 +489,13 @@ def explicit_waiting():
 ```python
 # ❌ 避免：脆弱的选择器
 page.click("div > div > div > button.btn-primary.btn-lg.mt-3")
-page.click("xpath=//*[@id="__layout"]/div/div[2]/div/div/div[1]/form/div[5]/button")
+page.click('xpath=//*[@id="__layout"]/div/div[2]/div/div/div[1]/form/div[5]/button')
 page.click("a[onclick*='delete']")
 
 # ✅ 推荐：稳定的选择器
 page.get_by_test_id("delete-user-btn").click()
-page.locator("role=button[name='Delete User']").click()
-page.locator("role=button[name='Delete']").filter(has_text="确认删除").click()
+page.get_by_role("button", name="Delete User").click()
+page.get_by_role("button", name="Delete").filter(has_text="确认删除").click()
 ```
 
 ### 最佳实践
