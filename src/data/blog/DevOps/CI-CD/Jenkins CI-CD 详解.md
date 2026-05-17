@@ -1,19 +1,19 @@
 ---
 title: Jenkins CI/CD 详解
-series: DevOps
+series: Jenkins CI/CD
 language: zh-CN
 author: Joekma
 pubDatetime: 2024-08-20T00:00:00Z
 slug: jenkins-cicd-complete-guide
-modDatetime: 2026-04-22T00:00:00Z
+modDatetime: 2026-05-17T00:00:00Z
 featured: false
 draft: false
 tags:
   - DevOps
   - CI/CD
   - Jenkins
-  - docs
-description: Jenkins CI/CD详解指南，涵盖流水线、Pipeline语法、Declarative语法、Docker集成、实战配置等完整内容。
+  - Pipeline
+description: 围绕 Jenkins CI/CD 落地实践，讲解 Pipeline 语法、凭据管理、Docker 集成、多分支流水线、Shared Libraries 与常见排查。
 ---
 
 # Jenkins CI/CD 详解
@@ -23,6 +23,16 @@ description: Jenkins CI/CD详解指南，涵盖流水线、Pipeline语法、Decl
 Jenkins 是开源的、用 Java 编写的持续集成和持续交付（CI/CD）工具。它本质上是一个自动化服务器，用于自动化软件开发过程中的各种任务，例如编译、测试、打包、部署等。
 
 Jenkins 拥有超过 1800 个插件，生态系统极为丰富，可以与 Git、Docker、Kubernetes、Slack 等几乎所有主流开发工具无缝集成。
+
+## 阅读路线
+
+Jenkins 的落地重点不只是“把命令搬进界面”，而是把交付流程固化为可审查、可回滚、可复用的流水线代码。建议按下面顺序阅读：
+
+1. 先理解 CI、持续交付、持续部署和 Pipeline as Code 的边界。
+2. 再掌握 Declarative Pipeline、Credentials、Docker agent 和 post 通知。
+3. 最后把多分支流水线、Shared Libraries 和常见排查纳入团队规范。
+
+生产环境优先把 `Jenkinsfile` 放进代码仓库，避免在 Jenkins UI 中维护难以审查的关键脚本。
 
 ## 核心概念
 

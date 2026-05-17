@@ -2,15 +2,16 @@
 title: Docker 下载安装与配置：Nginx 和 MySQL 实例
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-16T00:00:00.000+08:00
+modDatetime: 2026-05-17T00:00:00.000+08:00
 slug: docker-download-install-examples
 description: '通过 Nginx 和 MySQL 示例讲解 Docker 镜像拉取、Dockerfile 构建、端口映射、数据卷和环境变量配置。'
 tags:
+  - DevOps
   - Docker
   - Nginx
   - MySQL
 draft: false
-series: docker
+series: Docker
 language: zh-CN
 ---
 
@@ -22,6 +23,10 @@ language: zh-CN
 
 1. 直接使用官方镜像。
 2. 编写 Dockerfile 构建自定义镜像。
+
+## 示例目标
+
+Nginx 代表无状态服务，重点在镜像版本、端口映射和静态文件交付。MySQL 代表有状态服务，重点在数据卷、密码、配置文件和备份策略。两类服务的运行方式不同，不能用同一套心智模型处理。
 
 ## Nginx 示例
 
@@ -200,3 +205,5 @@ docker volume ls
 ## 小结
 
 Docker 部署服务时要分清三件事：镜像负责软件环境，容器负责运行实例，数据卷负责持久化数据。Nginx 这类无状态服务可以很轻量地替换镜像；MySQL 这类有状态服务必须明确数据卷、密码和备份策略。
+
+上线前至少确认端口没有冲突、数据卷路径可备份、环境变量未泄露到仓库、镜像标签不是随意漂移的 `latest`。

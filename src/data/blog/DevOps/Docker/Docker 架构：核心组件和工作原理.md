@@ -2,19 +2,33 @@
 title: Docker 架构：核心组件和工作原理
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-16T00:00:00.000+08:00
+modDatetime: 2026-05-17T00:00:00.000+08:00
 slug: docker-architecture
 description: '讲解 Docker Client、Docker Daemon、containerd、runc、镜像、容器、网络、存储和 BuildKit 的工作关系。'
 tags:
+  - DevOps
   - Docker
+  - 容器
 draft: false
-series: docker
+series: Docker
 language: zh-CN
 ---
 
 ## 概述
 
 Docker 是一个容器化平台，可以把应用及其依赖打包为镜像，并在隔离的容器中运行。容器共享宿主机内核，比虚拟机更轻量，但仍能通过命名空间、控制组和文件系统层实现隔离。
+
+## 阅读导览
+
+理解 Docker 架构时，先把“谁负责构建、谁负责调度、谁真正创建进程”分清楚：
+
+| 问题 | 对应组件 |
+|------|----------|
+| 用户输入命令 | Docker Client |
+| 接收 API 并协调资源 | Docker Daemon |
+| 构建镜像 | BuildKit |
+| 管理容器生命周期 | containerd |
+| 创建符合 OCI 规范的容器进程 | runc |
 
 ## 架构概览
 
@@ -175,6 +189,13 @@ docker push registry.example.com/team/myapp:1.0
 ```
 
 生产环境应固定镜像标签或摘要，避免直接依赖 `latest` 带来不可预期变更。
+
+## 生产检查清单
+
+- 固定基础镜像版本或摘要，避免构建结果漂移。
+- 容器默认使用非 root 用户、最小 capabilities 和只读文件系统。
+- 业务数据放入 volume、对象存储或数据库，不依赖容器可写层。
+- 为日志、指标、健康检查和镜像漏洞扫描预留标准入口。
 
 ## 小结
 

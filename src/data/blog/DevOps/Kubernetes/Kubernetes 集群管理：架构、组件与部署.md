@@ -2,15 +2,16 @@
 title: Kubernetes 集群管理：架构、组件与部署
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-16T00:00:00.000+08:00
+modDatetime: 2026-05-17T00:00:00.000+08:00
 slug: kubernetes-deployment-guide
-description: '讲解 Kubernetes 控制平面、工作节点、CRI 运行时、核心对象和常用 kubectl 操作。'
+description: '讲解 Kubernetes 控制平面、工作节点、CRI 运行时、核心对象、工作负载发布和常用 kubectl 运维操作。'
 tags:
-  - Docker
+  - DevOps
   - Kubernetes
   - 容器编排
+  - 云原生
 draft: false
-series: docker
+series: Kubernetes
 language: zh-CN
 ---
 
@@ -19,6 +20,10 @@ language: zh-CN
 Kubernetes（K8s）是容器编排平台，用于自动化部署、扩缩容和管理容器化应用。它关注的不是单个容器命令，而是通过声明式配置维护集群的期望状态。
 
 需要注意：Kubernetes 已移除 dockershim，不再把 Docker Engine 作为内置容器运行时接口。生产集群通常使用符合 CRI 的运行时，例如 `containerd` 或 `CRI-O`。
+
+## 阅读路线
+
+学习 Kubernetes 时，不要从 YAML 字段硬背开始。更稳的顺序是先理解控制平面如何维护期望状态，再理解 Pod、Deployment、Service 这些对象如何协作，最后再扩展到网络、存储、监控和安全。
 
 ## 核心能力
 
@@ -175,6 +180,14 @@ kubectl rollout undo deployment/nginx-deployment
 kubectl get services
 kubectl describe service nginx-service
 ```
+
+## 运维检查清单
+
+- 每个工作负载都配置资源 requests/limits 和 readinessProbe。
+- 外部流量优先通过 Ingress 或云负载均衡统一管理。
+- Secret 结合 RBAC、命名空间和加密策略使用。
+- 发布前用 `kubectl rollout status` 观察滚动更新状态。
+- 排障时按 Pod 事件、容器日志、Service 选择器、节点状态逐层检查。
 
 ## 小结
 

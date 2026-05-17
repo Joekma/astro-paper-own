@@ -2,14 +2,15 @@
 title: Docker Compose：定义和运行多容器应用
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-16T00:00:00.000+08:00
+modDatetime: 2026-05-17T00:00:00.000+08:00
 slug: docker-compose-tutorial
 description: '讲解 Docker Compose v2 的核心概念、compose.yaml 写法和多容器应用的常用管理命令。'
 tags:
+  - DevOps
   - Docker
   - Docker Compose
 draft: false
-series: docker
+series: Docker
 language: zh-CN
 ---
 
@@ -18,6 +19,10 @@ language: zh-CN
 Docker Compose 用一个 YAML 文件描述一组相关服务，让开发者可以用一条命令创建、启动、停止和删除多容器应用。
 
 现在推荐使用 Docker Compose v2，也就是 `docker compose` 子命令。旧版 `docker-compose` v1 已停止维护，不建议在新环境中继续安装或编写教程。
+
+## 适用场景
+
+Compose 最适合把一组本地开发或测试服务一次性拉起，例如 Web、数据库、缓存和消息队列。它能让依赖关系、网络、端口、环境变量和数据卷写进同一个文件，但生产发布仍要结合目标平台的密钥、网络和健康检查能力设计。
 
 ## 核心概念
 
@@ -179,6 +184,14 @@ depends_on:
 ```
 
 `depends_on` 可以控制启动顺序；如果需要等待数据库真正可用，应配合 `healthcheck`。
+
+## 配置检查清单
+
+- 使用 `compose.yaml` 和 `docker compose`，避免新项目继续依赖 v1。
+- 数据库、队列等有状态服务使用命名卷。
+- 密码和 token 不写入仓库，优先使用 Secret 或部署平台配置。
+- 为关键服务配置 `healthcheck`，避免只依赖启动顺序。
+- 使用明确镜像标签，并为需要构建的服务保留 Dockerfile。
 
 ## 小结
 

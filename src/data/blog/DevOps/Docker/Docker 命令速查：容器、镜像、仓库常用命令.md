@@ -2,19 +2,25 @@
 title: Docker 命令速查：容器、镜像、仓库常用命令
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-16T00:00:00.000+08:00
+modDatetime: 2026-05-17T00:00:00.000+08:00
 slug: docker-commands-reference
 description: 'Docker 常用命令速查，覆盖容器、镜像、网络、数据卷、Compose 和系统清理等操作。'
 tags:
+  - DevOps
   - Docker
+  - 命令速查
 draft: false
-series: docker
+series: Docker
 language: zh-CN
 ---
 
 ## 概述
 
 本文整理 Docker 日常高频命令。速查表适合回忆命令，不替代对数据持久化、权限和生产安全的理解。
+
+## 使用建议
+
+速查命令前先判断操作对象：容器、镜像、网络、数据卷还是 Compose 项目。涉及删除、清理、覆盖标签和生产镜像推送时，先用查看命令确认目标，再执行变更命令。
 
 ## 容器生命周期
 

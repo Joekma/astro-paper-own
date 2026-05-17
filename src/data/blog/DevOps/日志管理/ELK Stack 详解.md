@@ -1,11 +1,11 @@
 ---
 title: ELK Stack 日志管理 详解
-series: DevOps
+series: Elasticsearch
 language: zh-CN
 author: Joekma
 pubDatetime: 2024-08-25T00:00:00Z
 slug: elk-stack-complete-guide
-modDatetime: 2026-04-22T00:00:00Z
+modDatetime: 2026-05-17T00:00:00Z
 featured: false
 draft: false
 tags:
@@ -13,8 +13,8 @@ tags:
   - 日志
   - ELK
   - Elasticsearch
-  - docs
-description: ELK Stack（Elasticsearch + Logstash + Kibana）详解指南，涵盖架构、安装配置、实战使用、Kibana可视化等完整内容。
+  - 可观测性
+description: 面向日志采集、清洗、检索与可视化，讲解 ELK Stack 架构、Logstash/Filebeat 配置、Elasticsearch 查询、Kibana 看板和性能优化。
 ---
 
 # ELK Stack 日志管理 详解
@@ -29,6 +29,19 @@ ELK Stack 是 Elastic 公司推出的开源数据处理与可视化套件，由�
 - 实时性强：毫秒级检索，满足实时日志分析需求
 - 高可扩展性：支持集群部署，横向扩展处理能力
 - 开源免费：核心功能完全开源，社区活跃
+
+## 阅读路线
+
+ELK 的学习主线可以拆成四层：采集、处理、存储、消费。排障时也建议沿这条链路逐段定位。
+
+| 层级 | 关注点 | 常见组件 |
+|------|--------|----------|
+| 采集 | 日志文件、容器日志、系统指标是否完整进入管道 | Filebeat、Metricbeat |
+| 处理 | 字段解析、时间戳、脱敏、标签和异常数据 | Logstash filter |
+| 存储 | 索引模板、分片副本、生命周期和查询性能 | Elasticsearch |
+| 消费 | 检索、仪表盘、告警和权限 | Kibana |
+
+如果是本地验证，可以先用 Docker Compose 跑通最小链路；如果是生产建设，应重点看索引生命周期、权限、TLS、告警和容量规划。
 
 ## 核心组件
 

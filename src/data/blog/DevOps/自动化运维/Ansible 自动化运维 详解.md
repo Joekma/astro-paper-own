@@ -1,19 +1,19 @@
 ---
-title: Ansible 自动化运维 详解
-series: DevOps
+title: Ansible 自动化运维：从 Inventory 到 Playbook 落地
+series: Ansible
 language: zh-CN
 author: Joekma
 pubDatetime: 2024-08-28T00:00:00Z
 slug: ansible-automation-guide
-modDatetime: 2026-04-22T00:00:00Z
+modDatetime: 2026-05-17T00:00:00Z
 featured: false
 draft: false
 tags:
   - DevOps
   - 自动化运维
   - Ansible
-  - docs
-description: Ansible自动化运维详解指南，涵盖Inventory、Playbook、Role、模块、实战配置等完整内容。
+  - 配置管理
+description: 面向日常运维和应用发布，讲解 Ansible Inventory、Playbook、Role、变量模板、常用模块、Vault 与故障排查。
 ---
 
 # Ansible 自动化运维 详解
@@ -29,6 +29,16 @@ Ansible 是开源的自动化运维工具，采用 SSH 协议实现远程连接�
 - **YAML 语法**：Playbook 采用人类可读的 YAML 格式
 - **丰富模块**：内置 3000+ 模块，支持各类操作
 - **并行执行**：支持多主机并行操作
+
+## 阅读路线
+
+这篇文章适合按“先能跑、再可维护、最后可治理”的顺序阅读：
+
+1. 先掌握 Inventory、Ad-Hoc 命令和 Playbook 基础，能批量执行常见运维任务。
+2. 再学习变量、模板、Handler 和 Role，把脚本式配置整理成可复用的项目结构。
+3. 最后补上 Vault、标签、干跑、事实缓存和排障方法，让 Playbook 能进入团队协作和生产发布流程。
+
+如果只是排查线上问题，可以优先看“常见问题与排查”；如果要建设标准化运维仓库，应重点看“Roles 角色”“变量与模板”和“最佳实践”。
 
 ## 核心概念
 

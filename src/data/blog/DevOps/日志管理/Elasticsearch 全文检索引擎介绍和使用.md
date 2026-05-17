@@ -1,12 +1,13 @@
 ﻿---
 title: Elasticsearch 全文检索引擎介绍和使用
-series: 搜索、elasticsearch
+series: Elasticsearch
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-17T00:00:00.000+08:00
 slug: elasticsearch-search-engine
-description: 'Elasticsearch全文检索引擎介绍和使用方法。'
+description: '介绍 Elasticsearch 的索引、文档、分片副本、查询 DSL、聚合分析和 Python 客户端基础用法。'
 tags:
+  - DevOps
   - Elasticsearch
   - 搜索
   - 全文检索
@@ -15,6 +16,10 @@ language: zh-CN
 ---
 
 > Elasticsearch 是一个基于 Lucene 的分布式、RESTful 风格的搜索和数据分析引擎，广泛应用于日志分析、全文搜索等场景。
+
+## 阅读导览
+
+这篇文章聚焦入门使用：先理解 Index、Document、Field、Shard 和 Replica，再掌握索引创建、文档写入、查询 DSL 与聚合。真正进入生产前，还需要继续关注映射设计、分词器、容量规划和集群健康。
 
 ## 核心概念
 
@@ -185,3 +190,5 @@ for hit in result['hits']['hits']:
 - **全文搜索**：强大的查询能力
 - **聚合分析**：实时数据分析
 - **RESTful API**：易集成
+
+实践时建议先设计好字段类型和查询模式，再创建索引模板。频繁变更 mapping、盲目增加分片或把所有字段都设成 `text`，都会让后期检索和维护变复杂。

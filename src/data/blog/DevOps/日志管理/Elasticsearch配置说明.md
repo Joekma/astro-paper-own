@@ -1,21 +1,25 @@
 ﻿---
-title: Elasticsearch配置说明
-series: 搜索、elasticsearch
+title: Elasticsearch 配置说明
+series: Elasticsearch
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-17T00:00:00.000+08:00
 slug: elasticsearch-configuration
-description: 'Elasticsearch配置项说明'
+description: '梳理 Elasticsearch 集群、节点角色、索引模板、JVM、系统参数和网络配置的关键项与生产建议。'
 tags:
+  - DevOps
   - Elasticsearch
   - 搜索
   - 配置
-category: 搜索
 draft: false
 language: zh-CN
 ---
 
 > Elasticsearch 的配置分为 JVM 配置、系统配置和索引配置，合理配置对性能至关重要。本文详细介绍各配置项及其最佳实践。
+
+## 配置思路
+
+配置 Elasticsearch 时先分清三类目标：集群能稳定发现和选主，节点能承载预期角色，索引能匹配数据量和查询方式。不要只复制配置模板，应该把每个参数和实际场景绑定起来。
 
 ## 集群配置
 
@@ -177,3 +181,5 @@ http.cors.allow-origin: "*"
 - **JVM 内存**：不超过 32GB，使用 G1 GC
 - **系统参数**：调整文件描述符、内存锁定
 - **索引设置**：根据数据量调整分片副本
+
+变更生产配置前，先在测试集群验证启动、滚动重启、分片迁移和查询性能。涉及分片数量、节点角色、网络绑定和安全配置的调整，应提前准备回滚方案。

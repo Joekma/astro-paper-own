@@ -1,22 +1,26 @@
 ﻿---
-title: Elasticsearch集群健康和索引状态
-series: 搜索、elasticsearch
+title: Elasticsearch 集群健康和索引状态
+series: Elasticsearch
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-17T00:00:00.000+08:00
 slug: elasticsearch-cluster-health
-description: 'Elasticsearch集群健康状态和索引管理'
+description: '说明 Elasticsearch green、yellow、red 状态含义，覆盖索引、分片、未分配原因排查和基础监控脚本。'
 tags:
+  - DevOps
   - Elasticsearch
   - 搜索
   - 集群
   - 运维
-category: 搜索
 draft: false
 language: zh-CN
 ---
 
 > Elasticsearch 集群健康状态是运维监控的重要指标，理解三种状态含义并及时处理异常情况，对保障服务稳定性至关重要。
+
+## 排查顺序
+
+看到 `yellow` 或 `red` 时，先不要急着改副本数。更稳的排查顺序是：看集群健康摘要，看未分配分片，看 allocation explain，再结合节点磁盘、节点离线、索引设置和分片损坏判断原因。
 
 ## 健康状态详解
 
@@ -120,3 +124,5 @@ if __name__ == '__main__':
 - **yellow**：注意副本分配
 - **red**：紧急处理分片问题
 - **预防**：合理配置副本和磁盘 watermark
+
+临时把副本数调为 0 只能缓解单节点或容量不足场景，不应替代根因修复。生产环境应配合集群告警、磁盘水位监控和快照策略一起治理。

@@ -1,12 +1,13 @@
 ﻿---
 title: Elasticsearch 集群部署
-series: 搜索、elasticsearch
+series: Elasticsearch
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-05-17T00:00:00.000+08:00
 slug: elasticsearch-cluster-deployment
-description: '深入讲解Elasticsearch集群部署方法和实践。'
+description: '讲解 Elasticsearch 单节点、三节点集群、Docker 部署、安全配置、快照备份与恢复的运维实践。'
 tags:
+  - DevOps
   - Elasticsearch
   - 搜索
   - 集群
@@ -16,6 +17,10 @@ language: zh-CN
 ---
 
 > Elasticsearch 集群部署需要考虑硬件资源、网络配置、数据安全等因素。本文详细介绍从安装到生产环境的完整部署流程。
+
+## 部署原则
+
+Elasticsearch 集群部署的核心不是把节点启动起来，而是保证主节点选举稳定、数据节点容量可控、分片能均衡分配，并且备份、安全和监控在上线前就位。
 
 ## 环境要求
 
@@ -197,6 +202,14 @@ PUT /_snapshot/my_backup/snapshot_1
 # 恢复
 POST /_snapshot/my_backup/snapshot_1/_restore
 ```
+
+## 上线检查清单
+
+- 至少规划 3 个可参与选举的主节点，避免单点选主风险。
+- JVM 堆内存固定 `Xms`/`Xmx`，并为文件系统缓存保留足够内存。
+- 磁盘 watermark、分片数量、索引生命周期和快照策略已配置。
+- 安全认证、TLS、最小权限账号和运维访问边界已明确。
+- 已验证节点重启、索引恢复和快照恢复流程。
 
 ## 小结
 

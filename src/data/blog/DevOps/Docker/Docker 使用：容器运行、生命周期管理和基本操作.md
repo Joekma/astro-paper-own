@@ -2,19 +2,25 @@
 title: Docker 使用：容器运行、生命周期管理和基本操作
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-16T00:00:00.000+08:00
+modDatetime: 2026-05-17T00:00:00.000+08:00
 slug: docker-usage-tutorial
 description: '讲解 Docker 容器运行、生命周期、端口映射、日志查看和进入容器等基础操作。'
 tags:
+  - DevOps
   - Docker
+  - 容器
 draft: false
-series: docker
+series: Docker
 language: zh-CN
 ---
 
 ## 概述
 
 容器是镜像的运行实例。学习 Docker 的第一步，是理解 `docker run` 如何从镜像创建容器，以及容器启动、停止、删除、查看日志和端口映射的基本流程。
+
+## 学习路线
+
+初学时可以按这个顺序练习：先运行一次性容器，再运行后台服务，随后学习端口映射、日志查看、进入容器和清理资源。等这些动作熟悉后，再进入镜像构建、数据卷和 Compose。
 
 ## Hello World
 
@@ -147,3 +153,5 @@ docker rm web-demo
 ```
 
 容器默认不等于持久数据存储。数据库、上传文件和业务状态应放在数据卷或外部存储中，不要只保存在容器可写层里。
+
+排查容器问题时优先看三处：`docker logs` 看应用输出，`docker inspect` 看配置和挂载，`docker stats` 看资源使用。

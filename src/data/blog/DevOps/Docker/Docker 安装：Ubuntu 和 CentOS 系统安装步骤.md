@@ -2,15 +2,16 @@
 title: Docker 安装：Ubuntu 和 CentOS 系统安装步骤
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-16T00:00:00.000+08:00
+modDatetime: 2026-05-17T00:00:00.000+08:00
 slug: docker-installation-guide
 description: '讲解在 Ubuntu、Debian、CentOS Stream、RHEL 系发行版上通过官方仓库安装 Docker Engine 的推荐步骤。'
 tags:
+  - DevOps
   - Docker
   - Ubuntu
   - CentOS
 draft: false
-series: docker
+series: Docker
 language: zh-CN
 ---
 
@@ -19,6 +20,12 @@ language: zh-CN
 Docker Engine 建议通过 Docker 官方软件仓库安装。这样可以正常接收安全更新，也能同时安装 Compose v2 插件。
 
 CentOS Linux 7 已在 2024 年 6 月 30 日停止维护，CentOS 6 更早停止维护。新环境不建议继续以 CentOS 7 作为默认安装目标，应优先选择 Ubuntu LTS、Debian、CentOS Stream、Rocky Linux、AlmaLinux 或 RHEL 兼容发行版。
+
+## 安装策略
+
+生产环境建议优先使用官方软件仓库安装，这样版本来源、升级路径和安全补丁都更清晰。便捷脚本适合临时测试，不适合作为服务器初始化的长期标准。
+
+安装前先确认三件事：系统发行版仍受支持、内核版本满足要求、主机可以访问 Docker 仓库或内部镜像源。
 
 ## 安装前检查
 
@@ -155,6 +162,14 @@ sudo sh get-docker.sh
 ```
 
 这个脚本适合临时测试和开发环境，不适合生产服务器的标准化安装。生产环境应优先使用官方仓库步骤，并把安装命令纳入自动化配置管理。
+
+## 安装验收清单
+
+- `docker run hello-world` 能正常拉取镜像并启动容器。
+- `docker compose version` 能返回 Compose v2 版本。
+- `systemctl is-enabled docker` 确认服务已设置为开机启动。
+- `/etc/docker/daemon.json` 是合法 JSON，修改后已重启 Docker。
+- 只有可信用户被加入 `docker` 组。
 
 ## 常见问题
 
