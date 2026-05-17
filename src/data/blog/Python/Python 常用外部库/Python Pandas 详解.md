@@ -1,5 +1,5 @@
 ---
-title: Pandas 完全指南   表计算与数据分析
+title: Python Pandas 详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: pandas
@@ -15,7 +15,7 @@ series: python
 language: zh-CN
 ---
 
-# Pandas 完全指南 - 表计算与数据分析
+# Python Pandas 详解
 
 ## 简介
 

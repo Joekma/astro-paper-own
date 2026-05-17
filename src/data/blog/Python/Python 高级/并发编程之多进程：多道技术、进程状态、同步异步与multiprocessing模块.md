@@ -242,7 +242,7 @@ multiprocessing模块的功能众多：支持子进程、通信和共享数据�
 
 ### 创建进程的类
 
-```text
+```Python
 Process([group [, target [, name [, args [, kwargs]]]]])，由该类实例化得到的对象，可用来开启一个子进程
 
 强调：
@@ -252,7 +252,7 @@ Process([group [, target [, name [, args [, kwargs]]]]])，由该类实例化得
 
 ### 参数介绍
 
-```text
+```Python
 group参数未使用，值始终为None
 
 target表示调用对象，即子进程要执行的任务
@@ -266,7 +266,7 @@ name为子进程的名称
 
 ### 方法介绍
 
-```text
+```Python
 p.start()：启动进程，并调用该子进程中的p.run()
 
 p.run():进程启动时运行的方法，正是它去调用target指定的函数，我们自定义类的类中一定要实现该方法
@@ -280,7 +280,7 @@ p.join([timeout]):主线程等待p终止（强调：是主线程处于等的状�
 
 ### 属性介绍
 
-```text
+```Python
 p.daemon：默认值为False，如果设为True，代表p为后台运行的守护进程，当p的父进程终止时，p也随之终止，并且设定为True后，p不能创建自己的新进程，必须在p.start()之前设置
 
 p.name:进程的名称

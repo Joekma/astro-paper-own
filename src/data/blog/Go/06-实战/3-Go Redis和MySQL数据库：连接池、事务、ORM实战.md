@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: golang-use-redis-mysql
-description: '详细讲解Go集成Redis和MySQL，包括Redis连接、缓存、分布式锁、发布订阅、Pipeline、MySQL连接池、事务处理、预处理语句、GORM和XORM ORM框架使用，包含完整项目代码示例。'
+description: '详细讲解 Go 集成 Redis 和 MySQL，包括 go-redis/v9、database/sql、连接池、context、事务、预处理、GORM 和常见实践。'
 tags:
   - Go
   - Redis
@@ -21,90 +21,104 @@ language: zh-CN
 
 ## Redis
 
-### 安装客户端
+### 安装 go-redis
 
 ```bash
-go get github.com/gomodule/redigo/redis
+go get github.com/redis/go-redis/v9
 ```
 
-### 连接
+### 创建客户端
 
 ```go
-import "github.com/gomodule/redigo/redis"
+package main
 
-conn, err := redis.Dial("tcp", "localhost:6379")
-if err != nil {
-    log.Fatal(err)
+import (
+    "context"
+    "log"
+    "time"
+
+    "github.com/redis/go-redis/v9"
+)
+
+func newRedisClient() *redis.Client {
+    return redis.NewClient(&redis.Options{
+        Addr:         "localhost:6379",
+        Password:     "",
+        DB:           0,
+        PoolSize:     20,
+        MinIdleConns: 5,
+    })
 }
-defer conn.Close()
+
+func main() {
+    ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+    defer cancel()
+
+    rdb := newRedisClient()
+    defer rdb.Close()
+
+    if err := rdb.Ping(ctx).Err(); err != nil {
+        log.Fatal(err)
+    }
+}
 ```
+
+go-redis 的操作都接收 `context.Context`，方便超时和取消。
 
 ### 基本操作
 
 ```go
-// 设置值
-conn.Do("SET", "name", "wd")
+func cacheUser(ctx context.Context, rdb *redis.Client, user User) error {
+    key := "user:" + user.ID
 
-// 获取值
-name, err := redis.String(conn.Do("GET", "name"))
-fmt.Println(name)  // wd
+    data, err := json.Marshal(user)
+    if err != nil {
+        return err
+    }
 
-// 过期时间
-conn.Do("EXPIRE", "name", 10)  // 10秒过期
-
-// 删除
-conn.Do("DEL", "name")
-```
-
-### 批量操作
-
-```go
-// MSET
-conn.Do("MSET", "name", "wd", "age", 22)
-
-// MGET
-res, _ := redis.Strings(conn.Do("MGET", "name", "age"))
-fmt.Println(res)  // [wd 22]
-```
-
-### 列表操作
-
-```go
-// LPUSH
-conn.Do("LPUSH", "list1", "ele1", "ele2", "ele3")
-
-// LPOP
-val, _ := redis.String(conn.Do("LPOP", "list1"))
-fmt.Println(val)  // ele3
-```
-
-### Hash 操作
-
-```go
-// HSET
-conn.Do("HSET", "student", "name", "wd", "age", 22)
-
-// HGET
-age, _ := redis.Int64(conn.Do("HGET", "student", "age"))
-fmt.Println(age)  // 22
-```
-
-### 连接池
-
-```go
-pool := &redis.Pool{
-    MaxIdle:   10,
-    MaxActive: 100,
-    Dial: func() (redis.Conn, error) {
-        return redis.Dial("tcp", "localhost:6379")
-    },
+    // 设置缓存和过期时间
+    return rdb.Set(ctx, key, data, 10*time.Minute).Err()
 }
 
-conn := pool.Get()
-defer conn.Close()
+func getCachedUser(ctx context.Context, rdb *redis.Client, id string) (*User, error) {
+    data, err := rdb.Get(ctx, "user:"+id).Bytes()
+    if err != nil {
+        if errors.Is(err, redis.Nil) {
+            return nil, nil // 缓存未命中
+        }
+        return nil, err
+    }
+
+    var user User
+    if err := json.Unmarshal(data, &user); err != nil {
+        return nil, err
+    }
+    return &user, nil
+}
 ```
 
-## MySQL
+### Pipeline
+
+Pipeline 可以减少多次命令的网络往返。
+
+```go
+func batchSet(ctx context.Context, rdb *redis.Client, values map[string]string) error {
+    pipe := rdb.Pipeline()
+
+    for key, value := range values {
+        pipe.Set(ctx, key, value, time.Hour)
+    }
+
+    _, err := pipe.Exec(ctx)
+    return err
+}
+```
+
+Pipeline 不是事务。需要 Redis 事务语义时使用 `TxPipeline` 或 Lua，并理解具体命令的原子性。
+
+---
+
+## MySQL 与 database/sql
 
 ### 安装驱动
 
@@ -112,111 +126,216 @@ defer conn.Close()
 go get github.com/go-sql-driver/mysql
 ```
 
-### 连接
+### 创建连接池
 
 ```go
 import (
+    "context"
     "database/sql"
+    "time"
+
     _ "github.com/go-sql-driver/mysql"
 )
 
-db, err := sql.Open("mysql", "user:password@tcp(localhost:3306)/dbname")
-if err != nil {
-    log.Fatal(err)
-}
-defer db.Close()
+func openDB(ctx context.Context, dsn string) (*sql.DB, error) {
+    db, err := sql.Open("mysql", dsn)
+    if err != nil {
+        return nil, err
+    }
 
-db.SetMaxOpenConns(100)
-db.SetMaxIdleConns(10)
+    db.SetMaxOpenConns(50)
+    db.SetMaxIdleConns(10)
+    db.SetConnMaxLifetime(30 * time.Minute)
+    db.SetConnMaxIdleTime(5 * time.Minute)
+
+    if err := db.PingContext(ctx); err != nil {
+        db.Close()
+        return nil, err
+    }
+    return db, nil
+}
 ```
 
-### 查询
+`sql.Open` 不一定立即建立连接，使用 `PingContext` 可以验证数据库是否可达。
+
+---
+
+## 查询
 
 ```go
-rows, err := db.Query("SELECT id, name FROM users WHERE age > ?", 18)
-if err != nil {
-    log.Fatal(err)
-}
-defer rows.Close()
-
-for rows.Next() {
-    var id int
-    var name string
-    if err := rows.Scan(&id, &name); err != nil {
-        log.Fatal(err)
+func listUsers(ctx context.Context, db *sql.DB, minAge int) ([]User, error) {
+    rows, err := db.QueryContext(ctx, `
+        SELECT id, name, email, age
+        FROM users
+        WHERE age >= ?
+        ORDER BY id
+    `, minAge)
+    if err != nil {
+        return nil, err
     }
-    fmt.Println(id, name)
+    defer rows.Close()
+
+    var users []User
+    for rows.Next() {
+        var user User
+        if err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.Age); err != nil {
+            return nil, err
+        }
+        users = append(users, user)
+    }
+
+    if err := rows.Err(); err != nil {
+        return nil, err
+    }
+    return users, nil
 }
 ```
+
+一定要检查 `rows.Err()`，否则遍历过程中的错误可能被忽略。
 
 ### 查询单行
 
 ```go
-var name string
-err := db.QueryRow("SELECT name FROM users WHERE id = ?", 1).Scan(&name)
-fmt.Println(name)
+func getUser(ctx context.Context, db *sql.DB, id int64) (*User, error) {
+    var user User
+    err := db.QueryRowContext(ctx, `
+        SELECT id, name, email, age
+        FROM users
+        WHERE id = ?
+    `, id).Scan(&user.ID, &user.Name, &user.Email, &user.Age)
+
+    if err != nil {
+        if errors.Is(err, sql.ErrNoRows) {
+            return nil, nil
+        }
+        return nil, err
+    }
+    return &user, nil
+}
 ```
 
-### 插入
+---
+
+## 插入、更新、删除
 
 ```go
-result, err := db.Exec("INSERT INTO users (name, age) VALUES (?, ?)", "张三", 25)
-if err != nil {
-    log.Fatal(err)
-}
+func createUser(ctx context.Context, db *sql.DB, user User) (int64, error) {
+    result, err := db.ExecContext(ctx, `
+        INSERT INTO users (name, email, age)
+        VALUES (?, ?, ?)
+    `, user.Name, user.Email, user.Age)
+    if err != nil {
+        return 0, err
+    }
 
-id, _ := result.LastInsertId()
-fmt.Println("插入ID:", id)
+    return result.LastInsertId()
+}
 ```
 
-### 更新
+---
+
+## 事务
 
 ```go
-result, err := db.Exec("UPDATE users SET age = ? WHERE id = ?", 30, 1)
-affected, _ := result.RowsAffected()
-fmt.Println("影响行数:", affected)
+func transfer(ctx context.Context, db *sql.DB, fromID, toID int64, amount int64) error {
+    tx, err := db.BeginTx(ctx, &sql.TxOptions{
+        Isolation: sql.LevelReadCommitted,
+    })
+    if err != nil {
+        return err
+    }
+
+    // 如果后续 Commit 成功，Rollback 会返回 sql.ErrTxDone，可忽略
+    defer tx.Rollback()
+
+    if _, err := tx.ExecContext(ctx,
+        `UPDATE accounts SET balance = balance - ? WHERE id = ?`,
+        amount, fromID,
+    ); err != nil {
+        return err
+    }
+
+    if _, err := tx.ExecContext(ctx,
+        `UPDATE accounts SET balance = balance + ? WHERE id = ?`,
+        amount, toID,
+    ); err != nil {
+        return err
+    }
+
+    if err := tx.Commit(); err != nil {
+        return err
+    }
+    return nil
+}
 ```
 
-### 删除
+事务内所有操作都应使用 `tx`，不要混用外部 `db`，否则语句可能跑到事务之外。
+
+---
+
+## 预处理语句
 
 ```go
-result, err := db.Exec("DELETE FROM users WHERE id = ?", 1)
-affected, _ := result.RowsAffected()
-fmt.Println("删除行数:", affected)
+func insertMany(ctx context.Context, db *sql.DB, users []User) error {
+    stmt, err := db.PrepareContext(ctx, `
+        INSERT INTO users (name, email, age)
+        VALUES (?, ?, ?)
+    `)
+    if err != nil {
+        return err
+    }
+    defer stmt.Close()
+
+    for _, user := range users {
+        if _, err := stmt.ExecContext(ctx, user.Name, user.Email, user.Age); err != nil {
+            return err
+        }
+    }
+    return nil
+}
 ```
 
-### 预处理
+预处理适合重复执行相同 SQL 的场景。
+
+---
+
+## GORM 简例
+
+```bash
+go get gorm.io/gorm
+go get gorm.io/driver/mysql
+```
 
 ```go
-stmt, err := db.Prepare("INSERT INTO users (name, age) VALUES (?, ?)")
-if err != nil {
-    log.Fatal(err)
+type User struct {
+    ID    uint   `gorm:"primaryKey"`
+    Name  string `gorm:"size:100;not null"`
+    Email string `gorm:"uniqueIndex;size:255"`
+    Age   int
 }
-defer stmt.Close()
 
-stmt.Exec("李四", 28)
-stmt.Exec("王五", 32)
+func openGORM(dsn string) (*gorm.DB, error) {
+    db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+    if err != nil {
+        return nil, err
+    }
+
+    if err := db.AutoMigrate(&User{}); err != nil {
+        return nil, err
+    }
+    return db, nil
+}
 ```
 
-### 事务
+ORM 能提高开发效率，但复杂查询、性能热点、事务边界仍要理解底层 SQL。
 
-```go
-tx, err := db.Begin()
-if err != nil {
-    log.Fatal(err)
-}
+---
 
-_, err = tx.Exec("UPDATE accounts SET balance = balance - 100 WHERE id = 1")
-if err != nil {
-    tx.Rollback()
-    log.Fatal(err)
-}
+## 实践建议
 
-_, err = tx.Exec("UPDATE accounts SET balance = balance + 100 WHERE id = 2")
-if err != nil {
-    tx.Rollback()
-    log.Fatal(err)
-}
-
-tx.Commit()
-```
+1. 所有外部调用都传入 `context.Context`。
+2. 初始化数据库后调用 `PingContext`。
+3. 查询结果要 `defer rows.Close()` 并检查 `rows.Err()`。
+4. 事务中使用 `BeginTx`，并 `defer tx.Rollback()`。
+5. Redis 缓存要设置过期时间，避免无限增长。
+6. ORM 适合常规 CRUD，关键路径仍需关注 SQL 和索引。

@@ -1,5 +1,5 @@
 ﻿---
-title: Celery技术总结
+title: Python Celery 详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: celery
@@ -15,7 +15,7 @@ series: python
 language: zh-CN
 ---
 
-# Celery技术总结
+# Celery 详解
 
 ## Celery架构
 

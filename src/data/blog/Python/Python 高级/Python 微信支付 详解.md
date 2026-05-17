@@ -1,5 +1,5 @@
 ---
-title: 微信支付 Python 接入指南
+title: Python 微信支付 详解
 series: Python
 language: zh-CN
 author: Joekma
@@ -15,7 +15,7 @@ tags:
 description: 微信支付Python接入指南，涵盖统一下单、支付签名、前端调起支付等完整流程。
 ---
 
-# 微信支付 Python 接入指南
+# Python 微信支付 详解
 
 ##  简介
 

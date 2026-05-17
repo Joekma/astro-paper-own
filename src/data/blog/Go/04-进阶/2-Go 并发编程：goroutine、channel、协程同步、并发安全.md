@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: go-concurrency
-description: '深入讲解Go goroutine、channel通道、缓冲channel、select多路复用、协程同步（WaitGroup、Mutex、RWMutex、Cond、Once、Pool）、并发安全和死锁避免，包含完整代码示例。'
+description: '深入讲解 Go goroutine、channel、select、WaitGroup、Mutex、RWMutex、Once、Pool、context 取消和并发安全实践。'
 tags:
   - Go
   - 并发编程
@@ -21,190 +21,284 @@ language: zh-CN
 
 ## goroutine
 
-goroutine 是 Go 语言的轻量级线程，由 Go 程序运行时调度和管理。
-
-### 创建 goroutine
-
-```go
-go 函数名(参数列表)
-```
-
-### 示例
-
-```go
-func running() {
-    var times int
-    for {
-        times++
-        fmt.Println("tick", times)
-        time.Sleep(time.Second)
-    }
-}
-
-func main() {
-    go running()
-    var input string
-    fmt.Scanln(&input)
-}
-```
-
-### 匿名函数 goroutine
+goroutine 是由 Go 运行时调度的轻量级执行单元。
 
 ```go
 go func() {
-    for {
-        fmt.Println("running...")
-        time.Sleep(time.Second)
-    }
+    fmt.Println("run in another goroutine")
 }()
 ```
 
-## 并发与并行
+启动 goroutine 很便宜，但不是免费。每个 goroutine 都应该有明确的退出条件。
 
-| 概念 | 说明 |
-|------|------|
-| **并发 (concurrency)** | 任务在不同时间点交替执行 |
-| **并行 (parallelism)** | 任务同时执行 |
+---
 
-> Go 在 GOMAXPROCS 数量与任务数量相等时可并行执行。
+## 等待 goroutine 完成
 
-## channel
-
-channel 是 goroutine 之间通信的通道。
-
-### 声明
-
-```go
-var ch chan int         // 双向 channel
-var send chan<- int     // 只发送
-var recv <-chan int     // 只接收
-```
-
-### 创建
-
-```go
-ch := make(chan int)           // 无缓冲
-ch := make(chan int, 10)       // 有缓冲，容量 10
-```
-
-### 发送和接收
-
-```go
-ch <- value    // 发送
-value := <-ch  // 接收
-```
-
-> 发送和接收操作会阻塞，直到另一端准备好。
-
-### 示例
-
-```go
-func producer(ch chan<- int) {
-    for i := 0; i < 5; i++ {
-        ch <- i
-    }
-    close(ch)
-}
-
-func consumer(ch <-chan int) {
-    for v := range ch {
-        fmt.Println(v)
-    }
-}
-
-func main() {
-    ch := make(chan int)
-    go producer(ch)
-    consumer(ch)
-}
-```
-
-## 通道方向
-
-```go
-func send(ch chan<- int) {
-    ch <- 1
-}
-
-func receive(ch <-chan int) {
-    v := <-ch
-    fmt.Println(v)
-}
-```
-
-## select 多路复用
-
-```go
-select {
-case v := <-ch1:
-    fmt.Println("ch1:", v)
-case v := <-ch2:
-    fmt.Println("ch2:", v)
-default:
-    fmt.Println("no data")
-}
-```
-
-## 并发控制
-
-### sync.WaitGroup
+`sync.WaitGroup` 用来等待一组 goroutine 结束。
 
 ```go
 var wg sync.WaitGroup
 
-for i := 0; i < 5; i++ {
+for i := 0; i < 3; i++ {
+    i := i // 兼容旧 Go 版本，也让捕获关系更明显
+
     wg.Add(1)
-    go func(id int) {
+    go func() {
         defer wg.Done()
-        fmt.Println("goroutine", id)
-    }(i)
+        fmt.Println("worker", i)
+    }()
 }
 
-wg.Wait()  // 等待所有 goroutine 完成
+wg.Wait()
 ```
 
-### sync.Mutex
+`Add` 应在启动 goroutine 前调用，避免 goroutine 太快执行导致计数混乱。
+
+---
+
+## channel
+
+channel 用于 goroutine 之间通信。
 
 ```go
-var (
-    mu sync.Mutex
-    counter int
-)
+ch := make(chan int)     // 无缓冲 channel
+buf := make(chan int, 3) // 有缓冲 channel
+```
 
-func increment() {
-    mu.Lock()
-    defer mu.Unlock()
-    counter++
+无缓冲 channel 发送和接收必须同时准备好；有缓冲 channel 在缓冲未满时发送不阻塞，在缓冲非空时接收不阻塞。
+
+```go
+func producer(ch chan<- int) {
+    defer close(ch)
+    for i := 0; i < 5; i++ {
+        ch <- i
+    }
+}
+
+func consumer(ch <-chan int) {
+    for value := range ch {
+        fmt.Println(value)
+    }
 }
 ```
 
-### sync.RWMutex
+约定：通常由发送方关闭 channel，接收方不应关闭自己没有所有权的 channel。
+
+---
+
+## select
+
+`select` 同时等待多个 channel 操作。
 
 ```go
-var (
-    mu sync.RWMutex
+select {
+case value := <-data:
+    fmt.Println("data:", value)
+case <-time.After(time.Second):
+    fmt.Println("timeout")
+}
+```
+
+配合 context 实现取消：
+
+```go
+func worker(ctx context.Context, jobs <-chan Job) error {
+    for {
+        select {
+        case job, ok := <-jobs:
+            if !ok {
+                return nil
+            }
+            if err := handle(job); err != nil {
+                return err
+            }
+        case <-ctx.Done():
+            return ctx.Err()
+        }
+    }
+}
+```
+
+---
+
+## worker pool 示例
+
+```go
+func runWorkers(ctx context.Context, jobs []Job, workerCount int) error {
+    jobCh := make(chan Job)
+    errCh := make(chan error, workerCount)
+
+    var wg sync.WaitGroup
+    for i := 0; i < workerCount; i++ {
+        wg.Add(1)
+        go func(id int) {
+            defer wg.Done()
+            if err := worker(ctx, jobCh); err != nil {
+                errCh <- fmt.Errorf("worker %d: %w", id, err)
+            }
+        }(i)
+    }
+
+    go func() {
+        defer close(jobCh)
+        for _, job := range jobs {
+            select {
+            case jobCh <- job:
+            case <-ctx.Done():
+                return
+            }
+        }
+    }()
+
+    wg.Wait()
+    close(errCh)
+
+    for err := range errCh {
+        if err != nil {
+            return err
+        }
+    }
+    return ctx.Err()
+}
+```
+
+这个例子包含几个关键点：任务 channel 由发送方关闭、worker 能响应 context 取消、主流程等待所有 worker 结束。
+
+---
+
+## 互斥锁 Mutex
+
+多个 goroutine 访问共享变量时，需要同步。
+
+```go
+type Counter struct {
+    mu    sync.Mutex
     value int
-)
-
-func read() int {
-    mu.RLock()
-    defer mu.RUnlock()
-    return value
 }
 
-func write(v int) {
-    mu.Lock()
-    defer mu.Unlock()
-    value = v
+func (c *Counter) Inc() {
+    c.mu.Lock()
+    defer c.mu.Unlock()
+    c.value++
+}
+
+func (c *Counter) Value() int {
+    c.mu.Lock()
+    defer c.mu.Unlock()
+    return c.value
 }
 ```
 
-## GOMAXPROCS
+不要复制已经使用过的锁。包含锁的结构体通常用指针传递。
+
+---
+
+## 读写锁 RWMutex
+
+读多写少时可以使用 `sync.RWMutex`。
 
 ```go
-import "runtime"
+type Cache struct {
+    mu   sync.RWMutex
+    data map[string]string
+}
 
-runtime.GOMAXPROCS(runtime.NumCPU())  // 使用所有 CPU 核心
+func (c *Cache) Get(key string) (string, bool) {
+    c.mu.RLock()
+    defer c.mu.RUnlock()
+    value, ok := c.data[key]
+    return value, ok
+}
+
+func (c *Cache) Set(key, value string) {
+    c.mu.Lock()
+    defer c.mu.Unlock()
+    c.data[key] = value
+}
 ```
 
-> Go 1.5 之后默认使用多核。
+如果写操作频繁，`RWMutex` 不一定比 `Mutex` 更快，应以 benchmark 为准。
+
+---
+
+## sync.Once
+
+`sync.Once` 保证某段初始化逻辑只执行一次。
+
+```go
+var (
+    once sync.Once
+    cfg  *Config
+)
+
+func ConfigInstance() *Config {
+    once.Do(func() {
+        cfg = loadConfig()
+    })
+    return cfg
+}
+```
+
+适合懒加载配置、连接池等一次性初始化。
+
+---
+
+## sync.Pool
+
+`sync.Pool` 用于复用临时对象，减少 GC 压力。
+
+```go
+var bufferPool = sync.Pool{
+    New: func() any {
+        return new(bytes.Buffer)
+    },
+}
+
+func encode(value any) ([]byte, error) {
+    buf := bufferPool.Get().(*bytes.Buffer)
+    buf.Reset()
+    defer bufferPool.Put(buf)
+
+    if err := json.NewEncoder(buf).Encode(value); err != nil {
+        return nil, err
+    }
+
+    // 返回前复制一份，避免调用方引用被放回池中的 buffer
+    out := append([]byte(nil), buf.Bytes()...)
+    return out, nil
+}
+```
+
+`sync.Pool` 的对象可能随时被 GC 清理，不能用它保存必须存在的状态。
+
+---
+
+## 并发与并行
+
+并发是“同时处理多个任务的结构”，并行是“多个任务真的在同一时刻运行”。
+
+Go 默认会使用多个 CPU 核心执行 goroutine。`runtime.GOMAXPROCS` 通常不需要手动设置，除非做性能实验或特殊运行环境控制。
+
+---
+
+## race detector
+
+并发代码建议经常使用竞态检测。
+
+```bash
+go test -race ./...
+go run -race .
+```
+
+竞态检测会增加运行开销，不适合生产常驻开启，但非常适合测试和排查问题。
+
+---
+
+## 小结
+
+1. goroutine 必须有退出条件。
+2. channel 用来通信，锁用来保护共享内存，两者按场景选择。
+3. `WaitGroup` 等待任务完成，`context` 传播取消信号。
+4. map、计数器、缓存等共享状态需要锁或其他同步机制。
+5. 并发正确性优先于性能，优化前先用测试和 race detector 验证。

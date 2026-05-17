@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-08T00:00:00.000+08:00
 modDatetime: 2026-05-08T00:00:00.000+08:00
 slug: go-http-service
-description: '深入学习 Go HTTP 服务开发，掌握 net/http、路由处理、中间件、请求解析、响应构建等核心技能。'
+description: '深入学习 Go HTTP 服务开发，掌握 net/http、Go 1.22+ ServeMux 路由、请求解析、JSON 响应、中间件、超时、限流和优雅关闭。'
 tags:
   - Go
   - HTTP
@@ -19,72 +19,54 @@ language: zh-CN
 
 ## 概述
 
-Go 的 net/http 包提供了完整的 HTTP 服务器和客户端实现。本文章将详细介绍如何使用 Go 构建高性能 HTTP 服务，包括路由处理、中间件、请求解析、错误处理等核心技能。
-
-### 核心组件
-
-| 组件 | 说明 |
-|------|------|
-| **http.Server** | HTTP 服务器配置和启动 |
-| **http.Handler** | 请求处理接口 |
-| **http.HandlerFunc** | 函数类型的处理器 |
-| **ServeMux** | 路由器/多路复用器 |
-| **Middleware** | 中间件链式处理 |
+Go 标准库 `net/http` 已经能完成大量 Web/API 服务开发工作。Go 1.22 起，`http.ServeMux` 支持更强的路由模式，包括 HTTP 方法和路径通配符，小型服务未必需要第三方路由器。
 
 ---
 
-## 快速入门
-
-### 最简单的服务器
+## 最小 HTTP 服务
 
 ```go
 package main
 
 import (
-    "fmt"
-    "net/http"
-)
-
-func main() {
-    http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-        fmt.Fprintf(w, "Hello, World!")
-    })
-    
-    fmt.Println("服务器启动在 :8080")
-    http.ListenAndServe(":8080", nil)
-}
-```
-
-### 使用 Server 结构
-
-```go
-package main
-
-import (
-    "context"
     "fmt"
     "log"
     "net/http"
-    "time"
 )
 
 func main() {
-    handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        fmt.Fprintf(w, "Hello, HTTP!")
+    mux := http.NewServeMux()
+
+    mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+        fmt.Fprintln(w, "Hello, Go HTTP")
     })
-    
-    server := &http.Server{
-        Addr:         ":8080",
-        Handler:      handler,
-        ReadTimeout:  10 * time.Second,
-        WriteTimeout: 10 * time.Second,
-        IdleTimeout:  60 * time.Second,
-    }
-    
-    log.Println("服务器启动在 :8080")
-    if err := server.ListenAndServe(); err != nil {
+
+    log.Println("listening on :8080")
+    if err := http.ListenAndServe(":8080", mux); err != nil {
         log.Fatal(err)
     }
+}
+```
+
+推荐显式创建 `ServeMux`，避免依赖全局 `http.DefaultServeMux`。
+
+---
+
+## 使用 http.Server
+
+生产服务应设置超时，避免慢客户端长时间占用连接。
+
+```go
+server := &http.Server{
+    Addr:         ":8080",
+    Handler:      mux,
+    ReadTimeout:  5 * time.Second,
+    WriteTimeout: 10 * time.Second,
+    IdleTimeout:  60 * time.Second,
+}
+
+if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+    log.Fatal(err)
 }
 ```
 
@@ -92,572 +74,317 @@ func main() {
 
 ## ServeMux 路由
 
-### 默认路由器
-
-```go
-func main() {
-    mux := http.NewServeMux()
-    
-    mux.HandleFunc("/", homeHandler)
-    mux.HandleFunc("/about", aboutHandler)
-    mux.HandleFunc("/contact", contactHandler)
-    
-    http.ListenAndServe(":8080", mux)
-}
-
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "首页")
-}
-
-func aboutHandler(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "关于我们")
-}
-
-func contactHandler(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "联系我们")
-}
-```
-
-### 路径模式匹配
+Go 1.22+ 支持方法和路径变量。
 
 ```go
 mux := http.NewServeMux()
 
-// 精确匹配
-mux.HandleFunc("/", homeHandler)
-
-// 前缀匹配（/static/ 下的所有路径）
-mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
-
-// 路径参数（需要第三方路由器）
-mux.HandleFunc("/users/", usersHandler)
+mux.HandleFunc("GET /users", listUsers)
+mux.HandleFunc("POST /users", createUser)
+mux.HandleFunc("GET /users/{id}", getUser)
+mux.HandleFunc("GET /files/{path...}", getFile)
 ```
 
-### 处理静态文件
+获取路径变量：
 
 ```go
-func main() {
-    mux := http.NewServeMux()
-    
-    // 处理静态文件目录
-    fs := http.FileServer(http.Dir("static"))
-    mux.Handle("/static/", http.StripPrefix("/static/", fs))
-    
-    // 或使用 Dir 配置
-    mux.Handle("/assets/", http.FileServer(http.Dir("./public/assets")))
-    
-    http.ListenAndServe(":8080", mux)
+func getUser(w http.ResponseWriter, r *http.Request) {
+    id := r.PathValue("id")
+    fmt.Fprintf(w, "user id=%s\n", id)
 }
 ```
+
+`{id}` 匹配单个路径段，`{path...}` 匹配剩余路径。
 
 ---
 
-## Handler 接口
+## 请求解析
 
-### 实现 Handler 接口
-
-```go
-type LoggingHandler struct {
-    next http.Handler
-}
-
-func (h *LoggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-    log.Printf("请求: %s %s", r.Method, r.URL.Path)
-    h.next.ServeHTTP(w, r)
-}
-
-func main() {
-    handler := &LoggingHandler{next: http.DefaultServeMux}
-    http.ListenAndServe(":8080", handler)
-}
-```
-
-### HandlerFunc 函数类型
+### 查询参数
 
 ```go
-func logging(next http.HandlerFunc) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        log.Printf("%s %s", r.Method, r.URL.Path)
-        next.ServeHTTP(w, r)
+func listUsers(w http.ResponseWriter, r *http.Request) {
+    page := r.URL.Query().Get("page")
+    if page == "" {
+        page = "1"
     }
-}
-
-func main() {
-    mux := http.NewServeMux()
-    
-    mux.HandleFunc("/api/users", logging(getUsers))
-    mux.HandleFunc("/api/posts", logging(getPosts))
-    
-    http.ListenAndServe(":8080", mux)
-}
-
-func getUsers(w http.ResponseWriter, r *http.Request) {
-    json.NewEncoder(w).Encode([]string{"Alice", "Bob"})
-}
-
-func getPosts(w http.ResponseWriter, r *http.Request) {
-    json.NewEncoder(w).Encode([]string{"Post 1", "Post 2"})
+    fmt.Fprintln(w, "page:", page)
 }
 ```
 
----
-
-## 请求处理
-
-### 获取请求参数
+### JSON 请求体
 
 ```go
-func handleForm(w http.ResponseWriter, r *http.Request) {
-    // 设置表单解析限制
-    r.ParseForm()
-    
-    // 获取查询参数
-    name := r.URL.Query().Get("name")
-    age := r.URL.Query().Get("age")
-    
-    // 获取表单参数
-    username := r.FormValue("username")
-    password := r.FormValue("password")
-    
-    fmt.Fprintf(w, "Name: %s, Age: %s, User: %s", name, age, username)
-}
-```
-
-### 解析 JSON 请求
-
-```go
-type UserRequest struct {
+type CreateUserRequest struct {
     Name  string `json:"name"`
     Email string `json:"email"`
-    Age   int    `json:"age"`
 }
 
 func createUser(w http.ResponseWriter, r *http.Request) {
-    if r.Method != http.MethodPost {
-        http.Error(w, "方法不允许", http.StatusMethodNotAllowed)
-        return
-    }
-    
-    // 设置解析限制
-    r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1MB
-    
-    var req UserRequest
+    // 限制请求体大小，防止客户端发送过大的 JSON
+    r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1 MiB
+    defer r.Body.Close()
+
+    var req CreateUserRequest
     decoder := json.NewDecoder(r.Body)
-    decoder.DisallowUnknownFields()
-    
+    decoder.DisallowUnknownFields() // 遇到未知字段直接报错，避免静默忽略
+
     if err := decoder.Decode(&req); err != nil {
-        http.Error(w, "无效的 JSON: "+err.Error(), http.StatusBadRequest)
+        writeError(w, http.StatusBadRequest, "invalid json")
         return
     }
-    
-    // 验证
-    if req.Name == "" {
-        http.Error(w, "姓名不能为空", http.StatusBadRequest)
+
+    if req.Name == "" || req.Email == "" {
+        writeError(w, http.StatusBadRequest, "name and email are required")
         return
     }
-    
-    json.NewEncoder(w).Encode(map[string]interface{}{
-        "message": "用户创建成功",
-        "user":    req,
+
+    writeJSON(w, http.StatusCreated, map[string]any{
+        "id":    "generated-id",
+        "name":  req.Name,
+        "email": req.Email,
     })
-}
-```
-
-### 路径参数
-
-```go
-// 简单路径参数（使用字符串处理）
-func userHandler(w http.ResponseWriter, r *http.Request) {
-    path := r.URL.Path
-    // /users/123 -> 获取 123
-    
-    parts := strings.Split(path, "/")
-    if len(parts) >= 3 {
-        userID := parts[2]
-        fmt.Fprintf(w, "用户 ID: %s", userID)
-    }
-}
-
-// 使用 chi 路由器（推荐）
-import "github.com/go-chi/chi/v5"
-
-func main() {
-    r := chi.NewRouter()
-    
-    r.Get("/users/{id}", func(w http.ResponseWriter, r *http.Request) {
-        id := chi.URLParam(r, "id")
-        fmt.Fprintf(w, "用户 ID: %s", id)
-    })
-    
-    http.ListenAndServe(":8080", r)
 }
 ```
 
 ---
 
-## 响应处理
-
-### JSON 响应
+## JSON 响应
 
 ```go
-import "encoding/json"
-
-type Response struct {
-    Success bool        `json:"success"`
-    Data    interface{} `json:"data,omitempty"`
-    Error   string      `json:"error,omitempty"`
-}
-
-func successResponse(w http.ResponseWriter, data interface{}) {
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusOK)
-    json.NewEncoder(w).Encode(Response{
-        Success: true,
-        Data:    data,
-    })
-}
-
-func errorResponse(w http.ResponseWriter, message string, status int) {
-    w.Header().Set("Content-Type", "application/json")
+func writeJSON(w http.ResponseWriter, status int, value any) {
+    w.Header().Set("Content-Type", "application/json; charset=utf-8")
     w.WriteHeader(status)
-    json.NewEncoder(w).Encode(Response{
-        Success: false,
-        Error:   message,
-    })
-}
-```
 
-### 设置响应头
-
-```go
-func setHeaders(next http.HandlerFunc) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("Content-Type", "application/json")
-        w.Header().Set("X-Custom-Header", "value")
-        w.Header().Set("Access-Control-Allow-Origin", "*")
-        next.ServeHTTP(w, r)
+    if err := json.NewEncoder(w).Encode(value); err != nil {
+        // 响应已开始写出，此时只能记录日志
+        log.Printf("encode response: %v", err)
     }
 }
-```
 
-### 重定向
-
-```go
-func redirectHandler(w http.ResponseWriter, r *http.Request) {
-    http.Redirect(w, r, "/new-page", http.StatusMovedPermanently)
-}
-
-func temporaryRedirect(w http.ResponseWriter, r *http.Request) {
-    http.Redirect(w, r, "/temporary", http.StatusFound)
+func writeError(w http.ResponseWriter, status int, message string) {
+    writeJSON(w, status, map[string]any{
+        "error": message,
+    })
 }
 ```
+
+响应头必须在 `WriteHeader` 或第一次 `Write` 之前设置。
 
 ---
 
 ## 中间件
 
-### 日志中间件
-
-```go
-func loggingMiddleware(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        start := time.Now()
-        
-        // 包装 ResponseWriter 记录状态码
-        wrapped := &statusWriter{ResponseWriter: w, statusCode: 200}
-        
-        next.ServeHTTP(wrapped, r)
-        
-        duration := time.Since(start)
-        log.Printf("%s %s %d %v", r.Method, r.URL.Path, wrapped.statusCode, duration)
-    })
-}
-
-type statusWriter struct {
-    http.ResponseWriter
-    statusCode int
-}
-
-func (w *statusWriter) WriteHeader(code int) {
-    w.statusCode = code
-    w.ResponseWriter.WriteHeader(code)
-}
-```
-
-### 认证中间件
-
-```go
-func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        token := r.Header.Get("Authorization")
-        
-        if token == "" {
-            http.Error(w, "未授权", http.StatusUnauthorized)
-            return
-        }
-        
-        // 验证 token
-        userID, err := validateToken(token)
-        if err != nil {
-            http.Error(w, "无效的 token", http.StatusUnauthorized)
-            return
-        }
-        
-        // 将用户 ID 存入 context
-        ctx := context.WithValue(r.Context(), "userID", userID)
-        next.ServeHTTP(w, r.WithContext(ctx))
-    }
-}
-
-func validateToken(token string) (string, error) {
-    // 实现 token 验证逻辑
-    if token == "valid-token" {
-        return "user123", nil
-    }
-    return "", errors.New("invalid token")
-}
-```
-
-### 中间件链
+Go 中间件通常是 `func(http.Handler) http.Handler`。
 
 ```go
 type Middleware func(http.Handler) http.Handler
 
-func chain(middlewares ...Middleware) Middleware {
-    return func(final http.Handler) http.Handler {
-        for i := len(middlewares) - 1; i >= 0; i-- {
-            final = middlewares[i](final)
-        }
-        return final
+func chain(final http.Handler, middlewares ...Middleware) http.Handler {
+    for i := len(middlewares) - 1; i >= 0; i-- {
+        final = middlewares[i](final)
     }
-}
-
-func main() {
-    finalHandler := http.HandlerFunc(apiHandler)
-    
-    handler := chain(
-        loggingMiddleware,
-        authMiddleware,
-        corsMiddleware,
-    )(finalHandler)
-    
-    http.ListenAndServe(":8080", handler)
-}
-```
-
----
-
-## 优雅关闭
-
-### 使用 context
-
-```go
-func main() {
-    ctx, cancel := context.WithCancel(context.Background())
-    defer cancel()
-    
-    server := &http.Server{
-        Addr:    ":8080",
-        Handler: setupRouter(),
-    }
-    
-    // 启动服务器
-    go func() {
-        if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-            log.Fatalf("服务器错误: %v", err)
-        }
-    }()
-    
-    // 等待信号
-    quit := make(chan os.Signal, 1)
-    signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-    <-quit
-    
-    log.Println("关闭服务器...")
-    
-    // 优雅关闭，给 5 秒超时
-    shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
-    defer shutdownCancel()
-    
-    if err := server.Shutdown(shutdownCtx); err != nil {
-        log.Fatalf("服务器关闭失败: %v", err)
-    }
-    
-    log.Println("服务器已关闭")
-}
-
-func setupRouter() *http.ServeMux {
-    mux := http.NewServeMux()
-    mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-        fmt.Fprintf(w, "Hello!")
-    })
-    return mux
-}
-```
-
----
-
-## 常见问题
-
-### CORS 跨域
-
-```go
-func corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("Access-Control-Allow-Origin", "*")
-        w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-        w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-        
-        if r.Method == "OPTIONS" {
-            w.WriteHeader(http.StatusOK)
-            return
-        }
-        
-        next.ServeHTTP(w, r)
-    }
+    return final
 }
 ```
 
 ### 请求日志
 
 ```go
-func requestLog(next http.HandlerFunc) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        log.Printf("--> %s %s %s", r.RemoteAddr, r.Method, r.URL.Path)
-        next.ServeHTTP(w, r)
-        log.Printf("<-- %s %s", r.Method, r.URL.Path)
-    }
+type statusWriter struct {
+    http.ResponseWriter
+    status int
+}
+
+func (w *statusWriter) WriteHeader(status int) {
+    w.status = status
+    w.ResponseWriter.WriteHeader(status)
+}
+
+func logging(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        start := time.Now()
+        sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
+
+        next.ServeHTTP(sw, r)
+
+        log.Printf("%s %s %d %s", r.Method, r.URL.Path, sw.status, time.Since(start))
+    })
 }
 ```
 
-### 限流
+### 恢复 panic
 
 ```go
-import "golang.org/x/time/rate"
+func recoverPanic(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        defer func() {
+            if value := recover(); value != nil {
+                log.Printf("panic: %v", value)
+                writeError(w, http.StatusInternalServerError, "internal error")
+            }
+        }()
 
+        next.ServeHTTP(w, r)
+    })
+}
+```
+
+### 认证示例
+
+```go
+type userIDKey struct{}
+
+func auth(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+        if token == "" {
+            writeError(w, http.StatusUnauthorized, "missing token")
+            return
+        }
+
+        userID, err := validateToken(token)
+        if err != nil {
+            writeError(w, http.StatusUnauthorized, "invalid token")
+            return
+        }
+
+        // 把请求作用域数据放入 context，后续 handler 可读取
+        ctx := context.WithValue(r.Context(), userIDKey{}, userID)
+        next.ServeHTTP(w, r.WithContext(ctx))
+    })
+}
+```
+
+---
+
+## 静态文件
+
+```go
+fs := http.FileServer(http.Dir("./static"))
+mux.Handle("GET /static/", http.StripPrefix("/static/", fs))
+```
+
+公开静态目录前要确认目录中没有配置文件、源码、密钥等敏感内容。
+
+---
+
+## 限流
+
+下面是按客户端 IP 限流的简化示例。
+
+```go
 type RateLimiter struct {
-    limiter  *rate.Limiter
-    viscosity map[string]*rate.Limiter
-    mu       sync.RWMutex
+    mu       sync.Mutex
+    visitors map[string]*rate.Limiter
 }
 
-func newRateLimiter() *RateLimiter {
+func NewRateLimiter() *RateLimiter {
     return &RateLimiter{
-        limiter:  rate.NewLimiter(rate.Limit(100), 100),
-        viscosity: make(map[string]*rate.Limiter),
+        visitors: make(map[string]*rate.Limiter),
     }
 }
 
-func (rl *RateLimiter) getLimiter(ip string) *rate.Limiter {
+func (rl *RateLimiter) limiterFor(ip string) *rate.Limiter {
     rl.mu.Lock()
     defer rl.mu.Unlock()
-    
-    if limiter, ok := rl.viscosity[ip]; ok {
-        return limiter
+
+    limiter, ok := rl.visitors[ip]
+    if !ok {
+        limiter = rate.NewLimiter(10, 20) // 每秒 10 个事件，突发 20 个
+        rl.visitors[ip] = limiter
     }
-    
-    limiter := rate.NewLimiter(rate.Limit(10), 10)
-    rl.viscosity[ip] = limiter
     return limiter
 }
 
-func rateLimitMiddleware(next http.HandlerFunc) http.HandlerFunc {
-    rl := newRateLimiter()
-    
-    return func(w http.ResponseWriter, r *http.Request) {
-        ip := r.RemoteAddr
-        if !rl.getLimiter(ip).Allow() {
-            http.Error(w, "请求过于频繁", http.StatusTooManyRequests)
+func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        host, _, err := net.SplitHostPort(r.RemoteAddr)
+        if err != nil {
+            writeError(w, http.StatusBadRequest, "bad remote address")
             return
         }
+
+        if !rl.limiterFor(host).Allow() {
+            writeError(w, http.StatusTooManyRequests, "too many requests")
+            return
+        }
+
         next.ServeHTTP(w, r)
+    })
+}
+```
+
+真实生产环境还要考虑代理头、清理长期不活跃 IP、分布式限流等问题。
+
+---
+
+## 优雅关闭
+
+```go
+func main() {
+    mux := http.NewServeMux()
+    mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
+        w.WriteHeader(http.StatusOK)
+    })
+
+    server := &http.Server{
+        Addr:         ":8080",
+        Handler:      chain(mux, recoverPanic, logging),
+        ReadTimeout:  5 * time.Second,
+        WriteTimeout: 10 * time.Second,
+        IdleTimeout:  60 * time.Second,
+    }
+
+    go func() {
+        if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+            log.Fatalf("listen: %v", err)
+        }
+    }()
+
+    quit := make(chan os.Signal, 1)
+    signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+    <-quit
+
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+    if err := server.Shutdown(ctx); err != nil {
+        log.Printf("shutdown: %v", err)
     }
 }
 ```
+
+`Shutdown` 会停止接收新连接，并等待已有请求在 context 超时前完成。
 
 ---
 
 ## 第三方路由器
 
-### chi 路由器
+标准库足够应对许多服务。需要更丰富的路由组、中间件生态、参数绑定时，可以考虑：
 
-```go
-import "github.com/go-chi/chi/v5"
+| 路由器 | 特点 |
+|--------|------|
+| chi | 轻量、贴近标准库、适合 API 服务 |
+| gin | 功能完整、生态丰富、上手快 |
+| echo | Web/API 功能较完整 |
 
-func main() {
-    r := chi.NewRouter()
-    
-    // 中间件
-    r.Use(middleware.Logger)
-    r.Use(middleware.Recoverer)
-    
-    // 路由组
-    r.Route("/api", func(r chi.Router) {
-        r.Get("/users", listUsers)
-        r.Post("/users", createUser)
-        r.Get("/users/{id}", getUser)
-        r.Put("/users/{id}", updateUser)
-        r.Delete("/users/{id}", deleteUser)
-    })
-    
-    http.ListenAndServe(":8080", r)
-}
-
-func listUsers(w http.ResponseWriter, r *http.Request) {
-    json.NewEncoder(w).Encode([]User{})
-}
-```
-
-### gin 路由器
-
-```go
-import "github.com/gin-gonic/gin"
-
-func main() {
-    r := gin.Default()
-    
-    r.GET("/users/:id", func(c *gin.Context) {
-        id := c.Param("id")
-        c.JSON(200, gin.H{"id": id})
-    })
-    
-    r.POST("/users", func(c *gin.Context) {
-        var user User
-        if err := c.ShouldBindJSON(&user); err != nil {
-            c.JSON(400, gin.H{"error": err.Error()})
-            return
-        }
-        c.JSON(200, user)
-    })
-    
-    r.Run(":8080")
-}
-```
+即使用第三方框架，也建议先理解 `net/http` 的 `Handler` 模型，因为大部分框架都构建在它之上。
 
 ---
 
 ## 最佳实践
 
-| 实践 | 说明 |
-|------|------|
-| **使用路由器** | 不使用默认 ServeMux，避免全局状态 |
-| **设置超时** | 为服务器设置 Read/Write Timeout |
-| **优雅关闭** | 处理 SIGTERM 信号，优雅关闭服务器 |
-| **使用中间件** | 分离横切关注点（日志、认证、CORS） |
-| **返回 JSON** | 统一 JSON 响应格式 |
-| **错误处理** | 对 JSON 解析等操作进行检查 |
+1. 显式创建 `http.ServeMux` 或路由器，不依赖全局默认路由。
+2. 给 `http.Server` 设置 `ReadTimeout`、`WriteTimeout`、`IdleTimeout`。
+3. 解析 JSON 时限制请求体大小，并检查解码错误。
+4. 统一 JSON 响应和错误格式。
+5. 中间件统一使用 `func(http.Handler) http.Handler`，方便组合。
+6. 使用请求 `context` 传递取消信号和请求作用域数据。
+7. 生产服务实现优雅关闭。
 
 ---
 
-## 总结
+## 小结
 
-Go HTTP 服务开发核心要点：
-
-1. **Handler** - 实现 Handler 接口或使用 HandlerFunc
-2. **路由** - 使用 ServeMux 或第三方路由器
-3. **请求解析** - 获取参数、解析 JSON、处理路径参数
-4. **响应构建** - JSON 响应、设置 Header、状态码
-5. **中间件** - 日志、认证、限流等横切关注点
-6. **优雅关闭** - 处理信号、超时控制
-
-掌握这些技能能让你构建出专业的 HTTP 服务。
+Go HTTP 服务的核心是 `Handler`。理解 `ServeMux`、请求解析、响应写入、中间件、context 和优雅关闭，就能用标准库写出清晰可靠的 API 服务。复杂业务再引入 chi、gin 等框架，会更知道自己在使用什么。

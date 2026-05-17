@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-08T00:00:00.000+08:00
 modDatetime: 2026-05-08T00:00:00.000+08:00
 slug: go-error-handling
-description: '深入学习 Go 语言错误处理机制，掌握 error 接口、自定义错误、错误包装、错误链等核心概念。'
+description: '深入学习 Go 语言错误处理机制，掌握 error 接口、自定义错误、错误包装、错误链、errors.Is/As/Join、panic/recover 和工程最佳实践。'
 tags:
   - Go
   - 错误处理
@@ -18,23 +18,23 @@ language: zh-CN
 
 ## 概述
 
-Go 语言采用独特的错误处理方式，没有 try-catch 机制，而是通过返回 error 对象来表达错误。这种设计让错误处理变得显式和可控，但也需要开发者掌握正确的错误处理模式。
+Go 没有 Java、JavaScript 那样的 `try-catch` 机制。普通失败通过返回 `error` 显式表达，调用方决定如何处理。
 
-### 核心概念
+```go
+value, err := strconv.Atoi("42")
+if err != nil {
+    return fmt.Errorf("解析数字: %w", err)
+}
+fmt.Println(value)
+```
 
-| 概念 | 说明 |
-|------|------|
-| **error 接口** | 内置接口，用于表示错误状态 |
-| **返回错误** | 函数返回 (result, error) 形式 |
-| **错误检查** | if err != nil 处理错误 |
-| **错误包装** | fmt.Errorf 携带上下文 |
-| **哨兵错误** | 预定义错误变量用于比较 |
+这种写法看起来直接，但优点也很明显：错误路径清楚，不会被隐藏在异常跳转里。
 
 ---
 
-## error 接口基础
+## error 接口
 
-### 内置 error 接口
+`error` 是内置接口。
 
 ```go
 type error interface {
@@ -42,463 +42,316 @@ type error interface {
 }
 ```
 
-### 最简单的错误
+任何实现 `Error() string` 方法的类型都可以作为错误返回。
+
+### 创建简单错误
 
 ```go
-import "errors"
-
-// 使用 errors.New 创建错误
-err := errors.New("这是一个错误")
-fmt.Println(err)  // 这是一个错误
+var ErrNotFound = errors.New("not found")
 ```
 
-### 函数返回错误
+`errors.New` 适合创建固定错误值。需要格式化上下文时使用 `fmt.Errorf`。
 
 ```go
-import (
-    "errors"
-    "fmt"
-)
+return fmt.Errorf("用户 %s 不存在", userID)
+```
 
+---
+
+## 返回错误
+
+Go 习惯把 `error` 放在最后一个返回值。
+
+```go
 func divide(a, b int) (int, error) {
     if b == 0 {
-        return 0, errors.New("除数不能为零")
+        return 0, errors.New("除数不能为 0")
     }
     return a / b, nil
 }
+```
 
-// 使用函数
-result, err := divide(10, 2)
+调用方必须先检查错误，再使用结果。
+
+```go
+result, err := divide(10, 0)
 if err != nil {
-    fmt.Println("错误:", err)
-    return
+    return err
 }
-fmt.Println("结果:", result)
-```
-
----
-
-## 自定义错误类型
-
-### 定义错误类型
-
-```go
-import (
-    "fmt"
-    "time"
-)
-
-// 自定义错误类型
-type ValidationError struct {
-    Field   string
-    Message string
-    Time    time.Time
-}
-
-func (e *ValidationError) Error() string {
-    return fmt.Sprintf("%s: %s", e.Field, e.Message)
-}
-
-// 使用自定义错误
-func validateAge(age int) error {
-    if age < 0 {
-        return &ValidationError{
-            Field:   "age",
-            Message: "年龄不能为负数",
-            Time:    time.Now(),
-        }
-    }
-    if age > 150 {
-        return &ValidationError{
-            Field:   "age",
-            Message: "年龄不合理",
-            Time:    time.Now(),
-        }
-    }
-    return nil
-}
-```
-
-### 检查错误类型
-
-```go
-err := validateAge(-1)
-if err != nil {
-    // 类型断言
-    if validationErr, ok := err.(*ValidationError); ok {
-        fmt.Printf("验证错误字段: %s\n", validationErr.Field)
-        fmt.Printf("错误时间: %s\n", validationErr.Time)
-    }
-}
-```
-
----
-
-## 错误包装
-
-### fmt.Errorf 包装错误
-
-```go
-import "fmt"
-
-func readConfig(path string) error {
-    if path == "" {
-        return fmt.Errorf("配置文件路径为空")
-    }
-    // 模拟读取失败
-    return fmt.Errorf("读取文件失败: %w", errors.New("file not found"))
-}
-
-func main() {
-    err := readConfig("")
-    if err != nil {
-        // errors.Is 检查错误链
-        if errors.Is(err, errors.New("file not found")) {
-            fmt.Println("文件未找到")
-        }
-    }
-}
-```
-
-### errors.Wrap 包装 (Go 1.13+)
-
-```go
-import "fmt"
-
-func readFile(filename string) error {
-    return fmt.Errorf("文件读取失败: %w", os.ErrNotExist)
-}
-
-func processData(filename string) error {
-    err := readFile(filename)
-    if err != nil {
-        return fmt.Errorf("处理数据时: %w", err)
-    }
-    return nil
-}
-
-// 检查错误链
-err := processData("data.txt")
-if err != nil {
-    if errors.Is(err, os.ErrNotExist) {
-        fmt.Println("文件不存在")
-    }
-}
+fmt.Println(result)
 ```
 
 ---
 
 ## 哨兵错误
 
-### 预定义错误
+哨兵错误是预定义错误变量，适合表示稳定、可比较的错误状态。
 
 ```go
-import "errors"
-
-// 定义哨兵错误
 var (
-    ErrNotFound      = errors.New("资源不存在")
-    ErrUnauthorized   = errors.New("未授权访问")
-    ErrInvalidInput   = errors.New("无效输入")
-    ErrAlreadyExists  = errors.New("资源已存在")
+    ErrUserNotFound = errors.New("user not found")
+    ErrInvalidInput = errors.New("invalid input")
 )
 
 func findUser(id string) (*User, error) {
     if id == "" {
         return nil, ErrInvalidInput
     }
-    if id == "unknown" {
-        return nil, ErrNotFound
+    if id == "missing" {
+        return nil, ErrUserNotFound
     }
     return &User{ID: id}, nil
 }
+```
 
-// 使用哨兵错误
-user, err := findUser("unknown")
+判断时使用 `errors.Is`，这样即使错误被包装过也能匹配。
+
+```go
+user, err := findUser("missing")
 if err != nil {
-    if errors.Is(err, ErrNotFound) {
-        fmt.Println("用户不存在")
-    } else if errors.Is(err, ErrInvalidInput) {
-        fmt.Println("输入无效")
+    if errors.Is(err, ErrUserNotFound) {
+        return nil, fmt.Errorf("查询用户失败: %w", err)
     }
+    return nil, err
+}
+fmt.Println(user)
+```
+
+不要这样写：
+
+```go
+if errors.Is(err, errors.New("user not found")) {
+    // 永远不要用新创建的 error 做匹配目标
 }
 ```
 
-### 避免暴露内部错误
+每次 `errors.New` 都会创建一个新的错误值，和原来的哨兵错误不是同一个值。
+
+---
+
+## 错误包装
+
+Go 1.13 起，`fmt.Errorf` 使用 `%w` 可以包装错误，保留错误链。
 
 ```go
-import "errors"
-
-var errNotFound = errors.New("not found")
-
-type UserStore struct {
-    data map[string]*User
-}
-
-func (s *UserStore) FindUser(id string) (*User, error) {
-    user, ok := s.data[id]
-    if !ok {
-        return nil, errNotFound
-    }
-    return user, nil
-}
-
-// 对外暴露的包装错误
-func (s *UserStore) GetUser(id string) (*User, error) {
-    user, err := s.FindUser(id)
+func loadConfig(path string) error {
+    data, err := os.ReadFile(path)
     if err != nil {
-        if errors.Is(err, errNotFound) {
-            return nil, fmt.Errorf("获取用户失败: %w", err)
-        }
-        return nil, err
+        return fmt.Errorf("读取配置文件 %q: %w", path, err)
     }
-    return user, nil
-}
-```
 
----
-
-## 错误链操作
-
-### errors.Is
-
-```go
-import (
-    "errors"
-    "fmt"
-)
-
-var ErrBase = errors.New("基础错误")
-
-func level1() error { return fmt.Errorf("level1: %w", ErrBase) }
-func level2() error { return fmt.Errorf("level2: %w", level1()) }
-func level3() error { return fmt.Errorf("level3: %w", level2()) }
-
-// 检查错误链
-err := level3()
-fmt.Println(errors.Is(err, ErrBase))  // true
-```
-
-### errors.As
-
-```go
-import (
-    "errors"
-    "fmt"
-)
-
-type MyError struct {
-    Code    int
-    Message string
-}
-
-func (e *MyError) Error() string {
-    return e.Message
-}
-
-func returnMyError() error {
-    return &MyError{Code: 404, Message: "not found"}
-}
-
-// 提取错误类型
-err := returnMyError()
-var myErr *MyError
-if errors.As(err, &myErr) {
-    fmt.Printf("错误代码: %d\n", myErr.Code)
-}
-```
-
----
-
-## defer 延迟处理
-
-### 清理资源
-
-```go
-func readLargeFile(filepath string) error {
-    file, err := os.Open(filepath)
-    if err != nil {
-        return err
-    }
-    
-    // defer 确保文件关闭
-    defer file.Close()
-    
-    // 读取文件内容
-    data := make([]byte, 1024)
-    _, err = file.Read(data)
-    return err
-}
-```
-
-### 恢复 panic
-
-```go
-import "fmt"
-
-func safeDivide(a, b int) (result int, err error) {
-    // defer 恢复 panic
-    defer func() {
-        if r := recover(); r != nil {
-            err = fmt.Errorf("panic recovered: %v", r)
-        }
-    }()
-    
-    // 可能 panic 的代码
-    if b == 0 {
-        panic("除数不能为零")
-    }
-    return a / b, nil
-}
-
-func main() {
-    result, err := safeDivide(10, 0)
-    if err != nil {
-        fmt.Println("捕获错误:", err)
-    }
-}
-```
-
----
-
-## 错误处理模式
-
-### 只检查错误存在
-
-```go
-data, err := fetchData()
-if err != nil {
-    return err  // 简单向上传递
-}
-```
-
-### 添加上下文后传递
-
-```go
-data, err := fetchData()
-if err != nil {
-    return fmt.Errorf("获取用户数据失败: %w", err)
-}
-```
-
-### 使用错误变量进行比较
-
-```go
-if errors.Is(err, os.ErrNotExist) {
-    // 文件不存在
-}
-```
-
-### 自定义错误类型检查
-
-```go
-var validationErr *ValidationError
-if errors.As(err, &validationErr) {
-    fmt.Println(validationErr.Field)
-}
-```
-
----
-
-## 最佳实践
-
-### 应该做的事情
-
-| 实践 | 说明 |
-|------|------|
-| **返回具体错误** | 使用自定义错误类型提供更多上下文 |
-| **错误包装** | 使用 %w 包装底层错误 |
-| **使用哨兵错误** | 对于可预见的错误使用预定义错误 |
-| **错误检查使用 Is/As** | 不要直接比较错误值 |
-| **defer 清理资源** | 确保资源正确释放 |
-
-### 不应该做的事情
-
-| 反模式 | 说明 |
-|--------|------|
-| **忽略错误** | 不要使用 `_` 忽略错误 |
-| **panic 用于正常流程** | panic 只用于真正的异常情况 |
-| **字符串比较错误** | 使用 errors.Is 而非字符串比较 |
-| **错误信息过于模糊** | 提供有意义的错误信息 |
-
-### 示例对比
-
-```go
-// ❌ 错误：忽略错误
-data, _ := fetchData()
-
-// ❌ 错误：字符串比较
-if err.Error() == "not found" { }
-
-// ❌ 错误：过于宽泛
-if err != nil {
-    return err
-}
-
-// ✅ 正确：明确处理
-data, err := fetchData()
-if err != nil {
-    return fmt.Errorf("处理数据失败: %w", err)
-}
-
-// ✅ 正确：使用 errors.Is
-if errors.Is(err, os.ErrNotExist) {
-    return fmt.Errorf("配置文件不存在: %w", err)
-}
-```
-
----
-
-## 错误与日志
-
-### 在错误中包含日志
-
-```go
-import "log"
-
-func processRequest(req *Request) error {
-    err := validate(req)
-    if err != nil {
-        log.Printf("验证失败: %v", err)
-        return err
+    if len(data) == 0 {
+        return fmt.Errorf("配置文件 %q 为空: %w", path, ErrInvalidInput)
     }
     return nil
 }
 ```
 
-### 统一错误响应
+检查错误链：
 
 ```go
-type APIError struct {
-    Code    int    `json:"code"`
-    Message string `json:"message"`
+err := loadConfig("missing.yaml")
+if errors.Is(err, os.ErrNotExist) {
+    fmt.Println("配置文件不存在")
+}
+```
+
+包装错误时要补充“正在做什么”，而不是重复底层错误文本。
+
+---
+
+## 自定义错误类型
+
+自定义错误适合携带结构化信息。
+
+```go
+type ValidationError struct {
+    Field string
+    Msg   string
 }
 
-func (e *APIError) Error() string {
-    return e.Message
+func (e *ValidationError) Error() string {
+    return e.Field + ": " + e.Msg
 }
 
-func handleError(err error) *APIError {
-    if errors.Is(err, ErrNotFound) {
-        return &APIError{Code: 404, Message: "资源不存在"}
+func validateAge(age int) error {
+    if age < 0 {
+        return &ValidationError{Field: "age", Msg: "不能为负数"}
     }
-    if errors.Is(err, ErrUnauthorized) {
-        return &APIError{Code: 401, Message: "未授权"}
+    if age > 150 {
+        return &ValidationError{Field: "age", Msg: "不合理"}
     }
-    return &APIError{Code: 500, Message: "内部错误"}
+    return nil
 }
+```
+
+提取错误类型时使用 `errors.As`。
+
+```go
+err := validateAge(-1)
+
+var validationErr *ValidationError
+if errors.As(err, &validationErr) {
+    fmt.Println("字段:", validationErr.Field)
+}
+```
+
+`errors.As` 能穿透包装链，比直接类型断言更适合现代 Go 代码。
+
+---
+
+## 实现 Unwrap
+
+自定义错误类型也可以实现 `Unwrap`，让 `errors.Is/As` 识别内部错误。
+
+```go
+type QueryError struct {
+    Query string
+    Err   error
+}
+
+func (e *QueryError) Error() string {
+    return "查询失败: " + e.Query
+}
+
+func (e *QueryError) Unwrap() error {
+    return e.Err
+}
+```
+
+使用：
+
+```go
+err := &QueryError{
+    Query: "select * from users",
+    Err:   context.DeadlineExceeded,
+}
+
+fmt.Println(errors.Is(err, context.DeadlineExceeded)) // true
 ```
 
 ---
 
-## 总结
+## errors.Join
 
-Go 的错误处理设计强调显式和可控：
+当一个操作可能产生多个错误时，可以使用 `errors.Join` 合并。
 
-1. **error 接口** - 内置接口，返回错误作为函数返回值
-2. **自定义错误** - 通过实现 Error() 方法创建类型
-3. **错误包装** - 使用 %w 在错误链中保留上下文
-4. **errors.Is/As** - 安全地检查和提取错误
-5. **defer** - 确保资源清理和 panic 恢复
+```go
+func closeAll(closers ...io.Closer) error {
+    var errs []error
+    for _, closer := range closers {
+        if err := closer.Close(); err != nil {
+            errs = append(errs, err)
+        }
+    }
+    return errors.Join(errs...)
+}
+```
 
-掌握这些技巧能让你写出健壮的 Go 代码。
+`errors.Is` 和 `errors.As` 可以检查由 `errors.Join` 返回的错误树。
+
+---
+
+## defer 与资源清理
+
+`defer` 常用于释放资源。
+
+```go
+func copyFile(dstPath, srcPath string) (err error) {
+    src, err := os.Open(srcPath)
+    if err != nil {
+        return fmt.Errorf("打开源文件: %w", err)
+    }
+    defer src.Close()
+
+    dst, err := os.Create(dstPath)
+    if err != nil {
+        return fmt.Errorf("创建目标文件: %w", err)
+    }
+
+    defer func() {
+        closeErr := dst.Close()
+        if err == nil && closeErr != nil {
+            // 写文件时 Close 也可能返回刷盘错误
+            err = fmt.Errorf("关闭目标文件: %w", closeErr)
+        }
+    }()
+
+    if _, err := io.Copy(dst, src); err != nil {
+        return fmt.Errorf("复制文件: %w", err)
+    }
+    return nil
+}
+```
+
+只读文件的 `Close` 错误通常影响较小；写文件时更应该关注 `Close` 错误。
+
+---
+
+## panic 和 recover
+
+普通业务失败应返回 `error`。`panic` 适合表示程序无法继续的异常，例如不可恢复的不变量破坏。
+
+`recover` 只能在同一个 goroutine 的 `defer` 函数中捕获 panic。
+
+```go
+func RecoverMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        defer func() {
+            if value := recover(); value != nil {
+                log.Printf("panic: %v", value)
+                http.Error(w, "internal server error", http.StatusInternalServerError)
+            }
+        }()
+
+        next.ServeHTTP(w, r)
+    })
+}
+```
+
+中间件捕获 panic 后，应记录日志并返回统一错误响应，避免服务进程因为单个请求退出。
+
+---
+
+## 错误和日志
+
+错误应向上返回，日志通常在边界层记录。
+
+```go
+func service(ctx context.Context) error {
+    if err := repository(ctx); err != nil {
+        return fmt.Errorf("执行业务逻辑: %w", err)
+    }
+    return nil
+}
+
+func handler(w http.ResponseWriter, r *http.Request) {
+    if err := service(r.Context()); err != nil {
+        // HTTP 边界层统一记录日志和转换响应
+        log.Printf("request failed: %v", err)
+        http.Error(w, "internal error", http.StatusInternalServerError)
+        return
+    }
+}
+```
+
+不要在每一层都打印同一个错误，否则日志会重复且难以定位。
+
+---
+
+## 最佳实践
+
+| 做法 | 说明 |
+|------|------|
+| 失败时立即处理或返回 | 不要忽略错误 |
+| 包装错误时添加上下文 | 说明当前操作，例如“读取配置” |
+| 用 `%w` 保留错误链 | 方便上层 `errors.Is/As` |
+| 稳定错误用哨兵值 | 不要用字符串比较错误 |
+| 类型信息用自定义错误 | 需要字段、错误码、重试标记时很有用 |
+| 边界层统一记录日志 | 避免重复日志 |
+
+---
+
+## 小结
+
+Go 错误处理的核心是“显式”。函数返回错误，调用方检查错误；需要上下文时包装错误；需要判断时使用 `errors.Is/As`；需要多个错误时使用 `errors.Join`；只有真正异常的情况才使用 `panic/recover`。

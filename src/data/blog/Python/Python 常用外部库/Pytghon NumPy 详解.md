@@ -1,5 +1,5 @@
 ---
-title: NumPy 完全指南   数组计算与数据分析
+title: Pytghon NumPy 详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: numpy
@@ -10,12 +10,12 @@ tags:
   - Python
   - NumPy
   - docs
-description: NumPy 完全指南，涵盖 ndarray 数据结构、数组创建、索引切片、通用函数等核心内容。
+description: Python NumPy 详解，涵盖 ndarray 数据结构、数组创建、索引切片、通用函数等核心内容。
 series: python
 language: zh-CN
 ---
 
-# NumPy 完全指南 - 数组计算与数据分析
+# Python NumPy 详解
 
 ## 简介
 

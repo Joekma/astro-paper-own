@@ -1,5 +1,5 @@
 ﻿---
-title: Python Beautiful Soup 完全指南
+title: Python Beautiful Soup 详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: python-beautiful-soup
@@ -15,7 +15,7 @@ series: python
 language: zh-CN
 ---
 
-# Python Beautiful Soup 完全指南
+# Python Beautiful Soup 详解
 
 ## 简介
 

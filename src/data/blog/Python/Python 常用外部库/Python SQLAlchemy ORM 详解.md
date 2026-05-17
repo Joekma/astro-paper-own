@@ -1,5 +1,5 @@
 ﻿---
-title: Python SQLAlchemy ORM 框架完全指南
+title: Python SQLAlchemy ORM 详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: python-sqlalchemy-orm
@@ -17,7 +17,7 @@ series: python
 language: zh-CN
 ---
 
-# Python SQLAlchemy ORM 框架完全指南
+# Python SQLAlchemy ORM 详解
 
 ## 介绍
 

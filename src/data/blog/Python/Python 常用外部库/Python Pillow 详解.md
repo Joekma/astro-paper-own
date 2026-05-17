@@ -1,5 +1,5 @@
 ---
-title: Python常用库之Pilow
+title: Python Pillow 详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: python-pillow-image-processing
@@ -16,7 +16,7 @@ language: zh-CN
 
 ---
 
-# Python常用库之Pilow
+# Python Pillow 详解
 
 ## 简介
 

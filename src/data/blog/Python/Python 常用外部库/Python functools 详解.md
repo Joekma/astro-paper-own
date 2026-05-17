@@ -1,5 +1,5 @@
 ﻿---
-title: Python 常用库之 functools 指南
+title: Python functools 详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: python-functools
@@ -10,13 +10,13 @@ tags:
   - Python
   - functools
   - docs
-description: Python functools 模块完全指南，详解 partial 偏函数和 wraps 装饰器保留元信息的最佳实践。
+description: Python functools 详解，详解 partial 偏函数和 wraps 装饰器保留元信息的最佳实践。
 
 series: python
 language: zh-CN
 ---
 
-# Python 常用库之 functools 指南
+# Python functools 详解
 
 ## 简介
 
@@ -29,7 +29,7 @@ language: zh-CN
 
 这篇文章重点整理这两个最常见、最实用的工具。
 
-## 🧰 functools 是什么
+## functools 是什么
 
 `functools` 在 Python 2.5 中引入，用于集中提供一些与函数相关的辅助能力。
 

@@ -1,5 +1,5 @@
 ---
-title: Haystack Complete Guide   Django Full Text Search Framework
+title: Python Haystack 详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: haystack-complete-guide-django-full-text-search-framework
@@ -10,12 +10,12 @@ tags:
   - Python
   - Django
   - docs
-description: Django Haystack 全文搜索框架完整指南，支持 Solr、Elasticsearch、Whoosh 等多种后端。
+description: Python Django Haystack 全文搜索框架完整指南，支持 Solr、Elasticsearch、Whoosh 等多种后端。
 series: python
 language: zh-CN
 ---
 
-# Haystack Complete Guide - Django Full-Text Search Framework
+# Python Haystack 详解
 
 ## Introduction
 
