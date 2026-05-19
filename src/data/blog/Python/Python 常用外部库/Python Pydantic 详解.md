@@ -68,12 +68,14 @@ user = User(name="张三", age=25, email="zhangsan@example.com")
 print(user.name)    # 输出: 张三
 print(user.age)     # 输出: 25
 
-# 转换为字典
+# model_dump(): 将模型实例转换为 Python 字典（dict）
+# 这是 Pydantic v2 的方法名，v1 版本使用的是 dict()
 user_dict = user.model_dump()
 print(user_dict)
 # 输出: {'name': '张三', 'age': 25, 'email': 'zhangsan@example.com'}
 
-# 转换为 JSON
+# model_dump_json(): 将模型实例转换为 JSON 字符串
+# 等同于 json.dumps(model_dump())，内部自动处理日期等类型的序列化
 user_json = user.model_dump_json()
 print(user_json)
 # 输出: {"name": "张三", "age": 25, "email": "zhangsan@example.com"}
@@ -243,13 +245,18 @@ except Exception as e:
 from pydantic import BaseModel, Field, AliasChoices
 
 class UserModel(BaseModel):
-    # 使用别名
+    # Field 参数说明：
+    # - alias: 序列化时使用的别名（导出时显示的名称）
+    # - validation_alias: 验证时接受的别名（允许传入的多个名称）
+    # - AliasChoices: 允许验证时接受多个不同的别名名称
     user_name: str = Field(alias="userName", validation_alias=AliasChoices("userName", "username", "name"))
 
-    # 多个别名
+    # 多个别名：验证时接受 email、emailAddress、mail 任一参数
     email_address: str = Field(alias="email", validation_alias=AliasChoices("email", "emailAddress", "mail"))
 
-    # 保留原始字段名但接受别名输入
+    # alias 和 serialization_alias 的区别：
+    # - alias: 输入和输出都使用该别名
+    # - serialization_alias: 仅输出时使用该别名
     phone: str = Field(alias="phoneNumber", serialization_alias="phone_number")
 
 # 使用别名创建实例
@@ -283,6 +290,10 @@ class RegisterForm(BaseModel):
     email: str
     age: int
 
+    # @field_validator 装饰器说明：
+    # - 参数 "username" 指定要验证的字段名，可以是单个字段或多个字段的列表
+    # - 必须使用 @classmethod，因为验证器是类方法
+    # - info 参数（可选）包含字段的额外信息，如 field_name、data（其他字段值）
     @field_validator("username")
     @classmethod
     def validate_username(cls, v):
@@ -353,6 +364,10 @@ class OrderModel(BaseModel):
     end_date: str
     status: str
 
+    # @model_validator 装饰器说明：
+    # - mode="after": 在所有字段验证完成后执行，适用于需要访问多个字段的场景
+    # - 返回值类型必须标注为 Self（Python 3.11+）或具体类型名
+    # - self 参数包含所有已验证的字段值
     @model_validator(mode="after")
     def validate_dates(self) -> Self:
         # 检查日期顺序
@@ -399,6 +414,8 @@ class SubscriptionModel(BaseModel):
     yearly_price: float
     discount_code: Optional[str] = None
 
+    # model_validator 也可以用于定价逻辑验证
+    # 当 plan 为 "yearly" 时，验证年付价格是否合理
     @model_validator(mode="after")
     def validate_pricing(self) -> Self:
         # 计算折扣
@@ -549,21 +566,27 @@ print(f"上级的上级: {employee.supervisor.supervisor.name}")
 from pydantic import BaseModel, ConfigDict
 
 class UserConfig(BaseModel):
+    # model_config = ConfigDict(...) 是 Pydantic v2 配置模型的推荐方式
+    # 相比 v1 的 class Config，用 ConfigDict 更简洁且类型安全
     model_config = ConfigDict(
-        # 允许额外字段
-        extra="ignore",  # 或 "forbid", "allow"
+        # extra 参数控制额外字段的行为：
+        # - "ignore": 忽略额外字段（默认）
+        # - "forbid": 禁止额外字段
+        # - "allow": 允许额外字段
+        extra="ignore",  
 
-        # 案例转换
+        # str_to_lower/str_to_upper: 自动转换字符串大小写
         str_to_lower=True,        # 字符串转小写
         str_to_upper=False,       # 字符串转大写
 
-        # 别名使用
+        # populate_by_name: 允许使用原始字段名创建实例（即使有 alias）
         populate_by_name=True,    # 允许使用原始字段名
 
-        # 浮点数精度
+        # float_precision: 序列化时浮点数的精度（小数位数）
         float_precision=2,        # 保留2位小数
 
-        # JSON Schema 配置
+        # json_schema_extra: 为生成的 JSON Schema 添加自定义信息
+        # 这些信息对于 API 文档生成很有用（如 Swagger/OpenAPI）
         json_schema_extra={
             "example": {
                 "name": "示例用户",
@@ -593,16 +616,23 @@ print(user.email)  # 输出: test@example.com
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 class AdvancedConfig(BaseModel):
+    # 使用 ConfigDict 配置模型的高级选项
     model_config = ConfigDict(
-        # 验证配置
+        # validate_assignment: 赋值时验证（当属性被修改时也进行验证）
         validate_assignment=True,  # 赋值时验证
+
+        # strict=True: 严格模式，不允许类型强制转换
+        # 例如：age="25" (字符串) 在 strict 模式下会报错，而正常模式会转为 int
         strict=True,                # 严格模式
+
+        # extra="forbid": 禁止传入未声明的字段，传入会报错
         extra="forbid",             # 禁止未声明字段
 
-        # 别名配置
+        # populate_by_name: 允许通过原始字段名或别名来创建实例
         populate_by_name=True,
 
-        # 文档配置
+        # title: 模型的标题（用于 API 文档）
+        # json_schema_extra: 自定义 JSON Schema 的附加信息
         title="用户模型",
         json_schema_extra={
             "description": "用户信息数据模型",
@@ -667,7 +697,11 @@ product = Product(
 product_dict = product.model_dump()
 print(f"字典: {product_dict}")
 
-# 转换为字典（排除 None 值）
+# model_dump 方法的参数说明：
+# - exclude_none: 排除值为 None 的字段
+# - include: 只包含指定的字段（集合）
+# - exclude: 排除指定的字段（集合）
+# - by_alias: 使用别名（Field 的 alias）作为键名
 product_dict_exclude_none = product.model_dump(exclude_none=True)
 print(f"排除 None: {product_dict_exclude_none}")
 
@@ -675,11 +709,15 @@ print(f"排除 None: {product_dict_exclude_none}")
 product_dict_partial = product.model_dump(include=["name", "price"])
 print(f"部分字段: {product_dict_partial}")
 
-# 转换为 JSON 字符串
+# model_dump_json: 转换为 JSON 字符串
+# 可选参数：
+# - indent: 格式化缩进（用于美化输出）
+# - by_alias: 使用别名
+# - exclude_none: 排除 None 值
 product_json = product.model_dump_json()
 print(f"JSON: {product_json}")
 
-# 转换为 JSON（日期格式化）
+# 格式化 JSON 输出
 product_json_formatted = product.model_dump_json(
     indent=2,  # 格式化输出
     by_alias=True
@@ -700,7 +738,9 @@ class Order(BaseModel):
     created_at: datetime
     items: List[str]
 
-    # 使用 field_serializer 序列化单个字段
+    # @field_serializer 装饰器用于自定义字段的序列化行为
+    # 作用：在 model_dump() 时对字段值进行自定义转换
+    # 参数：字段名字符串
     @field_serializer("amount")
     def serialize_amount(self, amount: float) -> str:
         # 将金额格式化为货币字符串
@@ -740,29 +780,31 @@ print(order.model_dump())
 ### 模型继承
 
 ```python
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, field_validator
 
 # 基类：基础信息
 class BaseInfo(BaseModel):
+    # populate_by_name=True: 允许使用原始字段名或别名来创建实例
+    # 这是 v2 版本的配置方式，v1 使用 class Config
     model_config = ConfigDict(populate_by_name=True)
 
     id: str
     name: str
     created_at: str
 
-# 中间类：用户信息
+# 中间类：用户信息（继承 BaseInfo）
 class UserBase(BaseInfo):
     email: str
     phone: Optional[str] = None
 
-# 子类：完整用户模型
+# 子类：完整用户模型（继承 UserBase）
 class User(UserBase):
     # 新增字段
     age: int
     address: str
     is_active: bool = True
 
-    # 新增验证器
+    # 字段验证器：验证 age 字段
     @field_validator("age")
     @classmethod
     def validate_age(cls, v):
@@ -866,13 +908,13 @@ print(f"邮箱: {employee.contact.email}")
 ### Pydantic Settings
 
 ```python
-# 导入 Settings 类
+# 导入 Settings 类（需要先 pip install pydantic-settings）
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
 # 定义应用配置
 class Settings(BaseSettings):
-    # 必填配置
+    # 必填配置：没有默认值，必须通过环境变量或 .env 文件提供
     app_name: str
     database_url: str
 
@@ -881,6 +923,10 @@ class Settings(BaseSettings):
     port: int = 8000
     host: str = "localhost"
 
+    # SettingsConfigDict 是 pydantic-settings 的配置类
+    # - env_prefix: 环境变量前缀，如 APP_APP_NAME 对应 app_name
+    # - env_file: .env 文件路径，用于从文件加载环境变量
+    # - case_sensitive: 环境变量名是否区分大小写
     model_config = SettingsConfigDict(
         env_prefix="APP_",  # 环境变量前缀：APP_DEBUG, APP_PORT
         env_file=".env",  # .env 文件路径
@@ -889,6 +935,7 @@ class Settings(BaseSettings):
     )
 
 # 从环境变量加载配置
+# 示例环境变量：
 # 导出 APP_APP_NAME=myapp
 # 导出 APP_DEBUG=true
 # 导出 APP_DATABASE_URL=postgresql://localhost:5432/mydb
@@ -941,17 +988,20 @@ class AppSettings(BaseSettings):
     app_name: str = "MyApp"
     debug: bool = False
 
-    # 嵌套配置
+    # 使用 Field 的 default_factory 创建嵌套配置实例
+    # default_factory 在每次创建实例时调用，生成新的配置对象
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     redis: RedisSettings = Field(default_factory=RedisSettings)
     email: EmailSettings = Field(default_factory=EmailSettings)
 
-    # API 配置
+    # 使用 lambda 函数设置默认值
     api_keys: List[str] = Field(default_factory=list)
     cors_origins: List[str] = Field(default_factory=lambda: ["http://localhost:3000"])
 
     model_config = SettingsConfigDict(
         env_file=".env",
+        # env_nested_delimiter: 嵌套配置的分割符
+        # 例如：EMAIL__SMTP_HOST 会映射到 email.smtp_host
         env_nested_delimiter="__",  # 使用 __ 分隔嵌套配置
     )
 
@@ -959,7 +1009,7 @@ class AppSettings(BaseSettings):
 # DB_USER=myuser
 # DB_PASSWORD=mypassword
 # REDIS_HOST=redis.example.com
-# EMAIL__SMTP_HOST=smtp.example.com
+# EMAIL__SMTP_HOST=smtp.example.com（双下划线表示嵌套）
 
 settings = AppSettings()
 
@@ -977,10 +1027,10 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Column, Integer, String, Float, Boolean
 from sqlalchemy.orm import declarative_base
 
-# 创建 SQLAlchemy 基类
+# 创建 SQLAlchemy 基类（所有模型都需要继承这个基类）
 Base = declarative_base()
 
-# SQLAlchemy 模型
+# SQLAlchemy 模型：数据库表结构定义
 class ProductORM(Base):
     __tablename__ = "products"
 
@@ -989,15 +1039,18 @@ class ProductORM(Base):
     price = Column(Float, nullable=False)
     in_stock = Column(Boolean, default=True)
 
-# Pydantic 模型（用于创建/更新）
+# Pydantic 模型（用于创建/更新操作）
 class ProductCreate(BaseModel):
+    # ConfigDict(from_attributes=True) 是关键配置：
+    # - from_attributes=True: 允许从 ORM 对象（如 SQLAlchemy 模型）创建 Pydantic 模型
+    # - 这使得可以从数据库查询结果直接转换为 Pydantic 模型
     model_config = ConfigDict(from_attributes=True)
 
     name: str
     price: float
     in_stock: bool = True
 
-# Pydantic 模型（用于读取）
+# Pydantic 模型（用于读取操作，包含 id 字段）
 class ProductRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -1006,7 +1059,7 @@ class ProductRead(BaseModel):
     price: float
     in_stock: bool
 
-# Pydantic 模型（部分更新）
+# Pydantic 模型（用于部分更新，所有字段都是可选的）
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
     price: Optional[float] = None
@@ -1016,13 +1069,13 @@ class ProductUpdate(BaseModel):
 from sqlalchemy.orm import Session
 
 def create_product(db: Session, product: ProductCreate):
-    # 创建 ORM 对象
+    # 将 Pydantic 模型转换为字典，再传给 SQLAlchemy
     db_product = ProductORM(**product.model_dump())
     db.add(db_product)
     db.commit()
     db.refresh(db_product)
 
-    # 转换为 Pydantic 模型
+    # model_validate：从 ORM 对象创建 Pydantic 模型（需要 from_attributes=True）
     return ProductRead.model_validate(db_product)
 
 # 使用示例
@@ -1053,7 +1106,7 @@ class UserModel(BaseModel):
             raise ValueError("邮箱格式不正确")
         return v
 
-# 方法 1：使用 try-except
+# 方法 1：使用 try-except 捕获 ValidationError
 try:
     user = UserModel(
         name="张三",
@@ -1061,7 +1114,10 @@ try:
         age=25
     )
 except ValidationError as e:
-    # 获取所有错误
+    # e.errors() 返回验证错误的列表，每个错误包含：
+    # - loc: 错误位置（字段路径），是一个元组如 ('email',)
+    # - type: 错误类型，如 'value_error'
+    # - msg: 错误消息描述
     for error in e.errors():
         print(f"字段: {error['loc']}")
         print(f"错误类型: {error['type']}")
@@ -1134,10 +1190,13 @@ def validate_phone_number(v: str) -> str:
 
     return f"{digits[:3]}-{digits[3:7]}-{digits[7:]}"
 
-# 使用 Annotated 和 BeforeValidator
+# Annotated + BeforeValidator 是 Pydantic v2 的新用法
+# - Annotated: 类型注解容器，用于添加元数据
+# - BeforeValidator: 验证器，定义在字段值被解析之前执行的转换/验证逻辑
+# 用法：Annotated[目标类型, BeforeValidator(验证函数)]
 class Contact(BaseModel):
     name: str
-    # 使用 BeforeValidator 在解析前进行转换
+    # BeforeValidator 在字段值被赋值前执行，用于数据预处理和验证
     phone: Annotated[str, BeforeValidator(validate_phone_number)]
 
 # 测试
@@ -1286,7 +1345,7 @@ class RegisterForm(BaseModel):
     password: str
     confirm_password: str
 
-    # 字段级别验证
+    # 字段级别验证：使用 @field_validator 装饰单个字段
     @field_validator("username")
     @classmethod
     def validate_username(cls, v):
@@ -1301,10 +1360,13 @@ class RegisterForm(BaseModel):
             raise ValueError("邮箱格式不正确")
         return v
 
-    # 模型级别验证（跨字段）
+    # 跨字段验证：使用 info 参数访问其他字段值
+    # info.data: 包含同一模型中其他已验证字段的字典
+    # 这样可以比较 confirm_password 和 password 是否一致
     @field_validator("confirm_password")
     @classmethod
     def validate_passwords_match(cls, v, info):
+        # info.data 包含已验证的其他字段
         if "password" in info.data and v != info.data["password"]:
             raise ValueError("两次输入的密码不一致")
         return v
@@ -1441,7 +1503,10 @@ class Post(BaseModel):
     title: str
     comments: list[Comment] = Field(default_factory=list)
 
-# 在定义后调用 model_rebuild
+# 处理循环引用的方法：
+# 1. 使用 from __future__ import annotations（推荐）：将类型注解延迟求值
+# 2. 使用字符串引用：field: "ClassName"
+# 3. 使用 model_rebuild()：在类定义后手动构建模型
 Post.model_rebuild()
 
 # 测试
