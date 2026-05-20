@@ -7,6 +7,7 @@ slug: mysql-high-availability
 featured: false
 draft: false
 series: mysql
+seriesOrder: 9
 tags:
   - MySQL
   - 数据库

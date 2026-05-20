@@ -1,6 +1,7 @@
 ---
 title: 'Vue 3 初识与指令'
 series: Vue
+seriesOrder: 3
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-05-15T00:00:00.000+08:00

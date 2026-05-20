@@ -14,6 +14,7 @@ tags:
   - MVVM
 draft: false
 series: Avalonia
+seriesOrder: 5
 language: zh-CN
 ---
 

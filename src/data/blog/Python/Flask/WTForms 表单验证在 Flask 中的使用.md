@@ -12,6 +12,7 @@ tags:
   - 表单验证
 category: Flask
 series: flask
+seriesOrder: 12
 draft: false
 language: zh-CN
 ---

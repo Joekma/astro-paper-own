@@ -7,6 +7,7 @@ slug: sql-query-execution-order
 featured: false
 draft: false
 series: mysql
+seriesOrder: 13
 tags:
   - MySQL
   - 数据库

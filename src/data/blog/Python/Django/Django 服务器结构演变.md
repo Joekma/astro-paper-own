@@ -7,6 +7,7 @@ slug: django-server-structure-evolution
 featured: false
 draft: false
 series: django
+seriesOrder: 3
 tags:
   - Python
   - Django

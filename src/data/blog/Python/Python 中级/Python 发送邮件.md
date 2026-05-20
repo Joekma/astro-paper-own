@@ -12,6 +12,7 @@ tags:
   - docs
 description: Python 发送邮件，涵盖smtplib模块、SMTP配置、附件发送等邮件处理技巧。
 series: python
+seriesOrder: 31
 language: zh-CN
 ---
 

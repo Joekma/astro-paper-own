@@ -1,6 +1,7 @@
 ---
 title: 'webpack 5 与 Vue 3 打包工具'
 series: Vue、打包部署
+seriesOrder: 1
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-05-15T00:00:00.000+08:00

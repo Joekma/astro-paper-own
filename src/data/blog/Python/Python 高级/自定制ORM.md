@@ -12,6 +12,7 @@ tags:
   - docs
 description: 自定制ORM实现指南，从零开始构建ORM框架，掌握元类、描述符与数据模型的核心原理。
 series: python
+seriesOrder: 12
 language: zh-CN
 ---
 

@@ -12,6 +12,7 @@ tags:
   - docs
 description: PyMySQL 模块详解与 MySQL 权限管理指南。
 series: python
+seriesOrder: 9
 language: zh-CN
 ---
 

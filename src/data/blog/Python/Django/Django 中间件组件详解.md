@@ -7,6 +7,7 @@ slug: django-component-3-middleware
 featured: false
 draft: false
 series: django
+seriesOrder: 10
 tags:
   - Python
   - Django

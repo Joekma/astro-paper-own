@@ -14,6 +14,7 @@ tags:
   - 仓储模式
 draft: false
 series: csharp
+seriesOrder: 23
 language: zh-CN
 ---
 

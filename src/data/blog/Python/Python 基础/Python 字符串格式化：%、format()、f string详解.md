@@ -12,6 +12,7 @@ tags:
   - format
 draft: false
 series: python
+seriesOrder: 28
 language: zh-CN
 ---
 

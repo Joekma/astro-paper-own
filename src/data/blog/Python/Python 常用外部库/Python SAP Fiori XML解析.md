@@ -13,6 +13,7 @@ tags:
 description: Python XML 解析实战指南，涵盖 DOM、SAX、ElementTree 以及 SAP Fiori XML 数据处理。
 
 series: python
+seriesOrder: 10
 language: zh-CN
 ---
 

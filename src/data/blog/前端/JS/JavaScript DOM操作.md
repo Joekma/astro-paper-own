@@ -13,6 +13,7 @@ tags:
   - Web
 description: 'JavaScript DOM操作，包括元素选择、属性控制、内容操作和事件处理'
 series: JavaScript
+seriesOrder: 5
 language: zh-CN
 ---
 

@@ -13,6 +13,7 @@ tags:
   - 官方文档
 draft: false
 series: React 深入浅出
+seriesOrder: 6
 language: zh-CN
 ---
 

@@ -13,6 +13,7 @@ tags:
   - 系统集成
 draft: false
 series: Electron
+seriesOrder: 7
 language: zh-CN
 ---
 

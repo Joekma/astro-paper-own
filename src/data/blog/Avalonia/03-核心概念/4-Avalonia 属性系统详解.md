@@ -15,6 +15,7 @@ tags:
   - 自定义控件
 draft: false
 series: Avalonia
+seriesOrder: 8
 language: zh-CN
 ---
 

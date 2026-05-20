@@ -13,6 +13,7 @@ tags:
   - 缓存
 description: "Redis安装配置和基本数据操作"
 series: Redis
+seriesOrder: 3
 language: zh-CN
 ---
 

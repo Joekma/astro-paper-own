@@ -7,6 +7,7 @@ slug: django-orm-advanced
 featured: false
 draft: false
 series: django
+seriesOrder: 18
 tags:
   - Python
   - Django

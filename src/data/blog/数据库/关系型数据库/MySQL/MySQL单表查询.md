@@ -7,6 +7,7 @@ slug: mysql-single-table-query
 featured: false
 draft: false
 series: mysql
+seriesOrder: 6
 tags:
   - MySQL
   - 数据库

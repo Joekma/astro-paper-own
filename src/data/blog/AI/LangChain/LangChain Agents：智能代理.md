@@ -11,6 +11,7 @@ tags:
   - LLM
 draft: false
 series: LangChain
+seriesOrder: 4
 language: zh-CN
 ---
 

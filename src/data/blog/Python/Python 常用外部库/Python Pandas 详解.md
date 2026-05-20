@@ -12,6 +12,7 @@ tags:
   - docs
 description: Pandas 数据分析完全指南，涵盖 Series、DataFrame、数据清洗、统计分析等核心功能。
 series: python
+seriesOrder: 7
 language: zh-CN
 ---
 

@@ -7,6 +7,7 @@ slug: django-cache-mechanism
 featured: false
 draft: false
 series: django
+seriesOrder: 4
 tags:
   - Python
   - Django

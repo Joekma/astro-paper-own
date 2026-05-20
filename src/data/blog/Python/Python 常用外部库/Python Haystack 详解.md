@@ -12,6 +12,7 @@ tags:
   - docs
 description: Python Django Haystack 全文搜索框架完整指南，支持 Solr、Elasticsearch、Whoosh 等多种后端。
 series: python
+seriesOrder: 6
 language: zh-CN
 ---
 

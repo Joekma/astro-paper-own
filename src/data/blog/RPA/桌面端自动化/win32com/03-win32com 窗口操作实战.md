@@ -1,6 +1,7 @@
 ---
 title: pywin32 窗口操作实战
 series: pywin32
+seriesOrder: 3
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00

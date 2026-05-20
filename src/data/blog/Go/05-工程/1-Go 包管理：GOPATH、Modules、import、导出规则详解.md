@@ -14,6 +14,7 @@ tags:
   - GOPATH
 draft: false
 series: go
+seriesOrder: 14
 language: zh-CN
 ---
 

@@ -1,6 +1,7 @@
 ---
 title: 'Vue 3 组件系统'
 series: Vue
+seriesOrder: 4
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-05-15T00:00:00.000+08:00

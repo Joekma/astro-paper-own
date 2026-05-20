@@ -1,6 +1,7 @@
 ---
 title: Python 支付宝支付 详解
 series: Python
+seriesOrder: 8
 language: zh-CN
 author: Joekma
 pubDatetime: 2024-08-15T00:00:00Z

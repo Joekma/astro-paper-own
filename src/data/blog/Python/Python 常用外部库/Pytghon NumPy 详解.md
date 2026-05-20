@@ -12,6 +12,7 @@ tags:
   - docs
 description: Python NumPy 详解，涵盖 ndarray 数据结构、数组创建、索引切片、通用函数等核心内容。
 series: python
+seriesOrder: 1
 language: zh-CN
 ---
 

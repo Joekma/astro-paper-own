@@ -16,6 +16,7 @@ tags:
   - Web开发
 description: '深入解析CSS布局核心概念，涵盖文档流、Flexbox布局、Grid网格布局、BFC块级格式化上下文、经典布局技巧与实战应用'
 series: CSS
+seriesOrder: 2
 language: zh-CN
 ---
 

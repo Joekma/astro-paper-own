@@ -11,6 +11,7 @@ tags:
   - 循环
 draft: false
 series: LangGraph
+seriesOrder: 1
 language: zh-CN
 ---
 

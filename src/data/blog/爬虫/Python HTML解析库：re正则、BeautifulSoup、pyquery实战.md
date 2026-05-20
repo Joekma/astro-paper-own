@@ -7,6 +7,7 @@ slug: python-html-parsing-libraries
 featured: false
 draft: false
 series: 爬虫
+seriesOrder: 6
 tags:
   - Python
   - 爬虫

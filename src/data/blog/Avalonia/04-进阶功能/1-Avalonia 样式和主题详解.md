@@ -17,6 +17,7 @@ tags:
   - 皮肤
 draft: false
 series: Avalonia
+seriesOrder: 10
 language: zh-CN
 ---
 

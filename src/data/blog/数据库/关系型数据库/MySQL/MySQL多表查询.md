@@ -7,6 +7,7 @@ slug: mysql-multi-table-queries
 featured: false
 draft: false
 series: mysql
+seriesOrder: 7
 tags:
   - MySQL
   - 数据库

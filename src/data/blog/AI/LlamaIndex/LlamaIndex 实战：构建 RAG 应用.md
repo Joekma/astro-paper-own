@@ -11,6 +11,7 @@ tags:
   - 实战
 draft: false
 series: LlamaIndex
+seriesOrder: 3
 language: zh-CN
 ---
 

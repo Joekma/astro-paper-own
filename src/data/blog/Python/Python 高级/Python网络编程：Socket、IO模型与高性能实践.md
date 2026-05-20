@@ -14,6 +14,7 @@ tags:
   - 高性能
 description: 'Python网络编程完整指南，涵盖Socket套接字、IO模型、并发编程和异步实现'
 series: python
+seriesOrder: 13
 language: zh-CN
 ---
 

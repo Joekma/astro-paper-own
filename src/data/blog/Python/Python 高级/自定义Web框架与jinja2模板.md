@@ -1,6 +1,7 @@
 ---
 title: 自定义Web框架与jinja2模板
 series: Python
+seriesOrder: 5
 language: zh-CN
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z

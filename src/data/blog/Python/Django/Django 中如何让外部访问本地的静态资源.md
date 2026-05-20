@@ -7,6 +7,7 @@ slug: django-static-resources
 featured: false
 draft: false
 series: django
+seriesOrder: 11
 tags:
   - Python
   - Django

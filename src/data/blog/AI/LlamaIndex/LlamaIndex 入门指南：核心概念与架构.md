@@ -11,6 +11,7 @@ tags:
   - LLM
 draft: false
 series: LlamaIndex
+seriesOrder: 2
 language: zh-CN
 ---
 

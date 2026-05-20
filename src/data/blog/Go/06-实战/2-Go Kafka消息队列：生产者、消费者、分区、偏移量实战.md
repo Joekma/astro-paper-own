@@ -15,6 +15,7 @@ tags:
   - 消费者组
 draft: false
 series: go
+seriesOrder: 17
 language: zh-CN
 ---
 

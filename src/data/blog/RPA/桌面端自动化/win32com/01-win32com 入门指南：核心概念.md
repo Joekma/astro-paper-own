@@ -1,6 +1,7 @@
 ---
 title: pywin32 入门指南：核心概念
 series: pywin32
+seriesOrder: 1
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00

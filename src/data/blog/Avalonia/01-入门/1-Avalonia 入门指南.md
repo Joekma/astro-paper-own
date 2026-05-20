@@ -15,6 +15,7 @@ tags:
   - 桌面应用
 draft: false
 series: Avalonia
+seriesOrder: 1
 language: zh-CN
 ---
 

@@ -7,6 +7,7 @@ slug: django-getting-started
 featured: false
 draft: false
 series: django
+seriesOrder: 23
 tags:
   - Python
   - Django

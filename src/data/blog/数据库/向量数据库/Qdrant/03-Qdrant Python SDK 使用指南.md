@@ -1,6 +1,7 @@
 ---
 title: Qdrant Python SDK 使用指南
 series: "Qdrant"
+seriesOrder: 3
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00

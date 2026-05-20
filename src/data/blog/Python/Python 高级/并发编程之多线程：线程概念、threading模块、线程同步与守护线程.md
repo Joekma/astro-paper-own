@@ -1,6 +1,7 @@
 ---
 title: 并发编程之多线程：线程概念、threading模块、线程同步与守护线程
 series: Python
+seriesOrder: 2
 language: zh-CN
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z

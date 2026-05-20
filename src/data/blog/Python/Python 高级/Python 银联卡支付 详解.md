@@ -1,6 +1,7 @@
 ---
 title: Python 银联卡支付 详解
 series: Python
+seriesOrder: 7
 language: zh-CN
 author: Joekma
 pubDatetime: 2024-08-18T00:00:00Z

@@ -12,6 +12,7 @@ tags:
   - 命令行
 category: Flask
 series: flask
+seriesOrder: 10
 draft: false
 language: zh-CN
 ---

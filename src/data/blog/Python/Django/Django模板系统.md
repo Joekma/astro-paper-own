@@ -7,6 +7,7 @@ slug: django-template-system
 featured: false
 draft: false
 series: django
+seriesOrder: 22
 tags:
   - Python
   - Django

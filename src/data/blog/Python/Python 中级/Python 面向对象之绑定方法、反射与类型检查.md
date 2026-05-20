@@ -14,6 +14,7 @@ tags:
   - docs
 description: 深入理解 Python 面向对象中的绑定方法（classmethod、staticmethod）、反射机制（hasattr、getattr、setattr、delattr）以及类型检查（isinstance、issubclass）。
 series: python
+seriesOrder: 34
 language: zh-CN
 ---
 

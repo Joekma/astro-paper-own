@@ -12,6 +12,7 @@ tags:
   - 集群
 description: "Redis Cluster集群配置、原理和运维"
 series: Redis
+seriesOrder: 2
 language: zh-CN
 ---
 

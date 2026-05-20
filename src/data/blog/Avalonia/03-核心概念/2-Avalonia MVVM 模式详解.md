@@ -15,6 +15,7 @@ tags:
   - 设计模式
 draft: false
 series: Avalonia
+seriesOrder: 6
 language: zh-CN
 ---
 

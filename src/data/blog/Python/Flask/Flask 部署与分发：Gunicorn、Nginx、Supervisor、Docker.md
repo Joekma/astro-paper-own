@@ -12,6 +12,7 @@ tags:
   - Gunicorn
   - Nginx
 series: flask
+seriesOrder: 1
 draft: false
 language: zh-CN
 ---

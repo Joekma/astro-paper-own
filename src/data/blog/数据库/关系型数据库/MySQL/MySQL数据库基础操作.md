@@ -7,6 +7,7 @@ slug: mysql-database-operations
 featured: false
 draft: false
 series: mysql
+seriesOrder: 11
 tags:
   - MySQL
   - 数据库

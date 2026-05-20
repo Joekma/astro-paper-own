@@ -12,6 +12,7 @@ tags:
   - 桌面应用
 draft: false
 series: Electron
+seriesOrder: 2
 language: zh-CN
 ---
 

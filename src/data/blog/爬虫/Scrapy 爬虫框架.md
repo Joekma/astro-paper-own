@@ -7,6 +7,7 @@ slug: scrapy-framework-tutorial
 featured: false
 draft: false
 series: 爬虫
+seriesOrder: 10
 tags:
   - Python
   - 爬虫

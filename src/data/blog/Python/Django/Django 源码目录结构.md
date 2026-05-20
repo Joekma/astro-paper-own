@@ -7,6 +7,7 @@ slug: django-source-code-structure
 featured: false
 draft: false
 series: django
+seriesOrder: 9
 tags:
   - Python
   - Django

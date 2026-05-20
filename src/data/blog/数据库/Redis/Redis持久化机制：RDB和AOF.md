@@ -14,6 +14,7 @@ tags:
   - AOF
 description: "Redis持久化机制，RDB和AOF详解"
 series: Redis
+seriesOrder: 5
 language: zh-CN
 ---
 

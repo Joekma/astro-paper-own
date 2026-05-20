@@ -7,6 +7,7 @@ slug: django-nginx-uwsgi-deployment
 featured: false
 draft: false
 series: django
+seriesOrder: 21
 tags:
   - Python
   - Django

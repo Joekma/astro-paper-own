@@ -16,6 +16,7 @@ tags:
   - sync
 draft: false
 series: go
+seriesOrder: 12
 language: zh-CN
 ---
 

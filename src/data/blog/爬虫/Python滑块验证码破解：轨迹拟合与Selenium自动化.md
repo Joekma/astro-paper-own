@@ -7,6 +7,7 @@ slug: slider-captcha-solution
 featured: false
 draft: false
 series: 爬虫
+seriesOrder: 8
 tags:
   - Python
   - 爬虫

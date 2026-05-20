@@ -13,6 +13,7 @@ tags:
   - type
 draft: false
 series: python
+seriesOrder: 38
 language: zh-CN
 ---
 

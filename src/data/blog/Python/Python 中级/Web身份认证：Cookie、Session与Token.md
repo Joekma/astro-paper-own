@@ -15,6 +15,7 @@ tags:
   - JWT
 description: 'Web身份认证技术详解，包括Cookie、Session、Token原理和JWT实现'
 series: python
+seriesOrder: 42
 language: zh-CN
 ---
 

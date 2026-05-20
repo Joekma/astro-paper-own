@@ -1,6 +1,7 @@
 ---
 title: Playwright RPA 自动化：业务流程自动化
 series: playwright
+seriesOrder: 10
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00

@@ -7,6 +7,7 @@ slug: mysql-index-optimization
 featured: false
 draft: false
 series: mysql
+seriesOrder: 12
 tags:
   - MySQL
   - 数据库

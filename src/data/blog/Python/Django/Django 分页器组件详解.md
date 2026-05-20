@@ -7,6 +7,7 @@ slug: django-component-1-paginator
 featured: false
 draft: false
 series: django
+seriesOrder: 2
 tags:
   - Python
   - Django

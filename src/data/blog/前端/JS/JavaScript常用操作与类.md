@@ -13,6 +13,7 @@ tags:
   - 编程
 description: 'JavaScript常用操作，包括字符串、数组、日期、正则等核心API'
 series: JavaScript
+seriesOrder: 7
 language: zh-CN
 ---
 

@@ -18,6 +18,7 @@ tags:
   - Arrange
 draft: false
 series: Avalonia
+seriesOrder: 3
 language: zh-CN
 ---
 

@@ -7,6 +7,7 @@ slug: django-ajax
 featured: false
 draft: false
 series: django
+seriesOrder: 8
 tags:
   - Python
   - Django

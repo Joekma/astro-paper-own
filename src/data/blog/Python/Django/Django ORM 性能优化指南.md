@@ -7,6 +7,7 @@ slug: django-orm-optimization
 featured: false
 draft: false
 series: django
+seriesOrder: 17
 tags:
   - Python
   - Django

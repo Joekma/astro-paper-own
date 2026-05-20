@@ -1,6 +1,7 @@
 ---
 title: Ansible 自动化运维：从 Inventory 到 Playbook 落地
 series: Ansible
+seriesOrder: 1
 language: zh-CN
 author: Joekma
 pubDatetime: 2024-08-28T00:00:00Z

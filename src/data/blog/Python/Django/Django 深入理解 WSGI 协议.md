@@ -7,6 +7,7 @@ slug: django-wsgi-protocol
 featured: false
 draft: false
 series: django
+seriesOrder: 6
 tags:
   - Python
   - Django

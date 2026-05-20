@@ -12,6 +12,7 @@ tags:
   - 生成器
 draft: false
 series: python
+seriesOrder: 40
 language: zh-CN
 ---
 

@@ -11,6 +11,7 @@ tags:
   - 信号
   - Blinker
 series: flask
+seriesOrder: 5
 draft: false
 language: zh-CN
 ---

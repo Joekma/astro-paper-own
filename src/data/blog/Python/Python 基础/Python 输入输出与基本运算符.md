@@ -12,6 +12,7 @@ tags:
   - 数据类型
 draft: false
 series: python
+seriesOrder: 24
 language: zh-CN
 ---
 

@@ -13,6 +13,7 @@ tags:
   - 打包工具
 draft: false
 series: Electron
+seriesOrder: 9
 language: zh-CN
 ---
 

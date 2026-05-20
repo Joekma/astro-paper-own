@@ -12,6 +12,7 @@ tags:
   - 类型提示
 draft: false
 series: Python 常用外部库
+seriesOrder: 1
 language: zh-CN
 ---
 

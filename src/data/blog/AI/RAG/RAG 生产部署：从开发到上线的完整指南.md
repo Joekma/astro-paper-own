@@ -13,6 +13,7 @@ tags:
   - 最佳实践
 draft: false
 series: RAG
+seriesOrder: 4
 language: zh-CN
 ---
 

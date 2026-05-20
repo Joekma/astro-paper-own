@@ -7,6 +7,7 @@ slug: django-signals
 featured: false
 draft: false
 series: django
+seriesOrder: 7
 tags:
   - Python
   - Django

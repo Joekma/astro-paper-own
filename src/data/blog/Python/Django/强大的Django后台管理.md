@@ -7,6 +7,7 @@ slug: django-admin-powerful
 featured: false
 draft: false
 series: django
+seriesOrder: 1
 tags:
   - Python
   - Django

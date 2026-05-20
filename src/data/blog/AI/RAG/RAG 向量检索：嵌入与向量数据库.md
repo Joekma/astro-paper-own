@@ -12,6 +12,7 @@ tags:
   - VectorDB
 draft: false
 series: RAG
+seriesOrder: 7
 language: zh-CN
 ---
 

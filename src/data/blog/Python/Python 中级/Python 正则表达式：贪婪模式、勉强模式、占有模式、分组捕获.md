@@ -11,6 +11,7 @@ tags:
   - 正则表达式
 description: '深入理解Python正则表达式的高级特性，包括贪婪模式、勉强模式、占有模式、分组捕获等核心概念。'
 series: python
+seriesOrder: 39
 language: zh-CN
 ---
 

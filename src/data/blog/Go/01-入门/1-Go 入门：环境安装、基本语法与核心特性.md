@@ -14,6 +14,7 @@ tags:
   - 并发编程
 draft: false
 series: go
+seriesOrder: 1
 language: zh-CN
 ---
 

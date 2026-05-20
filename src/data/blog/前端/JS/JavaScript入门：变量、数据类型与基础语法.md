@@ -15,6 +15,7 @@ tags:
   - Web开发
 description: 'JavaScript入门，讲解变量声明（var/let/const）、数据类型、运算符、控制结构等核心基础，快速掌握JavaScript编程基础'
 series: JavaScript
+seriesOrder: 10
 language: zh-CN
 ---
 

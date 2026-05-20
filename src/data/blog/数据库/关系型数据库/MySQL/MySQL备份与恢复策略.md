@@ -7,6 +7,7 @@ slug: mysql-backup-recovery
 featured: false
 draft: false
 series: mysql
+seriesOrder: 2
 tags:
   - MySQL
   - 数据库

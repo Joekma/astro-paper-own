@@ -12,6 +12,7 @@ tags:
   - 多态
 draft: false
 series: python
+seriesOrder: 35
 language: zh-CN
 ---
 

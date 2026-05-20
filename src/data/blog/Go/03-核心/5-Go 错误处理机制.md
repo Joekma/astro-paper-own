@@ -13,6 +13,7 @@ tags:
   - 最佳实践
 draft: false
 series: go
+seriesOrder: 8
 language: zh-CN
 ---
 

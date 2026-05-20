@@ -12,6 +12,7 @@ tags:
   - 正则表达式
 description: 'Python文本处理完全指南，涵盖字符串切割、替换、正则匹配、空白字符去除等常用操作，配有丰富的实战示例。'
 series: Python 基础
+seriesOrder: 1
 language: zh-CN
 ---
 

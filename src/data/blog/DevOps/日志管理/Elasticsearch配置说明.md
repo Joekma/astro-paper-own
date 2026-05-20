@@ -1,6 +1,7 @@
 ﻿---
 title: Elasticsearch 配置说明
 series: Elasticsearch
+seriesOrder: 4
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-05-17T00:00:00.000+08:00

@@ -12,6 +12,7 @@ tags:
   - 检索增强生成
 draft: false
 series: RAG
+seriesOrder: 3
 language: zh-CN
 ---
 

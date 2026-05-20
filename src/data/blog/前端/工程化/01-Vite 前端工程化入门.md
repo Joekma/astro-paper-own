@@ -12,6 +12,7 @@ tags:
   - 构建工具
 draft: false
 series: 前端工程化
+seriesOrder: 1
 language: zh-CN
 ---
 

@@ -7,6 +7,7 @@ slug: django-component-5-contenttype
 featured: false
 draft: false
 series: django
+seriesOrder: 15
 tags:
   - Python
   - Django

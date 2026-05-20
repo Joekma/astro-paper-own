@@ -7,6 +7,7 @@ slug: django-component-4-auth
 featured: false
 draft: false
 series: django
+seriesOrder: 14
 tags:
   - Python
   - Django

@@ -13,6 +13,7 @@ tags:
   - 锁
 description: "Redis事务和锁机制，包括MULTI/EXEC和分布式锁实现"
 series: Redis
+seriesOrder: 7
 language: zh-CN
 ---
 

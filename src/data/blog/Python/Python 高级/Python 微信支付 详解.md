@@ -1,6 +1,7 @@
 ---
 title: Python 微信支付 详解
 series: Python
+seriesOrder: 6
 language: zh-CN
 author: Joekma
 pubDatetime: 2024-08-12T00:00:00Z

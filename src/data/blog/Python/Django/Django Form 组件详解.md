@@ -7,6 +7,7 @@ slug: django-component-2-form
 featured: false
 draft: false
 series: django
+seriesOrder: 16
 tags:
   - Python
   - Django

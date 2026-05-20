@@ -11,6 +11,7 @@ tags:
   - 并发
 draft: false
 series: Redis
+seriesOrder: 1
 language: zh-CN
 ---
 

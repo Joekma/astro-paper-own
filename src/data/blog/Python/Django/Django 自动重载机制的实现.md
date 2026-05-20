@@ -7,6 +7,7 @@ slug: django-autoreload-mechanism
 featured: false
 draft: false
 series: django
+seriesOrder: 12
 tags:
   - Python
   - Django

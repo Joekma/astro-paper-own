@@ -12,6 +12,7 @@ tags:
   - 云原生
 draft: false
 series: Kubernetes
+seriesOrder: 1
 language: zh-CN
 ---
 

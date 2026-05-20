@@ -13,6 +13,7 @@ tags:
 description: Python functools 详解，详解 partial 偏函数和 wraps 装饰器保留元信息的最佳实践。
 
 series: python
+seriesOrder: 5
 language: zh-CN
 ---
 

@@ -11,6 +11,7 @@ tags:
   - Flask-Login
   - 用户认证
 series: flask
+seriesOrder: 9
 draft: false
 language: zh-CN
 ---

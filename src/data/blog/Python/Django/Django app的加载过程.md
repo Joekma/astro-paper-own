@@ -7,6 +7,7 @@ slug: django-app-loading-process
 featured: false
 draft: false
 series: django
+seriesOrder: 13
 tags:
   - Python
   - Django

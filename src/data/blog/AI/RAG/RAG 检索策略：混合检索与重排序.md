@@ -12,6 +12,7 @@ tags:
   - 重排序
 draft: false
 series: RAG
+seriesOrder: 2
 language: zh-CN
 ---
 

@@ -13,6 +13,7 @@ tags:
   - 应用工厂
 category: Flask
 series: flask
+seriesOrder: 6
 draft: false
 language: zh-CN
 ---

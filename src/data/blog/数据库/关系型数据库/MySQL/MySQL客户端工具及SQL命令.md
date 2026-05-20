@@ -7,6 +7,7 @@ slug: mysql-client-tools
 featured: false
 draft: false
 series: mysql
+seriesOrder: 10
 tags:
   - MySQL
   - 数据库

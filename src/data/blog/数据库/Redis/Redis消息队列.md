@@ -12,6 +12,7 @@ tags:
   - 消息队列
 description: "Redis消息队列实现，包括List队列和Pub/Sub发布订阅"
 series: Redis
+seriesOrder: 8
 language: zh-CN
 ---
 

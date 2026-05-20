@@ -12,6 +12,7 @@ tags:
   - docs
 description: Celery 分布式任务队列详解，包含异步任务、定时任务和 Django 集成。
 series: python
+seriesOrder: 4
 language: zh-CN
 ---
 

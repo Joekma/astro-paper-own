@@ -12,6 +12,7 @@ tags:
   - 生产部署
 draft: false
 series: RAG
+seriesOrder: 8
 language: zh-CN
 ---
 

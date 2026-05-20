@@ -13,6 +13,7 @@ tags:
   - OpenClaw
 draft: false
 series: Agent
+seriesOrder: 8
 language: zh-CN
 ---
 

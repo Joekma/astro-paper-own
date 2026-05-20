@@ -14,6 +14,7 @@ tags:
   - LEGB
 draft: false
 series: python
+seriesOrder: 15
 language: zh-CN
 ---
 

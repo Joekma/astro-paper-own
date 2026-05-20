@@ -7,6 +7,7 @@ slug: django-request-response
 featured: false
 draft: false
 series: django
+seriesOrder: 5
 tags:
   - Python
   - Django

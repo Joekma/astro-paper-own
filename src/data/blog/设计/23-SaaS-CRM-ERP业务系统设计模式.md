@@ -13,6 +13,7 @@ tags:
   - B端设计
 description: "面向企业级业务系统，讲解对象管理、状态流转、权限、审批和操作日志等通用设计模式。"
 series: AI 多端页面设计
+seriesOrder: 23
 language: zh-CN
 ---
 

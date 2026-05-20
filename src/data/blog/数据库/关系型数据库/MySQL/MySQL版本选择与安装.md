@@ -7,6 +7,7 @@ slug: mysql-version-selection
 featured: false
 draft: false
 series: mysql
+seriesOrder: 1
 tags:
   - MySQL
   - 数据库

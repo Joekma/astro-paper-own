@@ -13,6 +13,7 @@ tags:
   - Unicode
 draft: false
 series: python
+seriesOrder: 27
 language: zh-CN
 ---
 

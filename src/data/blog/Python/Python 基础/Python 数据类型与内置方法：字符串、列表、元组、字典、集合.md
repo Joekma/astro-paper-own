@@ -15,6 +15,7 @@ tags:
   - 集合
 draft: false
 series: python
+seriesOrder: 25
 language: zh-CN
 ---
 

@@ -7,6 +7,7 @@ slug: django-settings-lazy-loading
 featured: false
 draft: false
 series: django
+seriesOrder: 20
 tags:
   - Python
   - Django

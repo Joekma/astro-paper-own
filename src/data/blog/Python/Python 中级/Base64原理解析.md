@@ -12,6 +12,7 @@ tags:
 category: Python中级
 draft: false
 series: Python
+seriesOrder: 9
 language: zh-CN
 ---
 

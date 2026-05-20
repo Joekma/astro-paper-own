@@ -13,6 +13,7 @@ tags:
   - Chrome DevTools
 draft: false
 series: Electron
+seriesOrder: 10
 language: zh-CN
 ---
 
