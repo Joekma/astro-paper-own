@@ -7,6 +7,7 @@ slug: mysql-storage-engines
 featured: false
 draft: false
 series: mysql
+seriesOrder: 4
 tags:
   - MySQL
   - 数据库

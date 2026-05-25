@@ -13,6 +13,7 @@ tags:
   - 系统通知
 draft: false
 series: Electron
+seriesOrder: 8
 language: zh-CN
 ---
 

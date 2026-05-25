@@ -15,6 +15,7 @@ tags:
   - 桌面应用
 draft: false
 series: Avalonia
+seriesOrder: 1
 language: zh-CN
 ---
 
@@ -462,6 +463,7 @@ dotnet add package Avalonia.Xaml.Behaviors
 | [数据绑定](file:///d:\Workspace\blg\astro-paper-own/src/data/blog/Avalonia/Avalonia%20数据绑定详解.md)     | Binding、DataContext  |
 | [布局系统](file:///d:\Workspace\blg\astro-paper-own/src/data/blog/Avalonia/Avalonia%20布局系统详解.md)     | StackPanel、Grid      |
 | [MVVM 模式](file:///d:\Workspace\blg\astro-paper-own/src/data/blog/Avalonia/Avalonia%20MVVM%20模式详解.md) | View/ViewModel/Model  |
+| [Markdown ImageLoader](/posts/avalonia/02-基础/avalonia-markdown-imageloader/)                             | Markdown 图片加载     |
 
 ---
 
@@ -481,5 +483,6 @@ dotnet add package Avalonia.Xaml.Behaviors
 
 - [Avalonia 官方文档](https://docs.avaloniaui.net/docs/)
 - [Avalonia 安装指南](https://docs.avaloniaui.net/docs/get-started/install)
+- [Avalonia Controls 总览](https://docs.avaloniaui.net/controls)
 - [Avalonia 模板](https://github.com/AvaloniaUI/avalonia-dotnet-templates)
 - [社区支持](https://docs.avaloniaui.net/docs/community)

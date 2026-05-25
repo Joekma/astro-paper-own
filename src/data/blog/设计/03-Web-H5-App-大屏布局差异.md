@@ -13,6 +13,7 @@ tags:
   - 移动端设计
 description: "讲解同一业务在 Web、H5、App 和大屏上的信息重组方式，避免简单缩放造成体验下降。"
 series: AI 多端页面设计
+seriesOrder: 3
 language: zh-CN
 ---
 

@@ -14,6 +14,7 @@ tags:
   - 前端
 description: '讲解 Vue 3 项目中 Vue Router 4、Pinia、路由守卫和服务端状态边界。'
 series: Vue
+seriesOrder: 2
 language: zh-CN
 ---
 

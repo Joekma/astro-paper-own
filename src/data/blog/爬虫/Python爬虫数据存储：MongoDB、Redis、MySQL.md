@@ -7,6 +7,7 @@ slug: python-scraping-data-storage
 featured: false
 draft: false
 series: 爬虫
+seriesOrder: 9
 tags:
   - Python
   - 爬虫

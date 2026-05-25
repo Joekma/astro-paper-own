@@ -11,6 +11,7 @@ tags:
   - Workflow
 draft: false
 series: LangGraph
+seriesOrder: 4
 language: zh-CN
 ---
 

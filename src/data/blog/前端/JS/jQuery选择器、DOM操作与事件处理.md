@@ -16,6 +16,7 @@ tags:
   - Web开发
 description: '全面的jQuery详解，涵盖选择器、DOM操作、CSS操作、事件处理、动画效果和AJAX交互，助你快速掌握jQuery核心技能'
 series: JavaScript
+seriesOrder: 11
 language: zh-CN
 ---
 

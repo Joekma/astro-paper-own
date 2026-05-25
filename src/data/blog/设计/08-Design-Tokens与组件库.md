@@ -13,6 +13,7 @@ tags:
   - AI开发
 description: "用设计令牌、组件约束和页面模式约束 AI 输出，避免每次生成页面都出现风格漂移。"
 series: AI 多端页面设计
+seriesOrder: 8
 language: zh-CN
 ---
 

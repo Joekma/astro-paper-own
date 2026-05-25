@@ -15,6 +15,7 @@ tags:
   - JSON序列化
 draft: false
 series: go
+seriesOrder: 5
 language: zh-CN
 ---
 

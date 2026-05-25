@@ -14,6 +14,7 @@ tags:
   - OOP
 draft: false
 series: csharp
+seriesOrder: 6
 language: zh-CN
 ---
 

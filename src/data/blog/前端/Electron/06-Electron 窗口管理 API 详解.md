@@ -12,6 +12,7 @@ tags:
   - 多窗口
 draft: false
 series: Electron
+seriesOrder: 6
 language: zh-CN
 ---
 

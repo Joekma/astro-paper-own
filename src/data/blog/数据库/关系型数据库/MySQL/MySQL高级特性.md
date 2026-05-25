@@ -7,6 +7,7 @@ slug: mysql-advanced-features
 featured: false
 draft: false
 series: mysql
+seriesOrder: 8
 tags:
   - MySQL
   - 数据库

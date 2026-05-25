@@ -14,6 +14,7 @@ tags:
   - 编程基础
 draft: false
 series: csharp
+seriesOrder: 1
 language: zh-CN
 ---
 

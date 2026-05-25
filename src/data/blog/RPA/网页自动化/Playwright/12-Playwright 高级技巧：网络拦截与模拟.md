@@ -1,6 +1,7 @@
 ---
 title: Playwright 高级技巧：网络拦截与模拟
 series: playwright
+seriesOrder: 12
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00

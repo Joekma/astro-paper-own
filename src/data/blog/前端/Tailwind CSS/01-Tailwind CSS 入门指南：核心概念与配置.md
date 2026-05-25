@@ -12,6 +12,7 @@ tags:
   - 实用优先
 draft: false
 series: Tailwind CSS
+seriesOrder: 1
 language: zh-CN
 ---
 

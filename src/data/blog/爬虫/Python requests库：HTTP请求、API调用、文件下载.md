@@ -7,6 +7,7 @@ slug: python-requests-library
 featured: false
 draft: false
 series: 爬虫
+seriesOrder: 7
 tags:
   - Python
   - requests

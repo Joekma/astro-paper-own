@@ -11,6 +11,7 @@ tags:
   - AI
 draft: false
 series: LangChain
+seriesOrder: 8
 language: zh-CN
 ---
 

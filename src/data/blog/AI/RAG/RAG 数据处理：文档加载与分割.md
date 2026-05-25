@@ -12,6 +12,7 @@ tags:
   - 文本分割
 draft: false
 series: RAG
+seriesOrder: 6
 language: zh-CN
 ---
 

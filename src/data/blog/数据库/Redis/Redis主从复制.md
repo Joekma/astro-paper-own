@@ -14,6 +14,7 @@ tags:
   - Sentinel
 description: "Redis主从复制、读写分离和Sentinel高可用方案"
 series: Redis
+seriesOrder: 9
 language: zh-CN
 ---
 

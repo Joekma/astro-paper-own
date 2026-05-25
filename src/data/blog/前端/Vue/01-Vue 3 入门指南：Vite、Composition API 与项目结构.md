@@ -14,6 +14,7 @@ tags:
   - 前端
 description: '基于 Vue 3 当前生态，讲解 create-vue、Vite、script setup、响应式状态和项目结构。'
 series: Vue
+seriesOrder: 1
 language: zh-CN
 ---
 

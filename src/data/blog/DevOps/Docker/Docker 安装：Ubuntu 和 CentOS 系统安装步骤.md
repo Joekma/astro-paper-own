@@ -12,6 +12,7 @@ tags:
   - CentOS
 draft: false
 series: Docker
+seriesOrder: 1
 language: zh-CN
 ---
 

@@ -16,6 +16,7 @@ tags:
   - Web开发
 description: '全面掌握CSS形变与动画技术，包括2D转换、3D转换、过渡动画、关键帧动画及实战案例，附送卡片翻转和加载动画等综合示例'
 series: CSS
+seriesOrder: 4
 language: zh-CN
 ---
 

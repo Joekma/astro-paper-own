@@ -1,6 +1,7 @@
 ---
 title: Qdrant 环境配置与部署
 series: "Qdrant"
+seriesOrder: 2
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
 modDatetime: 2026-05-09T00:00:00.000+08:00

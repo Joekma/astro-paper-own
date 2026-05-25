@@ -11,6 +11,7 @@ tags:
   - 实战
 draft: false
 series: LangChain
+seriesOrder: 2
 language: zh-CN
 ---
 

@@ -7,6 +7,7 @@ slug: mysql-pagination-optimization
 featured: false
 draft: false
 series: mysql
+seriesOrder: 5
 tags:
   - MySQL
   - 数据库

@@ -13,6 +13,7 @@ tags:
   - 高级
 description: 'JavaScript高级语法，包括原型链、闭包、作用域链和DOM选择器'
 series: JavaScript
+seriesOrder: 8
 language: zh-CN
 ---
 

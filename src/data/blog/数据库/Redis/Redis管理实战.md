@@ -12,6 +12,7 @@ tags:
   - 运维
 description: "Redis管理运维实战经验，包含配置优化、监控和安全"
 series: Redis
+seriesOrder: 6
 language: zh-CN
 ---
 

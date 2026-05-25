@@ -14,6 +14,7 @@ tags:
   - sync.Map
 draft: false
 series: go
+seriesOrder: 7
 language: zh-CN
 ---
 

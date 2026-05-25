@@ -12,6 +12,7 @@ tags:
   - LLM
 description: '深入理解Prompt提示词的概念、分类、组成要素及其工作原理。'
 series: Prompt
+seriesOrder: 1
 language: zh-CN
 ---
 

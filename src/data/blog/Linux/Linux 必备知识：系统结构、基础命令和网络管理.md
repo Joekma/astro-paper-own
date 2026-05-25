@@ -1,6 +1,7 @@
 ---
 title: Linux 必备知识：系统结构、基础命令和网络管理
 series: Linux
+seriesOrder: 2
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
 modDatetime: 2026-05-16T00:00:00.000+08:00

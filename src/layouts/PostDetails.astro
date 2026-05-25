@@ -9,6 +9,7 @@ import EditPost from "@/components/EditPost.astro";
 import ShareLinks from "@/components/ShareLinks.astro";
 import BackButton from "@/components/BackButton.astro";
 import BackToTopButton from "@/components/BackToTopButton.astro";
+import getSeriesPosts from "@/utils/getSeriesPosts";
 import { getPath } from "@/utils/getPath";
 import { slugifyStr } from "@/utils/slugify";
 import IconChevronLeft from "@/assets/icons/IconChevronLeft.svg";
@@ -41,18 +42,12 @@ const tableOfContents = headings.filter(
 );
 const series = post.data.series?.trim();
 const relatedPosts = series
-  ? posts
-      .filter(relatedPost => {
-        if (relatedPost.id === post.id) return false;
-
-        return relatedPost.data.series?.trim() === series;
-      })
-      .slice(0, 15)
-      .map(({ data: { title }, id, filePath }) => ({
-        id,
-        title,
-        filePath,
-      }))
+  ? getSeriesPosts(posts, series).map(({ data: { title }, id, filePath }) => ({
+      id,
+      title,
+      filePath,
+      isCurrent: id === post.id,
+    }))
   : [];
 
 let ogImageUrl: string | undefined;
@@ -226,10 +221,21 @@ const nextPost =
         <nav>
           <ol class="space-y-3">
             {relatedPosts.map(relatedPost => (
-              <li class="leading-relaxed">
+              <li
+                class:list={[
+                  "leading-relaxed",
+                  { "font-semibold": relatedPost.isCurrent },
+                ]}
+              >
                 <a
                   href={getPath(relatedPost.id, relatedPost.filePath)}
-                  class="block text-foreground/80 decoration-dashed underline-offset-4 hover:text-accent hover:underline"
+                  aria-current={relatedPost.isCurrent ? "page" : undefined}
+                  class:list={[
+                    "block decoration-dashed underline-offset-4",
+                    relatedPost.isCurrent
+                      ? "text-accent"
+                      : "text-foreground/80 hover:text-accent hover:underline",
+                  ]}
                 >
                   {relatedPost.title}
                 </a>

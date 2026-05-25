@@ -12,6 +12,7 @@ tags:
   - 官方文档
 draft: false
 series: React 深入浅出
+seriesOrder: 8
 language: zh-CN
 ---
 

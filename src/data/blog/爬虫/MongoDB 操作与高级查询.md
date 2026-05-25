@@ -7,6 +7,7 @@ slug: mongodb-operations-summary
 featured: false
 draft: false
 series: 爬虫
+seriesOrder: 1
 tags:
   - MongoDB
   - NoSQL数据库

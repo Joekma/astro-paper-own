@@ -11,6 +11,7 @@ tags:
   - LLM
 draft: false
 series: LangGraph
+seriesOrder: 2
 language: zh-CN
 ---
 

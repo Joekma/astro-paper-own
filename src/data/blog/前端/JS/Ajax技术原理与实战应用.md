@@ -16,6 +16,7 @@ tags:
   - Web开发
 description: '深入剖析Ajax技术原理，包含XMLHttpRequest、Fetch API、Promise封装、axios使用等，涵盖异步编程、错误处理和实际应用场景'
 series: JavaScript
+seriesOrder: 4
 language: zh-CN
 ---
 

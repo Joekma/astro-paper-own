@@ -12,6 +12,7 @@ tags:
   - 缓存
 description: "Redis作为缓存的使用方法和最佳实践"
 series: Redis
+seriesOrder: 10
 language: zh-CN
 ---
 

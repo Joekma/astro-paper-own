@@ -1,6 +1,7 @@
 ---
 title: ELK Stack 日志管理 详解
 series: Elasticsearch
+seriesOrder: 5
 language: zh-CN
 author: Joekma
 pubDatetime: 2024-08-25T00:00:00Z

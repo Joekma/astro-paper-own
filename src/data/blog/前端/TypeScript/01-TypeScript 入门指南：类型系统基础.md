@@ -12,6 +12,7 @@ tags:
   - JavaScript 超集
 draft: false
 series: TypeScript
+seriesOrder: 1
 language: zh-CN
 ---
 

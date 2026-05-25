@@ -18,6 +18,7 @@ tags:
   - ScrollViewer
 draft: false
 series: Avalonia
+seriesOrder: 4
 language: zh-CN
 ---
 
@@ -27,13 +28,15 @@ Avalonia 提供了丰富的内置控件，用于构建用户界面。本文介�
 
 ### 控件分类
 
-| 类别       | 控件                              |
-| ---------- | --------------------------------- |
-| **按钮**   | Button、ToggleButton、RadioButton |
-| **文本**   | TextBlock、TextBox、PasswordBox   |
-| **选择**   | CheckBox、ComboBox、ListBox       |
-| **容器**   | Border、ScrollViewer、Expander    |
-| **对话框** | Window、WindowDialog              |
+| 类别       | 控件                                             |
+| ---------- | ------------------------------------------------ |
+| **按钮**   | Button、ToggleButton、RadioButton                |
+| **文本**   | TextBlock、TextBox、PasswordBox、Markdown（Pro） |
+| **选择**   | CheckBox、ComboBox、ListBox                      |
+| **容器**   | Border、ScrollViewer、Expander                   |
+| **对话框** | Window、WindowDialog                             |
+
+如果你的目标是显示 Markdown 文档，推荐按“显示 Markdown -> 显示图片 -> 自定义 ImageLoader -> SVG/鉴权/缓存”的路线学习。图片加载可以从 [Markdown ImageLoader 入门](/posts/avalonia/02-基础/avalonia-markdown-imageloader/) 开始。
 
 ---
 
@@ -464,17 +467,18 @@ Avalonia 提供了丰富的内置控件，用于构建用户界面。本文介�
 
 ## 常用控件速查表
 
-| 控件         | 用途     | 关键属性                      |
-| ------------ | -------- | ----------------------------- |
-| Button       | 按钮     | Command, Content              |
-| TextBox      | 文本输入 | Text, Watermark, PasswordChar |
-| TextBlock    | 文本显示 | Text, FontSize                |
-| CheckBox     | 复选框   | IsChecked, Content            |
-| RadioButton  | 单选框   | IsChecked, GroupName          |
-| ComboBox     | 下拉选择 | ItemsSource, SelectedItem     |
-| ListBox      | 列表     | ItemsSource, SelectedItem     |
-| Border       | 边框容器 | Background, BorderThickness   |
-| ScrollViewer | 滚动容器 | HorizontalScrollBarVisibility |
+| 控件         | 用途       | 关键属性                                         |
+| ------------ | ---------- | ------------------------------------------------ |
+| Button       | 按钮       | Command, Content                                 |
+| TextBox      | 文本输入   | Text, Watermark, PasswordChar                    |
+| TextBlock    | 文本显示   | Text, FontSize                                   |
+| Markdown     | 富文本显示 | Text, ImageLoader（通过 MarkdownImage 样式设置） |
+| CheckBox     | 复选框     | IsChecked, Content                               |
+| RadioButton  | 单选框     | IsChecked, GroupName                             |
+| ComboBox     | 下拉选择   | ItemsSource, SelectedItem                        |
+| ListBox      | 列表       | ItemsSource, SelectedItem                        |
+| Border       | 边框容器   | Background, BorderThickness                      |
+| ScrollViewer | 滚动容器   | HorizontalScrollBarVisibility                    |
 
 ---
 
@@ -508,14 +512,14 @@ Avalonia 提供了丰富的内置控件，用于构建用户界面。本文介�
 
 ## 总结
 
-| 类别     | 控件                  | 使用场景  |
-| -------- | --------------------- | --------- |
-| **交互** | Button, ToggleButton  | 用户操作  |
-| **输入** | TextBox, PasswordBox  | 文本输入  |
-| **显示** | TextBlock             | 文本显示  |
-| **选择** | CheckBox, RadioButton | 二元/单选 |
-| **列表** | ListBox, ComboBox     | 多项选择  |
-| **容器** | Border, ScrollViewer  | 布局组织  |
+| 类别     | 控件                  | 使用场景        |
+| -------- | --------------------- | --------------- |
+| **交互** | Button, ToggleButton  | 用户操作        |
+| **输入** | TextBox, PasswordBox  | 文本输入        |
+| **显示** | TextBlock, Markdown   | 文本/富文本显示 |
+| **选择** | CheckBox, RadioButton | 二元/单选       |
+| **列表** | ListBox, ComboBox     | 多项选择        |
+| **容器** | Border, ScrollViewer  | 布局组织        |
 
 ---
 
@@ -524,4 +528,5 @@ Avalonia 提供了丰富的内置控件，用于构建用户界面。本文介�
 - [Avalonia 控件参考](https://docs.avaloniaui.net/docs/controls/)
 - [按钮控件](https://docs.avaloniaui.net/docs/controls/buttons/)
 - [文本控件](https://docs.avaloniaui.net/docs/controls/text/)
+- [Markdown ImageLoader 入门](/posts/avalonia/02-基础/avalonia-markdown-imageloader/)
 - [选择控件](https://docs.avaloniaui.net/docs/controls/selection/)

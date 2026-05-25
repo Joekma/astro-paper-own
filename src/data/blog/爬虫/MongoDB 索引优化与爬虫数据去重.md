@@ -7,6 +7,7 @@ slug: mongodb-indexes-and-deduplication
 featured: false
 draft: false
 series: 爬虫
+seriesOrder: 2
 tags:
   - MongoDB
   - 数据库

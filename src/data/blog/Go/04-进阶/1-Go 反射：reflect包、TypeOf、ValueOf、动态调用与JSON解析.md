@@ -15,6 +15,7 @@ tags:
   - 序列化
 draft: false
 series: go
+seriesOrder: 11
 language: zh-CN
 ---
 

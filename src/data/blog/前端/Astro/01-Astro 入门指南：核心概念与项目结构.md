@@ -12,6 +12,7 @@ tags:
   - SSG
 draft: false
 series: Astro
+seriesOrder: 1
 language: zh-CN
 ---
 

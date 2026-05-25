@@ -7,6 +7,7 @@ slug: mysql-error-solutions
 featured: false
 draft: false
 series: mysql
+seriesOrder: 3
 tags:
   - MySQL
   - 数据库

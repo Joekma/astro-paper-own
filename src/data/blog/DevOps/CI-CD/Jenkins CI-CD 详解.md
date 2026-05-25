@@ -1,6 +1,7 @@
 ---
 title: Jenkins CI/CD 详解
 series: Jenkins CI/CD
+seriesOrder: 1
 language: zh-CN
 author: Joekma
 pubDatetime: 2024-08-20T00:00:00Z

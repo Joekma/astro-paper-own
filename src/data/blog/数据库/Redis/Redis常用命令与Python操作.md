@@ -13,6 +13,7 @@ tags:
   - API
 description: "Redis常用命令、Python操作和应用程序集成方法"
 series: Redis
+seriesOrder: 4
 language: zh-CN
 ---
 

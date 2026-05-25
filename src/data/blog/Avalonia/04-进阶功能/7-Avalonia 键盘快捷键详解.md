@@ -15,6 +15,7 @@ tags:
   - 命令绑定
 draft: false
 series: Avalonia
+seriesOrder: 16
 language: zh-CN
 ---
 

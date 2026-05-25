@@ -13,6 +13,7 @@ tags:
   - B端设计
 description: "讲解工作台和数据看板如何设计成行动入口，而不是堆满图表和统计卡片的展示页。"
 series: AI 多端页面设计
+seriesOrder: 13
 language: zh-CN
 ---
 
