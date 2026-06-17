@@ -82,11 +82,11 @@ RAG（Retrieval-Augmented Generation，检索增强生成）是一种结合了�
 
 ```python
 # 导入LangChain的文档加载器和文本分割器
-from langchain_community.document_loaders import TextLoader, PDFLoader
+from langchain_community.document_loaders import TextLoader, PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 # 加载PDF文档
-loader = PDFLoader("document.pdf")
+loader = PyPDFLoader("document.pdf")
 documents = loader.load()
 
 # 创建文本分割器
@@ -223,9 +223,11 @@ def filtered_rag(query, vectorstore, llm, similarity_threshold=0.7):
     docs = vectorstore.similarity_search_with_score(query, k=10)
 
     # 步骤2：过滤低相似度文档
+    # 注意：similarity_search_with_score 返回的是距离（distance），越小越相似
+    # L2 距离范围 [0, +∞)，余弦距离范围 [0, 2]
     filtered_docs = [
         doc for doc, score in docs
-        if score < similarity_threshold  # 分数低于阈值才保留
+        if score < similarity_threshold  # 距离小于阈值才保留
     ]
 
     # 如果没有足够相关的文档
@@ -242,8 +244,6 @@ def filtered_rag(query, vectorstore, llm, similarity_threshold=0.7):
 使用重排序模型提升检索质量：
 
 ```python
-from langchain_core.output_parsers import StrOutputParser
-
 def reranked_rag(query, vectorstore, reranker, llm, top_k=20, final_k=5):
     # 步骤1：初步检索，获取更多候选
     initial_docs = vectorstore.similarity_search(query, k=top_k)

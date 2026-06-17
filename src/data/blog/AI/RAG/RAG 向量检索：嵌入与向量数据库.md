@@ -205,9 +205,15 @@ results_with_scores = vectorstore.similarity_search_with_score(query, k=5)
 for doc, score in results_with_scores:
     print(f"分数: {score:.4f} | 内容: {doc.page_content[:100]}...")
 
+    # score 是距离（distance），越小越相似
+    # 对于 cosine 距离（范围 [0, 2]）：similarity = 1 - distance
+    # 对于 L2 距离（范围 [0, +∞)）：仅展示距离，不直接转换为相似度
     distance = score
-    similarity = 1 - distance / 2
-    print(f"相似度: {similarity:.2%}")
+    if distance <= 2.0:
+        similarity = 1 - distance
+        print(f"相似度（cosine）: {similarity:.2%}")
+    else:
+        print(f"距离（L2）: {distance:.4f}")
 ```
 
 #### 元数据过滤检索
@@ -230,7 +236,9 @@ Facebook 的高效相似度搜索库：
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
 
-embeddings = OpenAIEmbeddings()
+# 假设 chunks 已经通过其他方式创建好
+# chunks = [...]
+embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
 vectorstore = FAISS.from_documents(
     documents=chunks,
@@ -239,9 +247,11 @@ vectorstore = FAISS.from_documents(
 
 vectorstore.save_local("faiss_index")
 
+# 加载时需要设置 allow_dangerous_deserialization=True（仅信任自己创建的文件）
 new_vectorstore = FAISS.load_local(
     "faiss_index",
-    embeddings
+    embeddings,
+    allow_dangerous_deserialization=True
 )
 ```
 
@@ -265,8 +275,10 @@ from pinecone import Pinecone
 pc = Pinecone(api_key="your-api-key")
 index = pc.Index("rag-index")
 
-embeddings = OpenAIEmbeddings()
+embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
+# 假设 chunks 已经通过其他方式创建好
+# chunks = [...]
 vectorstore = PineconeVectorStore(
     index=index,
     embedding=embeddings,
@@ -282,17 +294,26 @@ results = vectorstore.similarity_search(query="查询内容", k=5)
 
 ```python
 import weaviate
+from langchain_weaviate import WeaviateVectorStore
 
-client = weaviate.Client(url="http://localhost:8080")
+# weaviate v4 客户端
+client = weaviate.connect_to_local(
+    host="localhost",
+    port=8080,
+    grpc_port=50051
+)
 
-vectorstore = Weaviate(
+# embeddings 需先定义
+# embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+vectorstore = WeaviateVectorStore(
     client=client,
     index_name="Document",
     text_key="text",
-    embedding=embeddings,
-    attributes=["source", "category"]
+    embedding=embeddings
 )
 
+# 假设 chunks 已经通过其他方式创建好
+# chunks = [...]
 vectorstore.add_documents(chunks)
 
 results = vectorstore.similarity_search(query="查询", k=5)
@@ -385,15 +406,15 @@ vectorstore = Chroma(
 聚类加速搜索：
 
 ```python
-from langchain_community.vectorstores import FAISS
+# 注意：FAISS 不通过 index_params 传递这些参数
+# 应该在创建 index 时使用 faiss 自身的 API
+import faiss
 
+# embeddings 需先定义
+# embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 vectorstore = FAISS.from_documents(
     documents=chunks,
-    embedding=embeddings,
-    index_params={
-        "nlist": 100,
-        "metric_type": 1
-    }
+    embedding=embeddings
 )
 ```
 
@@ -402,18 +423,16 @@ vectorstore = FAISS.from_documents(
 高效的近似最近邻：
 
 ```python
-from langchain_pinecone import PineconeVectorStore
+# Pinecone 的索引参数在创建 ServerlessSpec 或 PodSpec 时设置
+# 假设 index 已经通过 Pinecone 控制台或代码创建好
+from pinecone import ServerlessSpec
 
+# embeddings 需先定义
+# embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 vectorstore = PineconeVectorStore(
     index=index,
     embedding=embeddings,
-    index_params={
-        "name": "hnsw",
-        "parameters": {
-            "ef_construction": 200,
-            "m": 16
-        }
-    }
+    text_key="text"
 )
 ```
 
@@ -523,27 +542,25 @@ print(f"从已存储的数据库检索到 {len(results)} 个结果")
 ```python
 import json
 
-def export_vectorstore(vectorstore, metadata_path="metadata.json"):
-    vectors = []
-    metadatas = []
-    ids = []
+def export_vectorstore_metadata(vectorstore, metadata_path="metadata.json"):
+    # Chroma 的 _collection 内部接口，仅供示例演示
+    data = vectorstore._collection.get(include=["metadatas", "documents"])
 
-    for doc in vectorstore.get()["documents"]:
-        doc_id = doc.metadata.get("id", str(hash(doc.page_content)))
-        ids.append(doc_id)
-        vectors.append(vectorstore.get_vector(doc_id))
-        metadatas.append(doc.metadata)
+    metadatas = data.get("metadatas", [])
+    documents = data.get("documents", [])
+    ids = data.get("ids", [])
 
-    with open(metadata_path, "w") as f:
+    with open(metadata_path, "w", encoding="utf-8") as f:
         json.dump({
             "ids": ids,
+            "documents": documents,
             "metadatas": metadatas
-        }, f)
+        }, f, ensure_ascii=False, indent=2)
 
-    return vectors, ids
+    return len(ids)
 
-vectors, ids = export_vectorstore(vectorstore)
-print(f"导出了 {len(vectors)} 个向量")
+count = export_vectorstore_metadata(vectorstore)
+print(f"导出了 {count} 个文档的元数据")
 ```
 
 ## 最佳实践

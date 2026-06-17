@@ -112,7 +112,7 @@ rag-production/
 ### 环境配置
 
 ```python
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 from functools import lru_cache
 
@@ -166,10 +166,12 @@ class Settings(BaseSettings):
     chunk_overlap: int = 200
     retrieval_k: int = 5
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        extra = "ignore"
+    # pydantic v2 配置
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
 @lru_cache()
 def get_settings() -> Settings:
@@ -181,12 +183,13 @@ settings = get_settings()
 ### 配置验证
 
 ```python
-from pydantic import validator
+from pydantic import field_validator
 
 class Settings(BaseSettings):
     openai_api_key: str
 
-    @validator("openai_api_key")
+    @field_validator("openai_api_key")
+    @classmethod
     def validate_api_key(cls, v):
         if not v or v == "your-api-key":
             raise ValueError("请设置有效的 OpenAI API Key")
@@ -196,7 +199,8 @@ class Settings(BaseSettings):
 
     chunk_size: int = 1000
 
-    @validator("chunk_size")
+    @field_validator("chunk_size")
+    @classmethod
     def validate_chunk_size(cls, v):
         if v < 100:
             raise ValueError("chunk_size 必须 >= 100")
@@ -206,7 +210,8 @@ class Settings(BaseSettings):
 
     max_concurrent_requests: int = 100
 
-    @validator("max_concurrent_requests")
+    @field_validator("max_concurrent_requests")
+    @classmethod
     def validate_concurrency(cls, v):
         if v < 1:
             raise ValueError("max_concurrent_requests 必须 >= 1")
@@ -324,16 +329,37 @@ async def get_metrics():
 ### 查询接口
 
 ```python
+import time
+import logging
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
-from datetime import datetime
-import uuid
 
 from src.core.rag_chain import RAGChain
 from src.api.middleware.auth import verify_api_key
 
 router = APIRouter()
+
+# 全局 RAG 链（应在 lifespan 中初始化）
+_rag_chain: Optional[RAGChain] = None
+
+def get_rag_chain() -> RAGChain:
+    if _rag_chain is None:
+        raise HTTPException(status_code=503, detail="RAG 链未初始化")
+    return _rag_chain
+
+async def log_query(session_id: str, query: str, answer: str, latency: float):
+    """后台记录查询日志。"""
+    logging.info(f"session={session_id} latency={latency:.3f}s query={query[:50]}")
+
+async def save_feedback(query: str, answer: str, rating: int, comment: Optional[str]):
+    """保存用户反馈。实际项目中应写入数据库。"""
+    logging.info(f"feedback rating={rating} query={query[:50]} comment={comment}")
+
+async def get_session_history(session_id: str, limit: int = 20) -> List[Dict]:
+    """获取会话历史。实际项目中应从数据库或缓存读取。"""
+    return []
 
 class QueryRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=2000)
@@ -425,12 +451,17 @@ async def get_history(
 ### 文档上传接口
 
 ```python
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
-from typing import List
-import hashlib
-import aiofiles
+import time
 import os
+import hashlib
+import logging
 from datetime import datetime
+from typing import List, Optional, Dict
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from pydantic import BaseModel
+import aiofiles
+
+from src.api.middleware.auth import verify_api_key
 
 router = APIRouter()
 
@@ -443,6 +474,42 @@ class UploadResponse(BaseModel):
 
 ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md", ".docx", ".doc"}
 MAX_FILE_SIZE = 50 * 1024 * 1024
+
+# 模拟索引器和元数据存储
+_INDEX_STORE: Dict[str, List[str]] = {}
+_METADATA_STORE: Dict[str, Dict] = {}
+
+async def process_and_index_document(
+    file_path: str,
+    file_id: str,
+    category: Optional[str],
+    original_filename: str
+) -> List[str]:
+    """处理文档并加入向量库索引。
+
+    实际实现应包括：文档加载、文本分割、嵌入生成、向量库写入。
+    """
+    logging.info(f"处理文档: {original_filename}")
+    # 简化处理：仅记录文件 ID 作为占位
+    chunk_ids = [f"{file_id}_chunk_{i}" for i in range(5)]
+    _INDEX_STORE[file_id] = chunk_ids
+    return chunk_ids
+
+async def record_upload_metadata(
+    file_id: str,
+    filename: str,
+    category: Optional[str],
+    chunks_created: int,
+    file_size: int
+):
+    """记录上传文件的元数据。"""
+    _METADATA_STORE[file_id] = {
+        "filename": filename,
+        "category": category,
+        "chunks_created": chunks_created,
+        "file_size": file_size,
+        "uploaded_at": datetime.utcnow().isoformat()
+    }
 
 @router.post("/upload", response_model=UploadResponse)
 async def upload_documents(
@@ -1339,6 +1406,7 @@ import asyncio
 import time
 from typing import List, Dict
 import statistics
+import aiohttp
 
 class LoadTester:
     def __init__(self, api_url: str, api_key: str):
@@ -1404,6 +1472,9 @@ class LoadTester:
     def _generate_report(self, results: List[Dict], errors: int, total_time: float):
         latencies = [r["latency"] for r in results]
 
+        # statistics.quantiles 返回 n-1 个分位点（不含 0 和 1）
+        # n=20 时返回 19 个分位点，索引 18 是 95% 分位
+        # n=100 时返回 99 个分位点，索引 98 是 99% 分位
         return {
             "total_requests": len(results) + errors,
             "successful_requests": len(results),
@@ -1417,11 +1488,14 @@ class LoadTester:
             "total_tokens": sum(r.get("tokens", 0) for r in results)
         }
 
-tester = LoadTester("https://rag.example.com", "your-api-key")
-report = await tester.run_load_test(concurrency=20, total_requests=1000)
-
-print(f"QPS: {report['requests_per_second']:.2f}")
-print(f"P95 延迟: {report['p95_latency']:.3f}s")
+# 使用示例（需在异步函数中执行）
+# async def main():
+#     tester = LoadTester("https://rag.example.com", "your-api-key")
+#     report = await tester.run_load_test(concurrency=20, total_requests=1000)
+#     print(f"QPS: {report['requests_per_second']:.2f}")
+#     print(f"P95 延迟: {report['p95_latency']:.3f}s")
+#
+# asyncio.run(main())
 ```
 
 ## 灾难恢复

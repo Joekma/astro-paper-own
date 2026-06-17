@@ -86,14 +86,19 @@ print(f"BM25 检索结果: {len(results)} 个")
 支持向量机基础的检索：
 
 ```python
-from langchain.retrievers import SVMRetriever
-
-retriever = SVMRetriever.from_texts(
-    texts=[doc.page_content for doc in documents],
-    embeddings=embeddings
-)
-
-results = retriever.invoke("深度学习框架")
+# SVMRetriever 在新版 langchain-community 中仍可用，但要求 embeddings 已定义
+# from langchain_community.retrievers import SVMRetriever
+# 
+# retriever = SVMRetriever.from_texts(
+#     texts=[doc.page_content for doc in documents],
+#     embeddings=embeddings
+# )
+#
+# results = retriever.invoke("深度学习框架")
+# print(f"SVM 检索结果: {len(results)} 个")
+#
+# 注：SVMRetriever 在新版本中已不推荐使用，建议改用向量检索
+print("SVM 检索器已弃用，建议使用向量检索")
 ```
 
 ## 混合检索
@@ -190,6 +195,7 @@ def rerank_documents(query, documents, top_n=5):
     return [doc for doc, score in scored_docs[:top_n]]
 
 reranked = rerank_documents("查询", initial_results, top_n=5)
+# 注：initial_results 需先通过 vectorstore.similarity_search 获取
 ```
 
 ### Cohere 重排序
@@ -347,12 +353,12 @@ results = parallel_subquery("深度学习在自然语言处理中的应用", vec
 ### 带过滤条件的检索
 
 ```python
-from langchain_core.retrievers import SelfQueryRetriever
-from langchain_openai import OpenAIEmbeddings
+from langchain.chains.query_constructor.schema import AttributeInfo
+from langchain.retrievers.self_query.base import SelfQueryRetriever
+from langchain_openai import ChatOpenAI
 
-from langchain_openai import OpenAI
-
-llm = OpenAI(model="gpt-4")
+# SelfQueryRetriever 应配合 chat 模型使用
+llm = ChatOpenAI(model="gpt-4", temperature=0)
 
 metadata_field_info = [
     AttributeInfo(
@@ -372,6 +378,8 @@ metadata_field_info = [
     )
 ]
 
+# vectorstore 需先创建
+# vectorstore = Chroma.from_documents(...)
 retriever = SelfQueryRetriever.from_llm(
     llm=llm,
     vectorstore=vectorstore,
@@ -382,6 +390,7 @@ retriever = SelfQueryRetriever.from_llm(
 results = retriever.invoke(
     "找出所有关于Python的文档，类别是编程"
 )
+print(f"自查询检索结果: {len(results)} 个")
 ```
 
 ### 带时间过滤的检索
@@ -409,30 +418,56 @@ recent_results = time_based_retrieval("技术更新", vectorstore, days=7)
 ### LRU 缓存
 
 ```python
-from functools import lru_cache
 import hashlib
 
-@lru_cache(maxsize=1000)
-def cached_query(query_hash):
-    return vectorstore.similarity_search(
-        cached_query._query,
-        k=5
-    )
+# 简单的 LRU 缓存：使用 OrderedDict 实现
+from collections import OrderedDict
+
+class SimpleLRUCache:
+    def __init__(self, capacity=1000):
+        self.cache = OrderedDict()
+        self.capacity = capacity
+
+    def get(self, key):
+        if key not in self.cache:
+            return None
+        # 移动到末尾表示最近使用
+        self.cache.move_to_end(key)
+        return self.cache[key]
+
+    def set(self, key, value):
+        if key in self.cache:
+            self.cache.move_to_end(key)
+        self.cache[key] = value
+        if len(self.cache) > self.capacity:
+            self.cache.popitem(last=False)
 
 def get_query_hash(query):
     return hashlib.md5(query.encode()).hexdigest()
 
-def retrieve_with_cache(query, vectorstore):
+# 创建全局缓存
+_cache = SimpleLRUCache(capacity=1000)
+
+def retrieve_with_cache(query, vectorstore, k=5):
     query_hash = get_query_hash(query)
 
-    cached_query._query = query
+    cached_result = _cache.get(query_hash)
+    if cached_result is not None:
+        return cached_result
 
-    return cached_query(query_hash)
+    result = vectorstore.similarity_search(query, k=k)
+    _cache.set(query_hash, result)
+    return result
+
+# 示例使用
+# results = retrieve_with_cache("用户查询", vectorstore)
 ```
 
 ### 语义缓存
 
 ```python
+import hashlib
+
 class SemanticCache:
     def __init__(self, vectorstore, threshold=0.95):
         self.vectorstore = vectorstore
@@ -440,20 +475,22 @@ class SemanticCache:
         self.cache = {}
 
     def retrieve(self, query, k=5):
-        query_hash = get_query_hash(query)
+        # 简单示例：使用查询字符串哈希作为 key
+        # 真实的语义缓存应基于查询向量的相似度匹配
+        query_hash = hashlib.md5(query.encode()).hexdigest()
 
         if query_hash in self.cache:
             return self.cache[query_hash]
 
         results = self.vectorstore.similarity_search(query, k=k)
-
-        if results and (1 - results[0].metadata.get("distance", 1)) > self.threshold:
-            self.cache[query_hash] = results
-            return results
-
+        self.cache[query_hash] = results
         return results
 
-semantic_cache = SemanticCache(vectorstore, threshold=0.95)
+# 使用示例
+# vectorstore 需先创建
+# vectorstore = Chroma.from_documents(...)
+# semantic_cache = SemanticCache(vectorstore, threshold=0.95)
+# results = semantic_cache.retrieve("查询内容")
 ```
 
 ## 上下文压缩
@@ -461,10 +498,12 @@ semantic_cache = SemanticCache(vectorstore, threshold=0.95)
 ### 检索后压缩
 
 ```python
+from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 
-llm = ChatOpenAI(model="gpt-4")
+llm = ChatOpenAI(model="gpt-4", temperature=0)
 
 compress_prompt = PromptTemplate.from_template(
     """基于以下查询压缩每个文档内容，只保留相关信息：
@@ -495,7 +534,9 @@ def compress_documents(query, documents, llm):
 
     return compressed
 
-compressed_docs = compress_documents("Python", documents, llm)
+# 使用示例
+# documents 需先准备好
+# compressed_docs = compress_documents("Python", documents, llm)
 ```
 
 ## 多样性检索
@@ -580,11 +621,18 @@ mmr_results = mmr_retrieval("机器学习", documents)
 ### 检索质量评估
 
 ```python
-def evaluate_retrieval(query, relevant_docs, retriever):
+def evaluate_retrieval(query, relevant_docs_content, retriever):
+    """评估检索质量。
+
+    Args:
+        query: 查询字符串
+        relevant_docs_content: 相关文档的内容集合（set of str）
+        retriever: 检索器对象
+    """
     retrieved_docs = retriever.invoke(query)
 
     retrieved_set = set(doc.page_content for doc in retrieved_docs)
-    relevant_set = set(relevant_docs)
+    relevant_set = set(relevant_docs_content)
 
     precision = len(retrieved_set & relevant_set) / len(retrieved_set) if retrieved_set else 0
     recall = len(retrieved_set & relevant_set) / len(relevant_set) if relevant_set else 0
@@ -598,16 +646,24 @@ def evaluate_retrieval(query, relevant_docs, retriever):
         "relevant_count": len(relevant_set)
     }
 
-metrics = evaluate_retrieval("Python", ["Python基础", "Python进阶"], retriever)
-print(f"Precision: {metrics['precision']:.2%}")
-print(f"Recall: {metrics['recall']:.2%}")
-print(f"F1: {metrics['f1']:.2%}")
+# retriever 需先定义
+# metrics = evaluate_retrieval("Python", ["Python基础", "Python进阶"], retriever)
+# print(f"Precision: {metrics['precision']:.2%}")
+# print(f"Recall: {metrics['recall']:.2%}")
+# print(f"F1: {metrics['f1']:.2%}")
 ```
 
 ### A/B 测试检索策略
 
 ```python
-def ab_test_strategies(query, strategies):
+def ab_test_strategies(query, strategies, relevant_docs):
+    """A/B 测试多个检索策略。
+
+    Args:
+        query: 测试查询
+        strategies: 策略字典 {name: retriever}
+        relevant_docs: 相关文档内容集合（set of str）
+    """
     results = {}
 
     for name, strategy in strategies.items():
@@ -627,14 +683,14 @@ def ab_test_strategies(query, strategies):
 
     return results
 
-strategies = {
-    "vector": vector_retriever,
-    "bm25": bm25_retriever,
-    "hybrid": ensemble_retriever,
-    "reranked": reranker
-}
-
-ab_results = ab_test_strategies("机器学习", strategies)
+# 使用示例
+# strategies = {
+#     "vector": vector_retriever,
+#     "bm25": bm25_retriever,
+#     "hybrid": ensemble_retriever,
+# }
+# relevant_docs = {"相关文档内容1", "相关文档内容2"}
+# ab_results = ab_test_strategies("机器学习", strategies, relevant_docs)
 ```
 
 ## 最佳实践

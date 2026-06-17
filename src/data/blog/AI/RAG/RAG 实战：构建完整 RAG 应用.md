@@ -91,12 +91,12 @@ settings = Settings()
 ```python
 from langchain_community.document_loaders import (
     TextLoader,
-    PDFLoader,
+    PyPDFLoader,
     Docx2txtLoader,
     UnstructuredMarkdownLoader,
     CSVLoader
 )
-from langchain.schema import Document
+from langchain_core.documents import Document
 from typing import List, Optional
 import os
 
@@ -104,7 +104,7 @@ class DocumentLoader:
     def __init__(self):
         self.loaders = {
             ".txt": TextLoader,
-            ".pdf": PDFLoader,
+            ".pdf": PyPDFLoader,
             ".docx": Docx2txtLoader,
             ".md": UnstructuredMarkdownLoader,
             ".csv": CSVLoader
@@ -336,6 +336,7 @@ class HybridRetriever(BaseRetriever):
 ### 6. 生成模块 (generator.py)
 
 ```python
+from typing import List
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -477,11 +478,10 @@ rag_chain = RAGChain(
 
 ```python
 import streamlit as st
+from langchain_core.documents import Document
 from rag.chain import RAGChain
-from rag.loader import DocumentLoader
 from rag.chunker import TextChunker
 from rag.vectorstore import VectorStoreManager
-from rag.retriever import HybridRetriever
 from rag.generator import AnswerGenerator
 
 st.set_page_config(page_title="RAG 智能问答", page_icon="🤖")
@@ -503,23 +503,28 @@ with st.sidebar:
     if uploaded_files:
         if st.button("处理文档", type="primary"):
             with st.spinner("处理文档中..."):
+                # 读取上传文件并构造 Document 对象列表
                 documents = []
                 for file in uploaded_files:
                     content = file.read().decode("utf-8", errors="ignore")
-                    documents.append({
-                        "content": content,
-                        "metadata": {"source": file.name}
-                    })
+                    documents.append(
+                        Document(
+                            page_content=content,
+                            metadata={"source": file.name}
+                        )
+                    )
 
+                # 分割文档为文本块
                 chunks = TextChunker().split_documents(documents)
 
-                vectorstore = VectorStoreManager().create_vectorstore(chunks)
+                # 创建向量库
+                vs_manager = VectorStoreManager()
+                vectorstore = vs_manager.create_vectorstore(chunks)
 
-                retriever = vectorstore.as_retriever(k=5)
-
+                # 构建 RAG Chain
                 st.session_state.rag_chain = RAGChain(
-                    vectorstore_manager=VectorStoreManager(),
-                    retriever=retriever,
+                    vectorstore_manager=vs_manager,
+                    retriever=vectorstore.as_retriever(search_kwargs={"k": 5}),
                     generator=AnswerGenerator()
                 )
 
@@ -582,7 +587,7 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-rag_chain = None
+rag_chain: Optional[RAGChain] = None
 
 class QueryRequest(BaseModel):
     query: str
@@ -593,17 +598,41 @@ class QueryResponse(BaseModel):
     sources: List[str]
     context: str
 
+def build_rag_chain(documents):
+    """根据文档内容构建 RAG Chain。
+
+    实际项目中应根据 RAGChain 的接口进行实现。
+    """
+    from rag.chunker import TextChunker
+    from rag.vectorstore import VectorStoreManager
+    from rag.generator import AnswerGenerator
+    from langchain_core.documents import Document
+
+    doc_objs = [
+        Document(page_content=content, metadata={"source": f"upload_{i}"})
+        for i, content in enumerate(documents)
+    ]
+
+    chunks = TextChunker().split_documents(doc_objs)
+    vs_manager = VectorStoreManager()
+    vectorstore = vs_manager.create_vectorstore(chunks)
+    return RAGChain(
+        vectorstore_manager=vs_manager,
+        retriever=vectorstore.as_retriever(search_kwargs={"k": 5}),
+        generator=AnswerGenerator()
+    )
+
 @app.post("/upload", status_code=201)
 async def upload_documents(files: List[UploadFile] = File(...)):
     global rag_chain
 
     try:
-        documents = []
+        contents = []
         for file in files:
             content = await file.read()
-            documents.append(content)
+            contents.append(content.decode("utf-8", errors="ignore"))
 
-        rag_chain = build_rag_chain(documents)
+        rag_chain = build_rag_chain(contents)
 
         return {"status": "success", "message": f"处理了 {len(files)} 个文件"}
 
@@ -620,10 +649,16 @@ async def query(request: QueryRequest):
         request.chat_history
     )
 
+    # result["context"] 是 Document 列表，需提取 page_content
+    context_text = "\n\n".join(
+        doc.page_content if hasattr(doc, "page_content") else str(doc)
+        for doc in result["context"]
+    )
+
     return QueryResponse(
         answer=result["answer"],
         sources=result["sources"],
-        context="\n\n".join([doc for doc in result["context"]])
+        context=context_text
     )
 
 @app.get("/health")

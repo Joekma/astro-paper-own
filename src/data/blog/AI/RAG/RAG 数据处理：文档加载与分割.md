@@ -271,7 +271,7 @@ print(f"Markdown 分割: {len(chunks)} 个块")
 针对代码文件的特殊分割：
 
 ```python
-from langchain.text_splitter import Language
+from langchain.text_splitter import Language, RecursiveCharacterTextSplitter
 
 splitter = RecursiveCharacterTextSplitter.from_language(
     language=Language.PYTHON,
@@ -289,10 +289,11 @@ print(f"代码分割: {len(code_chunks)} 个块")
 ```python
 from llama_index.core.node_parser import SentenceSplitter
 
+# SentenceSplitter 的参数是 chunk_size、chunk_overlap、paragraph_separator
 parser = SentenceSplitter(
     chunk_size=512,
     chunk_overlap=64,
-    separator="\n\n"
+    paragraph_separator="\n\n"
 )
 
 nodes = parser.get_nodes_from_documents(documents)
@@ -339,7 +340,7 @@ chunks = splitter.split_documents(documents)
 ### 添加基础元数据
 
 ```python
-from langchain.schema import Document
+from langchain_core.documents import Document
 
 doc = Document(
     page_content="文档内容...",
@@ -465,6 +466,12 @@ print(f"语义分割: {len(chunks)} 个块")
 根据内容类型自适应调整：
 
 ```python
+from langchain.text_splitter import (
+    Language,
+    MarkdownTextSplitter,
+    RecursiveCharacterTextSplitter,
+)
+
 def adaptive_splitter(text, content_type, chunk_size=1000):
     if content_type == "code":
         splitter = RecursiveCharacterTextSplitter.from_language(
@@ -520,10 +527,13 @@ def remove_noise(text):
 
 ```python
 def normalize_text(text):
-    text = text.replace('"', '"').replace('"', '"')
-    text = text.replace(''', "'").replace(''', "'")
+    # 将各种排版引号统一为 ASCII 引号
+    text = text.replace('“', '"').replace('”', '"')
+    text = text.replace('‘', "'").replace('’', "'")
+    # 将长破折号统一为连字符
     text = text.replace('—', '-').replace('–', '-')
-    text = text.replace('...', '...')
+    # 统一省略号为三个点
+    text = text.replace('…', '...')
     return text
 ```
 

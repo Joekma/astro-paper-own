@@ -63,10 +63,8 @@ language: zh-CN
 ### 图像加载与预处理
 
 ```python
-from langchain_community.document_loaders import UnstructuredImageLoader
+import os
 from PIL import Image
-import base64
-from io import BytesIO
 
 class ImageLoader:
     def __init__(self):
@@ -86,9 +84,6 @@ class ImageLoader:
         }
 
     def load_directory(self, directory):
-        from pathlib import Path
-        import os
-
         images = []
         for root, dirs, files in os.walk(directory):
             for file in files:
@@ -98,9 +93,10 @@ class ImageLoader:
 
         return images
 
-loader = ImageLoader()
-images = loader.load_directory("./images")
-print(f"加载了 {len(images)} 张图片")
+# 使用示例
+# loader = ImageLoader()
+# images = loader.load_directory("./images")
+# print(f"加载了 {len(images)} 张图片")
 ```
 
 ### 图像描述生成
@@ -355,50 +351,56 @@ print(f"提取了 {len(keyframes)} 个关键帧")
 ### 视频描述生成
 
 ```python
-from transformers import VideoCLIPModel, VideoCLIPProcessor
+# 视频描述生成：实际方案是按帧提取后用图像描述模型
+# 这里使用 BLIP 处理关键帧并拼接为视频描述
+from transformers import BlipProcessor, BlipForConditionalGeneration
 import torch
 from PIL import Image
 
 class VideoCaptioner:
-    def __init__(self):
-        self.model = VideoCLIPModel.from_pretrained("fcakyon/video-caption-gen")
-        self.processor = VideoCLIPProcessor.from_pretrained("fcakyon/video-caption-gen")
+    """视频描述生成器：对关键帧逐帧生成描述后拼接。"""
 
-    def caption_video(self, frames):
-        inputs = self.processor(
-            images=frames,
-            return_tensors="pt",
-            padding=True
-        )
+    def __init__(self, model_name="Salesforce/blip-image-captioning-base"):
+        self.processor = BlipProcessor.from_pretrained(model_name)
+        self.model = BlipForConditionalGeneration.from_pretrained(model_name)
 
+    def caption_frame(self, frame, max_length=100):
+        """为单帧生成描述。"""
+        if isinstance(frame, str):
+            image = Image.open(frame).convert("RGB")
+        else:
+            image = frame if isinstance(frame, Image.Image) else Image.fromarray(frame)
+
+        inputs = self.processor(image, return_tensors="pt")
         with torch.no_grad():
-            outputs = self.model.generate(inputs)
+            output = self.model.generate(
+                **inputs,
+                max_length=max_length,
+                num_beams=5,
+                no_repeat_ngram_size=2
+            )
+        return self.processor.decode(output[0], skip_special_tokens=True)
 
-        caption = self.processor.batch_decode(outputs, skip_special_tokens=True)[0]
+    def caption_video(self, frames, max_length=100):
+        """为整个视频（关键帧列表）生成综合描述。"""
+        frame_captions = [self.caption_frame(f, max_length) for f in frames]
+        # 简单拼接作为视频描述
+        return " ".join(frame_captions)
 
-        return caption
-
-    def caption_video_with_timestamps(self, frames, timestamps):
+    def caption_video_with_timestamps(self, frames, timestamps, max_length=100):
+        """为每个关键帧生成带时间戳的描述。"""
         captions = []
-
-        for i, (frame, timestamp) in enumerate(zip(frames, timestamps)):
-            inputs = self.processor(images=frame, return_tensors="pt")
-
-            with torch.no_grad():
-                output = self.model.generate(inputs)
-
-            caption = self.processor.decode(output[0], skip_special_tokens=True)
-
+        for frame, ts in zip(frames, timestamps):
             captions.append({
-                "timestamp": timestamp,
-                "caption": caption,
-                "frame_index": i
+                "timestamp": ts,
+                "caption": self.caption_frame(frame, max_length),
             })
-
         return captions
 
-captioner = VideoCaptioner()
-video_caption = captioner.caption_video(keyframes)
+# 使用示例
+# captioner = VideoCaptioner()
+# keyframes = [...]  # 关键帧列表（numpy 数组或 PIL Image）
+# video_caption = captioner.caption_video(keyframes)
 ```
 
 ### 视频向量存储
@@ -411,6 +413,14 @@ class VideoVectorStore:
         self.collection = client.create_collection("videos")
 
     def add_video(self, video_path, video_caption, frame_captions, metadata):
+        """添加视频到向量库。
+
+        Args:
+            video_path: 视频文件路径
+            video_caption: 视频整体描述
+            frame_captions: 关键帧描述与向量字典 {caption: vector} 或 [(caption, vector), ...]
+            metadata: 视频元数据
+        """
         video_embedding = self.embedder.embed_text(video_caption)
 
         self.collection.add(
@@ -581,6 +591,7 @@ for segment in result["segments"][:3]:
 ```python
 import librosa
 import numpy as np
+import torch
 from transformers import Wav2Vec2Model, Wav2Vec2Processor
 
 class AudioEmbedder:
@@ -618,16 +629,20 @@ class AudioEmbedder:
             "combined_embedding": combined_embedding
         }
 
-embedder = AudioEmbedder()
-audio_doc = embedder.create_audio_document("audio.wav", transcription_text, embeddings_model)
+# 使用示例
+# embedder = AudioEmbedder()
+# transcription_text = "示例转录文本"
+# embeddings_model = OpenAIEmbeddings(model="text-embedding-3-small")
+# audio_doc = embedder.create_audio_document("audio.wav", transcription_text, embeddings_model)
 ```
 
 ### 音频向量存储
 
 ```python
 class AudioVectorStore:
-    def __init__(self, client):
+    def __init__(self, client, embeddings_model):
         self.client = client
+        self.embeddings_model = embeddings_model
         self.collection = client.create_collection("audio")
 
     def add_audio(self, audio_doc, metadata):
@@ -643,7 +658,7 @@ class AudioVectorStore:
         )
 
     def search_audio(self, query, k=5):
-        query_embedding = embeddings_model.embed_query(query)
+        query_embedding = self.embeddings_model.embed_query(query)
 
         results = self.collection.query(
             query_embeddings=[query_embedding],
@@ -651,6 +666,12 @@ class AudioVectorStore:
         )
 
         return results
+
+# 使用示例
+# import chromadb
+# client = chromadb.PersistentClient("./audio_db")
+# embeddings_model = OpenAIEmbeddings(model="text-embedding-3-small")
+# audio_store = AudioVectorStore(client, embeddings_model)
 ```
 
 ## 多模态检索
@@ -659,12 +680,11 @@ class AudioVectorStore:
 
 ```python
 class CrossModalRetriever:
-    def __init__(self, image_vectorstore, text_vectorstore, audio_vectorstore):
+    def __init__(self, image_vectorstore, text_vectorstore, audio_vectorstore, image_embedder):
         self.image_store = image_vectorstore
         self.text_store = text_vectorstore
         self.audio_store = audio_vectorstore
-
-        self.image_embedder = VisualEmbedder()
+        self.image_embedder = image_embedder
 
     def retrieve(self, query, modalities=["text", "image", "audio"], k=5):
         results = {"texts": [], "images": [], "audios": []}
@@ -684,25 +704,31 @@ class CrossModalRetriever:
         return results
 
     def image_to_text_search(self, image_path, k=5):
+        """以图搜文：使用图像向量在文本库中检索。"""
         image_embedding = self.image_embedder.embed_image(image_path)
-
-        results = self.text_store.search_vector(image_embedding, k=k)
-
+        # 注意：需要 Chroma 集合直接支持按向量查询
+        results = self.text_store.text_collection.query(
+            query_embeddings=[image_embedding],
+            n_results=k
+        )
         return results
 
     def text_to_image_search(self, text_query, k=5):
+        """以文搜图：使用文本向量在图像库中检索。"""
         text_embedding = self.image_embedder.embed_text(text_query)
+        results = self.image_store.image_collection.query(
+            query_embeddings=[text_embedding],
+            n_results=k
+        )
+        return results
 
-        image_results = self.image_store.search_vector(text_embedding, k=k)
-
-        return image_results
-
-retriever = CrossModalRetriever(image_store, text_store, audio_store)
-multimodal_results = retriever.retrieve(
-    query="日落风景",
-    modalities=["text", "image"],
-    k=5
-)
+# 使用示例
+# retriever = CrossModalRetriever(image_store, text_store, audio_store, image_embedder)
+# multimodal_results = retriever.retrieve(
+#     query="日落风景",
+#     modalities=["text", "image"],
+#     k=5
+# )
 ```
 
 ### 多模态相似度融合
@@ -854,23 +880,39 @@ answer = generator.generate(context, "这张图片描述了什么场景？")
 ## 实战：构建多模态 RAG 系统
 
 ```python
+import cv2
+import chromadb
+from langchain_openai import OpenAIEmbeddings
+
 class MultimodalRAGSystem:
+    """多模态 RAG 系统：整合图像、视频、音频处理与检索。"""
+
     def __init__(self):
         self.image_loader = ImageLoader()
         self.video_extractor = VideoFrameExtractor()
         self.audio_processor = AudioProcessor()
+        self.image_captioner = ImageCaptioner()
 
         self.image_embedder = VisualEmbedder()
-        self.text_embedder = OpenAIEmbeddings()
+        self.text_embedder = OpenAIEmbeddings(model="text-embedding-3-small")
+        self.audio_embedder = AudioEmbedder()
+        self.transcriber = WhisperTranscriber()
 
-        self.image_vectorstore = MultimodalVectorStore("image_db")
-        self.video_vectorstore = VideoVectorStore(client, self.text_embedder)
-        self.audio_vectorstore = AudioVectorStore(client)
+        # Chroma 客户端
+        self.client = chromadb.PersistentClient("./multimodal_db")
 
+        # 各模态向量库
+        self.text_vectorstore = MultimodalVectorStore("./text_db")
+        self.image_vectorstore = MultimodalVectorStore("./image_db")
+        self.video_vectorstore = VideoVectorStore(self.client, self.text_embedder)
+        self.audio_vectorstore = AudioVectorStore(self.client, self.text_embedder)
+
+        # 跨模态检索器
         self.retriever = CrossModalRetriever(
-            self.image_vectorstore,
-            text_vectorstore,
-            self.audio_vectorstore
+            image_vectorstore=self.image_vectorstore,
+            text_vectorstore=self.text_vectorstore,
+            audio_vectorstore=self.audio_vectorstore,
+            image_embedder=self.image_embedder
         )
 
         self.context_builder = MultimodalContextBuilder()
@@ -879,12 +921,8 @@ class MultimodalRAGSystem:
     def process_image(self, image_path):
         caption = self.image_captioner.generate_caption(image_path)
         embedding = self.image_embedder.embed_image(image_path)
-
         self.image_vectorstore.add_images(
-            [image_path],
-            [caption],
-            [embedding],
-            [{"source": image_path}]
+            [image_path], [caption], [embedding], [{"source": image_path}]
         )
 
     def process_video(self, video_path):
@@ -897,12 +935,6 @@ class MultimodalRAGSystem:
             caption = self.image_captioner.generate_caption(frame_path)
             captions.append(caption)
 
-        video_doc = {
-            "path": video_path,
-            "captions": captions,
-            "frames": frames
-        }
-
         self.video_vectorstore.add_video(
             video_path,
             " ".join(captions),
@@ -912,58 +944,47 @@ class MultimodalRAGSystem:
 
     def process_audio(self, audio_path):
         transcription = self.transcriber.transcribe(audio_path)
-
         audio_doc = self.audio_embedder.create_audio_document(
             audio_path,
             transcription["text"],
             self.text_embedder
         )
-
         self.audio_vectorstore.add_audio(
-            audio_doc,
-            {"source": audio_path}
+            audio_doc, {"source": audio_path}
         )
 
     def query(self, question, modalities=None):
         modalities = modalities or ["text", "image", "audio"]
-
         retrieved = self.retriever.retrieve(question, modalities=modalities, k=5)
-
         context = self.context_builder.build_context(
             self.flatten_results(retrieved)
         )
-
         answer = self.generator.generate(context, question)
-
-        return {
-            "answer": answer,
-            "sources": retrieved
-        }
+        return {"answer": answer, "sources": retrieved}
 
     def flatten_results(self, results):
         all_items = []
-
         for modality in ["texts", "images", "audios"]:
             if modality in results:
                 items = results[modality]
                 if items and "documents" in items:
-                    for i, doc in enumerate(items["documents"]):
+                    docs = items["documents"]
+                    metas = items.get("metadatas", [{}] * len(docs))
+                    for i, doc in enumerate(docs):
                         all_items.append({
                             "type": modality[:-1] if modality.endswith("s") else modality,
                             "content": doc,
-                            "metadata": items.get("metadatas", [{}])[i] if i < len(items.get("metadatas", [])) else {}
+                            "metadata": metas[i] if i < len(metas) else {}
                         })
-
         return all_items
 
-system = MultimodalRAGSystem()
-
-system.process_image("photo.jpg")
-system.process_video("video.mp4")
-system.process_audio("speech.wav")
-
-result = system.query("描述这个视频的内容", modalities=["video", "text"])
-print(result["answer"])
+# 使用示例
+# system = MultimodalRAGSystem()
+# system.process_image("photo.jpg")
+# system.process_video("video.mp4")
+# system.process_audio("speech.wav")
+# result = system.query("描述这个视频的内容", modalities=["video", "text"])
+# print(result["answer"])
 ```
 
 ## 最佳实践

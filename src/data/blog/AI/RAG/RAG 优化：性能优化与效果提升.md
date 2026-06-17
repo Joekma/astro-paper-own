@@ -382,6 +382,7 @@ optimized_context = optimize_context(context)
 
 ```python
 import asyncio
+from langchain_core.messages import HumanMessage
 
 class AsyncRAG:
     def __init__(self, vectorstore, llm):
@@ -389,11 +390,13 @@ class AsyncRAG:
         self.llm = llm
 
     async def query(self, query):
+        # 向量检索
         docs = await self.vectorstore.asimilarity_search(query, k=5)
-
         context = "\n\n".join([doc.page_content for doc in docs])
 
-        response = await self.llm.ainvoke(f"上下文：{context}\n\n问题：{query}")
+        # 构造消息并异步调用 LLM
+        prompt = f"上下文：{context}\n\n问题：{query}"
+        response = await self.llm.ainvoke([HumanMessage(content=prompt)])
 
         return {
             "answer": response.content,
@@ -404,9 +407,13 @@ class AsyncRAG:
         tasks = [self.query(q) for q in queries]
         return await asyncio.gather(*tasks)
 
-async_rag = AsyncRAG(vectorstore, llm)
-
-results = await async_rag.batch_query(["查询1", "查询2", "查询3"])
+# 使用示例（需在异步上下文中执行）
+# async def main():
+#     async_rag = AsyncRAG(vectorstore, llm)
+#     results = await async_rag.batch_query(["查询1", "查询2", "查询3"])
+#     return results
+#
+# results = asyncio.run(main())
 ```
 
 ### 2. 并发检索
@@ -481,7 +488,32 @@ def evaluate_retrieval(test_cases, retriever):
 ### 2. 生成质量评估
 
 ```python
+import re
+
+def calculate_relevance(answer, query):
+    """简单的相关性评估：基于词项重合度"""
+    query_terms = set(re.findall(r'\w+', query.lower()))
+    answer_terms = set(re.findall(r'\w+', answer.lower()))
+
+    overlap = len(query_terms & answer_terms)
+    return overlap / len(query_terms) if query_terms else 0
+
+def calculate_accuracy(answer, expected):
+    """简单准确性评估：检查 expected 是否在 answer 中"""
+    return 1.0 if expected in answer else 0.5
+
+def calculate_coherence(answer):
+    """简单连贯性评估：基于句子数量"""
+    sentences = [s for s in re.split(r'[。.!?！？]', answer) if s.strip()]
+    return min(1.0, len(sentences) / 5)
+
 def evaluate_generation(test_cases, rag_chain):
+    """评估生成质量。
+
+    Args:
+        test_cases: 测试用例列表，每个用例含 query 和 expected_answer
+        rag_chain: RAG 链对象，需要有 invoke 或 query 方法
+    """
     metrics = {
         "relevance": [],
         "accuracy": [],
@@ -489,8 +521,9 @@ def evaluate_generation(test_cases, rag_chain):
     }
 
     for case in test_cases:
-        result = rag_chain.chat(case["query"])
-        answer = result["answer"]
+        # rag_chain 应提供统一的调用接口
+        result = rag_chain.invoke({"query": case["query"]})
+        answer = result if isinstance(result, str) else result.get("answer", "")
         expected = case["expected_answer"]
 
         relevance = calculate_relevance(answer, case["query"])
@@ -506,21 +539,6 @@ def evaluate_generation(test_cases, rag_chain):
         "avg_accuracy": sum(metrics["accuracy"]) / len(metrics["accuracy"]),
         "avg_coherence": sum(metrics["coherence"]) / len(metrics["coherence"])
     }
-
-def calculate_relevance(answer, query):
-    import re
-    query_terms = set(re.findall(r'\w+', query.lower()))
-    answer_terms = set(re.findall(r'\w+', answer.lower()))
-
-    overlap = len(query_terms & answer_terms)
-    return overlap / len(query_terms) if query_terms else 0
-
-def calculate_accuracy(answer, expected):
-    return 1.0 if expected in answer else 0.5
-
-def calculate_coherence(answer):
-    sentences = answer.split("。")
-    return min(1.0, len(sentences) / 5)
 ```
 
 ## 生产部署优化
@@ -528,10 +546,24 @@ def calculate_coherence(answer):
 ### 1. 健康检查
 
 ```python
+import time
 from fastapi import FastAPI
 from pydantic import BaseModel
 
 app = FastAPI()
+_start_time = time.time()
+
+# 这些状态检查函数需根据实际部署实现
+def is_vectorstore_ready() -> bool:
+    # 实际实现中应检查向量数据库连接
+    return True
+
+def is_llm_ready() -> bool:
+    # 实际实现中应检查 LLM 服务可用性
+    return True
+
+def get_uptime() -> float:
+    return time.time() - _start_time
 
 class HealthResponse(BaseModel):
     status: str
@@ -595,6 +627,12 @@ async def rate_limit_middleware(request, call_next):
 ```python
 class GracefulDegradation:
     def __init__(self, primary_rag, fallback_rag):
+        """优雅降级包装器。
+
+        Args:
+            primary_rag: 主 RAG 系统，需有 chat(query) 方法
+            fallback_rag: 降级 RAG 系统，需有 chat(query) 方法
+        """
         self.primary = primary_rag
         self.fallback = fallback_rag
 
@@ -613,7 +651,11 @@ class GracefulDegradation:
                     "sources": []
                 }
 
-degradation = GracefulDegradation(primary_rag, simple_rag)
+# 使用示例
+# primary_rag = SomeRAGSystem()  # 主 RAG 系统
+# simple_rag = SimpleRAG()  # 简化的降级 RAG 系统
+# degradation = GracefulDegradation(primary_rag, simple_rag)
+# result = degradation.query("用户问题")
 ```
 
 ## 监控与告警
