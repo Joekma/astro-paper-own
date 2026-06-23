@@ -77,25 +77,65 @@ const tuple: [string, number] = ["age", 25];
 ### any 和 unknown
 
 ```typescript
-// any - 任意类型（跳过类型检查）
-let value: any = 4;
-value = "string"; // OK
-value = true; // OK
+// any：关闭 TypeScript 检查
+let value: any;
+value = 123;
+value = "hello";
+value = true;
+value = {};
 
-// unknown - 未知类型（更安全）
-let userInput: unknown;
-userInput = 4;
-userInput = "string";
+//任何值都可以赋值。而且：
 
-// unknown 需要类型检查
-if (typeof userInput === "string") {
-  console.log(userInput.toUpperCase());
+let value: any = "hello";
+
+value.foo.bar.test();
+value();
+value[100];
+
+//TypeScript 都不会报错。它会认为：
+
+//你比编译器更清楚自己在做什么。例如：
+function printName(user: any) {
+    console.log(user.name.toUpperCase());
 }
 
-// never - 从不返回
-function error(message: string): never {
-  throw new Error(message);
-}
+printName(123); //编译：✅ 通过
+
+//运行：
+❌ TypeError:
+Cannot read properties of undefined
+
+//所以：
+any
+ ↓
+//关闭所有类型检查
+//可以理解成：
+
+TypeScript
+      │
+      │
+      ▼
+any  -----> "别管了，我自己负责。"
+
+//unknown：真正的未知类型
+let value: unknown;
+
+value = 123;
+value = "hello";
+value = {};
+
+//同样可以接收任何值。但是：
+let value: unknown;
+value.foo;
+
+//会报错：
+Property 'foo' does not exist on type 'unknown'
+
+//甚至：
+value();
+
+//也会报错：
+Object is of type 'unknown' //因为 TypeScript 会说：我不知道它是什么，所以不能随便操作。
 ```
 
 ### void 和 never
