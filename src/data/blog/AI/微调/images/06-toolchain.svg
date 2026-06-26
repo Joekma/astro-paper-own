@@ -1,0 +1,76 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="960"
+  height="520"
+  viewBox="0 0 960 520"
+  role="img"
+  aria-labelledby="title desc"
+>
+  <title id="title">开源微调工具链分层</title>
+  <desc id="desc">
+    展示数据、模型、训练器、参数高效微调和一体化工具之间的分层关系。
+  </desc>
+  <defs>
+    <style>
+      .bg {
+        fill: #f8fafc;
+      }
+      .layer {
+        fill: #ffffff;
+        stroke: #94a3b8;
+        stroke-width: 2;
+        rx: 14;
+      }
+      .top {
+        fill: #eff6ff;
+        stroke: #2563eb;
+        stroke-width: 2;
+        rx: 14;
+      }
+      .title {
+        fill: #0f172a;
+        font:
+          700 24px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .text {
+        fill: #334155;
+        font:
+          600 18px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .small {
+        fill: #475569;
+        font:
+          14px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+    </style>
+  </defs>
+  <rect class="bg" width="960" height="520" />
+  <text class="title" x="48" y="56">开源微调工具链分层</text>
+  <rect class="top" x="100" y="100" width="760" height="70" />
+  <text class="text" x="384" y="130">LLaMA-Factory / Axolotl</text>
+  <text class="small" x="356" y="154">
+    配置驱动的一体化训练、评估、合并与导出
+  </text>
+  <rect class="layer" x="100" y="198" width="760" height="70" />
+  <text class="text" x="430" y="228">TRL</text>
+  <text class="small" x="344" y="252">
+    SFTTrainer、DPOTrainer、偏好优化训练器
+  </text>
+  <rect class="layer" x="100" y="296" width="360" height="70" />
+  <text class="text" x="226" y="326">Transformers</text>
+  <text class="small" x="182" y="350">模型、Tokenizer、Trainer、推理 API</text>
+  <rect class="layer" x="500" y="296" width="360" height="70" />
+  <text class="text" x="656" y="326">PEFT</text>
+  <text class="small" x="580" y="350">LoRA、QLoRA、Adapter 管理</text>
+  <rect class="layer" x="100" y="394" width="760" height="70" />
+  <text class="text" x="416" y="424">底层运行时</text>
+  <text class="small" x="328" y="448">
+    PyTorch、Accelerate、DeepSpeed、FSDP、bitsandbytes
+  </text>
+</svg>

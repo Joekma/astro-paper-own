@@ -1,0 +1,89 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="960"
+  height="520"
+  viewBox="0 0 960 520"
+  role="img"
+  aria-labelledby="title desc"
+>
+  <title id="title">偏好对齐训练流程</title>
+  <desc id="desc">展示 SFT 模型、偏好数据、DPO/ORPO/RFT 和评估闭环。</desc>
+  <defs>
+    <style>
+      .bg {
+        fill: #f8fafc;
+      }
+      .box {
+        fill: #ffffff;
+        stroke: #94a3b8;
+        stroke-width: 2;
+        rx: 12;
+      }
+      .accent {
+        fill: #fdf2f8;
+        stroke: #db2777;
+        stroke-width: 2;
+        rx: 12;
+      }
+      .title {
+        fill: #0f172a;
+        font:
+          700 24px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .text {
+        fill: #334155;
+        font:
+          600 18px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .small {
+        fill: #475569;
+        font:
+          14px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .arrow {
+        stroke: #db2777;
+        stroke-width: 3;
+        fill: none;
+        marker-end: url(#arrow);
+      }
+    </style>
+    <marker
+      id="arrow"
+      viewBox="0 0 10 10"
+      refX="9"
+      refY="5"
+      markerWidth="8"
+      markerHeight="8"
+      orient="auto"
+    >
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#db2777" />
+    </marker>
+  </defs>
+  <rect class="bg" width="960" height="520" />
+  <text class="title" x="48" y="56">偏好对齐：让模型更符合“好答案”标准</text>
+  <rect class="box" x="70" y="120" width="190" height="96" />
+  <text class="text" x="116" y="156">SFT 模型</text>
+  <text class="small" x="104" y="186">先学会基本任务格式</text>
+  <rect class="box" x="330" y="120" width="220" height="96" />
+  <text class="text" x="374" y="156">偏好数据</text>
+  <text class="small" x="366" y="186">prompt + chosen + rejected</text>
+  <rect class="accent" x="620" y="120" width="220" height="96" />
+  <text class="text" x="674" y="156">对齐训练</text>
+  <text class="small" x="656" y="186">DPO / ORPO / RFT</text>
+  <path class="arrow" d="M260 168 H330" />
+  <path class="arrow" d="M550 168 H620" />
+  <rect class="box" x="210" y="310" width="220" height="96" />
+  <text class="text" x="264" y="346">安全边界</text>
+  <text class="small" x="246" y="376">拒答、事实性、风格一致</text>
+  <rect class="box" x="530" y="310" width="220" height="96" />
+  <text class="text" x="584" y="346">评估闭环</text>
+  <text class="small" x="566" y="376">胜率、人工评审、红队</text>
+  <path class="arrow" d="M730 216 C730 280 640 284 640 310" />
+  <path class="arrow" d="M530 358 H430" />
+</svg>

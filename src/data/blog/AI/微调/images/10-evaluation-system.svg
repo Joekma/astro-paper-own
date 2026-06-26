@@ -1,0 +1,83 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="960"
+  height="520"
+  viewBox="0 0 960 520"
+  role="img"
+  aria-labelledby="title desc"
+>
+  <title id="title">微调评估体系</title>
+  <desc id="desc">
+    展示离线指标、自动评测、人工评审、安全测试和线上指标构成的评估体系。
+  </desc>
+  <defs>
+    <style>
+      .bg {
+        fill: #f8fafc;
+      }
+      .center {
+        fill: #ecfdf5;
+        stroke: #059669;
+        stroke-width: 2;
+        rx: 16;
+      }
+      .box {
+        fill: #ffffff;
+        stroke: #94a3b8;
+        stroke-width: 2;
+        rx: 12;
+      }
+      .title {
+        fill: #0f172a;
+        font:
+          700 24px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .text {
+        fill: #334155;
+        font:
+          600 18px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .small {
+        fill: #475569;
+        font:
+          14px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .line {
+        stroke: #059669;
+        stroke-width: 3;
+        fill: none;
+      }
+    </style>
+  </defs>
+  <rect class="bg" width="960" height="520" />
+  <text class="title" x="48" y="56">微调评估体系</text>
+  <rect class="center" x="370" y="210" width="220" height="100" />
+  <text class="text" x="426" y="250">发布决策</text>
+  <text class="small" x="414" y="280">质量、风险、成本一起看</text>
+  <rect class="box" x="70" y="120" width="210" height="86" />
+  <text class="text" x="116" y="154">离线指标</text>
+  <text class="small" x="104" y="182">loss / perplexity / EM</text>
+  <rect class="box" x="375" y="100" width="210" height="86" />
+  <text class="text" x="421" y="134">自动评测</text>
+  <text class="small" x="410" y="162">golden set / LLM judge</text>
+  <rect class="box" x="680" y="120" width="210" height="86" />
+  <text class="text" x="726" y="154">人工评审</text>
+  <text class="small" x="710" y="182">胜率、错误类型、可用性</text>
+  <rect class="box" x="190" y="350" width="210" height="86" />
+  <text class="text" x="236" y="384">安全测试</text>
+  <text class="small" x="230" y="412">越权、泄漏、有害输出</text>
+  <rect class="box" x="560" y="350" width="210" height="86" />
+  <text class="text" x="606" y="384">线上指标</text>
+  <text class="small" x="594" y="412">满意度、转人工、延迟成本</text>
+  <path class="line" d="M280 163 L370 235" />
+  <path class="line" d="M480 186 V210" />
+  <path class="line" d="M680 163 L590 235" />
+  <path class="line" d="M400 393 L444 310" />
+  <path class="line" d="M560 393 L516 310" />
+</svg>

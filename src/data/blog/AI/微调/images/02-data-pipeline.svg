@@ -1,0 +1,101 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="960"
+  height="520"
+  viewBox="0 0 960 520"
+  role="img"
+  aria-labelledby="title desc"
+>
+  <title id="title">微调数据工程流水线</title>
+  <desc id="desc">展示数据采集、清洗、标注、格式化、切分和版本管理流程。</desc>
+  <defs>
+    <style>
+      .bg {
+        fill: #f8fafc;
+      }
+      .box {
+        fill: #ffffff;
+        stroke: #94a3b8;
+        stroke-width: 2;
+        rx: 12;
+      }
+      .accent {
+        fill: #ecfeff;
+        stroke: #06b6d4;
+        stroke-width: 2;
+        rx: 12;
+      }
+      .title {
+        fill: #0f172a;
+        font:
+          700 24px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .text {
+        fill: #334155;
+        font:
+          600 18px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .small {
+        fill: #475569;
+        font:
+          14px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .arrow {
+        stroke: #0891b2;
+        stroke-width: 3;
+        fill: none;
+        marker-end: url(#arrow);
+      }
+    </style>
+    <marker
+      id="arrow"
+      viewBox="0 0 10 10"
+      refX="9"
+      refY="5"
+      markerWidth="8"
+      markerHeight="8"
+      orient="auto"
+    >
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0891b2" />
+    </marker>
+  </defs>
+  <rect class="bg" width="960" height="520" />
+  <text class="title" x="48" y="56">微调数据工程流水线</text>
+  <rect class="box" x="50" y="110" width="140" height="86" />
+  <text class="text" x="84" y="144">采集</text>
+  <text class="small" x="74" y="172">日志 / 文档 / 工单</text>
+  <rect class="box" x="230" y="110" width="140" height="86" />
+  <text class="text" x="264" y="144">清洗</text>
+  <text class="small" x="250" y="172">去重 / 脱敏 / 过滤</text>
+  <rect class="accent" x="410" y="110" width="140" height="86" />
+  <text class="text" x="444" y="144">标注</text>
+  <text class="small" x="432" y="172">指令 / 答案 / 偏好</text>
+  <rect class="box" x="590" y="110" width="140" height="86" />
+  <text class="text" x="624" y="144">格式化</text>
+  <text class="small" x="612" y="172">ChatML / JSONL</text>
+  <rect class="box" x="770" y="110" width="140" height="86" />
+  <text class="text" x="804" y="144">切分</text>
+  <text class="small" x="798" y="172">train / valid / test</text>
+  <path class="arrow" d="M190 153 H230" />
+  <path class="arrow" d="M370 153 H410" />
+  <path class="arrow" d="M550 153 H590" />
+  <path class="arrow" d="M730 153 H770" />
+  <rect class="box" x="130" y="300" width="210" height="110" />
+  <text class="text" x="176" y="338">质量门禁</text>
+  <text class="small" x="160" y="370">长度、重复率、毒性、泄漏</text>
+  <rect class="box" x="390" y="300" width="210" height="110" />
+  <text class="text" x="436" y="338">版本管理</text>
+  <text class="small" x="424" y="370">数据集卡、变更记录、哈希</text>
+  <rect class="box" x="650" y="300" width="210" height="110" />
+  <text class="text" x="696" y="338">训练输入</text>
+  <text class="small" x="680" y="370">可复现、可审计、可回滚</text>
+  <path class="arrow" d="M840 196 C840 264 754 264 754 300" />
+  <path class="arrow" d="M650 355 H600" />
+  <path class="arrow" d="M390 355 H340" />
+</svg>
