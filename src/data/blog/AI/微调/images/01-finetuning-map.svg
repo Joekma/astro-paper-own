@@ -1,0 +1,106 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="960"
+  height="520"
+  viewBox="0 0 960 520"
+  role="img"
+  aria-labelledby="title desc"
+>
+  <title id="title">大模型微调技术地图</title>
+  <desc id="desc">从业务目标到数据、训练方法、评估和部署的微调全流程。</desc>
+  <defs>
+    <style>
+      .bg {
+        fill: #f8fafc;
+      }
+      .panel {
+        fill: #ffffff;
+        stroke: #cbd5e1;
+        stroke-width: 2;
+        rx: 12;
+      }
+      .head {
+        fill: #0f172a;
+        font:
+          700 24px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .text {
+        fill: #334155;
+        font:
+          500 18px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .small {
+        fill: #475569;
+        font:
+          14px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .arrow {
+        stroke: #2563eb;
+        stroke-width: 3;
+        fill: none;
+        marker-end: url(#arrow);
+      }
+      .tag {
+        fill: #dbeafe;
+        stroke: #60a5fa;
+        stroke-width: 1.5;
+        rx: 16;
+      }
+    </style>
+    <marker
+      id="arrow"
+      viewBox="0 0 10 10"
+      refX="9"
+      refY="5"
+      markerWidth="8"
+      markerHeight="8"
+      orient="auto-start-reverse"
+    >
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb" />
+    </marker>
+  </defs>
+  <rect class="bg" width="960" height="520" />
+  <text class="head" x="48" y="56">大模型微调技术地图</text>
+  <rect class="panel" x="52" y="104" width="180" height="110" />
+  <text class="text" x="88" y="146">业务目标</text>
+  <text class="small" x="82" y="178">风格 / 格式 / 能力</text>
+  <rect class="panel" x="292" y="104" width="180" height="110" />
+  <text class="text" x="328" y="146">数据工程</text>
+  <text class="small" x="320" y="178">采集 / 清洗 / 标注</text>
+  <rect class="panel" x="532" y="104" width="180" height="110" />
+  <text class="text" x="568" y="146">训练方法</text>
+  <text class="small" x="552" y="178">SFT / LoRA / DPO</text>
+  <rect class="panel" x="752" y="104" width="150" height="110" />
+  <text class="text" x="790" y="146">评估</text>
+  <text class="small" x="778" y="178">自动 + 人工</text>
+  <path class="arrow" d="M232 159 H292" />
+  <path class="arrow" d="M472 159 H532" />
+  <path class="arrow" d="M712 159 H752" />
+  <rect class="panel" x="148" y="302" width="180" height="110" />
+  <text class="text" x="184" y="344">部署服务</text>
+  <text class="small" x="174" y="376">合并 / 量化 / 推理</text>
+  <rect class="panel" x="388" y="302" width="180" height="110" />
+  <text class="text" x="424" y="344">线上反馈</text>
+  <text class="small" x="424" y="376">日志 / 评价 / 缺陷</text>
+  <rect class="panel" x="628" y="302" width="180" height="110" />
+  <text class="text" x="664" y="344">迭代闭环</text>
+  <text class="small" x="654" y="376">重采样 / 再训练</text>
+  <path class="arrow" d="M827 214 C827 270 770 302 718 302" />
+  <path class="arrow" d="M628 357 H568" />
+  <path class="arrow" d="M388 357 H328" />
+  <path class="arrow" d="M238 302 C238 246 142 246 142 214" />
+  <rect class="tag" x="72" y="450" width="160" height="36" />
+  <text class="small" x="96" y="473">先评估再微调</text>
+  <rect class="tag" x="272" y="450" width="180" height="36" />
+  <text class="small" x="296" y="473">数据质量优先</text>
+  <rect class="tag" x="492" y="450" width="190" height="36" />
+  <text class="small" x="516" y="473">小步实验闭环</text>
+  <rect class="tag" x="722" y="450" width="170" height="36" />
+  <text class="small" x="746" y="473">上线持续回归</text>
+</svg>

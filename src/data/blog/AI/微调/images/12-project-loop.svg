@@ -1,0 +1,94 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="960"
+  height="520"
+  viewBox="0 0 960 520"
+  role="img"
+  aria-labelledby="title desc"
+>
+  <title id="title">微调项目生产闭环</title>
+  <desc id="desc">展示需求评估、数据、实验、评估、发布和反馈的项目闭环。</desc>
+  <defs>
+    <style>
+      .bg {
+        fill: #f8fafc;
+      }
+      .box {
+        fill: #ffffff;
+        stroke: #64748b;
+        stroke-width: 2;
+        rx: 12;
+      }
+      .accent {
+        fill: #fff1f2;
+        stroke: #e11d48;
+        stroke-width: 2;
+        rx: 12;
+      }
+      .title {
+        fill: #0f172a;
+        font:
+          700 24px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .text {
+        fill: #334155;
+        font:
+          600 18px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .small {
+        fill: #475569;
+        font:
+          14px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .arrow {
+        stroke: #e11d48;
+        stroke-width: 3;
+        fill: none;
+        marker-end: url(#arrow);
+      }
+    </style>
+    <marker
+      id="arrow"
+      viewBox="0 0 10 10"
+      refX="9"
+      refY="5"
+      markerWidth="8"
+      markerHeight="8"
+      orient="auto"
+    >
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#e11d48" />
+    </marker>
+  </defs>
+  <rect class="bg" width="960" height="520" />
+  <text class="title" x="48" y="56">微调项目生产闭环</text>
+  <rect class="accent" x="390" y="90" width="180" height="80" />
+  <text class="text" x="426" y="123">需求评估</text>
+  <text class="small" x="414" y="150">是否真的需要微调</text>
+  <rect class="box" x="650" y="170" width="180" height="80" />
+  <text class="text" x="704" y="203">数据</text>
+  <text class="small" x="684" y="230">样例、偏好、红线</text>
+  <rect class="box" x="650" y="310" width="180" height="80" />
+  <text class="text" x="704" y="343">实验</text>
+  <text class="small" x="684" y="370">小模型、小数据、小步</text>
+  <rect class="box" x="390" y="390" width="180" height="80" />
+  <text class="text" x="444" y="423">评估</text>
+  <text class="small" x="422" y="450">基准、人工、安全</text>
+  <rect class="box" x="130" y="310" width="180" height="80" />
+  <text class="text" x="184" y="343">发布</text>
+  <text class="small" x="164" y="370">灰度、监控、回滚</text>
+  <rect class="box" x="130" y="170" width="180" height="80" />
+  <text class="text" x="184" y="203">反馈</text>
+  <text class="small" x="164" y="230">线上日志、失败样例</text>
+  <path class="arrow" d="M570 130 C640 130 700 146 740 170" />
+  <path class="arrow" d="M740 250 V310" />
+  <path class="arrow" d="M650 350 C600 394 570 410 570 430" />
+  <path class="arrow" d="M390 430 C340 410 310 394 310 350" />
+  <path class="arrow" d="M220 310 V250" />
+  <path class="arrow" d="M310 210 C350 166 390 150 390 130" />
+</svg>

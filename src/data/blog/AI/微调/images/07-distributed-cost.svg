@@ -1,0 +1,98 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="960"
+  height="520"
+  viewBox="0 0 960 520"
+  role="img"
+  aria-labelledby="title desc"
+>
+  <title id="title">分布式训练与成本优化</title>
+  <desc id="desc">展示显存、吞吐、通信和成本之间的取舍。</desc>
+  <defs>
+    <style>
+      .bg {
+        fill: #f8fafc;
+      }
+      .box {
+        fill: #ffffff;
+        stroke: #64748b;
+        stroke-width: 2;
+        rx: 12;
+      }
+      .hot {
+        fill: #fee2e2;
+        stroke: #dc2626;
+        stroke-width: 2;
+        rx: 12;
+      }
+      .cool {
+        fill: #e0f2fe;
+        stroke: #0284c7;
+        stroke-width: 2;
+        rx: 12;
+      }
+      .title {
+        fill: #0f172a;
+        font:
+          700 24px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .text {
+        fill: #334155;
+        font:
+          600 18px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .small {
+        fill: #475569;
+        font:
+          14px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .arrow {
+        stroke: #475569;
+        stroke-width: 3;
+        fill: none;
+        marker-end: url(#arrow);
+      }
+    </style>
+    <marker
+      id="arrow"
+      viewBox="0 0 10 10"
+      refX="9"
+      refY="5"
+      markerWidth="8"
+      markerHeight="8"
+      orient="auto"
+    >
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569" />
+    </marker>
+  </defs>
+  <rect class="bg" width="960" height="520" />
+  <text class="title" x="48" y="56">分布式训练与成本优化</text>
+  <rect class="hot" x="90" y="120" width="200" height="104" />
+  <text class="text" x="144" y="158">显存压力</text>
+  <text class="small" x="122" y="190">参数、梯度、优化器、激活</text>
+  <rect class="cool" x="380" y="120" width="200" height="104" />
+  <text class="text" x="426" y="158">并行策略</text>
+  <text class="small" x="414" y="190">DDP / ZeRO / FSDP</text>
+  <rect class="box" x="670" y="120" width="200" height="104" />
+  <text class="text" x="724" y="158">吞吐效率</text>
+  <text class="small" x="704" y="190">tokens/s、利用率、通信</text>
+  <path class="arrow" d="M290 172 H380" />
+  <path class="arrow" d="M580 172 H670" />
+  <rect class="box" x="140" y="310" width="210" height="104" />
+  <text class="text" x="194" y="348">训练预算</text>
+  <text class="small" x="166" y="380">GPU 小时、失败重跑、存储</text>
+  <rect class="box" x="440" y="310" width="210" height="104" />
+  <text class="text" x="494" y="348">优化手段</text>
+  <text class="small" x="466" y="380">QLoRA、checkpoint、packing</text>
+  <rect class="box" x="720" y="310" width="150" height="104" />
+  <text class="text" x="758" y="348">结果</text>
+  <text class="small" x="748" y="380">低成本可复现</text>
+  <path class="arrow" d="M350 362 H440" />
+  <path class="arrow" d="M650 362 H720" />
+</svg>
