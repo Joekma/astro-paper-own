@@ -5,7 +5,6 @@ import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Tag from "@/components/Tag.astro";
 import Datetime from "@/components/Datetime.astro";
-import EditPost from "@/components/EditPost.astro";
 import ShareLinks from "@/components/ShareLinks.astro";
 import BackButton from "@/components/BackButton.astro";
 import BackToTopButton from "@/components/BackToTopButton.astro";
@@ -33,7 +32,6 @@ const {
   modDatetime,
   timezone,
   tags,
-  hideEditPost,
 } = post.data;
 
 const { Content, headings } = await render(post);
@@ -111,14 +109,6 @@ const nextPost =
     </h1>
     <div class="my-2 flex flex-wrap items-center gap-2">
       <Datetime {pubDatetime} {modDatetime} {timezone} size="lg" />
-      <span
-        aria-hidden="true"
-        class:list={[
-          "max-sm:hidden",
-          { hidden: !SITE.editPost.enabled || hideEditPost },
-        ]}>|</span
-      >
-      <EditPost {hideEditPost} {post} class="max-sm:hidden" />
     </div>
     <article
       id="article"
@@ -128,8 +118,6 @@ const nextPost =
     </article>
 
     <hr class="my-8 border-dashed" />
-
-    <EditPost class="sm:hidden" {hideEditPost} {post} />
 
     <ul class="mt-4 mb-8 flex flex-wrap gap-4 sm:my-8">
       {tags.map(tag => <Tag tag={slugifyStr(tag)} tagName={tag} size="sm" />)}
@@ -197,7 +185,7 @@ const nextPost =
               >
                 <a
                   href={`#${heading.slug}`}
-                  class="block text-foreground/80 hover:text-accent"
+                  class="app-toc-link block text-foreground/80 hover:text-accent"
                 >
                   {heading.text}
                 </a>
@@ -265,6 +253,20 @@ const nextPost =
     left: max(1rem, calc((100vw - 48rem) / 2 - 18rem));
   }
 
+  .app-toc-link {
+    border-inline-start: 2px solid transparent;
+    padding-inline-start: 0.5rem;
+    transition:
+      border-color 150ms ease,
+      color 150ms ease;
+  }
+
+  .app-toc-link[aria-current="location"] {
+    border-inline-start-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
   .app-related {
     right: max(1rem, calc((100vw - 48rem) / 2 - 18rem));
   }
@@ -311,6 +313,99 @@ const nextPost =
     });
   }
   updateScrollProgress();
+
+  /** Highlights the table-of-contents link for the heading
+   * nearest to the top of the viewport. */
+  function highlightActiveTocHeading() {
+    if (window.__activeTocCleanup) {
+      window.__activeTocCleanup();
+      delete window.__activeTocCleanup;
+    }
+
+    const tocLinks = Array.from(
+      document.querySelectorAll("aside.app-toc a[href^='#']")
+    );
+    const articleHeadings = Array.from(
+      document.querySelectorAll(
+        "#article h2[id], #article h3[id], #article h4[id]"
+      )
+    );
+
+    if (!tocLinks.length || !articleHeadings.length) return;
+
+    const headingsById = new Map(
+      articleHeadings.map(heading => [heading.id, heading])
+    );
+    const tocItems = tocLinks
+      .map(link => {
+        const rawHash = link.getAttribute("href")?.slice(1) ?? "";
+        let id = rawHash;
+
+        try {
+          id = decodeURIComponent(rawHash);
+        } catch {
+          id = rawHash;
+        }
+
+        const heading = headingsById.get(id);
+        return heading ? { heading, link } : null;
+      })
+      .filter(Boolean);
+
+    if (!tocItems.length) return;
+
+    let ticking = false;
+
+    function setActiveLink(activeLink) {
+      for (const { link } of tocItems) {
+        if (link === activeLink) {
+          link.setAttribute("aria-current", "location");
+          link.scrollIntoView({ block: "nearest", inline: "nearest" });
+        } else {
+          link.removeAttribute("aria-current");
+        }
+      }
+    }
+
+    function getActiveItem() {
+      const activationLine = Math.min(window.innerHeight * 0.25, 160);
+      let activeItem = tocItems[0];
+
+      for (const item of tocItems) {
+        if (item.heading.getBoundingClientRect().top <= activationLine) {
+          activeItem = item;
+        } else {
+          break;
+        }
+      }
+
+      return activeItem;
+    }
+
+    function updateActiveHeading() {
+      ticking = false;
+      setActiveLink(getActiveItem().link);
+    }
+
+    function requestUpdate() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(updateActiveHeading);
+    }
+
+    document.addEventListener("scroll", requestUpdate, { passive: true });
+    window.addEventListener("resize", requestUpdate);
+    window.addEventListener("hashchange", requestUpdate);
+
+    window.__activeTocCleanup = () => {
+      document.removeEventListener("scroll", requestUpdate);
+      window.removeEventListener("resize", requestUpdate);
+      window.removeEventListener("hashchange", requestUpdate);
+    };
+
+    requestUpdate();
+  }
+  highlightActiveTocHeading();
 
   /** Attaches links to headings in the document,
    *  allowing sharing of sections easily */
