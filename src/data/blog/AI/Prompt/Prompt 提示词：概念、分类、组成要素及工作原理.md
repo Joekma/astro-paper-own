@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 modDatetime: 2026-04-22T00:00:00Z
 slug: what-is-prompt
-featured: true
+featured: false
 draft: false
 tags:
   - AI
