@@ -19,6 +19,8 @@ language: zh-CN
 
 本文将通过一个完整的实战项目，展示如何使用 LangChain v1.0 构建功能丰富的聊天机器人。我们将实现一个支持多轮对话、知识库问答和流式输出的智能助手。
 
+这篇文章更关注“模块如何拼在一起”。代码没有追求一次性覆盖所有生产细节，而是把聊天记忆、知识库检索、工具调用和界面交互拆开讲清楚，方便你后续替换模型、向量库或前端框架。
+
 ### 项目架构
 
 ```
@@ -46,38 +48,34 @@ language: zh-CN
 
 ```bash
 pip install langchain langgraph langchain-openai langchain-community
-pip install streamlit python-dotenv chromadb
+pip install langchain-text-splitters streamlit python-dotenv chromadb
 ```
 
 ## 对话记忆模块
 
 ```python
-from langchain.memory import ConversationBufferMemory
-from langchain_openai import ChatOpenAI
-
 class ChatMemory:
     def __init__(self):
-        self.memory = ConversationBufferMemory(
-            memory_key="chat_history",
-            return_messages=True
-        )
+        self.messages = []
 
     def save_context(self, user_input: str, ai_output: str):
-        self.memory.chat_memory.add_user_message(user_input)
-        self.memory.chat_memory.add_ai_message(ai_output)
+        self.messages.append({"role": "user", "content": user_input})
+        self.messages.append({"role": "assistant", "content": ai_output})
 
     def get_history(self) -> list:
-        return self.memory.load_memory_variables({}).get("history", [])
+        return self.messages
 
     def clear(self):
-        self.memory.clear()
+        self.messages.clear()
 ```
+
+这里用普通列表保存消息，是为了让状态结构一眼可见：模型需要的就是一组按顺序排列的 `messages`。如果要跨进程或跨服务保存，再把这层替换成数据库或 LangGraph checkpointer。
 
 ## 知识库模块
 
 ```python
 from langchain_community.document_loaders import TextLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 
@@ -113,6 +111,8 @@ class KnowledgeBase:
         return docs
 ```
 
+知识库模块只负责“把文档变成可检索的上下文”，不直接生成回答。这样 UI、Agent 和 RAG 可以分开测试，也更容易替换 Chroma、FAISS 或云端向量数据库。
+
 ## Agent 模块
 
 ```python
@@ -124,7 +124,11 @@ from langchain_core.tools import tool
 def calculator(expression: str) -> str:
     """执行数学计算"""
     try:
-        result = eval(expression)
+        import operator
+
+        ops = {"+": operator.add, "-": operator.sub, "*": operator.mul, "/": operator.truediv}
+        left, op, right = expression.split()
+        result = ops[op](float(left), float(right))
         return f"计算结果：{result}"
     except Exception as e:
         return f"计算错误：{str(e)}"
@@ -196,9 +200,8 @@ with st.sidebar:
 st.title("🤖 AI 聊天助手")
 
 for message in st.session_state.memory.get_history():
-    if hasattr(message, "type"):
-        with st.chat_message("user" if message.type == "human" else "assistant"):
-            st.write(message.content)
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
 
 user_input = st.chat_input("输入你的问题...")
 
@@ -235,7 +238,7 @@ def test_memory():
 def test_agent():
     agent = create_tool_agent()
     result = agent.invoke({
-        "messages": [{"role": "user", "content": "计算 2+3*5"}]
+        "messages": [{"role": "user", "content": "计算 2 + 3"}]
     })
     assert result["messages"][-1].content
 ```

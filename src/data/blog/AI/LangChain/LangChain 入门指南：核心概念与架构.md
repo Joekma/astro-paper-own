@@ -19,6 +19,10 @@ language: zh-CN
 
 LangChain v1.0 是一个面向生产环境的 AI Agent 构建框架，将 LLM 与外部工具结合，提供记忆能力、结构化输出和中间件控制。v1.0 基于 **LangGraph** 构建，将 Agent 表达为状态图，实现可追踪、可调试、可持久化的执行流程。
 
+简单说，LangChain 负责把“模型调用、提示词、工具、状态、检索”这些零散能力接成一个可维护的应用骨架。刚开始接触时，不必急着记住所有类名，先理解每个模块在请求链路中负责哪一段，会更容易看懂后面的示例。
+
+版本提示：本文按 LangChain v1 的思路组织。v1 中 `langchain` 主包更聚焦 Agent 相关能力，旧版 Chain、Memory 等接口如果继续使用，需要结合 `langchain-classic` 或迁移到新版的 Runnable、messages、checkpointer 写法。
+
 ### 核心设计理念
 
 | 理念 | 说明 |
@@ -68,6 +72,7 @@ LangChain v1.0 是一个面向生产环境的 AI Agent 构建框架，将 LLM �
 ```bash
 pip install langchain langgraph
 pip install langchain-openai
+pip install langchain-community langchain-text-splitters chromadb
 ```
 
 ### 环境变量配置
@@ -142,14 +147,23 @@ def search_database(query: str) -> str:
 @tool
 def calculate(expression: str) -> str:
     """执行数学计算"""
-    try:
-        result = eval(expression)
-        return str(result)
-    except Exception as e:
-        return f"计算错误: {str(e)}"
+    import operator
+
+    ops = {
+        "+": operator.add,
+        "-": operator.sub,
+        "*": operator.mul,
+        "/": operator.truediv,
+    }
+    left, op, right = expression.split()
+    if op not in ops:
+        return "只支持 +、-、*、/ 四种运算"
+    return str(ops[op](float(left), float(right)))
 
 tools = [search_database, calculate]
 ```
+
+工具函数的边界越清晰，Agent 越容易稳定调用。这里没有把任意字符串交给 Python 执行，因为示例代码经常会被直接复制到真实项目里，保守一些更安全。
 
 ## Memory 模块
 
@@ -157,23 +171,30 @@ tools = [search_database, calculate]
 
 ```python
 from langchain.agents import create_agent
-from langchain.memory import ConversationBufferMemory
+from langgraph.checkpoint.memory import InMemorySaver
 
-memory = ConversationBufferMemory(
-    memory_key="chat_history",
-    return_messages=True
-)
+checkpointer = InMemorySaver()
 
 agent = create_agent(
     model=llm,
     tools=tools,
     system_prompt="你是一个有帮助的助手。",
-    memory=memory
+    checkpointer=checkpointer
 )
 
-result1 = agent.invoke({"messages": [{"role": "user", "content": "我叫张三"}]})
-result2 = agent.invoke({"messages": [{"role": "user", "content": "我叫什么名字？"}]})
+config = {"configurable": {"thread_id": "demo-user"}}
+
+result1 = agent.invoke(
+    {"messages": [{"role": "user", "content": "我叫张三"}]},
+    config=config
+)
+result2 = agent.invoke(
+    {"messages": [{"role": "user", "content": "我叫什么名字？"}]},
+    config=config
+)
 ```
+
+同一个 `thread_id` 会把两次调用放进同一段对话状态里。换成新的 `thread_id`，就相当于开始一段新的会话。
 
 ## Retrieval 模块 (RAG)
 
@@ -181,7 +202,7 @@ result2 = agent.invoke({"messages": [{"role": "user", "content": "我叫什么�
 
 ```python
 from langchain_community.document_loaders import TextLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 
@@ -215,7 +236,11 @@ def get_weather(city: str) -> str:
 @tool
 def calculator(expression: str) -> str:
     """数学计算"""
-    return str(eval(expression))
+    import operator
+
+    ops = {"+": operator.add, "-": operator.sub, "*": operator.mul, "/": operator.truediv}
+    left, op, right = expression.split()
+    return str(ops[op](float(left), float(right)))
 
 llm = ChatOpenAI(model="gpt-4o", temperature=0)
 tools = [get_weather, calculator]
@@ -227,7 +252,7 @@ agent = create_agent(
 )
 
 result = agent.invoke({
-    "messages": [{"role": "user", "content": "计算 (2+3)*5 的结果"}]
+    "messages": [{"role": "user", "content": "计算 2 + 3 的结果"}]
 })
 
 print(result["messages"][-1].content)
@@ -284,9 +309,9 @@ result = app.invoke({
 |------|------------|------|
 | **Agent** | `create_agent()` | 构建智能体 |
 | **Tools** | `@tool` 装饰器 | 定义工具函数 |
-| **Memory** | `ConversationBufferMemory` | 对话记忆 |
+| **Memory** | `checkpointer` + `thread_id` | 对话状态 |
 | **Retrieval** | `vectorstore.as_retriever()` | RAG 检索 |
 
-LangChain v1.0 提供了简洁的 `create_agent` API，让构建 AI Agent 变得简单。通过 `system_prompt` 配置角色行为，通过 `tools` 扩展能力，通过 `memory` 保持上下文。
+LangChain v1.0 提供了简洁的 `create_agent` API，让构建 AI Agent 变得简单。通过 `system_prompt` 配置角色行为，通过 `tools` 扩展能力，通过 `checkpointer` 和 `thread_id` 保持上下文。
 
 对于复杂场景，可以下潜到 LangGraph 获得更精细的控制。

@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-11T00:00:00.000+08:00
 modDatetime: 2026-05-11T00:00:00.000+08:00
 slug: langgraph-agent-pratice
-description: '使用LangGraph构建完整的智能代理应用，包括工具调用、决策逻辑和多Agent协作。'
+description: "使用LangGraph构建完整的智能代理应用，包括工具调用、决策逻辑和多Agent协作。"
 tags:
   - LangGraph
   - Agent
@@ -18,6 +18,7 @@ language: zh-CN
 ## 概述
 
 本文将通过实战项目展示如何使用 LangGraph 构建智能代理。我们将创建一个能够自主决策、使用工具并完成复杂任务的 Agent 系统。
+实战里的关键不是让所有逻辑都塞进一个大函数，而是把“模型思考”“工具执行”“状态记录”“条件路由”拆成清晰节点。这样每一步都能单独观察，也更容易定位 Agent 为什么走到了某个分支。
 
 ### 项目目标
 
@@ -61,6 +62,7 @@ from langchain_core.tools import tool
 from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.graph import StateGraph, START, END, MessagesState
 from langchain_openai import ChatOpenAI
+from typing import Literal
 
 @tool
 def search_knowledge_base(query: str) -> str:
@@ -76,13 +78,17 @@ def search_knowledge_base(query: str) -> str:
     return "未找到相关信息"
 
 @tool
-def calculate(expression: str) -> str:
-    """执行数学计算"""
-    try:
-        result = eval(expression)
-        return str(result)
-    except:
-        return "计算错误"
+def calculate(a: float, b: float, operation: Literal["add", "subtract", "multiply", "divide"]) -> str:
+    """执行受控的四则运算"""
+    if operation == "add":
+        return str(a + b)
+    if operation == "subtract":
+        return str(a - b)
+    if operation == "multiply":
+        return str(a * b)
+    if operation == "divide":
+        return "除数不能为 0" if b == 0 else str(a / b)
+    return "未知操作"
 
 @tool
 def get_current_time() -> str:
@@ -98,9 +104,13 @@ def send_notification(message: str, recipient: str) -> str:
 tools = [search_knowledge_base, calculate, get_current_time, send_notification]
 ```
 
+工具函数的签名会影响模型如何生成工具调用参数。这里的计算工具使用明确的参数和操作枚举，避免让示例执行任意表达式。
+
 ## Agent 实现
 
 ### 基础 Agent 图
+
+基础 Agent 图由两个核心节点组成：`model` 负责判断是否需要工具，`tools` 负责执行工具调用。`tools_condition` 会把模型输出路由到工具节点或结束。
 
 ```python
 def create_agent_graph():
@@ -135,9 +145,13 @@ result = agent.invoke({
 print(result["messages"][-1].content)
 ```
 
+这段图会在“模型 -> 工具 -> 模型”之间循环，直到模型不再请求工具。循环边让工具结果回到模型，模型才能基于工具结果生成最终回答。
+
 ## 带状态的 Agent
 
 ### 自定义状态
+
+自定义状态适合保存业务字段，例如上下文、迭代次数和最终结果。`iterations` 是循环保护字段，避免 Agent 在没有明确答案时无限自我调用。
 
 ```python
 from typing import TypedDict, Annotated
@@ -219,8 +233,7 @@ def create_coordinator_agent():
         return "model"
 
     def calculator_node(state: CoordinatorState):
-        expression = "10 + 20"
-        result = eval(expression)
+        result = 10 + 20
         return {"results": {**state.get("results", {}), "calc": result}}
 
     graph.add_node("analyzer", analyze_task)
@@ -241,15 +254,17 @@ def create_coordinator_agent():
 agent = create_coordinator_agent()
 ```
 
+协调型 Agent 的重点是先识别任务类型，再把任务交给专门节点。条件路由返回的字符串必须和节点名一致，或者通过映射表转换。
+
 ## 带记忆的 Agent
 
 ### 持久化对话
 
 ```python
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.memory import InMemorySaver
 
 def create_memory_agent():
-    memory = MemorySaver()
+    memory = InMemorySaver()
 
     graph = StateGraph(MessagesState)
 
@@ -278,9 +293,13 @@ result2 = agent.invoke(
 )
 ```
 
+同一个 `thread_id` 会让后续调用读取同一条会话历史。示例使用内存型 checkpointer 方便演示，服务重启后仍要保留状态时应换成数据库持久化。
+
 ## 决策 Agent
 
 ### 条件路由
+
+当规则足够明确时，可以先用普通函数完成决策，再把 LLM 放到需要语言理解或生成的节点里。这样能降低成本，也让路由逻辑更可预测。
 
 ```python
 from typing import Literal
@@ -358,7 +377,8 @@ def create_research_agent():
     graph.add_node("compile", compile_report)
 
     graph.add_edge(START, "research")
-    graph.add_conditional_edges("research", should_continue, {"research": "research", "compile": END})
+    graph.add_conditional_edges("research", should_continue, {"research": "research", "compile": "compile"})
+    graph.add_edge("compile", END)
 
     return graph.compile()
 
@@ -366,6 +386,8 @@ agent = create_research_agent()
 result = agent.invoke({"topic": "人工智能", "research_steps": [], "findings": [], "final_report": ""})
 print(result["final_report"])
 ```
+
+这里的 `compile` 分支必须先进入 `compile` 节点，再连接到 `END`。如果直接把 `"compile"` 映射到 `END`，报告生成节点就不会执行。
 
 ## 最佳实践
 
@@ -402,20 +424,20 @@ class OptimizedState(TypedDict):
     messages: Annotated[list, operator.add]
     metadata: dict
 
-    def get_recent_messages(self, n=5):
-        return self["messages"][-n:]
+def get_recent_messages(state: OptimizedState, n: int = 5):
+    return state["messages"][-n:]
 ```
 
 ## 总结
 
 本文实现的智能代理特性：
 
-| 特性 | 实现方式 |
-|------|---------|
-| **工具调用** | ToolNode + tools_condition |
-| **状态管理** | TypedDict 自定义状态 |
-| **记忆持久化** | MemorySaver checkpointer |
-| **条件路由** | add_conditional_edges |
-| **多步骤处理** | 循环 + 状态更新 |
+| 特性           | 实现方式                            |
+| -------------- | ----------------------------------- |
+| **工具调用**   | ToolNode + tools_condition          |
+| **状态管理**   | TypedDict 自定义状态                |
+| **记忆持久化** | InMemorySaver / 持久化 checkpointer |
+| **条件路由**   | add_conditional_edges               |
+| **多步骤处理** | 循环 + 状态更新                     |
 
 LangGraph 的图结构让构建复杂的 Agent 系统变得直观和可控。

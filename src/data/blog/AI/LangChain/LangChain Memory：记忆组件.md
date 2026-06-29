@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-11T00:00:00.000+08:00
 modDatetime: 2026-05-11T00:00:00.000+08:00
 slug: langchain-memory
-description: '深入讲解LangChain v1.0的Memory模块，包括对话记忆、缓冲记忆和组合记忆。'
+description: '深入讲解LangChain v1.0的Memory模块，包括短期会话状态、摘要记忆和检索式记忆。'
 tags:
   - LangChain
   - Memory
@@ -17,7 +17,9 @@ language: zh-CN
 
 ## 概述
 
-Memory（记忆组件）是 LangChain 中用于在对话或处理过程中保持状态的模块。它让 LLM 能够记住之前的信息，实现真正的多轮对话体验。
+Memory（记忆组件）是 LangChain 中用于在对话或处理过程中保持状态的能力。它解决的问题很直接：模型本身不会自动记住上一次请求，如果应用不把历史消息或关键状态传回去，下一轮对话就会像重新开始一样。
+
+在 LangChain v1 中，短期记忆通常通过 Agent 的 `checkpointer` 保存到 graph state，再用调用时的 `thread_id` 区分不同会话。旧版资料里的 memory 类仍可能在历史项目中出现，但新项目更建议围绕 messages、state 和 checkpointer 来理解。
 
 ### 为什么需要 Memory？
 
@@ -49,43 +51,51 @@ Memory（记忆组件）是 LangChain 中用于在对话或处理过程中保持
 
 | 类型 | 说明 | 适用场景 |
 |------|------|---------|
-| **ConversationBufferMemory** | 简单缓冲记忆 | 标准聊天 |
-| **ConversationSummaryMemory** | 摘要记忆 | 长对话 |
-| **CombinedMemory** | 组合记忆 | 多维度记忆 |
-| **VectorStoreRetrieverMemory** | 向量记忆 | 语义检索 |
+| **短期会话记忆** | 按 thread 保存消息状态 | 标准聊天 |
+| **摘要记忆** | 将长历史压缩成摘要 | 长对话 |
+| **组合上下文** | 同时使用历史、摘要、用户资料 | 多维度上下文 |
+| **检索式记忆** | 用向量检索找回相关片段 | 大量历史信息 |
 
-## ConversationBufferMemory
+## 短期会话记忆
 
 ### 基础用法
 
 ```python
-from langchain.memory import ConversationBufferMemory
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain.agents import create_agent
+from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.memory import InMemorySaver
 
-memory = ConversationBufferMemory(
-    memory_key="history",
-    return_messages=True
+agent = create_agent(
+    model=ChatOpenAI(model="gpt-4o"),
+    tools=[],
+    system_prompt="你是一个有帮助的助手。",
+    checkpointer=InMemorySaver()
 )
 
-memory.chat_memory.add_user_message("你好")
-memory.chat_memory.add_ai_message("你好！有什么可以帮助你的吗？")
+config = {"configurable": {"thread_id": "user-001"}}
 
-history = memory.load_memory_variables({})
-print(history["history"])
+agent.invoke(
+    {"messages": [{"role": "user", "content": "我叫张三"}]},
+    config=config
+)
+
+result = agent.invoke(
+    {"messages": [{"role": "user", "content": "我叫什么名字？"}]},
+    config=config
+)
+
+print(result["messages"][-1].content)
 ```
+
+这段代码的重点是 `config`。同一个 `thread_id` 会复用同一段会话状态；换成另一个 `thread_id`，历史就不会串到新用户或新会话里。
 
 ### 在 Agent 中使用
 
 ```python
 from langchain.agents import create_agent
-from langchain.memory import ConversationBufferMemory
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
-
-memory = ConversationBufferMemory(
-    memory_key="chat_history",
-    return_messages=True
-)
+from langgraph.checkpoint.memory import InMemorySaver
 
 @tool
 def get_weather(city: str) -> str:
@@ -98,174 +108,177 @@ agent = create_agent(
     model=llm,
     tools=[get_weather],
     system_prompt="你是一个有帮助的助手。",
-    memory=memory
+    checkpointer=InMemorySaver()
 )
 
-result1 = agent.invoke({
-    "messages": [{"role": "user", "content": "我叫张三"}]
-})
+config = {"configurable": {"thread_id": "chat-001"}}
 
-result2 = agent.invoke({
-    "messages": [{"role": "user", "content": "我叫什么名字？"}]
-})
+result1 = agent.invoke(
+    {"messages": [{"role": "user", "content": "我叫张三"}]},
+    config=config
+)
+
+result2 = agent.invoke(
+    {"messages": [{"role": "user", "content": "我叫什么名字？"}]},
+    config=config
+)
 ```
 
-## ConversationSummaryMemory
+## 摘要记忆
 
 ### 对长对话进行摘要
 
 ```python
-from langchain.memory import ConversationSummaryMemory
 from langchain_openai import ChatOpenAI
+from langchain.messages import HumanMessage, AIMessage
 
 llm = ChatOpenAI(model="gpt-4o")
 
-memory = ConversationSummaryMemory(
-    llm=llm,
-    memory_key="summary",
-    return_messages=True
-)
+messages = [
+    HumanMessage(content="我们公司最近推出了新产品"),
+    AIMessage(content="这个产品主要解决什么问题？"),
+    HumanMessage(content="它帮助客服团队自动整理客户问题"),
+]
 
-for i in range(10):
-    memory.chat_memory.add_user_message(f"这是第{i+1}轮对话")
+def summarize_messages(messages):
+    text = "\n".join(f"{m.type}: {m.content}" for m in messages)
+    response = llm.invoke(f"请用100字以内总结这段对话：\n{text}")
+    return response.content
 
-summary = memory.load_memory_variables({})
-print(summary["summary"])
+summary = summarize_messages(messages)
+print(summary)
 ```
 
-## CombinedMemory
+摘要不是为了保存每个字，而是为了保留后续回答真正需要的事实。长对话中可以定期把旧消息压缩成摘要，只把最近几轮完整消息继续放进上下文。
 
-### 组合多种记忆类型
+## 组合上下文
+
+### 组合多种上下文
 
 ```python
-from langchain.memory import (
-    ConversationBufferMemory,
-    ConversationSummaryMemory
-)
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.messages import HumanMessage, AIMessage
 
 llm = ChatOpenAI(model="gpt-4o")
 
-conv_memory = ConversationBufferMemory(
-    memory_key="recent_history",
-    return_messages=True
-)
+recent_history = [
+    HumanMessage(content="我们公司最近推出了新产品"),
+    AIMessage(content="听起来不错，它面向哪类用户？"),
+]
+summary = "用户正在讨论一个面向客服团队的新产品。"
 
-summary_memory = ConversationSummaryMemory(
-    llm=llm,
-    memory_key="summary",
-    return_messages=True
-)
-
-def chat_with_combined_memory(input_text, messages):
-    recent_history = conv_memory.load_memory_variables({}).get("history", [])
-    summary = summary_memory.load_memory_variables({}).get("summary", "")
+def chat_with_combined_context(input_text):
+    user_profile = "用户偏好简洁、可执行的建议。"
 
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "你是一个友好的助手。"),
-        MessagesPlaceholder(variable_name="history"),
+        ("system", "你是一个友好的助手。用户画像：{user_profile}"),
         ("system", "对话摘要：{summary}"),
+        MessagesPlaceholder(variable_name="history"),
         ("human", "{input}")
     ])
 
-    response = llm.invoke(prompt.format_messages(
-        history=recent_history,
-        summary=summary,
-        input=input_text
-    ))
+    messages = prompt.invoke({
+        "user_profile": user_profile,
+        "summary": summary,
+        "history": recent_history,
+        "input": input_text,
+    }).to_messages()
 
-    conv_memory.chat_memory.add_user_message(input_text)
-    conv_memory.chat_memory.add_ai_message(response.content)
-    summary_memory.chat_memory.add_user_message(input_text)
-    summary_memory.chat_memory.add_ai_message(response.content)
+    return llm.invoke(messages).content
 
-    return response.content
-
-chat_with_combined_memory("我们公司最近推出了新产品", [])
+answer = chat_with_combined_context("帮我整理一个产品介绍大纲")
+print(answer)
 ```
 
-## VectorStoreRetrieverMemory
+组合上下文的关键是把不同来源的信息放到清楚的位置：用户画像放系统消息，摘要单独成段，最近消息保持原始顺序。这样比把所有内容拼成一个长字符串更容易维护。
+
+## 检索式记忆
 
 ### 基于语义检索的记忆
 
 ```python
-from langchain.memory import VectorStoreRetrieverMemory
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
+from langchain_core.documents import Document
 
 embeddings = OpenAIEmbeddings()
-vectorstore = Chroma(embedding_function=embeddings)
-
-memory = VectorStoreRetrieverMemory(
-    vectorstore=vectorstore,
-    memory_key="chat_history",
-    k=3
+vectorstore = Chroma.from_documents(
+    documents=[
+        Document(page_content="用户喜欢 Python 编程"),
+        Document(page_content="用户在上海工作"),
+    ],
+    embedding=embeddings
 )
 
-memory.save_context(
-    {"input": "我喜欢Python编程"},
-    {"output": "Python是一门很棒的编程语言！"}
-)
-memory.save_context(
-    {"input": "我在上海工作"},
-    {"output": "上海是一座国际化大都市！"}
-)
+retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
-related = memory.load_memory_variables(
-    {"input": "我在哪里工作？"}
-)
+related = retriever.invoke("我在哪里工作？")
 print(related)
 ```
+
+检索式记忆适合“历史很多，但每次只需要其中几条相关信息”的场景。它不等同于完整聊天历史，而是把过去的重要事实当成可检索资料。
 
 ## 持久化记忆
 
 ### 使用 Checkpointer
 
 ```python
-from langgraph.checkpoint.memory import MemorySaver
+from langchain.agents import create_agent
+from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.memory import InMemorySaver
 
-checkpointer = MemorySaver()
+checkpointer = InMemorySaver()
 
-memory = ConversationBufferMemory(
-    memory_key="chat_history",
-    return_messages=True,
+agent = create_agent(
+    model=ChatOpenAI(model="gpt-4o"),
+    tools=[],
+    system_prompt="你是一个有帮助的助手。",
     checkpointer=checkpointer
 )
 
 config = {"configurable": {"thread_id": "user_123"}}
 
-memory.save_context(
-    {"input": "你好"},
-    {"output": "你好！"}
+agent.invoke(
+    {"messages": [{"role": "user", "content": "你好"}]},
+    config=config
 )
 
-history = memory.load_memory_variables({})
-print(history)
+state = agent.get_state(config)
+print(state.values["messages"])
 ```
+
+`InMemorySaver` 适合本地演示，进程结束后数据就没了。生产环境要换成数据库型 checkpointer，让同一个 thread 能跨进程恢复。
 
 ### 保存和加载
 
 ```python
 import json
 
-vars = memory.load_memory_variables({})
-with open("memory.json", "w") as f:
-    json.dump(vars, f)
+messages = [
+    {"role": "user", "content": "你好"},
+    {"role": "assistant", "content": "你好！有什么可以帮助你？"},
+]
 
-with open("memory.json", "r") as f:
+with open("memory.json", "w", encoding="utf-8") as f:
+    json.dump(messages, f, ensure_ascii=False)
+
+with open("memory.json", "r", encoding="utf-8") as f:
     loaded = json.load(f)
     print(loaded)
 ```
+
+手动保存 JSON 适合教学或小工具；一旦涉及多用户、并发和恢复能力，就应该使用 checkpointer 或数据库。
 
 ## 最佳实践
 
 | 实践 | 说明 |
 |------|------|
-| **选择合适的类型** | 短对话用 Buffer，长对话用 Summary |
+| **按 thread 隔离** | 不同用户或会话使用不同 `thread_id` |
 | **设置 token 限制** | 避免超出模型上下文限制 |
-| **定期清理** | 删除无用记忆 |
-| **持久化存储** | 生产环境使用 checkpointer |
+| **定期摘要** | 长对话用摘要压缩旧消息 |
+| **检索重要事实** | 大量历史信息用向量检索找回 |
+| **持久化存储** | 生产环境使用数据库型 checkpointer |
 
 ### 记忆类型选择指南
 
@@ -273,33 +286,34 @@ with open("memory.json", "r") as f:
 对话长度
   │
   │短（< 5轮）
-  │  └── ConversationBufferMemory
+  │  └── 直接保留完整 messages
   │
   │中等（5-20轮）
-  │  └── ConversationSummaryMemory
+  │  └── 完整 messages + 定期摘要
   │
   │长（> 20轮）
-  │  └── 需要检索 → VectorStoreRetrieverMemory
+  │  └── 摘要 + 检索式记忆
   │
   │ 复杂场景
-  │  └── CombinedMemory（组合多种）
+  │  └── 组合上下文（历史、摘要、用户资料、检索结果）
 ```
 
 ### 限制记忆长度
 
 ```python
-memory = ConversationBufferMemory(
-    max_token_limit=2000
-)
+def keep_recent_messages(messages, max_items=10):
+    return messages[-max_items:]
 ```
+
+真正限制上下文时，建议按 token 数估算，而不是只按消息条数截断；上面的函数只展示最朴素的裁剪思路。
 
 ## 总结
 
-| Memory 类型 | 特点 | 适用场景 |
+| Memory 方式 | 特点 | 适用场景 |
 |------------|------|---------|
-| **BufferMemory** | 完整历史 | 短对话 |
-| **SummaryMemory** | 摘要存储 | 长对话 |
-| **VectorMemory** | 语义检索 | 大量记忆 |
-| **CombinedMemory** | 多类型组合 | 复杂需求 |
+| **messages** | 结构直观 | 短对话 |
+| **checkpointer** | 按 thread 恢复状态 | 多轮 Agent |
+| **摘要** | 压缩上下文 | 长对话 |
+| **检索** | 找回相关事实 | 大量历史 |
 
-Memory 让 LLM 应用具有真正的对话能力，选择合适的记忆类型可以优化性能和用户体验。
+Memory 让 LLM 应用具有真正的对话能力。把短期状态、摘要和检索式事实分清楚，应用会更稳，也更容易解释为什么模型“记得”某些信息。
