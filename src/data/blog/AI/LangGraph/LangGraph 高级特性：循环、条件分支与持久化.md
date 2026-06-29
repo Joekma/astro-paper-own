@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-11T00:00:00.000+08:00
 modDatetime: 2026-05-11T00:00:00.000+08:00
 slug: langgraph-advanced-features
-description: '深入讲解LangGraph高级特性，包括循环控制、条件分支、状态持久化和人机交互。'
+description: "深入讲解LangGraph高级特性，包括循环控制、条件分支、状态持久化和人机交互。"
 tags:
   - LangGraph
   - 高级特性
@@ -18,6 +18,7 @@ language: zh-CN
 ## 概述
 
 LangGraph 的高级特性使其成为构建复杂 LLM 应用的理想选择。本篇将详细介绍循环控制、条件分支、状态持久化和人机交互等高级功能。
+这些能力通常不是孤立使用的：循环让 Agent 能多步尝试，条件分支让流程按状态选择路径，持久化让流程可以暂停、恢复和回溯。阅读下面的示例时，可以重点观察“状态字段如何驱动下一步”。
 
 ### 高级特性概览
 
@@ -42,6 +43,8 @@ LangGraph 的高级特性使其成为构建复杂 LLM 应用的理想选择。�
 ## 循环控制
 
 ### 带条件的循环
+
+循环依赖条件边完成。节点每执行一次只更新状态，是否继续由路由函数决定。
 
 ```python
 from langgraph.graph import StateGraph, START, END
@@ -69,6 +72,8 @@ graph.add_conditional_edges("increment", should_continue, {
 app = graph.compile()
 ```
 
+这里 `counter` 小于 5 时会回到 `increment`，否则进入 `END`。实际项目中建议同时保留业务退出条件和 `recursion_limit` 这类兜底限制。
+
 ### 最大迭代限制
 
 ```python
@@ -83,16 +88,21 @@ class IterState(TypedDict):
 def process(state: IterState):
     return {"iterations": state["iterations"] + 1}
 
+def route_by_iterations(state: IterState):
+    return "process" if state["iterations"] < 5 else "end"
+
 graph = StateGraph(IterState)
 graph.add_node("process", process)
 graph.add_edge(START, "process")
-graph.add_edge("process", END)
+graph.add_conditional_edges("process", route_by_iterations, {"process": "process", "end": END})
 
 app = graph.compile()
 
 config = RunnableConfig(recursion_limit=10)
 result = app.invoke({"iterations": 0, "result": ""}, config=config)
 ```
+
+`recursion_limit` 是防护网，不应该替代业务退出条件。上例正常会在 5 次内结束；如果路由函数写错导致无法退出，递归限制会阻止无限执行。
 
 ### Early Stopping
 
@@ -110,7 +120,8 @@ def should_stop_early(state: IterState) -> Literal["stop", "continue"]:
 ### 基础条件分支
 
 ```python
-from typing import Literal
+from langgraph.graph import StateGraph, START, END
+from typing import TypedDict, Literal
 
 class BranchState(TypedDict):
     input_value: int
@@ -134,12 +145,22 @@ def process_low(state: BranchState):
     return {"path": "处理低值"}
 
 graph = StateGraph(BranchState)
+graph.add_node("router", lambda state: state)
 graph.add_node("high", process_high)
 graph.add_node("medium", process_medium)
 graph.add_node("low", process_low)
-graph.add_edge(START, "route")
-graph.add_conditional_edges("route", route_based_on_value)
+graph.add_edge(START, "router")
+graph.add_conditional_edges(
+    "router",
+    route_based_on_value,
+    {"high": "high", "medium": "medium", "low": "low"},
+)
+graph.add_edge("high", END)
+graph.add_edge("medium", END)
+graph.add_edge("low", END)
 ```
+
+条件边必须挂在一个真实存在的节点上。这里使用轻量的 `router` 节点保留状态，再由路由函数选择后续处理节点。
 
 ### 多条件路由
 
@@ -159,6 +180,8 @@ def complex_router(state: BranchState) -> Literal["path_a", "path_b", "path_c", 
     return "path_c"
 ```
 
+多条件路由适合把复杂判断集中在一个函数中，但返回值仍然要保持稳定。建议使用 `Literal` 标注所有可能分支，减少拼写错误。
+
 ### 动态分支映射
 
 ```python
@@ -175,41 +198,52 @@ graph.add_conditional_edges(
 
 ## 状态持久化
 
-### MemorySaver
+### InMemorySaver
 
 ```python
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.memory import InMemorySaver
 
-checkpointer = MemorySaver()
+checkpointer = InMemorySaver()
 app = graph.compile(checkpointer=checkpointer)
 
 config = {"configurable": {"thread_id": "unique_session_id"}}
 
-result1 = app.invoke({"messages": ["first message"]}, config=config)
-result2 = app.invoke({"messages": ["second message"]}, config=config)
+result1 = app.invoke({"messages": [{"role": "user", "content": "first message"}]}, config=config)
+result2 = app.invoke({"messages": [{"role": "user", "content": "second message"}]}, config=config)
 
 saved_state = app.get_state(config)
 print(saved_state.values)
 ```
 
+内存型 checkpointer 适合演示暂停、恢复和时间旅行。生产环境需要换成 PostgreSQL、SQLite 等能跨进程保存状态的实现。
+
 ### 状态恢复
 
 ```python
-checkpoint_config = {"configurable": {"thread_id": "session_1", "checkpoint_ns": "checkpoint_id"}}
-app.recover_state_from_checkpoint(checkpoint_config)
+history = list(app.get_state_history(config))
+checkpoint_config = history[-2].config
+
+snapshot = app.get_state(checkpoint_config)
+print(snapshot.values)
+
+# 从历史检查点继续执行会形成新的执行分支
+forked = app.invoke(
+    {"messages": [{"role": "user", "content": "从检查点继续"}]},
+    config=checkpoint_config,
+)
 ```
 
 ### PostgreSQL 持久化
 
 ```python
 from langgraph.checkpoint.postgres import PostgresSaver
-from langchain_postgres import Pool
+from psycopg_pool import ConnectionPool
 
-pool = Pool.connect("postgresql://user:pass@host:5432/db")
-checkpointer = PostgresSaver(pool)
-checkpointer.setup()
+with ConnectionPool("postgresql://user:pass@host:5432/db") as pool:
+    checkpointer = PostgresSaver(pool)
+    checkpointer.setup()
 
-app = graph.compile(checkpointer=checkpointer)
+    app = graph.compile(checkpointer=checkpointer)
 ```
 
 ### Sqlite 持久化
@@ -239,11 +273,18 @@ def human_review_node(state):
     return {"decision": review_decision}
 ```
 
+`interrupt()` 会暂停图并把数据交给外部系统。外部拿到人工审核结果后，再用同一个 `thread_id` 恢复执行。
+
 ### 手动状态更新
 
 ```python
-config = {"configurable": {"thread_id": "user_123", "checkpoint_ns": interrupt_id}}
-app.update_state(config, {"user_feedback": "批准"})
+from langgraph.types import Command
+
+config = {"configurable": {"thread_id": "user_123"}}
+app.invoke(Command(resume="approve"), config=config)
+
+# 如需人工修正状态，可以显式更新某个节点后的状态
+app.update_state(config, {"user_feedback": "批准"}, as_node="human_review")
 ```
 
 ## 错误处理
@@ -251,19 +292,26 @@ app.update_state(config, {"user_feedback": "批准"})
 ### TryExcept 节点
 
 ```python
+from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 from langchain_core.tools import tool
+from typing import TypedDict
 
 @tool
-def unreliable_tool():
+def unreliable_tool(query: str) -> str:
     import random
     if random.random() > 0.5:
-        return "成功"
+        return f"成功处理：{query}"
     raise Exception("工具执行失败")
 
-graph = StateGraph(...)
-tool_node = ToolNode(unreliable_tool)
+class ToolState(TypedDict):
+    messages: list
+
+graph = StateGraph(ToolState)
+tool_node = ToolNode([unreliable_tool])
 ```
+
+`ToolNode` 接收工具列表。工具异常通常会转成工具消息返回给模型，必要时可以在工具内部返回更业务化的错误信息。
 
 ### 自定义错误处理
 
@@ -280,7 +328,8 @@ def safe_node(state):
 ### 嵌套图
 
 ```python
-from langgraph.graph import StateGraph, END
+from langgraph.graph import StateGraph, START, END
+from typing import TypedDict
 
 def create_subgraph():
     class SubGraphState(TypedDict):
@@ -309,11 +358,13 @@ main_graph.add_edge("subgraph", END)
 ### Send API
 
 ```python
-from langgraph.constants import Send
+from langgraph.types import Send
+from typing import TypedDict, Annotated
+import operator
 
 class ParallelState(TypedDict):
     items: list
-    results: list
+    results: Annotated[list, operator.add]
 
 def spawn_tasks(state: ParallelState):
     return [Send("processor", {"item": item}) for item in state["items"]]
@@ -326,6 +377,8 @@ graph.add_node("processor", process_item)
 graph.add_conditional_edges(START, spawn_tasks)
 graph.add_edge("processor", END)
 ```
+
+`Send` 会为每个 item 派发一次 `processor`。因为多个分支都会写入 `results`，这里用 `Annotated[list, operator.add]` 指定追加合并。
 
 ## 时间旅行
 
@@ -340,8 +393,11 @@ def time_travel():
 
     if len(history) > 2:
         old_config = history[-3].config
-        app.recover_state_from_checkpoint(old_config)
+        replayed = app.invoke(None, config=old_config)
+        return replayed
 ```
+
+时间旅行并不是把全局状态“倒回去”，而是使用历史检查点的 `config` 重新读取或继续执行。继续执行会产生新的分支，原历史仍可查看。
 
 ### 状态比较
 
@@ -376,9 +432,9 @@ class OptimizedState(TypedDict):
 ### 3. 检查点策略
 
 ```python
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.memory import InMemorySaver
 
-checkpointer = MemorySaver()
+checkpointer = InMemorySaver()
 app = graph.compile(
     checkpointer=checkpointer,
     debug=True
@@ -387,13 +443,13 @@ app = graph.compile(
 
 ## 总结
 
-| 高级特性 | 用途 |
-|---------|------|
-| **条件循环** | 动态控制执行流程 |
-| **条件分支** | 根据状态路由 |
-| **状态持久化** | 会话恢复 |
-| **人机交互** | 人工干预 |
-| **子图** | 模块化复杂逻辑 |
-| **并行执行** | 高效处理批量任务 |
+| 高级特性       | 用途             |
+| -------------- | ---------------- |
+| **条件循环**   | 动态控制执行流程 |
+| **条件分支**   | 根据状态路由     |
+| **状态持久化** | 会话恢复         |
+| **人机交互**   | 人工干预         |
+| **子图**       | 模块化复杂逻辑   |
+| **并行执行**   | 高效处理批量任务 |
 
 这些高级特性使 LangGraph 能够构建真正生产级别的 LLM 应用。

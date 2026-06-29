@@ -4,7 +4,7 @@ author: Joekma
 pubDatetime: 2026-05-11T00:00:00.000+08:00
 modDatetime: 2026-05-11T00:00:00.000+08:00
 slug: langgraph-state-management
-description: '深入讲解LangGraph状态管理机制，包括状态定义、更新策略、状态持久化和跨会话管理。'
+description: "深入讲解LangGraph状态管理机制，包括状态定义、更新策略、状态持久化和跨会话管理。"
 tags:
   - LangGraph
   - State
@@ -18,6 +18,7 @@ language: zh-CN
 ## 概述
 
 状态管理是 LangGraph 的核心特性之一。它通过强类型的状态定义，确保数据在整个图中的流动是可预测和可控的。
+在 LangGraph 中，节点之间不直接互相传参，而是共同读写同一份状态。理解状态如何定义、如何更新、如何被检查点保存，是理解复杂工作流的关键。
 
 ### 状态管理架构
 
@@ -48,6 +49,8 @@ language: zh-CN
 
 ### TypedDict 基础
 
+`TypedDict` 用来描述状态中有哪些字段。它不会在运行时自动校验所有数据，但能让编辑器、类型检查器和读者清楚知道状态结构。
+
 ```python
 from typing import TypedDict, List
 
@@ -58,6 +61,8 @@ class AgentState(TypedDict):
 ```
 
 ### 带注解的状态
+
+默认情况下，节点返回的新值会覆盖旧值；使用 `Annotated` 可以为字段指定合并策略。列表字段常见的做法是追加而不是覆盖。
 
 ```python
 from typing import TypedDict, Annotated
@@ -72,6 +77,8 @@ class EnhancedState(TypedDict):
 ## 状态更新策略
 
 ### 基础更新
+
+节点不需要返回完整状态，只返回本次要修改的字段即可。未返回的字段会保留原值。
 
 ```python
 from langgraph.graph import StateGraph, START
@@ -107,8 +114,11 @@ def multi_update(state: SimpleState):
 ### Annotated 状态
 
 ```python
+from typing import TypedDict, Annotated
+from langgraph.graph.message import add_messages
+
 class MessageState(TypedDict):
-    messages: Annotated[list, operator.add]
+    messages: Annotated[list, add_messages]
 
 def add_message(state: MessageState):
     return {"messages": [{"role": "assistant", "content": "新消息"}]}
@@ -125,33 +135,34 @@ def another_message(state: MessageState):
 from langgraph.graph import MessagesState
 
 def process_messages(state: MessagesState):
-    messages = state["messages"]
-    return {"messages": messages + ["处理后的消息"]}
+    return {"messages": [{"role": "assistant", "content": "处理后的消息"}]}
 ```
+
+`MessagesState` 已经内置消息合并规则，节点只需要返回新增消息。这样可以避免手动拼接时重复追加历史消息。
 
 ### 自定义 MessagesState
 
 ```python
 from typing import TypedDict, Annotated
-import operator
+from langgraph.graph.message import add_messages
 
 class CustomMessagesState(TypedDict):
-    messages: Annotated[list, operator.add]
+    messages: Annotated[list, add_messages]
     metadata: dict
 ```
 
 ## 状态持久化
 
-### MemorySaver
+### InMemorySaver
 
 ```python
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import StateGraph, START, MessagesState
 
-memory = MemorySaver()
+memory = InMemorySaver()
 
 graph = StateGraph(MessagesState)
-graph.add_node("process", lambda s: {"messages": s["messages"]})
+graph.add_node("process", lambda s: {"messages": [{"role": "assistant", "content": "状态已保存"}]})
 graph.add_edge(START, "process")
 
 app = graph.compile(checkpointer=memory)
@@ -163,20 +174,22 @@ result = app.invoke(
     config=config
 )
 
-history = [s async for s in app.astream_history(config)]
+history = list(app.get_state_history(config))
 ```
+
+`thread_id` 决定状态写入和读取到哪条会话。内存型 checkpointer 适合本地演示；生产环境应选择数据库等持久化 checkpointer。
 
 ### PostgreSQL Checkpointer
 
 ```python
 from langgraph.checkpoint.postgres import PostgresSaver
-from langchain_postgres import Pool
+from psycopg_pool import ConnectionPool
 
-pool = Pool.connect("postgresql://user:pass@localhost/db")
-checkpointer = PostgresSaver(pool)
-checkpointer.setup()
+with ConnectionPool("postgresql://user:pass@localhost/db") as pool:
+    checkpointer = PostgresSaver(pool)
+    checkpointer.setup()
 
-app = graph.compile(checkpointer=checkpointer)
+    app = graph.compile(checkpointer=checkpointer)
 ```
 
 ## 状态回溯
@@ -197,10 +210,17 @@ for state in all_states:
 ### 状态恢复
 
 ```python
-from langchain_core.runnables import RunnableConfig
+history = list(app.get_state_history(config))
+checkpoint_config = history[-2].config
 
-config = {"configurable": {"thread_id": "session_1", "checkpoint_ns": "abc123"}}
-app.recover_state_from_checkpoint(config)
+snapshot = app.get_state(checkpoint_config)
+print(snapshot.values)
+
+# 也可以从这个历史检查点继续执行，形成一条新的分支
+forked = app.invoke(
+    {"messages": [{"role": "user", "content": "从这里继续"}]},
+    config=checkpoint_config,
+)
 ```
 
 ## 状态验证
@@ -222,14 +242,15 @@ def validate_node(state: ValidatedState):
 ### 自定义验证
 
 ```python
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 class StateModel(BaseModel):
     name: str
     age: int = Field(gt=0)
     email: str
 
-    @validator("email")
+    @field_validator("email")
+    @classmethod
     def validate_email(cls, v):
         if "@" not in v:
             raise ValueError("无效的邮箱格式")
@@ -270,8 +291,10 @@ def process_query(state: ConversationState):
 
 def route_by_intent(state: ConversationState) -> Literal["process_order", "process_query"]:
     intent = state["current_intent"]
-    return intent
+    return "process_order" if intent == "order" else "process_query"
 ```
+
+路由函数返回的值必须能对应到下一步节点。这里把业务意图 `order/query/general` 转换成实际节点名，避免把状态值误当成节点名。
 
 ### 2. 多步骤工作流
 
@@ -309,6 +332,7 @@ def step_3(state: WorkflowState):
 from typing import Literal
 
 class BranchState(TypedDict):
+    value: int
     condition: str
     result: str
 
@@ -375,11 +399,11 @@ def add_item(state: AccumulatorState):
 
 ## 总结
 
-| 特性 | 说明 |
-|------|------|
-| **TypedDict** | 类型安全的状态定义 |
-| **Annotated** | 特殊的更新策略 |
-| **MemorySaver** | 内存状态持久化 |
-| **检查点** | 状态恢复和回溯 |
+| 特性              | 说明                 |
+| ----------------- | -------------------- |
+| **TypedDict**     | 类型安全的状态定义   |
+| **Annotated**     | 特殊的更新策略       |
+| **InMemorySaver** | 开发阶段的内存检查点 |
+| **检查点**        | 状态恢复和回溯       |
 
 状态管理是 LangGraph 强大能力的核心，通过合理的状态设计可以构建复杂的工作流。

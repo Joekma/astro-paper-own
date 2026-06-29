@@ -19,6 +19,8 @@ language: zh-CN
 
 Chain（链）是 LangChain 的核心概念之一，它允许我们将多个组件组合在一起，形成一个连贯的工作流程。通过链式调用，可以将提示词模板、模型、输出解析器等组件串联起来，实现复杂的 LLM 应用。
 
+更直观地说，Chain 解决的是“不要把所有逻辑都塞进一次模型调用”的问题。一个可靠的应用通常会先整理输入，再调用模型，再解析输出，有时还要继续下一步处理；LCEL 的管道语法就是把这些步骤排成一条清楚的流水线。
+
 ### 为什么需要 Chain？
 
 | 需求 | 解决方案 |
@@ -39,7 +41,7 @@ Chain（链）是 LangChain 的核心概念之一，它允许我们将多个组�
 │  │              │  │    Chain    │  │    Chain     │     │
 │  └──────────────┘  └──────────────┘  └──────────────┘     │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │  RouterChain │  │  RetrievalQA │  │  Custom Chain │     │
+│  │   Branching  │  │  Retriever   │  │ Custom Runnable│     │
 │  └──────────────┘  └──────────────┘  └──────────────┘     │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -131,12 +133,11 @@ chain = (
 )
 ```
 
-## TransformChain
+## 数据转换链
 
 用于数据转换的链：
 
 ```python
-from langchain.chains import TransformChain
 from langchain_core.runnables import RunnableLambda
 
 def transform_function(inputs: dict) -> dict:
@@ -144,17 +145,15 @@ def transform_function(inputs: dict) -> dict:
     lines = text.split("\n")
     return {"lines": lines, "line_count": len(lines)}
 
-transform_chain = TransformChain(
-    input_variables=["text"],
-    output_variables=["lines", "line_count"],
-    transform=transform_function
-)
+transform_chain = RunnableLambda(transform_function)
 
 result = transform_chain.invoke({
     "text": "第一行\n第二行\n第三行\n第四行"
 })
 print(f"行数：{result['line_count']}")
 ```
+
+旧版资料里经常能看到专门的数据转换类，在 v1 语境下，用 `RunnableLambda` 表达“接收输入、返回新字典”更直接，也更容易和后续的提示词、模型、解析器继续用 `|` 组合。
 
 ## 自定义 Chain
 

@@ -19,6 +19,8 @@ language: zh-CN
 
 Retrieval（检索）是 LangChain 中实现检索增强生成（Retrieval-Augmented Generation, RAG）的核心模块。RAG 是一种让 LLM 能够访问外部知识库的技术，可以显著提高回答的准确性和可靠性。
 
+RAG 的核心不是“让模型变聪明”，而是在回答前先把相关资料找出来，再把资料和问题一起交给模型。这样模型不需要凭记忆猜答案，也能回答私有文档、最新资料或业务知识库里的问题。
+
 ### 为什么需要 RAG？
 
 | 问题 | RAG 解决方案 |
@@ -100,7 +102,7 @@ for doc in documents:
 ### 基础分割
 
 ```python
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 splitter = RecursiveCharacterTextSplitter(
     chunk_size=1000,
@@ -111,6 +113,8 @@ splitter = RecursiveCharacterTextSplitter(
 
 docs = splitter.split_documents(documents)
 ```
+
+分割的目标是让每个片段既足够小，能放进模型上下文，又保留完整语义。`chunk_overlap` 可以减少答案刚好跨片段时的信息丢失。
 
 ## 向量存储
 
@@ -146,6 +150,8 @@ results_with_scores = vectorstore.similarity_search_with_score(
     k=3
 )
 ```
+
+`similarity_search_with_score` 适合调试检索质量：如果分数很差或返回内容不相关，优先检查分割大小、embedding 模型和查询表达，而不是马上改提示词。
 
 ### FAISS 向量存储
 
@@ -229,19 +235,14 @@ result = rag_chain.invoke("用户问题")
 ### 带历史记录的 RAG
 
 ```python
-from langchain.memory import ConversationBufferMemory
-
-memory = ConversationBufferMemory(
-    memory_key="chat_history",
-    return_messages=True,
-    output_key="answer"
-)
+chat_history = []
 
 def chat_with_history(question):
-    history = memory.load_memory_variables({}).get("chat_history", [])
-
     retrieved_docs = retriever.invoke(question)
     context = "\n\n".join([doc.page_content for doc in retrieved_docs])
+    history_text = "\n".join(
+        f"{item['role']}: {item['content']}" for item in chat_history
+    )
 
     prompt = PromptTemplate.from_template(
         """基于以下上下文和对话历史回答问题：
@@ -257,22 +258,22 @@ def chat_with_history(question):
         回答："""
     )
 
-    response = llm.invoke(prompt.format_messages(
-        chat_history=history,
+    response = llm.invoke(prompt.format(
+        chat_history=history_text,
         context=context,
         question=question
     ))
 
-    memory.save_context(
-        {"question": question},
-        {"answer": response.content}
-    )
+    chat_history.append({"role": "user", "content": question})
+    chat_history.append({"role": "assistant", "content": response.content})
 
     return response.content
 
 result = chat_with_history("公司的主营业务是什么？")
 result = chat_with_history("这个业务的规模有多大？")
 ```
+
+这里的历史记录只用于帮助模型理解追问，例如“这个业务”指代上一轮的主营业务。真正决定答案事实来源的，仍然应该是检索出来的 `context`。
 
 ## Embeddings 模型
 

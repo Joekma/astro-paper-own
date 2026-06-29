@@ -19,6 +19,8 @@ language: zh-CN
 
 Model I/O 是 LangChain 的核心模块，负责管理与语言模型的所有交互操作。这个模块涵盖了从提示词构建、模型调用到输出解析的完整流程。
 
+把它拆开看，就是三件事：先把用户输入组织成模型能理解的消息或提示词，再调用具体模型，最后把模型输出整理成应用能继续使用的数据。很多 LangChain 示例看起来复杂，本质上都是这三步的组合。
+
 ### Model I/O 架构
 
 ```
@@ -51,6 +53,8 @@ chat = ChatOpenAI(model="gpt-4o")
 response = chat.invoke("你好，请介绍一下你自己")
 print(response.content)
 ```
+
+`ChatOpenAI` 返回的是消息对象，不是普通字符串。大多数时候读取 `response.content` 就够了；如果要看 token 用量、工具调用等信息，再查看对象上的其他字段。
 
 ### 消息类型
 
@@ -130,6 +134,8 @@ chat = ChatOpenAI(model="gpt-4o")
 for chunk in chat.stream("写一篇关于春天的散文"):
     print(chunk.content, end="", flush=True)
 ```
+
+流式输出适合聊天界面和长文本生成。它不会让模型更快完成全部生成，但能让用户更早看到内容，体感延迟会明显降低。
 
 ### 配置参数
 
@@ -319,6 +325,8 @@ result = full_chain.invoke({
     "text": "Python是一种高级编程语言，由Guido van Rossum于1991年创建。"
 })
 ```
+
+多步骤链的关键是前一步输出必须匹配后一步输入。如果中间结果是字典、字符串或消息对象，最好在代码里显式转换，避免后续提示词收到意料之外的结构。
 
 ## 错误处理
 

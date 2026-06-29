@@ -19,6 +19,8 @@ language: zh-CN
 
 Callbacks（回调机制）是 LangChain 中用于监控和记录 LLM 应用执行过程的模块。它允许你在关键事件发生时执行自定义逻辑，如记录日志、显示进度、收集指标等。
 
+可以把 Callback 理解成“旁路观察者”：主流程仍然负责生成回答、调用工具，Callback 只是在开始、结束、出错或产生新 token 时收到通知。这样监控、日志和 UI 进度就不会混进业务逻辑里。
+
 ### 为什么需要 Callbacks？
 
 | 需求 | Callbacks 解决方案 |
@@ -102,6 +104,8 @@ llm = ChatOpenAI(
 
 response = llm.invoke("写一首关于春天的诗")
 ```
+
+这类回调最适合做流式展示或简单日志。不要在 `on_llm_new_token` 里执行耗时操作，否则每个 token 都会被拖慢。
 
 ### Chain Callback
 
@@ -208,7 +212,7 @@ class CostTracker(BaseCallbackHandler):
         self.requests = []
 
     def on_chat_model_end(self, response, **kwargs):
-        usage = response.usage_metadata
+        usage = response.usage_metadata or {}
 
         input_tokens = usage.get("input_tokens", 0)
         output_tokens = usage.get("output_tokens", 0)
@@ -240,6 +244,8 @@ for i in range(5):
 
 print(tracker.get_report())
 ```
+
+上面的价格只是演示计算方式，真实项目要按所用模型的最新价格表维护费率。`usage_metadata` 也可能为空，所以示例里用空字典做了兜底。
 
 ### 2. 性能监控
 
@@ -338,7 +344,7 @@ class ContextHandler(BaseCallbackHandler):
         tags = metadata.get("tags", [])
         print(f"处理标签: {tags}")
 
-llm = ChatOpenAI(callbacks=[ContextHandler()])
+llm = ChatOpenAI(model="gpt-4o", callbacks=[ContextHandler()])
 
 chain.invoke(
     {"input": "query"},
@@ -357,6 +363,8 @@ chain.invoke(
 | **异常处理** | 回调中的异常不应中断主流程 |
 | **资源管理** | 使用 context manager 管理资源 |
 | **日志级别** | 生产环境使用适当日志级别 |
+
+经验上，Callback 里最适合放“观察型”逻辑：记录、统计、展示进度。会改变业务结果的逻辑最好放在链、工具或中间件中，否则调试时很难判断回答变化来自哪里。
 
 ## 总结
 

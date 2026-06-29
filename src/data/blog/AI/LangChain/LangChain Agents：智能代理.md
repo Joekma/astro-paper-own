@@ -19,6 +19,8 @@ language: zh-CN
 
 Agent（智能代理）是 LangChain v1.0 的核心功能，它赋予 LLM 自主决策和执行任务的能力。v1.0 统一使用 `create_agent` API，基于 LangGraph 构建，提供更好的状态管理和持久化支持。
 
+可以把 Agent 理解成“模型 + 执行外壳”：模型负责判断下一步，执行外壳负责把工具、提示词、状态和中间过程组织起来。学习 Agent 时，最重要的不是一次记住所有参数，而是看清楚模型什么时候自己回答、什么时候请求工具、工具结果又如何回到模型。
+
 ### Agent 工作原理
 
 ```
@@ -69,12 +71,16 @@ def calculate(expression: str) -> str:
     """执行数学计算
 
     Args:
-        expression: 数学表达式，如 "2+3*5"
+        expression: 数学表达式，如 "2 + 3"
 
     Returns:
         计算结果
     """
-    return str(eval(expression))
+    import operator
+
+    ops = {"+": operator.add, "-": operator.sub, "*": operator.mul, "/": operator.truediv}
+    left, op, right = expression.split()
+    return str(ops[op](float(left), float(right)))
 
 llm = ChatOpenAI(model="gpt-4o", temperature=0)
 
@@ -97,9 +103,11 @@ print(result["messages"][-1].content)
 | **model** | LanguageModelLike | 语言模型实例 |
 | **tools** | Sequence[BaseTool] | 可用工具列表 |
 | **system_prompt** | str | 系统提示词 |
-| **memory** | BaseMemory | 对话记忆（可选） |
+| **checkpointer** | Checkpointer | 按 thread 保存短期记忆 |
 | **pre_model_hook** | RunnableLike | 模型调用前钩子 |
 | **post_model_hook** | RunnableLike | 模型调用后钩子 |
+
+短期记忆在 v1 中通常通过 `checkpointer` 和调用时的 `thread_id` 维护，而不是把旧版 memory 对象直接塞进 Agent。这样同一个 Agent 可以服务多个会话，每个会话用不同的 thread 隔离状态。
 
 ## 工具定义
 
@@ -190,14 +198,9 @@ def well_designed_tool(query: str) -> str:
 
 ```python
 from langchain.agents import create_agent
-from langchain.memory import ConversationBufferMemory
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
-
-memory = ConversationBufferMemory(
-    memory_key="chat_history",
-    return_messages=True
-)
+from langgraph.checkpoint.memory import InMemorySaver
 
 @tool
 def get_weather(city: str) -> str:
@@ -210,19 +213,25 @@ agent = create_agent(
     model=llm,
     tools=[get_weather],
     system_prompt="你是一个有帮助的助手。",
-    memory=memory
+    checkpointer=InMemorySaver()
 )
 
-result1 = agent.invoke({
-    "messages": [{"role": "user", "content": "我叫张三"}]
-})
+config = {"configurable": {"thread_id": "user-zhangsan"}}
 
-result2 = agent.invoke({
-    "messages": [{"role": "user", "content": "我叫什么名字？"}]
-})
+result1 = agent.invoke(
+    {"messages": [{"role": "user", "content": "我叫张三"}]},
+    config=config
+)
+
+result2 = agent.invoke(
+    {"messages": [{"role": "user", "content": "我叫什么名字？"}]},
+    config=config
+)
 
 print(result2["messages"][-1].content)
 ```
+
+关键点是复用同一个 `config`。如果第二次调用换了 `thread_id`，Agent 就会把它当成另一段独立会话。
 
 ## LangGraph 底层实现
 
@@ -231,11 +240,11 @@ print(result2["messages"][-1].content)
 ### 完整 ReAct Agent
 
 ```python
-from langgraph.graph import StateGraph, START, END, MessagesState
-from langgraph.prebuilt import ToolNode, tools_condition
+from langgraph.graph import StateGraph, START, END
+from langgraph.prebuilt import ToolNode
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
-from typing import Annotated
+from typing import Annotated, TypedDict
 import operator
 
 def add_messages(left: list, right: list) -> list:
@@ -253,7 +262,9 @@ def search(query: str) -> str:
 @tool
 def calculator(expression: str) -> str:
     """执行数学计算"""
-    return str(eval(expression))
+    ops = {"+": operator.add, "-": operator.sub, "*": operator.mul, "/": operator.truediv}
+    left, op, right = expression.split()
+    return str(ops[op](float(left), float(right)))
 
 tools = [search, calculator]
 tool_node = ToolNode(tools)
@@ -284,7 +295,7 @@ graph.add_edge("tools", "model")
 app = graph.compile()
 
 result = app.invoke({
-    "messages": [{"role": "user", "content": "计算 2+3*5"}]
+    "messages": [{"role": "user", "content": "计算 2 + 3"}]
 })
 print(result["messages"][-1].content)
 ```
@@ -293,6 +304,7 @@ print(result["messages"][-1].content)
 
 ```python
 from typing import TypedDict, Annotated
+import operator
 
 class CustomAgentState(TypedDict):
     messages: Annotated[list, operator.add]
@@ -315,26 +327,25 @@ def model_node(state: CustomAgentState):
 ### 使用 Checkpointer
 
 ```python
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.memory import InMemorySaver
 
-checkpointer = MemorySaver()
+checkpointer = InMemorySaver()
 
 agent = create_agent(
     model=llm,
     tools=tools,
     system_prompt="你是一个有帮助的助手。",
+    checkpointer=checkpointer
 )
-
-app = agent.compile(checkpointer=checkpointer)
 
 config = {"configurable": {"thread_id": "user_123"}}
 
-result = app.invoke(
-    {"messages": [{"role": "user", "content": "你好"]},
+result = agent.invoke(
+    {"messages": [{"role": "user", "content": "你好"}]},
     config=config
 )
 
-history = app.get_state(config)
+history = agent.get_state(config)
 print(history.values)
 ```
 

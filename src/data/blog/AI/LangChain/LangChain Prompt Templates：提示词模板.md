@@ -19,6 +19,8 @@ language: zh-CN
 
 提示词模板（Prompt Template）是 LangChain 中最常用的组件之一，它允许开发者创建可复用的、结构化的提示词。通过模板化，可以更方便地管理复杂提示词，提高代码的可维护性和一致性。
 
+提示词模板的价值不只是少写字符串拼接，而是把“固定指令”和“每次变化的输入”分开。这样做之后，提示词更容易审查、复用和版本管理，也更不容易因为一次临时改动破坏其他调用。
+
 ### 提示词模板的价值
 
 | 价值 | 说明 |
@@ -40,6 +42,8 @@ template = PromptTemplate.from_template("请将以下中文翻译成英文：{te
 prompt = template.invoke({"text": "今天天气真好"})
 print(prompt.to_string())
 ```
+
+`invoke()` 返回的是 PromptValue，调用模型前可以用 `to_string()` 或 `to_messages()` 检查最终内容。调试提示词时，先打印格式化结果通常比直接看模型回答更有效。
 
 ### 部分变量填充
 
@@ -128,6 +132,7 @@ prompt = template.invoke({"user_input": "能详细解释一下吗？"})
 
 ```python
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import HumanMessage, AIMessage
 
 template = ChatPromptTemplate.from_messages([
     ("system", "你是一个对话助手。以下是之前的对话历史："),
@@ -279,21 +284,15 @@ print(prompt.to_string())
 ```python
 from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-
-prompt = ChatPromptTemplate.from_messages([
-    ("system", "你是一个{role}。"),
-    MessagesPlaceholder(variable_name="chat_history", optional=True),
-    ("human", "{input}"),
-    MessagesPlaceholder(variable_name="agent_scratchpad", optional=True)
-])
 
 agent = create_agent(
     model=ChatOpenAI(model="gpt-4o"),
     tools=[],
-    system_prompt="你是一个有帮助的助手。"  # 也可以通过 prompt 参数传入
+    system_prompt="你是一个有帮助的助手。回答要简洁，并在不确定时说明原因。"
 )
 ```
+
+Agent 的系统行为优先放在 `system_prompt` 中。更复杂的多消息模板通常先用于普通模型链；等模板稳定后，再把核心角色、约束和工具说明整理进 Agent 的系统提示。
 
 ## 最佳实践
 

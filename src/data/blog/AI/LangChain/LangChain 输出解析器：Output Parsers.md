@@ -19,6 +19,8 @@ language: zh-CN
 
 Output Parsers（输出解析器）是 LangChain 中用于将 LLM 的原始文本输出转换为结构化数据的模块。它们确保 LLM 的输出符合预期的格式，便于后续处理和使用。
 
+在真实应用里，模型回答通常不是给人直接看的，而是要进入数据库、表单、接口或下一段流程。Parser 的作用就是把“看起来像 JSON 的文本”变成真正可验证、可处理的数据。
+
 ### 为什么需要 Output Parser？
 
 | 问题 | Parser 解决方案 |
@@ -54,6 +56,8 @@ result = chain.invoke({"topic": "人工智能"})
 print(result)
 ```
 
+`StrOutputParser` 适合只需要纯文本的场景。它不会做格式校验，但可以把模型消息对象里的正文稳定取出来，便于继续拼接到后续步骤。
+
 ## JsonOutputParser
 
 ### 基础用法
@@ -86,6 +90,8 @@ result = chain.invoke({
 print(result)
 print(result["name"])
 ```
+
+`format_instructions` 是这里的关键，它把解析器需要的格式要求写进提示词。没有这段指令时，模型可能会额外输出解释文字，导致 JSON 解析失败。
 
 ## PydanticOutputParser
 
@@ -186,7 +192,10 @@ class CustomParser(BaseOutputParser):
     def parse(self, text: str) -> Any:
         text = text.strip()
         if "{" in text and "}" in text:
-            json_str = re.search(r'\{.*\}', text, re.DOTALL).group()
+            match = re.search(r'\{.*\}', text, re.DOTALL)
+            if match is None:
+                return text
+            json_str = match.group()
             return json.loads(json_str)
         return text
 
@@ -299,6 +308,8 @@ result = chain.invoke({
 | **提供格式指令** | 帮助 LLM 生成正确格式 |
 | **错误处理** | 解析可能失败，准备降级方案 |
 | **清晰 Schema** | 详细的字段描述 |
+
+解析器不是“保证模型永不出错”的魔法，它只是把错误尽早暴露出来。越靠近外部接口、数据库写入或自动化执行，越应该优先使用 Pydantic 这类带校验的解析方式。
 
 ## 总结
 
