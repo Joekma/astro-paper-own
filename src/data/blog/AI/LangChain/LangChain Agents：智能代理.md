@@ -104,8 +104,9 @@ print(result["messages"][-1].content)
 | **tools** | Sequence[BaseTool] | 可用工具列表 |
 | **system_prompt** | str | 系统提示词 |
 | **checkpointer** | Checkpointer | 按 thread 保存短期记忆 |
-| **pre_model_hook** | RunnableLike | 模型调用前钩子 |
-| **post_model_hook** | RunnableLike | 模型调用后钩子 |
+| **middleware** | Sequence[AgentMiddleware] | 在模型、工具调用前后扩展执行逻辑 |
+| **response_format** | type 或 ResponseFormat | 结构化输出格式 |
+| **store** | BaseStore | 跨会话长期存储 |
 
 短期记忆在 v1 中通常通过 `checkpointer` 和调用时的 `thread_id` 维护，而不是把旧版 memory 对象直接塞进 Agent。这样同一个 Agent 可以服务多个会话，每个会话用不同的 thread 隔离状态。
 
@@ -387,7 +388,7 @@ result = app.invoke(
 | **清晰的工具描述** | 工具描述要准确、简洁，包含参数说明 |
 | **错误处理** | 为工具添加异常处理，避免程序崩溃 |
 | **限制迭代次数** | 使用 recursion_limit 防止无限循环 |
-| **使用 memory** | 对话场景使用 ConversationBufferMemory |
+| **使用短期记忆** | 对话场景使用 checkpointer + thread_id |
 | **状态持久化** | 生产环境使用 checkpointer |
 
 ### 推荐代码结构

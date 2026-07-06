@@ -20,6 +20,8 @@ language: zh-CN
 状态管理是 LangGraph 的核心特性之一。它通过强类型的状态定义，确保数据在整个图中的流动是可预测和可控的。
 在 LangGraph 中，节点之间不直接互相传参，而是共同读写同一份状态。理解状态如何定义、如何更新、如何被检查点保存，是理解复杂工作流的关键。
 
+> 版本基线：本文示例按 `langgraph>=1.2.7` 的 1.x API 校验。内存检查点随 `langgraph` 安装；PostgreSQL / SQLite 持久化检查点需要额外安装对应包。
+
 ### 状态管理架构
 
 ```
@@ -177,7 +179,12 @@ result = app.invoke(
 history = list(app.get_state_history(config))
 ```
 
-`thread_id` 决定状态写入和读取到哪条会话。内存型 checkpointer 适合本地演示；生产环境应选择数据库等持久化 checkpointer。
+`thread_id` 决定状态写入和读取到哪条会话。内存型 checkpointer 适合本地演示；生产环境应选择数据库等持久化 checkpointer。持久化实现拆在独立包中，使用前按需要安装：
+
+```bash
+pip install -U langgraph-checkpoint-postgres psycopg-pool
+pip install -U langgraph-checkpoint-sqlite
+```
 
 ### PostgreSQL Checkpointer
 
@@ -185,12 +192,17 @@ history = list(app.get_state_history(config))
 from langgraph.checkpoint.postgres import PostgresSaver
 from psycopg_pool import ConnectionPool
 
-with ConnectionPool("postgresql://user:pass@localhost/db") as pool:
+DB_URI = "postgresql://user:pass@localhost/db"
+connection_kwargs = {"autocommit": True, "prepare_threshold": 0}
+
+with ConnectionPool(conninfo=DB_URI, kwargs=connection_kwargs) as pool:
     checkpointer = PostgresSaver(pool)
     checkpointer.setup()
 
     app = graph.compile(checkpointer=checkpointer)
 ```
+
+`setup()` 会创建或更新检查点表，通常只在初始化或迁移阶段运行。长生命周期服务中，连接池应和应用一起启动、一起关闭，不要在每次请求里重复创建。
 
 ## 状态回溯
 

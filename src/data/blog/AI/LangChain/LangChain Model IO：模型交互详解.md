@@ -43,7 +43,7 @@ Model I/O 是 LangChain 的核心模块，负责管理与语言模型的所有�
 | 类型 | 说明 | API 方式 |
 |------|------|---------|
 | **LLMs** | 纯文本补全 | `/completions` |
-| **Chat Models** | 对话模型 | `/chat/completions` |
+| **Chat Models** | 对话模型 | 统一 Chat Model 接口，底层由 provider 决定 |
 
 ```python
 from langchain_openai import ChatOpenAI
@@ -275,6 +275,32 @@ result = chain.invoke({
 
 print(result.name)
 print(result.age)
+print(result.skills)
+```
+
+### 原生结构化输出
+
+如果模型支持工具调用或原生结构化输出，可以直接把 Pydantic schema 绑定到模型上，少写一层格式指令和手动解析逻辑。
+
+```python
+from langchain_openai import ChatOpenAI
+from pydantic import BaseModel, Field
+from typing import List
+
+class PersonInfo(BaseModel):
+    name: str = Field(description="姓名")
+    age: int = Field(description="年龄")
+    occupation: str = Field(description="职业")
+    skills: List[str] = Field(description="技能列表")
+
+model = ChatOpenAI(model="gpt-4o")
+structured_model = model.with_structured_output(PersonInfo)
+
+result = structured_model.invoke(
+    "张三是一名30岁的软件工程师，擅长Python和Java开发"
+)
+
+print(result.name)
 print(result.skills)
 ```
 

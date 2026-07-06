@@ -133,6 +133,39 @@ print(result.age)
 print(result.skills)
 ```
 
+### Agent 结构化输出
+
+在 Agent 场景中，如果模型或提供商支持结构化输出，优先使用 `response_format`，让 LangChain 在 Agent 状态中返回校验后的 `structured_response`。
+
+```python
+from langchain.agents import create_agent
+from langchain_openai import ChatOpenAI
+from pydantic import BaseModel, Field
+from typing import List
+
+class Person(BaseModel):
+    name: str = Field(description="人物姓名")
+    age: int = Field(description="人物年龄")
+    occupation: str = Field(description="职业")
+    skills: List[str] = Field(description="技能列表")
+
+agent = create_agent(
+    model=ChatOpenAI(model="gpt-4o"),
+    response_format=Person
+)
+
+result = agent.invoke({
+    "messages": [{
+        "role": "user",
+        "content": "李明是一位35岁的数据科学家，精通Python、SQL和机器学习"
+    }]
+})
+
+person = result["structured_response"]
+print(person.name)
+print(person.skills)
+```
+
 ### 嵌套模型
 
 ```python
@@ -308,8 +341,9 @@ result = chain.invoke({
 | **提供格式指令** | 帮助 LLM 生成正确格式 |
 | **错误处理** | 解析可能失败，准备降级方案 |
 | **清晰 Schema** | 详细的字段描述 |
+| **优先原生结构化输出** | Agent 或支持该能力的模型优先使用 response_format / with_structured_output |
 
-解析器不是“保证模型永不出错”的魔法，它只是把错误尽早暴露出来。越靠近外部接口、数据库写入或自动化执行，越应该优先使用 Pydantic 这类带校验的解析方式。
+解析器不是“保证模型永不出错”的魔法，它只是把错误尽早暴露出来。简单 LCEL 链可以继续使用 `PydanticOutputParser`；Agent 或支持原生结构化输出的模型，优先使用 `response_format` 或 `with_structured_output`，让模型端和框架端一起约束输出。
 
 ## 总结
 
@@ -317,7 +351,7 @@ result = chain.invoke({
 |--------|------|------|
 | **StrOutputParser** | 简单字符串 | 零转换 |
 | **JsonOutputParser** | JSON 解析 | 基础结构 |
-| **PydanticOutputParser** | 类型验证 | 最推荐 |
+| **PydanticOutputParser** | 类型验证 | 简单链适用 |
 | **CommaSeparatedListOutputParser** | 列表解析 | 简单列表 |
 
 Output Parser 让 LLM 输出变得可控、可验证，是构建可靠 LLM 应用的关键。

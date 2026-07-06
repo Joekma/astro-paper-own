@@ -20,6 +20,8 @@ language: zh-CN
 LangGraph 的高级特性使其成为构建复杂 LLM 应用的理想选择。本篇将详细介绍循环控制、条件分支、状态持久化和人机交互等高级功能。
 这些能力通常不是孤立使用的：循环让 Agent 能多步尝试，条件分支让流程按状态选择路径，持久化让流程可以暂停、恢复和回溯。阅读下面的示例时，可以重点观察“状态字段如何驱动下一步”。
 
+> 版本基线：本文示例按 `langgraph>=1.2.7` 的 1.x API 校验。基础图能力只需安装 `langgraph`；涉及模型调用时还需要 `langchain-openai` 并配置 `OPENAI_API_KEY`；PostgreSQL / SQLite 检查点需要额外安装对应的持久化包。
+
 ### 高级特性概览
 
 ```
@@ -215,7 +217,12 @@ saved_state = app.get_state(config)
 print(saved_state.values)
 ```
 
-内存型 checkpointer 适合演示暂停、恢复和时间旅行。生产环境需要换成 PostgreSQL、SQLite 等能跨进程保存状态的实现。
+内存型 checkpointer 适合演示暂停、恢复和时间旅行。生产环境需要换成 PostgreSQL、SQLite 等能跨进程保存状态的实现。持久化 checkpointer 拆在独立包里，使用前先安装对应依赖：
+
+```bash
+pip install -U langgraph-checkpoint-postgres psycopg-pool
+pip install -U langgraph-checkpoint-sqlite
+```
 
 ### 状态恢复
 
@@ -239,21 +246,28 @@ forked = app.invoke(
 from langgraph.checkpoint.postgres import PostgresSaver
 from psycopg_pool import ConnectionPool
 
-with ConnectionPool("postgresql://user:pass@host:5432/db") as pool:
+DB_URI = "postgresql://user:pass@host:5432/db"
+connection_kwargs = {"autocommit": True, "prepare_threshold": 0}
+
+with ConnectionPool(conninfo=DB_URI, kwargs=connection_kwargs) as pool:
     checkpointer = PostgresSaver(pool)
     checkpointer.setup()
 
     app = graph.compile(checkpointer=checkpointer)
 ```
 
-### Sqlite 持久化
+`setup()` 用来创建或迁移检查点表，通常在应用启动或部署迁移阶段执行。示例使用连接池上下文管理器，离开 `with` 块后连接会被关闭，生产服务中应把编译后的图和连接池生命周期绑定到应用生命周期。
+
+### SQLite 持久化
 
 ```python
 from langgraph.checkpoint.sqlite import SqliteSaver
 
-checkpointer = SqliteSaver.from_conn_string("checkpoints.db")
-app = graph.compile(checkpointer=checkpointer)
+with SqliteSaver.from_conn_string("checkpoints.sqlite") as checkpointer:
+    app = graph.compile(checkpointer=checkpointer)
 ```
+
+SQLite 适合本地开发、小型单进程服务或测试环境。多进程、高并发或需要集中化运维时，优先选择 PostgreSQL。
 
 ## 人机交互
 
@@ -333,10 +347,10 @@ from typing import TypedDict
 
 def create_subgraph():
     class SubGraphState(TypedDict):
-        sub_value: str
+        sub_result: str
 
     sub_graph = StateGraph(SubGraphState)
-    sub_graph.add_node("sub_node", lambda s: {"sub_value": "processed"})
+    sub_graph.add_node("sub_node", lambda s: {"sub_result": "processed"})
     sub_graph.add_edge(START, "sub_node")
     sub_graph.add_edge("sub_node", END)
     return sub_graph.compile()
@@ -352,6 +366,8 @@ main_graph.add_node("subgraph", subgraph)
 main_graph.add_edge(START, "subgraph")
 main_graph.add_edge("subgraph", END)
 ```
+
+子图和父图直接相连时，二者需要共享要读写的状态字段。上例让子图写入父图中同名的 `sub_result` 字段；如果子图内部状态和父图字段不同，应使用一个包装节点显式转换输入输出。
 
 ## 并行执行
 

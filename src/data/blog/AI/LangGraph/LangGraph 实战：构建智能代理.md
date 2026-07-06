@@ -20,6 +20,8 @@ language: zh-CN
 本文将通过实战项目展示如何使用 LangGraph 构建智能代理。我们将创建一个能够自主决策、使用工具并完成复杂任务的 Agent 系统。
 实战里的关键不是让所有逻辑都塞进一个大函数，而是把“模型思考”“工具执行”“状态记录”“条件路由”拆成清晰节点。这样每一步都能单独观察，也更容易定位 Agent 为什么走到了某个分支。
 
+> 版本基线：本文示例按 `langgraph>=1.2.7` 的 1.x API 校验。Agent 示例会调用 OpenAI 模型，运行前需要安装 `langchain-openai` 并配置 `OPENAI_API_KEY`。
+
 ### 项目目标
 
 ```
@@ -50,8 +52,10 @@ language: zh-CN
 ### 安装依赖
 
 ```bash
-pip install langgraph langchain-openai langchain-community
+pip install -U "langgraph>=1.2.7" langchain-openai
 ```
+
+本文的工具示例使用内置字典和本地函数，不依赖 `langchain-community`。只有接入第三方检索器、向量库或社区集成时，才需要按对应集成文档额外安装 `langchain-community`。
 
 ## 定义工具
 

@@ -70,9 +70,9 @@ LangChain v1.0 是一个面向生产环境的 AI Agent 构建框架，将 LLM �
 ### 安装 LangChain v1.0
 
 ```bash
-pip install langchain langgraph
-pip install langchain-openai
-pip install langchain-community langchain-text-splitters chromadb
+pip install langchain langgraph langchain-openai
+pip install langchain-community langchain-text-splitters
+pip install langchain-chroma langchain-huggingface chromadb
 ```
 
 ### 环境变量配置
@@ -122,7 +122,7 @@ print(result["messages"][-1].content)
 ### 消息格式
 
 ```python
-from langchain.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
 
 messages = [
     SystemMessage(content="你是一个专业助手。"),
@@ -204,7 +204,7 @@ result2 = agent.invoke(
 from langchain_community.document_loaders import TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 
 loader = TextLoader("文档路径.txt")
 documents = loader.load()

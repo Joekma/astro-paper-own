@@ -131,7 +131,7 @@ docs = splitter.split_documents(documents)
 
 ```python
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 
 embeddings = OpenAIEmbeddings()
 
@@ -140,8 +140,6 @@ vectorstore = Chroma.from_documents(
     embedding=embeddings,
     persist_directory="./chroma_db"
 )
-
-vectorstore.persist()
 
 results = vectorstore.similarity_search("查询内容", k=3)
 
@@ -298,7 +296,7 @@ vectors = embeddings.embed_documents([
 ### 本地 Embeddings
 
 ```python
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 
 embeddings = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"

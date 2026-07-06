@@ -186,7 +186,7 @@ print(prompt.to_string())
 from langchain_core.prompts import FewShotPromptTemplate, PromptTemplate
 from langchain_core.example_selectors import SemanticSimilarityExampleSelector
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 
 examples = [
     {"input": "今天心情很好", "output": "happy"},

@@ -130,7 +130,7 @@ result2 = agent.invoke(
 
 ```python
 from langchain_openai import ChatOpenAI
-from langchain.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage, AIMessage
 
 llm = ChatOpenAI(model="gpt-4o")
 
@@ -158,7 +158,7 @@ print(summary)
 ```python
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage, AIMessage
 
 llm = ChatOpenAI(model="gpt-4o")
 
@@ -199,7 +199,7 @@ print(answer)
 
 ```python
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain_core.documents import Document
 
 embeddings = OpenAIEmbeddings()
