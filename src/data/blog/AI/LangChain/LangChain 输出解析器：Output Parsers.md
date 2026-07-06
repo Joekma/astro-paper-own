@@ -21,6 +21,8 @@ Output Parsers（输出解析器）是 LangChain 中用于将 LLM 的原始文�
 
 在真实应用里，模型回答通常不是给人直接看的，而是要进入数据库、表单、接口或下一段流程。Parser 的作用就是把“看起来像 JSON 的文本”变成真正可验证、可处理的数据。
 
+![LangChain 输出解析器分类](./images/langchain-output-parsers.svg)
+
 ### 为什么需要 Output Parser？
 
 | 问题 | Parser 解决方案 |

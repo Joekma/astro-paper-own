@@ -20,6 +20,8 @@ language: zh-CN
 
 RAG（Retrieval-Augmented Generation，检索增强生成）是一种结合了信息检索和语言模型生成的技术架构。它通过从外部知识库中检索相关信息，然后将这些信息作为上下文提供给语言模型，从而生成更准确、更可靠的回答。
 
+![RAG 基础工作流](./images/rag-core-workflow.svg)
+
 ### 为什么需要 RAG？
 
 尽管大型语言模型（LLM）具有强大的生成能力，但它们存在一些固有的局限性：

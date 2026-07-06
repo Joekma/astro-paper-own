@@ -21,6 +21,8 @@ Memory（记忆组件）是 LangChain 中用于在对话或处理过程中保持
 
 在 LangChain v1 中，短期记忆通常通过 Agent 的 `checkpointer` 保存到 graph state，再用调用时的 `thread_id` 区分不同会话。旧版资料里的 memory 类仍可能在历史项目中出现，但新项目更建议围绕 messages、state 和 checkpointer 来理解。
 
+![LangChain Memory 类型](./images/langchain-memory-types.svg)
+
 ### 为什么需要 Memory？
 
 | 场景 | 没有 Memory | 有 Memory |

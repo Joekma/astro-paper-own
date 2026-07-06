@@ -1,0 +1,151 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="960"
+  height="520"
+  viewBox="0 0 960 520"
+  role="img"
+  aria-labelledby="title desc"
+>
+  <title id="title">LangChain v1 架构</title>
+  <desc id="desc">
+    展示 LangChain 高层 Agent 抽象构建在 LangGraph 运行时之上。
+  </desc>
+  <defs>
+    <style>
+      .bg {
+        fill: #f8fafc;
+      }
+      .box {
+        fill: #ffffff;
+        stroke: #cbd5e1;
+        stroke-width: 2;
+      }
+      .accent {
+        fill: #dbeafe;
+        stroke: #2563eb;
+        stroke-width: 2;
+      }
+      .green {
+        fill: #dcfce7;
+        stroke: #16a34a;
+        stroke-width: 2;
+      }
+      .yellow {
+        fill: #fef9c3;
+        stroke: #ca8a04;
+        stroke-width: 2;
+      }
+      .purple {
+        fill: #ede9fe;
+        stroke: #7c3aed;
+        stroke-width: 2;
+      }
+      .rose {
+        fill: #ffe4e6;
+        stroke: #e11d48;
+        stroke-width: 2;
+      }
+      .soft {
+        fill: #eef2ff;
+        stroke: #818cf8;
+        stroke-width: 2;
+        stroke-dasharray: 8 8;
+      }
+      .tag {
+        fill: #eff6ff;
+        stroke: #60a5fa;
+        stroke-width: 1.5;
+      }
+      .title {
+        fill: #0f172a;
+        font:
+          700 26px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .subtitle {
+        fill: #475569;
+        font:
+          14px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .center {
+        fill: #0f172a;
+        font:
+          700 21px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .text {
+        fill: #1e293b;
+        font:
+          700 18px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .small {
+        fill: #475569;
+        font:
+          500 14px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .arrow {
+        stroke: #2563eb;
+        stroke-width: 3;
+        fill: none;
+        marker-end: url(#arrow);
+      }
+      .grid {
+        stroke: #cbd5e1;
+        stroke-width: 1.5;
+      }
+    </style>
+    <marker
+      id="arrow"
+      viewBox="0 0 10 10"
+      refX="9"
+      refY="5"
+      markerWidth="8"
+      markerHeight="8"
+      orient="auto-start-reverse"
+    >
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb" />
+    </marker>
+  </defs>
+  <rect class="bg" width="960" height="520" />
+  <text class="title" x="48" y="56" text-anchor="start">LangChain v1 架构</text>
+  <text class="subtitle" x="48" y="84" text-anchor="start">
+    展示 LangChain 高层 Agent 抽象构建在 LangGraph 运行时之上。
+  </text>
+  <rect class="accent" x="110" y="104" width="740" height="58" rx="12" />
+  <text class="text" x="480" y="136" text-anchor="middle">应用入口</text>
+  <text class="small" x="480" y="156" text-anchor="middle">业务请求</text>
+  <path class="arrow" d="M480 162 L480 180" />
+  <rect class="green" x="140" y="180" width="680" height="58" rx="12" />
+  <text class="text" x="480" y="212" text-anchor="middle">LangChain Agent</text>
+  <text class="small" x="480" y="232" text-anchor="middle">
+    create_agent 高层抽象
+  </text>
+  <path class="arrow" d="M480 238 L480 256" />
+  <rect class="yellow" x="110" y="256" width="740" height="58" rx="12" />
+  <text class="text" x="480" y="288" text-anchor="middle">
+    Model / Tools / Middleware
+  </text>
+  <text class="small" x="480" y="308" text-anchor="middle">
+    模型、工具、中间件
+  </text>
+  <path class="arrow" d="M480 314 L480 332" />
+  <rect class="purple" x="140" y="332" width="680" height="58" rx="12" />
+  <text class="text" x="480" y="364" text-anchor="middle">
+    LangGraph Runtime
+  </text>
+  <text class="small" x="480" y="384" text-anchor="middle">状态图与持久化</text>
+  <path class="arrow" d="M480 390 L480 408" />
+  <rect class="rose" x="110" y="408" width="740" height="58" rx="12" />
+  <text class="text" x="480" y="440" text-anchor="middle">Observability</text>
+  <text class="small" x="480" y="460" text-anchor="middle">
+    追踪、调试、评估
+  </text>
+</svg>

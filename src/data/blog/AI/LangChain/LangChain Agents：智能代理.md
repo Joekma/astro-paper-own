@@ -21,6 +21,8 @@ Agent（智能代理）是 LangChain v1.0 的核心功能，它赋予 LLM 自主
 
 可以把 Agent 理解成“模型 + 执行外壳”：模型负责判断下一步，执行外壳负责把工具、提示词、状态和中间过程组织起来。学习 Agent 时，最重要的不是一次记住所有参数，而是看清楚模型什么时候自己回答、什么时候请求工具、工具结果又如何回到模型。
 
+![LangChain Agent 执行链路](./images/langchain-agents-flow.svg)
+
 ### Agent 工作原理
 
 ```

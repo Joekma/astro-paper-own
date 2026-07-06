@@ -1,0 +1,151 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="960"
+  height="520"
+  viewBox="0 0 960 520"
+  role="img"
+  aria-labelledby="title desc"
+>
+  <title id="title">Agent 安全控制面</title>
+  <desc id="desc">
+    展示威胁模型、最小权限、工具审批、沙箱和审计如何保护 Agent。
+  </desc>
+  <defs>
+    <style>
+      .bg {
+        fill: #f8fafc;
+      }
+      .box {
+        fill: #ffffff;
+        stroke: #cbd5e1;
+        stroke-width: 2;
+      }
+      .accent {
+        fill: #dbeafe;
+        stroke: #2563eb;
+        stroke-width: 2;
+      }
+      .green {
+        fill: #dcfce7;
+        stroke: #16a34a;
+        stroke-width: 2;
+      }
+      .yellow {
+        fill: #fef9c3;
+        stroke: #ca8a04;
+        stroke-width: 2;
+      }
+      .purple {
+        fill: #ede9fe;
+        stroke: #7c3aed;
+        stroke-width: 2;
+      }
+      .rose {
+        fill: #ffe4e6;
+        stroke: #e11d48;
+        stroke-width: 2;
+      }
+      .soft {
+        fill: #eef2ff;
+        stroke: #818cf8;
+        stroke-width: 2;
+        stroke-dasharray: 8 8;
+      }
+      .tag {
+        fill: #eff6ff;
+        stroke: #60a5fa;
+        stroke-width: 1.5;
+      }
+      .title {
+        fill: #0f172a;
+        font:
+          700 26px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .subtitle {
+        fill: #475569;
+        font:
+          14px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .center {
+        fill: #0f172a;
+        font:
+          700 21px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .text {
+        fill: #1e293b;
+        font:
+          700 18px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .small {
+        fill: #475569;
+        font:
+          500 14px "Microsoft YaHei",
+          Arial,
+          sans-serif;
+      }
+      .arrow {
+        stroke: #2563eb;
+        stroke-width: 3;
+        fill: none;
+        marker-end: url(#arrow);
+      }
+      .grid {
+        stroke: #cbd5e1;
+        stroke-width: 1.5;
+      }
+    </style>
+    <marker
+      id="arrow"
+      viewBox="0 0 10 10"
+      refX="9"
+      refY="5"
+      markerWidth="8"
+      markerHeight="8"
+      orient="auto-start-reverse"
+    >
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb" />
+    </marker>
+  </defs>
+  <rect class="bg" width="960" height="520" />
+  <text class="title" x="48" y="56" text-anchor="start">Agent 安全控制面</text>
+  <text class="subtitle" x="48" y="84" text-anchor="start">
+    展示威胁模型、最小权限、工具审批、沙箱和审计如何保护 Agent。
+  </text>
+  <rect class="rose" x="340" y="214" width="280" height="104" rx="18" />
+  <text class="center" x="480" y="258" text-anchor="middle">安全控制面</text>
+  <text class="small" x="480" y="288" text-anchor="middle">
+    授权、隔离、审计
+  </text>
+  <rect class="box" x="72" y="126" width="210" height="86" rx="12" />
+  <text class="text" x="177" y="164" text-anchor="middle">威胁模型</text>
+  <text class="small" x="177" y="194" text-anchor="middle">提示注入</text>
+  <path class="arrow" d="M282 203 L340 221" />
+  <rect class="accent" x="330" y="94" width="210" height="86" rx="12" />
+  <text class="text" x="435" y="132" text-anchor="middle">最小权限</text>
+  <text class="small" x="435" y="162" text-anchor="middle">按任务授权</text>
+  <path class="arrow" d="M450 180 L462 214" />
+  <rect class="green" x="642" y="126" width="210" height="86" rx="12" />
+  <text class="text" x="747" y="164" text-anchor="middle">工具审批</text>
+  <text class="small" x="747" y="194" text-anchor="middle">高风险确认</text>
+  <path class="arrow" d="M642 207 L620 215" />
+  <rect class="yellow" x="72" y="324" width="210" height="86" rx="12" />
+  <text class="text" x="177" y="362" text-anchor="middle">沙箱隔离</text>
+  <text class="small" x="177" y="392" text-anchor="middle">限制副作用</text>
+  <path class="arrow" d="M282 332 L340 313" />
+  <rect class="purple" x="330" y="356" width="210" height="86" rx="12" />
+  <text class="text" x="435" y="394" text-anchor="middle">审计日志</text>
+  <text class="small" x="435" y="424" text-anchor="middle">可追溯</text>
+  <path class="arrow" d="M450 356 L462 318" />
+  <rect class="rose" x="642" y="324" width="210" height="86" rx="12" />
+  <text class="text" x="747" y="362" text-anchor="middle">回滚策略</text>
+  <text class="small" x="747" y="392" text-anchor="middle">失败恢复</text>
+  <path class="arrow" d="M642 327 L617 318" />
+</svg>

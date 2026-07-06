@@ -21,6 +21,8 @@ Retrieval（检索）是 LangChain 中实现检索增强生成（Retrieval-Augme
 
 RAG 的核心不是“让模型变聪明”，而是在回答前先把相关资料找出来，再把资料和问题一起交给模型。这样模型不需要凭记忆猜答案，也能回答私有文档、最新资料或业务知识库里的问题。
 
+![LangChain Retrieval RAG 流程](./images/langchain-retrieval-rag.svg)
+
 ### 为什么需要 RAG？
 
 | 问题 | RAG 解决方案 |

@@ -23,6 +23,8 @@ Agent Loop 是 Agent 的核心运行闭环。它把用户输入变成一连串�
 
 OpenClaw 文档把 Agent Loop 定义为一次真实运行的权威路径：intake、context assembly、model inference、tool execution、streaming replies、persistence。这个拆解可以作为理解大多数 Agent Runtime 的基础。
 
+![Agent Loop 运行闭环](./images/03-agent-loop-runtime.svg)
+
 ## 基础流程
 
 ```text

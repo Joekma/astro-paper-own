@@ -22,6 +22,8 @@ LangGraph 是 LangChain 生态系统中用于构建有状态、多参与者应�
 
 > 版本基线：本文示例按 `langgraph>=1.2.7` 的 1.x API 校验。基础图能力只需安装 `langgraph`；涉及模型调用时还需要 `langchain-openai` 并配置 `OPENAI_API_KEY`。
 
+![LangGraph 核心架构](./images/langgraph-core-architecture.svg)
+
 ### LangGraph vs LangChain Chain
 
 | 特性         | LangChain Chain | LangGraph |

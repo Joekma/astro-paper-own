@@ -23,6 +23,8 @@ MCP（Model Context Protocol）是一个连接 AI 应用与外部系统的开放
 
 MCP 的目标是把外部能力标准化，让工具和数据源可以被多个 AI 应用复用。
 
+![MCP Client Server 架构](./images/05-mcp-client-server.svg)
+
 ## MCP 的基本架构
 
 MCP 使用 Host、Client、Server 三层结构：

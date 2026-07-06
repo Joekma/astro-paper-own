@@ -26,6 +26,8 @@ OpenClaw 与 Hermes Agent 都属于现代个人 Agent 系统，但侧重点不�
 
 把两者放在一起看，可以总结出一套比较完整的 Agent 系统设计模式。
 
+![OpenClaw 与 Hermes 设计模式对比](./images/13-openclaw-hermes-comparison.svg)
+
 ## 总体对比
 
 | 维度 | OpenClaw | Hermes Agent |

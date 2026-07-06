@@ -21,6 +21,8 @@ language: zh-CN
 
 传统 RAG 主要处理文本数据，但现实世界中的信息往往是多模态的。本篇将介绍如何扩展 RAG 系统以支持图像、视频、音频等多种模态数据的处理与检索。
 
+![RAG 多模态处理链路](./images/rag-multimodal-processing.svg)
+
 ### 多模态 RAG 架构
 
 ```

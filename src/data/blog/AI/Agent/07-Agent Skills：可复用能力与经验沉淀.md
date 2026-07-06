@@ -23,6 +23,8 @@ Skills 是 Agent 的过程记忆。它把“如何完成某类任务”的经验
 
 与长期记忆不同，记忆通常保存事实和偏好；技能保存流程、工具使用方法、检查清单和输出规范。
 
+![Agent Skills 生命周期](./images/07-agent-skills-lifecycle.svg)
+
 ## Skill 的基本形态
 
 一个典型 Skill 目录可能长这样：

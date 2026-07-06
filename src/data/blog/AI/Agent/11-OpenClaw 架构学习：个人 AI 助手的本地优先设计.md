@@ -23,6 +23,8 @@ OpenClaw 的核心定位是本地优先、开源、自托管的个人 AI 助手�
 
 从架构角度看，OpenClaw 最值得学习的是：它把“交互入口”和“执行环境”分离，用 Gateway 做控制平面，用 workspace 组织 Agent 的长期上下文。
 
+![OpenClaw 本地优先架构](./images/11-openclaw-local-first.svg)
+
 ## 总体架构
 
 ```text

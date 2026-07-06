@@ -23,6 +23,8 @@ Hermes Agent 是 Nous Research 推出的开源 AI Agent 框架，定位于终端
 
 如果说 OpenClaw 更强调个人助手的入口和 Gateway，那么 Hermes Agent 更强调 Agent 如何在使用过程中积累经验，并把经验沉淀为可复用技能。
 
+![Hermes 自改进闭环](./images/12-hermes-self-improvement.svg)
+
 ## 总体架构
 
 ```text

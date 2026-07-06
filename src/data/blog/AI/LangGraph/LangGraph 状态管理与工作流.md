@@ -22,6 +22,8 @@ language: zh-CN
 
 > 版本基线：本文示例按 `langgraph>=1.2.7` 的 1.x API 校验。内存检查点随 `langgraph` 安装；PostgreSQL / SQLite 持久化检查点需要额外安装对应包。
 
+![LangGraph 状态管理与工作流](./images/langgraph-state-workflow.svg)
+
 ### 状态管理架构
 
 ```

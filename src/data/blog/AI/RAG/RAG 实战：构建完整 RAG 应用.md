@@ -20,6 +20,8 @@ language: zh-CN
 
 本文将通过一个完整的实战项目，展示如何从零构建一个功能完善的 RAG 应用。我们将实现一个支持文档上传、智能问答、多轮对话的完整系统。
 
+![完整 RAG 应用链路](./images/rag-complete-application.svg)
+
 ### 项目架构
 
 ```

@@ -23,6 +23,8 @@ AI Agent 是一种能够围绕目标持续感知上下文、调用工具、执�
 
 从 OpenClaw 和 Hermes Agent 的设计可以看到，现代 Agent 正在从“带工具的聊天机器人”演进为“长期运行的个人执行环境”。OpenClaw 强调本地优先、Gateway、多通道入口和工作区文件；Hermes Agent 强调技能、记忆、工具集、终端后端、定时任务和多平台运行。
 
+![AI Agent 核心组件](./images/02-agent-core-components.svg)
+
 ## Agent 与普通聊天机器人的区别
 
 | 维度 | 普通聊天机器人 | AI Agent |

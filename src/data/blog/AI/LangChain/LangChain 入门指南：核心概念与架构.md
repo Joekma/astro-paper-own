@@ -23,6 +23,8 @@ LangChain v1.0 是一个面向生产环境的 AI Agent 构建框架，将 LLM �
 
 版本提示：本文按 LangChain v1 的思路组织。v1 中 `langchain` 主包更聚焦 Agent 相关能力，旧版 Chain、Memory 等接口如果继续使用，需要结合 `langchain-classic` 或迁移到新版的 Runnable、messages、checkpointer 写法。
 
+![LangChain v1 架构](./images/langchain-v1-architecture.svg)
+
 ### 核心设计理念
 
 | 理念 | 说明 |

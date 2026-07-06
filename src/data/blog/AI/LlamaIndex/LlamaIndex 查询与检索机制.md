@@ -21,6 +21,8 @@ language: zh-CN
 
 可以把一次查询拆成四步：查询引擎接收问题，检索器从索引中找相关节点，后处理器筛选或重排节点，响应合成器把节点内容组织成最终回答。
 
+![LlamaIndex 查询与检索链路](./images/llamaindex-query-retrieval.svg)
+
 ### 查询流程
 
 ```

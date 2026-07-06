@@ -21,6 +21,8 @@ language: zh-CN
 
 将 RAG 系统从开发环境迁移到生产环境需要考虑可靠性、性能、安全性和可维护性等多个方面。本篇将详细介绍生产级 RAG 系统的完整部署流程和最佳实践。
 
+![RAG 生产部署层次](./images/rag-production-deployment.svg)
+
 ### 生产部署架构
 
 ```

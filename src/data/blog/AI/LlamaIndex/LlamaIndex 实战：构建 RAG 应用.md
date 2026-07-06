@@ -21,6 +21,8 @@ language: zh-CN
 
 这个项目按“数据加载、文本分割、索引构建、查询回答”四个模块展开。每个模块都可以单独替换，但前后传递的对象要保持一致：文档进入分割器，节点进入索引，索引再生成查询引擎。
 
+![LlamaIndex RAG 应用模块](./images/llamaindex-rag-application.svg)
+
 ### 项目架构
 
 ```

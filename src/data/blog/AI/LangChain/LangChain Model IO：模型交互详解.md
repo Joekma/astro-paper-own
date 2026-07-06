@@ -21,6 +21,8 @@ Model I/O 是 LangChain 的核心模块，负责管理与语言模型的所有�
 
 把它拆开看，就是三件事：先把用户输入组织成模型能理解的消息或提示词，再调用具体模型，最后把模型输出整理成应用能继续使用的数据。很多 LangChain 示例看起来复杂，本质上都是这三步的组合。
 
+![LangChain Model IO 关系](./images/langchain-model-io.svg)
+
 ### Model I/O 架构
 
 ```

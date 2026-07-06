@@ -21,6 +21,8 @@ Callbacks（回调机制）是 LangChain 中用于监控和记录 LLM 应用执�
 
 可以把 Callback 理解成“旁路观察者”：主流程仍然负责生成回答、调用工具，Callback 只是在开始、结束、出错或产生新 token 时收到通知。这样监控、日志和 UI 进度就不会混进业务逻辑里。
 
+![LangChain Callbacks 事件流](./images/langchain-callback-events.svg)
+
 ### 为什么需要 Callbacks？
 
 | 需求 | Callbacks 解决方案 |

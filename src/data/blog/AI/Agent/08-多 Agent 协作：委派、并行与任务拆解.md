@@ -23,6 +23,8 @@ language: zh-CN
 
 如果拆分不当，多 Agent 只会放大混乱：重复工作、互相覆盖文件、争抢资源、成本上涨、上下文不一致。
 
+![多 Agent 协作模式](./images/08-multi-agent-collaboration.svg)
+
 ## 适合多 Agent 的任务
 
 适合拆分的任务通常具有以下特征：

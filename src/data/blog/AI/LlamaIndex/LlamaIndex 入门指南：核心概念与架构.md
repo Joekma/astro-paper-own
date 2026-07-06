@@ -21,6 +21,8 @@ LlamaIndex 是一个专为构建 LLM 应用设计的数据框架，特别擅长�
 
 理解 LlamaIndex 时，可以先抓住一条主线：先把外部资料加载成**文档**，再切成适合检索的**节点**，然后构建**索引**，最后通过**查询引擎**把用户问题转换成答案。
 
+![LlamaIndex 核心架构](./images/llamaindex-core-architecture.svg)
+
 ### LlamaIndex vs LangChain
 
 如果你的目标是围绕私有资料做问答、摘要和检索，LlamaIndex 通常更直接；如果你的目标是编排多个工具、Agent 或复杂工作流，LangChain 的通用性会更强。

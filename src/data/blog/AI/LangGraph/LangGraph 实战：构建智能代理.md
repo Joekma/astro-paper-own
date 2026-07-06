@@ -22,6 +22,8 @@ language: zh-CN
 
 > 版本基线：本文示例按 `langgraph>=1.2.7` 的 1.x API 校验。Agent 示例会调用 OpenAI 模型，运行前需要安装 `langchain-openai` 并配置 `OPENAI_API_KEY`。
 
+![LangGraph 智能代理实战流程](./images/langgraph-agent-practice.svg)
+
 ### 项目目标
 
 ```

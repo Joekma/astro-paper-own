@@ -22,6 +22,8 @@ LangGraph 的高级特性使其成为构建复杂 LLM 应用的理想选择。�
 
 > 版本基线：本文示例按 `langgraph>=1.2.7` 的 1.x API 校验。基础图能力只需安装 `langgraph`；涉及模型调用时还需要 `langchain-openai` 并配置 `OPENAI_API_KEY`；PostgreSQL / SQLite 检查点需要额外安装对应的持久化包。
 
+![LangGraph 高级特性](./images/langgraph-advanced-features.svg)
+
 ### 高级特性概览
 
 ```
