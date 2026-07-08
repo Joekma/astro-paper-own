@@ -23,8 +23,6 @@ language: zh-CN
 
 但自动化也意味着更高风险：任务可能重复运行、错误发送、消耗成本、循环创建任务，甚至在无人值守时执行高风险动作。
 
-![自动化 Agent 执行链路](./images/10-agent-automation.svg)
-
 ## 自动化入口
 
 常见触发方式包括：
@@ -81,6 +79,8 @@ Hermes Agent 的 Cron 文档说明，Cron 可以调度一次性或周期性任�
 ```
 
 Hermes Agent 的 Gateway scheduler 每 60 秒 tick 一次，并用锁文件防止重复 tick 导致同一批任务重复运行。
+
+![自动化 Agent 从 Cron、Webhook、消息和 Heartbeat 触发，经调度器、任务队列、后台会话、执行和通知投递，并由锁、超时、去重、审批和审计控制失控风险](./images/automated-agent-background-execution-figure-01.png)
 
 ## 结果投递
 
@@ -227,16 +227,13 @@ import time
 
 TASKS_FILE = Path("cron_tasks.json")
 
-
 def load_tasks() -> list[dict]:
     if not TASKS_FILE.exists():
         return []
     return json.loads(TASKS_FILE.read_text(encoding="utf-8"))
 
-
 def save_tasks(tasks: list[dict]) -> None:
     TASKS_FILE.write_text(json.dumps(tasks, ensure_ascii=False, indent=2), encoding="utf-8")
-
 
 def create_task(name: str, prompt: str, interval_seconds: int) -> None:
     tasks = load_tasks()
@@ -251,11 +248,9 @@ def create_task(name: str, prompt: str, interval_seconds: int) -> None:
     )
     save_tasks(tasks)
 
-
 def run_agent(prompt: str) -> str:
     # 这里替换成真实 Agent Loop。demo 只返回摘要。
     return f"{datetime.now().isoformat(timespec='seconds')} 执行任务：{prompt}"
-
 
 def tick_once() -> None:
     tasks = load_tasks()
@@ -271,7 +266,6 @@ def tick_once() -> None:
                 timespec="seconds"
             )
     save_tasks(tasks)
-
 
 if __name__ == "__main__":
     if not TASKS_FILE.exists():

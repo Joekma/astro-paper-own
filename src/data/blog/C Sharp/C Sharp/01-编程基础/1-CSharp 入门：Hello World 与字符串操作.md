@@ -22,6 +22,8 @@ language: zh-CN
 
 本文将带你编写第一个 C# 程序，开启编程之旅。我们将从最简单的"Hello World"开始，逐步学习变量声明、字符串处理等核心概念。
 
+![C# 入门程序从源代码、编译器、.NET 程序集到 CLR 运行时和控制台输出的执行链路](./images/csharp-hello-world-runtime-flow-figure-01.png)
+
 ### 学习目标
 
 | 目标               | 说明                     |

@@ -22,6 +22,8 @@ language: zh-CN
 
 LINQ（Language-Integrated Query，语言集成查询）是 C# 中强大的数据查询功能。它将查询功能直接集成到 C# 语言中，提供一致的方式来查询和转换各种数据源的数据。
 
+![C# LINQ 将集合、数据库或 XML 等数据源接入查询语法或方法语法，经 Where、Select、GroupBy、OrderBy 等操作符延迟执行并在枚举时产生结果](./images/csharp-linq-query-processing-flow-figure-01.png)
+
 ### LINQ 的优势
 
 | 优势           | 说明                             |

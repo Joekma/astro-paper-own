@@ -1,4 +1,4 @@
-﻿---
+---
 title: RabbitMQ 队列：消息队列原理和使用
 series: 消息队列
 seriesOrder: 3
@@ -18,6 +18,8 @@ language: zh-CN
 ## 概述
 
 RabbitMQ 是基于 Erlang 开发的功能完善的开源消息队列系统，采用 AMQP 协议实现。具备可靠性、灵活路由、集群、事务等特性。
+
+![RabbitMQ 消息路由从 Producer 携带 routing key 发送到 Exchange，Exchange 根据 direct、fanout、topic、headers 类型和 binding 规则投递到 Queue，Consumer 消费后 ACK，并可结合 durable queue、persistent message、prefetch、DLX 与 retry 提升可靠性](./images/rabbitmq-amqp-routing-topology-figure-01.png)
 
 ## 核心概念
 

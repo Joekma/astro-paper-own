@@ -57,7 +57,6 @@ language: zh-CN
 ```python
 from xml.parsers.expat import ParserCreate
 
-
 class DefaultSaxHandler(object):
     def start_element(self, name, attrs):
         print('sax:start_element: %s, attrs: %s' % (name, str(attrs)))
@@ -67,7 +66,6 @@ class DefaultSaxHandler(object):
 
     def char_data(self, text):
         print('sax:char_data: %s' % text)
-
 
 xml = r'''<?xml version="1.0"?>
 <ol>
@@ -242,7 +240,6 @@ class xml.etree.ElementTree.ElementTree(element=None, file=None)
 
 ```python
 import xml.etree.ElementTree as ET
-
 
 def parse_feed_xml(file_path):
     tree = ET.parse(file_path)

@@ -23,8 +23,6 @@ Agent 安全的核心不是让模型“更听话”，而是让系统在模型�
 
 当 Agent 可以执行命令、访问文件、控制浏览器、发送消息、连接业务系统时，它已经是一个有真实副作用的自动化执行者。安全设计必须从第一天开始。
 
-![Agent 安全控制面](./images/09-agent-safety-controls.svg)
-
 ## 威胁模型
 
 Agent 常见风险包括：
@@ -39,6 +37,8 @@ Agent 常见风险包括：
 - 远程 Gateway 暴露
 - 消息平台被未授权用户触发
 - 密钥泄露到日志或上下文
+
+![Agent 安全架构通过不可信输入过滤、最小权限、审批、沙箱、密钥隔离、审计与回滚形成纵深防御](./images/agent-security-defense-in-depth-figure-01.png)
 
 ## 最小权限
 
@@ -217,7 +217,6 @@ WORKSPACE.mkdir(exist_ok=True)
 
 DANGEROUS = {"rm", "del", "format", "shutdown", "reboot", "curl", "wget"}
 
-
 def looks_dangerous(command: str) -> bool:
     parts = shlex.split(command, posix=False)
     if not parts:
@@ -227,12 +226,10 @@ def looks_dangerous(command: str) -> bool:
         return True
     return any(token in command for token in ["| bash", "| sh", ">", ">>", "&& rm"])
 
-
 def ask_approval(command: str) -> bool:
     print(f"[approval required] {command}")
     answer = input("allow? type yes: ")
     return answer == "yes"
-
 
 def run_shell(command: str, cwd: Path = WORKSPACE) -> str:
     resolved = cwd.resolve()
@@ -250,7 +247,6 @@ def run_shell(command: str, cwd: Path = WORKSPACE) -> str:
         timeout=20,
     )
     return completed.stdout[-4000:] + completed.stderr[-4000:]
-
 
 if __name__ == "__main__":
     print(run_shell("dir" if __import__("os").name == "nt" else "ls"))

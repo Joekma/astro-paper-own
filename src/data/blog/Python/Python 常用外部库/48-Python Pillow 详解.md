@@ -195,21 +195,17 @@ PIL的`ImageDraw`提供了一系列绘图方法，让我们可以直接绘图。
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import random
 
-
 def rndChar():
     """随机字母"""
     return chr(random.randint(65, 90))
-
 
 def rndColor():
     """随机颜色1"""
     return (random.randint(64, 255), random.randint(64, 255), random.randint(64, 255))
 
-
 def rndColor2():
     """随机颜色2"""
     return (random.randint(32, 127), random.randint(32, 127), random.randint(32, 127))
-
 
 # 240 x 60:
 width = 60 * 4

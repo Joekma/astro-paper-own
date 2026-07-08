@@ -21,6 +21,8 @@ language: zh-CN
 
 C# 关键字是语言预定义的保留词，每个关键字都有特定的含义，不能用作标识符。了解关键字是掌握 C# 语言的基础。本文按功能分类介绍 C# 中的常用关键字。
 
+![C# 关键字按照访问修饰符、类型声明、流程控制、方法参数、异常处理、泛型、LINQ、异步和命名空间等功能分类](./images/csharp-keywords-taxonomy-figure-01.png)
+
 ### C# 关键字分类
 
 | 类别       | 包含关键字                                                                 |
@@ -1012,7 +1014,6 @@ var person = new Person();
 | where T : BaseClass | 继承自某类 | T 必须是 BaseClass 的子类 |
 | where T : IInterface | 实现某接口 | T 必须实现 IDisposable |
 | where T : notnull | 非空类型 | C# 8.0+，排除 null |
-
 
 ---
 

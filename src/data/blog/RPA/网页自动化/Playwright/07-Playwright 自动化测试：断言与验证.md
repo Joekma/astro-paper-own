@@ -416,7 +416,6 @@ class LoginPage:
     def expect_success(self):
         expect(self.success_msg).to_be_visible()
 
-
 class DashboardPage:
     """仪表盘页面对象"""
     
@@ -427,7 +426,6 @@ class DashboardPage:
     
     def expect_logged_in(self, username):
         expect(self.user_info).to_contain_text(username)
-
 
 # 测试中使用
 def test_login_flow(page):

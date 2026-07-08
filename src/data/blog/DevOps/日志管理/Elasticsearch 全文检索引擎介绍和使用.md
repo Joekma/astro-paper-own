@@ -1,4 +1,4 @@
-﻿---
+---
 title: Elasticsearch 全文检索引擎介绍和使用
 series: Elasticsearch
 seriesOrder: 2
@@ -21,6 +21,8 @@ language: zh-CN
 ## 阅读导览
 
 这篇文章聚焦入门使用：先理解 Index、Document、Field、Shard 和 Replica，再掌握索引创建、文档写入、查询 DSL 与聚合。真正进入生产前，还需要继续关注映射设计、分词器、容量规划和集群健康。
+
+![Elasticsearch 全文检索从文档写入开始，经 Mapping、分词器、倒排索引、分片副本、查询 DSL、相关性排序和聚合分析返回结果](./images/elasticsearch-full-text-search-workflow-figure-01.png)
 
 ## 核心概念
 

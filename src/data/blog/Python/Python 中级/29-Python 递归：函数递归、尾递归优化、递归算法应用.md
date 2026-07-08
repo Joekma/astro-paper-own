@@ -441,7 +441,6 @@ def suyinshu2(n):
 suyinshu2(100)
 ```
 
-
 阶乘：
 
 ```python
@@ -499,7 +498,6 @@ print(factorial(4))
 # 24
 ```
 
-
 阶乘优化版本，处理小数的情况
 
 ```python
@@ -556,7 +554,6 @@ def is_power(a,b):
 ans = is_power(4, 2)
 print(ans)
 ```
-
 
 最大公约数
 

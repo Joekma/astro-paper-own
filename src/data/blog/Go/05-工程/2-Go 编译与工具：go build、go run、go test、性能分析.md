@@ -24,6 +24,8 @@ language: zh-CN
 
 `go run` 会临时编译并运行程序，适合开发和演示。
 
+![Go 编译与工具链从 go run、go fmt、go test 形成开发循环，经 go build、go install 和 GOOS/GOARCH 交叉编译进入发布，并通过 go vet、race detector、coverage、benchmark、pprof、trace 和 go generate 做质量与性能分析](./images/go-build-toolchain-workflow-figure-01.png)
+
 ```bash
 go run .
 go run ./cmd/api

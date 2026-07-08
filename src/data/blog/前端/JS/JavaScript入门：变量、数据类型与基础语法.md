@@ -1,4 +1,4 @@
-﻿---
+---
 title: JavaScript入门：变量、数据类型与基础语法
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00

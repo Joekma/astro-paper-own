@@ -23,6 +23,8 @@ language: zh-CN
 
 Model-View-ViewModel（MVVM）模式将应用程序的用户界面与其逻辑分离。MVVM 不是将显示代码和行为混合在同一代码文件中，而是将它们分成三个独立的部分，通过数据绑定进行通信。
 
+![Avalonia MVVM 中 View、ViewModel 与 Model 通过 Binding、Command、PropertyChanged 和服务仓储分层协作](./images/avalonia-mvvm-layered-architecture-figure-01.png)
+
 ### MVVM 的核心价值
 
 | 价值              | 说明                                                |

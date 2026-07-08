@@ -21,6 +21,8 @@ language: zh-CN
 
 Avalonia DevTools 是一套强大的内置调试和诊断工具，帮助开发者快速定位 UI 问题、调试布局、检查属性和事件。本教程将详细介绍如何安装、配置和使用 DevTools 🚀
 
+![Avalonia DevTools 将运行中应用接入 Diagnostics，并通过视觉树、属性检查、布局诊断和事件追踪形成修复验证闭环](./images/avalonia-devtools-diagnostics-workflow-figure-01.png)
+
 ---
 
 ## 前置要求

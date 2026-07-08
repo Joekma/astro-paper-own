@@ -23,8 +23,6 @@ language: zh-CN
 
 如果拆分不当，多 Agent 只会放大混乱：重复工作、互相覆盖文件、争抢资源、成本上涨、上下文不一致。
 
-![多 Agent 协作模式](./images/08-multi-agent-collaboration.svg)
-
 ## 适合多 Agent 的任务
 
 适合拆分的任务通常具有以下特征：
@@ -59,6 +57,8 @@ language: zh-CN
 多 Agent 的目标是缩短关键路径，而不是制造“热闹的并发”。
 
 ## 协作模式
+
+![多 Agent 协作中 Manager 拆解任务、Worker 并行执行、Specialist 接力、Reviewer 审查以及共享任务板和写入边界](./images/multi-agent-collaboration-figure-01.png)
 
 ### 1. Manager-Worker
 
@@ -226,13 +226,11 @@ Hermes 的 delegation 和 Kanban 方向，本质是主 Agent 分配任务、work
 import asyncio
 from dataclasses import dataclass
 
-
 @dataclass
 class Task:
     owner: str
     instruction: str
     write_scope: str
-
 
 async def worker(task: Task) -> dict:
     print(f"[{task.owner}] start: {task.instruction}")
@@ -243,7 +241,6 @@ async def worker(task: Task) -> dict:
         "summary": f"完成 {task.instruction}",
         "risk": "未运行真实测试，仅为 demo",
     }
-
 
 async def manager(goal: str) -> list[dict]:
     tasks = [
@@ -256,7 +253,6 @@ async def manager(goal: str) -> list[dict]:
     results = await asyncio.gather(*(worker(task) for task in tasks))
     print("[manager] merge results")
     return results
-
 
 if __name__ == "__main__":
     output = asyncio.run(manager("生成一套 Agent 实操文档"))

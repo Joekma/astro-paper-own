@@ -178,7 +178,6 @@ print(
     'and the imaginary part {0.imag}.'.format(c)
 )
 
-
 class Point:
     def __init__(self, x, y):
         self.x = x
@@ -186,7 +185,6 @@ class Point:
 
     def __str__(self):
         return 'Point({self.x}, {self.y})'.format(self=self)
-
 
 print(Point(4, 2))
 ```

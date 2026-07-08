@@ -11,7 +11,7 @@ tags:
   - 循环
 draft: false
 series: LangGraph
-seriesOrder: 1
+seriesOrder: 3
 language: zh-CN
 ---
 
@@ -20,29 +20,11 @@ language: zh-CN
 LangGraph 的高级特性使其成为构建复杂 LLM 应用的理想选择。本篇将详细介绍循环控制、条件分支、状态持久化和人机交互等高级功能。
 这些能力通常不是孤立使用的：循环让 Agent 能多步尝试，条件分支让流程按状态选择路径，持久化让流程可以暂停、恢复和回溯。阅读下面的示例时，可以重点观察“状态字段如何驱动下一步”。
 
-> 版本基线：本文示例按 `langgraph>=1.2.7` 的 1.x API 校验。基础图能力只需安装 `langgraph`；涉及模型调用时还需要 `langchain-openai` 并配置 `OPENAI_API_KEY`；PostgreSQL / SQLite 检查点需要额外安装对应的持久化包。
-
-![LangGraph 高级特性](./images/langgraph-advanced-features.svg)
+> 版本基线：本文示例按 `langgraph>=1.2.8` 的 1.x API 校验。基础图能力只需安装 `langgraph`；涉及模型调用时还需要 `langchain-openai` 并配置 `OPENAI_API_KEY`；PostgreSQL / SQLite 检查点需要额外安装对应的持久化包。
 
 ### 高级特性概览
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                  LangGraph 高级特性                            │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │    循环     │  │  条件分支   │  │   持久化    │        │
-│  │  Control   │  │  Branching │  │ Persist    │        │
-│  └─────────────┘  └─────────────┘  └─────────────┘        │
-│                                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │   错误处理  │  │   子图调用  │  │  人机交互   │        │
-│  │ Error Hand │  │ Subgraph   │  │ Human in L │        │
-│  └─────────────┘  └─────────────┘  └─────────────┘        │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
-```
+![LangGraph 高级特性通过状态驱动的循环、条件分支、子图、人机审批、错误重试和 checkpointer 时间线实现可恢复的复杂工作流](./images/langgraph-advanced-features-figure-01.png)
 
 ## 循环控制
 
@@ -244,19 +226,50 @@ forked = app.invoke(
 
 ### PostgreSQL 持久化
 
+官方推荐使用 `langgraph-checkpoint-postgres` 包，它通过 psycopg 3 连接 PostgreSQL。生产环境建议使用 `ConnectionPool` 并显式设置 `autocommit=True`（`setup()` 创建表所必需）以及 `row_factory=dict_row`（否则读取会抛 `TypeError`）。
+
 ```python
 from langgraph.checkpoint.postgres import PostgresSaver
 from psycopg_pool import ConnectionPool
 
-DB_URI = "postgresql://user:pass@host:5432/db"
-connection_kwargs = {"autocommit": True, "prepare_threshold": 0}
+DB_URI = "postgresql://user:pass@localhost:5442/postgres?sslmode=disable"
+connection_kwargs = {
+    "autocommit": True,
+    "prepare_threshold": 0,
+}
 
-with ConnectionPool(conninfo=DB_URI, kwargs=connection_kwargs) as pool:
+with ConnectionPool(
+    conninfo=DB_URI,
+    max_size=20,
+    kwargs=connection_kwargs,
+) as pool:
     checkpointer = PostgresSaver(pool)
+
+    # 首次使用前需要调用 setup() 创建检查点表
     checkpointer.setup()
 
     app = graph.compile(checkpointer=checkpointer)
 ```
+
+如果不想自己管理连接池，也可以直接传入一条连接：
+
+```python
+from psycopg import Connection
+
+with Connection.connect(DB_URI, **connection_kwargs) as conn:
+    checkpointer = PostgresSaver(conn)
+    # checkpointer.setup()  # 首次使用需要执行
+    app = graph.compile(checkpointer=checkpointer)
+```
+
+最简单的方式是直接传连接字符串，`from_conn_string` 内部会处理连接生命周期：
+
+```python
+with PostgresSaver.from_conn_string(DB_URI) as checkpointer:
+    app = graph.compile(checkpointer=checkpointer)
+```
+
+异步版本位于 `langgraph.checkpoint.postgres.aio`，对应使用 `AsyncPostgresSaver` 与 `AsyncConnectionPool`，方法名前缀为 `a`（如 `aput`、`aget`、`alist`）。
 
 `setup()` 用来创建或迁移检查点表，通常在应用启动或部署迁移阶段执行。示例使用连接池上下文管理器，离开 `with` 块后连接会被关闭，生产服务中应把编译后的图和连接池生命周期绑定到应用生命周期。
 

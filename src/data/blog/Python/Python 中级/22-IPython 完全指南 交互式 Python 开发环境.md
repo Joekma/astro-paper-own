@@ -78,7 +78,6 @@ ipython3
 !ipython profile edit
 ```
 
-
 ##  基础功能
 
 ### IPython 与标准 Python 的区别

@@ -22,6 +22,8 @@ language: zh-CN
 
 goroutine 如果一直阻塞在 channel、网络 I/O、锁或循环中，就可能泄漏。
 
+![Go 常见坑点可按症状、根因和修复路径排查，包括 goroutine 泄漏、channel 死锁、map 并发写、切片保留大数组、defer 和 time.After 性能问题，并结合 race detector、pprof、go test 和监控定位](./images/go-common-pitfalls-troubleshooting-matrix-figure-01.png)
+
 ### 问题示例
 
 ```go

@@ -23,6 +23,8 @@ language: zh-CN
 
 Avalonia 有自己的属性系统，扩展了标准 .NET 属性模型。Avalonia 属性支持样式、数据绑定、动画、属性值继承和变化通知。理解属性系统对于创建自定义控件和有效使用框架至关重要。
 
+![Avalonia 属性系统中 StyledProperty、DirectProperty、AttachedProperty 与本地值、绑定、样式、动画和继承值的优先级解析](./images/avalonia-property-system-priority-figure-01.png)
+
 ### 属性类型概述
 
 | 属性类型              | 基类                             | 用途                           |

@@ -1,4 +1,4 @@
-﻿---
+---
 title: Elasticsearch 配置说明
 series: Elasticsearch
 seriesOrder: 4
@@ -21,6 +21,8 @@ language: zh-CN
 ## 配置思路
 
 配置 Elasticsearch 时先分清三类目标：集群能稳定发现和选主，节点能承载预期角色，索引能匹配数据量和查询方式。不要只复制配置模板，应该把每个参数和实际场景绑定起来。
+
+![Elasticsearch 配置应围绕稳定发现与选主、节点承载角色、索引匹配数据与查询展开，并结合 JVM、系统限制和监控校验](./images/elasticsearch-configuration-layer-map-figure-01.png)
 
 ## 集群配置
 

@@ -162,7 +162,6 @@ def create_wap_pay_url(trade_no, total_amount, subject, quit_url):
 import qrcode
 from io import BytesIO
 
-
 def generate_qr_code(qr_url):
     qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=2)
     qr.add_data(qr_url)
@@ -283,7 +282,6 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.backends import default_backend
 import base64
 
-
 def verify_sign(params, sign, alipay_public_key, sign_type='RSA2'):
     sorted_params = sorted(params.items())
     sign_content = '&'.join(['{}={}'.format(k, v) for k, v in sorted_params])
@@ -372,7 +370,6 @@ def refund_order(trade_no, refund_amount, refund_reason=''):
 ```python
 from cryptography import x509
 import hashlib
-
 
 def get_cert_sn(cert_content):
     cert = x509.load_pem_x509_certificate(cert_content.encode('utf-8'), default_backend())

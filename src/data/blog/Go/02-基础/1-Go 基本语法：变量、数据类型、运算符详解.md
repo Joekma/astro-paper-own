@@ -30,6 +30,8 @@ language: zh-CN
 - 首字母大写的包级标识符可以被其他包访问，首字母小写则仅包内可见。
 - `_` 是空白标识符，用于显式忽略不需要的值。
 
+![Go 基本语法地图把标识符、作用域、var 与短变量声明、const 和 iota、零值、类型推断、基础类型、运算符、类型转换与 err != nil 串联起来](./images/go-basic-syntax-type-map-figure-01.png)
+
 ```go
 value, _ := strconv.Atoi("42") // 忽略错误只适合演示，生产代码应处理 err
 fmt.Println(value)

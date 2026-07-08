@@ -22,6 +22,8 @@ language: zh-CN
 
 MVVM（Model-View-ViewModel）是一种软件架构模式，广泛应用于 WPF、Xamarin、Avalonia UI 等 XAML 技术的桌面和移动应用开发中。MVVM 模式的核心思想是将用户界面（View）与业务逻辑（ViewModel）分离，通过数据绑定实现 UI 与逻辑的解耦。
 
+![MVVM 通过 View、ViewModel 和 Model 分层，将数据绑定、Command、PropertyChanged、服务和仓储组合成职责分离且可测试的架构](./images/mvvm-design-pattern-architecture-figure-01.png)
+
 ### MVVM 的核心价值
 
 | 价值         | 说明                                             |

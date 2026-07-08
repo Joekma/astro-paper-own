@@ -22,6 +22,8 @@ language: zh-CN
 
 XAML（eXtensible Application Markup Language）是一种基于 XML 的语言，用于声明对象图。在 Avalonia 中，XAML 用于声明式定义用户界面。每个 XML 元素映射到 .NET 对象，XML 属性设置这些对象的属性。
 
+![Avalonia XAML 从标记、命名空间和属性语法解析为对象图与视觉树的映射关系](./images/avalonia-xaml-object-visual-tree-figure-01.png)
+
 ### Avalonia XAML 文件
 
 Avalonia 使用 `.axaml` 文件扩展名（Avalonia XAML）来区分其 XAML 文件与其他 XAML 方言。

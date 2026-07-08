@@ -20,7 +20,7 @@ language: zh-CN
 
 SFT 让模型学会“应该怎么回答”，偏好对齐让模型进一步学会“多个答案里哪个更好”。当模型已经能完成任务，但答案的安全性、风格、简洁度、拒答边界不稳定时，就可以考虑偏好优化。
 
-![偏好对齐训练流程](./images/08-preference-alignment.svg)
+![偏好对齐从 SFT 模型、chosen/rejected 偏好数据到 RLHF、DPO、ORPO、RFT 和安全评估的流程](./images/preference-alignment-methods-figure-01.png)
 
 ## 核心概念
 

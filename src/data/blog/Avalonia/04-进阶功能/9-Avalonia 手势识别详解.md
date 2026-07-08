@@ -25,6 +25,8 @@ Avalonia 使用统一的指针事件系统。鼠标、触摸和手写笔输入�
 
 手势是基于指针事件构建的高级抽象，代表用户意图：点击、双指缩放、滚动。
 
+![Avalonia 手势识别将 PointerPressed、PointerMoved、PointerReleased 等底层指针事件聚合为 Tapped、Holding、Pinch 和 Scroll 等用户意图](./images/avalonia-gesture-recognition-pipeline-figure-01.png)
+
 ### 手势 vs 指针事件
 
 | 层面     | 事件类型 | 说明                               |

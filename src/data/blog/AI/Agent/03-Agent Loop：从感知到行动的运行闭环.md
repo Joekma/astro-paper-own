@@ -23,8 +23,6 @@ Agent Loop 是 Agent 的核心运行闭环。它把用户输入变成一连串�
 
 OpenClaw 文档把 Agent Loop 定义为一次真实运行的权威路径：intake、context assembly、model inference、tool execution、streaming replies、persistence。这个拆解可以作为理解大多数 Agent Runtime 的基础。
 
-![Agent Loop 运行闭环](./images/03-agent-loop-runtime.svg)
-
 ## 基础流程
 
 ```text
@@ -48,6 +46,8 @@ OpenClaw 文档把 Agent Loop 定义为一次真实运行的权威路径：intak
 ```
 
 这条链路里最关键的不是“模型说了什么”，而是每一步是否可恢复、可审计、可控制。
+
+![Agent Loop 从消息入口到工具调用、观察、压缩、持久化与回复的可审计运行闭环](./images/agent-runtime-loop-figure-01.png)
 
 ## 阶段一：消息进入
 
@@ -194,14 +194,12 @@ import time
 
 STATE_FILE = Path("agent_state.json")
 
-
 @dataclass
 class AgentState:
     goal: str
     steps: list[str]
     observations: list[str]
     done: bool = False
-
 
 def load_state(goal: str) -> AgentState:
     if STATE_FILE.exists():
@@ -210,13 +208,11 @@ def load_state(goal: str) -> AgentState:
             return AgentState(**data)
     return AgentState(goal=goal, steps=[], observations=[])
 
-
 def save_state(state: AgentState) -> None:
     STATE_FILE.write_text(
         json.dumps(asdict(state), ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
-
 
 def choose_next_step(state: AgentState) -> str:
     if not state.steps:
@@ -225,14 +221,12 @@ def choose_next_step(state: AgentState) -> str:
         return "执行一个可验证动作"
     return "总结结果并结束"
 
-
 def execute(step: str, goal: str) -> str:
     if "计划" in step:
         return f"计划：把「{goal}」拆成查询、执行、验证三步"
     if "执行" in step:
         return "执行：这里可以替换为真实工具调用，例如搜索、读文件、运行测试"
     return "总结：任务已完成"
-
 
 def run(goal: str) -> AgentState:
     state = load_state(goal)
@@ -246,7 +240,6 @@ def run(goal: str) -> AgentState:
         save_state(state)
         time.sleep(0.2)
     return state
-
 
 if __name__ == "__main__":
     result = run(" ".join(sys.argv[1:]) or "整理今天的技术资料")

@@ -1,4 +1,4 @@
-﻿---
+---
 title: Elasticsearch 集群部署
 series: Elasticsearch
 seriesOrder: 1
@@ -22,6 +22,8 @@ language: zh-CN
 ## 部署原则
 
 Elasticsearch 集群部署的核心不是把节点启动起来，而是保证主节点选举稳定、数据节点容量可控、分片能均衡分配，并且备份、安全和监控在上线前就位。
+
+![Elasticsearch 集群部署需要规划主节点、数据节点、Ingest 节点、分片副本、选主发现、快照备份、安全 TLS 和监控](./images/elasticsearch-cluster-deployment-topology-figure-01.png)
 
 ## 环境要求
 

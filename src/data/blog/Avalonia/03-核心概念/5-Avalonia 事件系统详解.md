@@ -21,6 +21,8 @@ language: zh-CN
 
 Avalonia 使用与 WPF 类似的路由事件（Routed Event）系统。路由事件可以穿过元素树，允许父元素处理由子元素引发的事件。这是 Avalonia 中输入、交互和控件行为工作的基础。
 
+![Avalonia 路由事件在 Window、Panel、Button 元素树中通过 Tunnel、Direct 和 Bubble 三种策略传播，并可由 Handled 控制后续处理](./images/avalonia-routed-events-strategies-figure-01.png)
+
 ### 路由事件的核心价值
 
 | 价值         | 说明                               |

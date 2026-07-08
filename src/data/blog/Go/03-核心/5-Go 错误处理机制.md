@@ -29,6 +29,8 @@ if err != nil {
 fmt.Println(value)
 ```
 
+![Go 错误处理通过 result 和 error 显式返回，调用方检查 err != nil，并可用 fmt.Errorf 的 %w 形成错误包装链，再通过 errors.Is、errors.As、errors.Join 识别和组合错误，panic 与 recover 只用于异常边界](./images/go-error-handling-chain-figure-01.png)
+
 这种写法看起来直接，但优点也很明显：错误路径清楚，不会被隐藏在异常跳转里。
 
 ---

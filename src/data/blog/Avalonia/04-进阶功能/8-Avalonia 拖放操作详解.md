@@ -22,6 +22,8 @@ language: zh-CN
 
 Avalonia 支持拖放操作，用于在控件之间、应用程序与操作系统之间传输数据。拖放系统使用 `DragDrop` 静态类和 `DataTransfer` 类型来管理操作过程中的数据。
 
+![Avalonia 拖放操作从拖拽源通过 DragDrop 和 DataTransfer 传递文件或文本数据，并由目标控件的 DragEnter、DragOver、Drop 事件处理](./images/avalonia-drag-drop-datatransfer-flow-figure-01.png)
+
 ### 拖放操作的应用场景
 
 | 场景           | 说明                           |

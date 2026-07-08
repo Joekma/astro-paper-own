@@ -23,8 +23,6 @@ OpenClaw 的核心定位是本地优先、开源、自托管的个人 AI 助手�
 
 从架构角度看，OpenClaw 最值得学习的是：它把“交互入口”和“执行环境”分离，用 Gateway 做控制平面，用 workspace 组织 Agent 的长期上下文。
 
-![OpenClaw 本地优先架构](./images/11-openclaw-local-first.svg)
-
 ## 总体架构
 
 ```text
@@ -42,6 +40,8 @@ OpenClaw 的核心定位是本地优先、开源、自托管的个人 AI 助手�
 ```
 
 OpenClaw 官方文档将 Gateway 描述为通道连接、会话、路由和控制面的单一来源。它支持 Discord、Google Chat、iMessage、Matrix、Microsoft Teams、Signal、Slack、Telegram、WhatsApp、Zalo 等多种通道或插件。
+
+![OpenClaw 本地优先架构通过多通道入口、Gateway 控制平面、Agent Runtime、工具沙箱和透明 Workspace 文件模型组织个人 AI 助手](./images/openclaw-local-first-architecture-figure-01.png)
 
 ## Gateway 的价值
 
@@ -239,7 +239,6 @@ from pathlib import Path
 ROOT = Path("agent-home")
 FILES = ["AGENTS.md", "SOUL.md", "USER.md", "TOOLS.md", "MEMORY.md"]
 
-
 def load_workspace_context() -> str:
     chunks = []
     for name in FILES:
@@ -247,7 +246,6 @@ def load_workspace_context() -> str:
         if path.exists():
             chunks.append(f"\n# {name}\n{path.read_text(encoding='utf-8')}")
     return "\n".join(chunks)
-
 
 if __name__ == "__main__":
     print(load_workspace_context())

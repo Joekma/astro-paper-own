@@ -22,6 +22,8 @@ language: zh-CN
 
 在 C# 中，值类型不能为 null，但实际编程中我们经常需要表示「无值」的状态。可空类型允许值类型也表示 null，从而处理那些「可能没有值」的情况。
 
+![C# 可空类型通过 T?、可空引用类型、空值分析、空条件运算符和空合并运算符构建 null 安全访问路径](./images/csharp-nullable-types-null-safety-figure-01.png)
+
 ### 核心概念
 
 | 概念             | 说明                        |

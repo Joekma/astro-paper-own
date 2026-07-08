@@ -23,8 +23,6 @@ language: zh-CN
 
 好的记忆系统不是“什么都记住”，而是“只记住稳定、可复用、经过验证的信息，并允许修正和遗忘”。
 
-![Agent 记忆系统层级](./images/06-agent-memory-layers.svg)
-
 ## 记忆的层次
 
 | 层次 | 生命周期 | 用途 |
@@ -36,6 +34,8 @@ language: zh-CN
 | 用户画像 | 长期 | 记录偏好、沟通方式、授权边界 |
 | 经验记忆 | 长期 | 记录解决问题的方法和失败教训 |
 | 检索记忆 | 长期且大规模 | 搜索过去会话、文档和知识库 |
+
+![Agent 记忆系统从短期会话、工作记忆到长期用户画像、经验记忆、检索记忆与治理机制的分层结构](./images/agent-memory-system-figure-01.png)
 
 ## 短期记忆
 
@@ -183,14 +183,12 @@ MEMORY_FILE = MEMORY_DIR / "MEMORY.md"
 USER_FILE = MEMORY_DIR / "USER.md"
 MAX_CHARS = 12_000
 
-
 def read_memory() -> str:
     parts = []
     for path in [USER_FILE, MEMORY_FILE]:
         if path.exists():
             parts.append(f"# {path.name}\n{path.read_text(encoding='utf-8')}")
     return "\n\n".join(parts)
-
 
 def append_memory(kind: str, text: str) -> str:
     if kind not in {"memory", "user"}:
@@ -204,7 +202,6 @@ def append_memory(kind: str, text: str) -> str:
     new_text = (old + entry)[-MAX_CHARS:]
     path.write_text(new_text, encoding="utf-8")
     return f"saved to {path}"
-
 
 if __name__ == "__main__":
     append_memory("user", "用户偏好中文回答，喜欢先给结论再给步骤")

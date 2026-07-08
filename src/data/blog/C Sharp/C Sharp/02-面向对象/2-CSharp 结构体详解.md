@@ -22,6 +22,8 @@ language: zh-CN
 
 结构体（Struct）是 C# 中与类相似但有重要区别的类型。理解结构体与类的差异，能帮助你在不同场景下做出更好的设计选择。
 
+![C# 结构体作为值类型按值复制并直接存储数据，类作为引用类型通过引用访问堆对象，同时 readonly struct 和 record struct 提供不同变体](./images/csharp-struct-class-memory-copy-figure-01.png)
+
 ### 结构体 vs 类
 
 | 特性               | 结构体       | 类       |

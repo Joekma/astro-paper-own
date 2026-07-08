@@ -11,7 +11,7 @@ tags:
   - LLM
 draft: false
 series: LangGraph
-seriesOrder: 2
+seriesOrder: 1
 language: zh-CN
 ---
 
@@ -20,9 +20,7 @@ language: zh-CN
 LangGraph 是 LangChain 生态系统中用于构建有状态、多参与者应用程序的开源框架。它利用 LLM 创建代理和多代理工作流，提供了循环性、可控性和持久性等核心优势。
 相比把多个调用硬串成一条链，LangGraph 更适合描述“下一步取决于当前状态”的流程。读者可以先把它理解成一个带共享数据的流程图：节点负责处理，边负责决定流向，状态负责保存上下文。
 
-> 版本基线：本文示例按 `langgraph>=1.2.7` 的 1.x API 校验。基础图能力只需安装 `langgraph`；涉及模型调用时还需要 `langchain-openai` 并配置 `OPENAI_API_KEY`。
-
-![LangGraph 核心架构](./images/langgraph-core-architecture.svg)
+> 版本基线：本文示例按 `langgraph>=1.2.8` 的 1.x API 校验。基础图能力只需安装 `langgraph`；涉及模型调用时还需要 `langchain-openai` 并配置 `OPENAI_API_KEY`。
 
 ### LangGraph vs LangChain Chain
 
@@ -36,25 +34,7 @@ LangGraph 是 LangChain 生态系统中用于构建有状态、多参与者应�
 
 ### 核心概念
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      LangGraph 核心概念                        │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│   ┌──────────┐                                              │
-│   │   Node   │ ← 函数/处理单元                               │
-│   └──────────┘                                              │
-│        │                                                      │
-│   ┌────┴────┐                                                │
-│   │   Edge  │ ← 节点之间的连接                               │
-│   └────┬────┘                                                │
-│        │                                                      │
-│   ┌────┴────┐                                                │
-│   │  State   │ ← 整个图共享的状态                            │
-│   └──────────┘                                              │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
-```
+![LangGraph 通过 StateGraph、Node、Edge、Conditional Edge、共享 State 和 compile 运行时构建可循环、可分支、可持久化的状态图应用](./images/langgraph-core-stategraph-architecture-figure-01.png)
 
 ## 核心概念详解
 
@@ -182,7 +162,8 @@ result = app.invoke({"counter": 0, "messages": []})
 ### 1. 对话 Agent
 
 ```python
-from langgraph.graph import StateGraph, START, END, MessagesState
+from langgraph.graph import StateGraph, START, END
+from langgraph.graph.message import MessagesState
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
@@ -340,7 +321,7 @@ app.invoke(Command(resume="人工补充的内容"), config=config)
 ### 安装
 
 ```bash
-pip install -U "langgraph>=1.2.7" langchain-openai
+pip install -U "langgraph>=1.2.8" langchain-openai
 ```
 
 如果只运行不包含模型调用的基础图示例，可以只安装 `langgraph`。对话 Agent 和 RAG 示例会调用 OpenAI 模型，需要提前设置 `OPENAI_API_KEY`。
@@ -348,7 +329,8 @@ pip install -U "langgraph>=1.2.7" langchain-openai
 ### 基本导入
 
 ```python
-from langgraph.graph import StateGraph, START, END, MessagesState
+from langgraph.graph import StateGraph, START, END
+from langgraph.graph.message import MessagesState
 from langgraph.prebuilt import ToolNode, tools_condition
 from typing import TypedDict
 ```

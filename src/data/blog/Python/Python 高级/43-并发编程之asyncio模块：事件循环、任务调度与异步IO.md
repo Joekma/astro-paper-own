@@ -46,17 +46,14 @@ description: "系统讲解Python asyncio模块，涵盖事件循环、协程、T
 ```python
 import time
 
-
 def download(name: str, delay: float) -> str:
     time.sleep(delay)
     return f"{name} done"
-
 
 def main():
     print(download("a", 2))
     print(download("b", 1))
     print(download("c", 1))
-
 
 main()
 ```
@@ -68,11 +65,9 @@ main()
 ```python
 import asyncio
 
-
 async def download(name: str, delay: float) -> str:
     await asyncio.sleep(delay)
     return f"{name} done"
-
 
 async def main():
     results = await asyncio.gather(
@@ -81,7 +76,6 @@ async def main():
         download("c", 1),
     )
     print(results)
-
 
 asyncio.run(main())
 ```
@@ -98,7 +92,6 @@ asyncio.run(main())
 async def hello():
     return "hello asyncio"
 
-
 coro = hello()
 print(coro)  # <coroutine object hello at ...>
 ```
@@ -108,15 +101,12 @@ print(coro)  # <coroutine object hello at ...>
 ```python
 import asyncio
 
-
 async def hello():
     return "hello asyncio"
-
 
 async def main():
     result = await hello()
     print(result)
-
 
 asyncio.run(main())
 ```
@@ -135,11 +125,9 @@ asyncio.run(main())
 ```python
 import asyncio
 
-
 async def main():
     loop = asyncio.get_running_loop()
     print(loop)
-
 
 asyncio.run(main())
 ```
@@ -153,12 +141,10 @@ asyncio.run(main())
 ```python
 import asyncio
 
-
 async def worker(name: str, delay: float):
     await asyncio.sleep(delay)
     print(f"{name} finished")
     return name
-
 
 async def main():
     task = asyncio.create_task(worker("task-1", 1))
@@ -166,7 +152,6 @@ async def main():
 
     result = await task
     print("result:", result)
-
 
 asyncio.run(main())
 ```
@@ -180,11 +165,9 @@ import asyncio
 
 background_tasks: set[asyncio.Task] = set()
 
-
 async def send_metric(i: int):
     await asyncio.sleep(0.1)
     print(f"metric {i} sent")
-
 
 def start_background_task(i: int):
     task = asyncio.create_task(send_metric(i))
@@ -211,18 +194,15 @@ def start_background_task(i: int):
 ```python
 import asyncio
 
-
 async def step(name: str, delay: float):
     print(f"{name}: start")
     await asyncio.sleep(delay)
     print(f"{name}: end")
     return name
 
-
 async def main():
     result = await step("A", 1)
     print(result)
-
 
 asyncio.run(main())
 ```
@@ -237,11 +217,9 @@ asyncio.run(main())
 import asyncio
 import time
 
-
 async def query(name: str, delay: float):
     await asyncio.sleep(delay)
     return f"{name}: {delay}s"
-
 
 async def main():
     start = time.perf_counter()
@@ -252,7 +230,6 @@ async def main():
 
     print(a, b, c)
     print(f"cost: {time.perf_counter() - start:.2f}s")
-
 
 asyncio.run(main())
 ```
@@ -265,11 +242,9 @@ asyncio.run(main())
 import asyncio
 import time
 
-
 async def query(name: str, delay: float):
     await asyncio.sleep(delay)
     return f"{name}: {delay}s"
-
 
 async def main():
     start = time.perf_counter()
@@ -282,7 +257,6 @@ async def main():
 
     print(results)
     print(f"cost: {time.perf_counter() - start:.2f}s")
-
 
 asyncio.run(main())
 ```
@@ -299,11 +273,9 @@ asyncio.run(main())
 import asyncio
 import time
 
-
 async def say_after(delay: float, text: str):
     await asyncio.sleep(delay)
     print(text)
-
 
 async def main():
     print(f"started at {time.strftime('%X')}")
@@ -315,7 +287,6 @@ async def main():
     await task2
 
     print(f"finished at {time.strftime('%X')}")
-
 
 asyncio.run(main())
 ```
@@ -329,11 +300,9 @@ asyncio.run(main())
 ```python
 import asyncio
 
-
 async def fetch_user(user_id: int):
     await asyncio.sleep(0.2)
     return {"id": user_id, "name": f"user-{user_id}"}
-
 
 async def main():
     users = await asyncio.gather(
@@ -342,7 +311,6 @@ async def main():
         fetch_user(3),
     )
     print(users)
-
 
 asyncio.run(main())
 ```
@@ -354,13 +322,11 @@ asyncio.run(main())
 ```python
 import asyncio
 
-
 async def job(i: int):
     await asyncio.sleep(0.1)
     if i == 2:
         raise ValueError("bad job")
     return i * 10
-
 
 async def main():
     results = await asyncio.gather(
@@ -376,7 +342,6 @@ async def main():
         else:
             print("ok:", result)
 
-
 asyncio.run(main())
 ```
 
@@ -390,12 +355,10 @@ asyncio.run(main())
 import asyncio
 import random
 
-
 async def fetch(name: str):
     delay = random.uniform(0.1, 1.0)
     await asyncio.sleep(delay)
     return name, delay
-
 
 async def main():
     tasks = [
@@ -407,7 +370,6 @@ async def main():
     for done in asyncio.as_completed(tasks):
         name, delay = await done
         print(f"{name} finished in {delay:.2f}s")
-
 
 asyncio.run(main())
 ```
@@ -421,16 +383,13 @@ Python 3.11 引入了 `asyncio.TaskGroup`。它把一组相关任务放进同一
 ```python
 import asyncio
 
-
 async def load_profile(user_id: int):
     await asyncio.sleep(0.2)
     return {"user_id": user_id}
 
-
 async def load_orders(user_id: int):
     await asyncio.sleep(0.3)
     return ["order-1", "order-2"]
-
 
 async def main():
     async with asyncio.TaskGroup() as tg:
@@ -440,7 +399,6 @@ async def main():
     profile = profile_task.result()
     orders = orders_task.result()
     print(profile, orders)
-
 
 asyncio.run(main())
 ```
@@ -456,11 +414,9 @@ asyncio.run(main())
 ```python
 import asyncio
 
-
 async def slow_query():
     await asyncio.sleep(3)
     return "data"
-
 
 async def main():
     try:
@@ -468,7 +424,6 @@ async def main():
         print(result)
     except TimeoutError:
         print("query timeout")
-
 
 asyncio.run(main())
 ```
@@ -480,16 +435,13 @@ Python 3.11 起可以使用 `asyncio.timeout()`。它是异步上下文管理器
 ```python
 import asyncio
 
-
 async def call_api():
     await asyncio.sleep(0.8)
     return "api"
 
-
 async def call_db():
     await asyncio.sleep(0.8)
     return "db"
-
 
 async def main():
     try:
@@ -499,7 +451,6 @@ async def main():
             print(api_result, db_result)
     except TimeoutError:
         print("whole operation timeout")
-
 
 asyncio.run(main())
 ```
@@ -513,7 +464,6 @@ asyncio.run(main())
 ```python
 import asyncio
 
-
 async def worker():
     try:
         while True:
@@ -522,7 +472,6 @@ async def worker():
     except asyncio.CancelledError:
         print("cleanup before cancel")
         raise
-
 
 async def main():
     task = asyncio.create_task(worker())
@@ -534,7 +483,6 @@ async def main():
         await task
     except asyncio.CancelledError:
         print("task cancelled")
-
 
 asyncio.run(main())
 ```
@@ -553,7 +501,6 @@ asyncio.run(main())
 import asyncio
 import random
 
-
 async def fetch(url: str, sem: asyncio.Semaphore):
     async with sem:
         delay = random.uniform(0.1, 0.5)
@@ -561,14 +508,12 @@ async def fetch(url: str, sem: asyncio.Semaphore):
         print(f"fetched {url} in {delay:.2f}s")
         return url
 
-
 async def main():
     sem = asyncio.Semaphore(20)
     urls = [f"https://example.com/{i}" for i in range(100)]
 
     results = await asyncio.gather(*(fetch(url, sem) for url in urls))
     print(f"total: {len(results)}")
-
 
 asyncio.run(main())
 ```
@@ -582,7 +527,6 @@ asyncio 是单线程协作式调度，但只要在读写共享状态之间存在
 ```python
 import asyncio
 
-
 class Counter:
     def __init__(self):
         self.value = 0
@@ -594,12 +538,10 @@ class Counter:
             await asyncio.sleep(0)
             self.value = current + 1
 
-
 async def main():
     counter = Counter()
     await asyncio.gather(*(counter.incr() for _ in range(1000)))
     print(counter.value)
-
 
 asyncio.run(main())
 ```
@@ -613,12 +555,10 @@ asyncio.run(main())
 ```python
 import asyncio
 
-
 async def worker(name: str, ready: asyncio.Event):
     print(f"{name} waiting")
     await ready.wait()
     print(f"{name} start")
-
 
 async def main():
     ready = asyncio.Event()
@@ -633,7 +573,6 @@ async def main():
 
     await asyncio.gather(*tasks)
 
-
 asyncio.run(main())
 ```
 
@@ -645,7 +584,6 @@ asyncio.run(main())
 import asyncio
 import random
 
-
 async def producer(queue: asyncio.Queue[str]):
     for i in range(10):
         item = f"url-{i}"
@@ -655,7 +593,6 @@ async def producer(queue: asyncio.Queue[str]):
 
     for _ in range(3):
         await queue.put("STOP")
-
 
 async def consumer(name: str, queue: asyncio.Queue[str]):
     while True:
@@ -669,7 +606,6 @@ async def consumer(name: str, queue: asyncio.Queue[str]):
         finally:
             queue.task_done()
 
-
 async def main():
     queue: asyncio.Queue[str] = asyncio.Queue(maxsize=5)
 
@@ -682,7 +618,6 @@ async def main():
     await producer(queue)
     await queue.join()
     await asyncio.gather(*consumers)
-
 
 asyncio.run(main())
 ```
@@ -699,21 +634,17 @@ asyncio.run(main())
 import asyncio
 import time
 
-
 async def bad():
     time.sleep(2)
     return "done"
-
 
 async def ticker():
     for i in range(5):
         print("tick", i)
         await asyncio.sleep(0.5)
 
-
 async def main():
     await asyncio.gather(bad(), ticker())
-
 
 asyncio.run(main())
 ```
@@ -728,17 +659,14 @@ asyncio.run(main())
 import asyncio
 import time
 
-
 def blocking_io(name: str):
     time.sleep(2)
     return f"{name} done"
-
 
 async def ticker():
     for i in range(5):
         print("tick", i)
         await asyncio.sleep(0.5)
-
 
 async def main():
     result, _ = await asyncio.gather(
@@ -746,7 +674,6 @@ async def main():
         ticker(),
     )
     print(result)
-
 
 asyncio.run(main())
 ```
@@ -762,12 +689,10 @@ import asyncio
 import concurrent.futures
 import hashlib
 
-
 def cpu_heavy(data: bytes) -> str:
     for _ in range(200_000):
         data = hashlib.sha256(data).digest()
     return data.hex()
-
 
 async def main():
     loop = asyncio.get_running_loop()
@@ -775,7 +700,6 @@ async def main():
     with concurrent.futures.ProcessPoolExecutor() as pool:
         result = await loop.run_in_executor(pool, cpu_heavy, b"hello")
         print(result[:20])
-
 
 asyncio.run(main())
 ```
@@ -790,7 +714,6 @@ asyncio 标准库内置了 streams API，可以快速编写 TCP 服务。
 
 ```python
 import asyncio
-
 
 async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     addr = writer.get_extra_info("peername")
@@ -808,7 +731,6 @@ async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrit
         await writer.wait_closed()
         print(f"client closed: {addr}")
 
-
 async def main():
     server = await asyncio.start_server(handle_client, "127.0.0.1", 8888)
 
@@ -817,7 +739,6 @@ async def main():
 
     async with server:
         await server.serve_forever()
-
 
 asyncio.run(main())
 ```
@@ -828,7 +749,6 @@ asyncio.run(main())
 
 ```python
 import asyncio
-
 
 async def main():
     reader, writer = await asyncio.open_connection("127.0.0.1", 8888)
@@ -841,7 +761,6 @@ async def main():
 
     writer.close()
     await writer.wait_closed()
-
 
 asyncio.run(main())
 ```
@@ -856,7 +775,6 @@ asyncio.run(main())
 import asyncio
 import random
 
-
 async def download(url: str) -> str:
     delay = random.uniform(0.2, 1.0)
     await asyncio.sleep(delay)
@@ -865,7 +783,6 @@ async def download(url: str) -> str:
         raise RuntimeError(f"download failed: {url}")
 
     return f"{url} body, cost={delay:.2f}s"
-
 
 async def worker(name: str, queue: asyncio.Queue[str], results: list[str]):
     while True:
@@ -883,7 +800,6 @@ async def worker(name: str, queue: asyncio.Queue[str], results: list[str]):
                 print(f"{name} ok {url}")
         finally:
             queue.task_done()
-
 
 async def main():
     urls = [f"https://example.com/page/{i}" for i in range(30)]
@@ -906,7 +822,6 @@ async def main():
 
     print(f"success: {len(results)}")
 
-
 asyncio.run(main())
 ```
 
@@ -925,7 +840,6 @@ asyncio.run(main())
 ```python
 async def get_data():
     return {"ok": True}
-
 
 async def main():
     data = get_data()  # 错误：这里只是协程对象
@@ -1035,10 +949,8 @@ async def cpu_task():
 ```python
 import asyncio
 
-
 async def main():
     await asyncio.sleep(0.1)
-
 
 asyncio.run(main(), debug=True)
 ```
@@ -1056,17 +968,14 @@ PYTHONASYNCIODEBUG=1 python app.py
 ```python
 import asyncio
 
-
 async def worker(user_id: int):
     await asyncio.sleep(1)
     return user_id
-
 
 async def main():
     task = asyncio.create_task(worker(1001), name="load-user-1001")
     print(task.get_name())
     await task
-
 
 asyncio.run(main())
 ```
@@ -1078,14 +987,12 @@ asyncio.run(main())
 ```python
 import asyncio
 
-
 async def main():
     current = asyncio.current_task()
     print(current)
 
     tasks = asyncio.all_tasks()
     print(f"task count: {len(tasks)}")
-
 
 asyncio.run(main())
 ```

@@ -11,7 +11,7 @@ tags:
   - 实战
 draft: false
 series: LangGraph
-seriesOrder: 3
+seriesOrder: 4
 language: zh-CN
 ---
 
@@ -20,41 +20,18 @@ language: zh-CN
 本文将通过实战项目展示如何使用 LangGraph 构建智能代理。我们将创建一个能够自主决策、使用工具并完成复杂任务的 Agent 系统。
 实战里的关键不是让所有逻辑都塞进一个大函数，而是把“模型思考”“工具执行”“状态记录”“条件路由”拆成清晰节点。这样每一步都能单独观察，也更容易定位 Agent 为什么走到了某个分支。
 
-> 版本基线：本文示例按 `langgraph>=1.2.7` 的 1.x API 校验。Agent 示例会调用 OpenAI 模型，运行前需要安装 `langchain-openai` 并配置 `OPENAI_API_KEY`。
-
-![LangGraph 智能代理实战流程](./images/langgraph-agent-practice.svg)
+> 版本基线：本文示例按 `langgraph>=1.2.8` 的 1.x API 校验。Agent 示例会调用 OpenAI 模型，运行前需要安装 `langchain-openai` 并配置 `OPENAI_API_KEY`。
 
 ### 项目目标
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    智能代理架构图                             │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│   ┌─────────┐                                                │
-│   │  用户   │                                                │
-│   └────┬────┘                                                │
-│        │                                                      │
-│        ▼                                                      │
-│   ┌─────────────────┐                                        │
-│   │    Agent Core   │                                        │
-│   └────────┬────────┘                                        │
-│            │                                                  │
-│     ┌──────┼──────┐                                         │
-│     ▼      ▼      ▼                                         │
-│  ┌────┐ ┌────┐ ┌────┐                                      │
-│  │工具1│ │工具2│ │工具3│                                     │
-│  └────┘ └────┘ └────┘                                      │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
-```
+![LangGraph 智能代理通过 Model Node、tools_condition、ToolNode 和工具结果回环实现带状态的工具调用 Agent，并用迭代计数防止无限循环](./images/langgraph-agent-tool-loop-figure-01.png)
 
 ## 环境配置
 
 ### 安装依赖
 
 ```bash
-pip install -U "langgraph>=1.2.7" langchain-openai
+pip install -U "langgraph>=1.2.8" langchain-openai
 ```
 
 本文的工具示例使用内置字典和本地函数，不依赖 `langchain-community`。只有接入第三方检索器、向量库或社区集成时，才需要按对应集成文档额外安装 `langchain-community`。
@@ -66,7 +43,8 @@ pip install -U "langgraph>=1.2.7" langchain-openai
 ```python
 from langchain_core.tools import tool
 from langgraph.prebuilt import ToolNode, tools_condition
-from langgraph.graph import StateGraph, START, END, MessagesState
+from langgraph.graph import StateGraph, START, END
+from langgraph.graph.message import MessagesState
 from langchain_openai import ChatOpenAI
 from typing import Literal
 

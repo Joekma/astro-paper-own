@@ -29,6 +29,8 @@ type Writer interface {
 }
 ```
 
+![Go 接口描述行为契约，具体类型通过方法集隐式实现接口，小接口可以组合，并可通过类型断言、type switch 检查动态类型，同时需要注意动态类型和动态值造成的 nil 陷阱](./images/go-interface-implicit-implementation-figure-01.png)
+
 任何类型只要实现了 `Write([]byte) (int, error)` 方法，就自动实现 `Writer` 接口。Go 不需要 `implements` 关键字。
 
 ---

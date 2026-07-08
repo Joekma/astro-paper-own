@@ -1,4 +1,4 @@
-﻿---
+---
 title: HTML语法完全指南
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
@@ -18,8 +18,6 @@ series: HTML
 seriesOrder: 1
 language: zh-CN
 ---
-
-
 
 ## 一、HTML 简介
 

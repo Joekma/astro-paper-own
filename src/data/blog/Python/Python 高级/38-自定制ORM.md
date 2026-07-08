@@ -331,16 +331,13 @@ class Field(object):
     def __str__(self):
         return '<%s:%s>' % (self.__class__.__name__, self.name)
 
-
 class StringField(Field):
     def __init__(self, name):
         super(StringField, self).__init__(name, 'varchar(100)')
 
-
 class IntegerField(Field):
     def __init__(self, name):
         super(IntegerField, self).__init__(name, 'bigint')
-
 
 class ModelMetaclass(type):
     def __new__(cls, name, bases, attrs):
@@ -362,7 +359,6 @@ class ModelMetaclass(type):
         attrs['__table__'] = name
 
         return type.__new__(cls, name, bases, attrs)
-
 
 class Model(dict, metaclass=ModelMetaclass):
     def __init__(self, **kw):
@@ -393,14 +389,12 @@ class Model(dict, metaclass=ModelMetaclass):
         print('SQL: %s' % sql)
         print('ARGS: %s' % str(args))
 
-
 # 定义User类
 class User(Model):
     id = IntegerField('id')
     name = StringField('username')
     email = StringField('email')
     password = StringField('password')
-
 
 # 测试
 if __name__ == '__main__':

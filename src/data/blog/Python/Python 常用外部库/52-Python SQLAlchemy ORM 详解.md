@@ -74,7 +74,6 @@ engine = create_engine(
     pool_recycle=-1  # 多久之后对线程池中的线程进行一次连接的回收（重置）
 )
 
-
 def task(arg):
     conn = engine.raw_connection()
     cursor = conn.cursor()
@@ -85,7 +84,6 @@ def task(arg):
     print(result)
     cursor.close()
     conn.close()
-
 
 for i in range(20):
     t = threading.Thread(target=task, args=(i,))
@@ -104,7 +102,6 @@ from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, Uniq
 
 Base = declarative_base()
 
-
 class Users(Base):
     __tablename__ = 'users'  # 数据库表名称
     id = Column(Integer, primary_key=True)  # id 主键
@@ -119,7 +116,6 @@ class Users(Base):
         # UniqueConstraint('id', 'name', name='uix_id_name'),  # 联合唯一
         # Index('ix_id_name', 'name', 'email'),  # 索引
     )
-
 
 def init_db():
     """
@@ -136,7 +132,6 @@ def init_db():
 
     Base.metadata.create_all(engine)
 
-
 def drop_db():
     """
     根据类删除数据库表
@@ -151,7 +146,6 @@ def drop_db():
     )
 
     Base.metadata.drop_all(engine)
-
 
 if __name__ == '__main__':
     # drop_db()
@@ -190,7 +184,6 @@ class Hobby(Base):
     id = Column(Integer, primary_key=True)
     caption = Column(String(50), default='篮球')
 
-
 class Person(Base):
     __tablename__ = 'person'
     nid = Column(Integer, primary_key=True)
@@ -215,12 +208,10 @@ class Boy2Girl(Base):
     girl_id = Column(Integer, ForeignKey('girl.id'))
     boy_id = Column(Integer, ForeignKey('boy.id'))
 
-
 class Girl(Base):
     __tablename__ = 'girl'
     id = Column(Integer, primary_key=True)
     name = Column(String(64), unique=True, nullable=False)
-
 
 class Boy(Base):
     __tablename__ = 'boy'
@@ -620,12 +611,10 @@ s2g = Server2Group(server_id=1, group_id=1)
 session.add(s2g)
 session.commit()
 
-
 gp = Group(name='C组')
 gp.servers = [Server(hostname='c3.com'), Server(hostname='c4.com')]
 session.add(gp)
 session.commit()
-
 
 ser = Server(hostname='c6.com')
 ser.groups = [Group(name='F组'), Group(name='G组')]

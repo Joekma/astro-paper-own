@@ -27,6 +27,8 @@ func 函数名(参数列表) 返回值列表 {
 }
 ```
 
+![Go 函数机制包含函数签名、值传递与指针参数、多返回值和 err 检查、闭包捕获外部变量、defer 栈的 LIFO 执行以及 panic 和 recover 的异常路径边界](./images/go-functions-defer-closure-figure-01.png)
+
 示例：
 
 ```go

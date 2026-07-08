@@ -23,8 +23,6 @@ MCP（Model Context Protocol）是一个连接 AI 应用与外部系统的开放
 
 MCP 的目标是把外部能力标准化，让工具和数据源可以被多个 AI 应用复用。
 
-![MCP Client Server 架构](./images/05-mcp-client-server.svg)
-
 ## MCP 的基本架构
 
 MCP 使用 Host、Client、Server 三层结构：
@@ -45,6 +43,8 @@ Host
 | Server | 暴露资源、提示和工具的服务 |
 
 规范中，MCP 使用 JSON-RPC 2.0 消息，支持有状态连接、能力协商和多类功能。
+
+![MCP 通过 Host、Client、Server、JSON-RPC 通道和信任边界标准化 Agent 工具生态](./images/agent-mcp-host-client-server-figure-01.png)
 
 ## Server 能提供什么
 
@@ -229,7 +229,6 @@ mcp = FastMCP("notes-server", json_response=True)
 NOTES_DIR = Path("notes")
 NOTES_DIR.mkdir(exist_ok=True)
 
-
 @mcp.tool()
 def search_notes(keyword: str, limit: int = 5) -> list[dict]:
     """Search local markdown notes by keyword."""
@@ -242,7 +241,6 @@ def search_notes(keyword: str, limit: int = 5) -> list[dict]:
             break
     return hits
 
-
 @mcp.resource("note://{name}")
 def read_note(name: str) -> str:
     """Read one note by file name."""
@@ -251,7 +249,6 @@ def read_note(name: str) -> str:
     if path.suffix != ".md":
         path = path.with_suffix(".md")
     return path.read_text(encoding="utf-8")
-
 
 if __name__ == "__main__":
     mcp.run(transport="streamable-http")

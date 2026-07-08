@@ -24,6 +24,8 @@ Go，也常被称为 Golang，是 Google 开源的静态类型、编译型编程
 
 Go 适合构建网络服务、命令行工具、云原生基础设施、微服务、数据处理程序等。Docker、Kubernetes、etcd、Terraform、Prometheus 等项目都大量使用 Go。
 
+![Go 入门学习从环境安装和 go env 开始，经 go mod init、main.go、go run、go build 形成项目运行与单文件部署流程，并延伸到 goroutine、channel 和标准库](./images/go-getting-started-toolchain-overview-figure-01.png)
+
 ### 设计取向
 
 | 取向 | 说明 |

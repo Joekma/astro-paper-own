@@ -22,6 +22,8 @@ language: zh-CN
 
 Avalonia 提供了全面的输入事件来处理指针（鼠标/触摸/笔）、键盘和手势交互。大多数输入事件使用组合的 `Tunnel | Bubble` 路由策略，允许父元素在输入到达目标之前进行拦截。
 
+![Avalonia 将鼠标、触摸和手写笔统一为指针事件，并与键盘事件、手势事件一起通过 Tunnel 和 Bubble 路由到处理器](./images/avalonia-input-events-routing-figure-01.png)
+
 ### 输入事件类型
 
 | 类型         | 说明                         | 路由策略 |

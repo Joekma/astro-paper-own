@@ -26,6 +26,8 @@ language: zh-CN
 - 超时控制
 - 请求作用域数据
 
+![Go context 在调用链和 goroutine 之间传播取消信号、截止时间、超时控制和请求作用域数据，父 Context 派生 WithCancel、WithTimeout、WithDeadline、WithValue 后通过 Done 通道通知下游停止](./images/go-context-cancellation-propagation-figure-01.png)
+
 它不是全局变量，也不是配置容器。它的主要职责是让一组相关操作可以一起停止。
 
 ---

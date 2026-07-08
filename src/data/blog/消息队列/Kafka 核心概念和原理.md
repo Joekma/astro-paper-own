@@ -1,4 +1,4 @@
-﻿---
+---
 title: Kafka 核心概念和原理
 series: 消息队列
 seriesOrder: 2
@@ -18,6 +18,8 @@ language: zh-CN
 ## 概述
 
 Kafka 是 LinkedIn 开源的分布式流处理平台，最初用于日志收集，现已广泛用于实时数据管道、流处理等场景。以高吞吐量、低延迟著称，适合日志收集和实时分析。
+
+![Kafka 核心架构由 Producer 按 key 写入 Topic，Topic 被拆成多个 Partition 分布在 Broker 集群中，并通过 Leader 和 Follower 副本容错，Consumer Group 按分区消费并提交 Offset、观察 lag](./images/kafka-core-architecture-partition-offset-figure-01.png)
 
 ## 核心概念
 

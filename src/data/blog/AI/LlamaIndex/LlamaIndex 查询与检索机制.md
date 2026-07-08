@@ -21,8 +21,6 @@ language: zh-CN
 
 可以把一次查询拆成四步：查询引擎接收问题，检索器从索引中找相关节点，后处理器筛选或重排节点，响应合成器把节点内容组织成最终回答。
 
-![LlamaIndex 查询与检索链路](./images/llamaindex-query-retrieval.svg)
-
 ### 查询流程
 
 ```
@@ -40,6 +38,8 @@ language: zh-CN
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+![LlamaIndex 查询流程由 Query Engine、Retriever、Retrieved Nodes、Postprocessor 和 Synthesizer 组成，并通过分数、元数据和来源调试检索质量](./images/llamaindex-query-retrieval-pipeline-figure-01.png)
 
 ## 查询引擎
 

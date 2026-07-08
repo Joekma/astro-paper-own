@@ -22,6 +22,8 @@ language: zh-CN
 
 数据绑定提供了一种简单的方法来获取数据到应用程序 UI，而无需在每次值更改时在每个控件上设置属性。数据绑定在对象属性和 UI 控件属性之间建立映射，这种映射可以是双向的，也可以是单向的。
 
+![Avalonia 数据绑定通过 DataContext 在 View 控件属性和 ViewModel 属性之间建立 OneWay、TwoWay 与 Converter 数据流](./images/avalonia-data-binding-flow-figure-01.png)
+
 ### 数据绑定的优势
 
 | 优势       | 说明                 |

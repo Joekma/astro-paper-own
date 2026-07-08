@@ -22,6 +22,8 @@ language: zh-CN
 
 Avalonia 支持创建自定义控件来满足特定的 UI 需求。本文介绍如何创建可样式化、可重用的自定义控件。
 
+![Avalonia 自定义控件在 UserControl、TemplatedControl 和 Control 三种路径之间按组合、模板化和自定义渲染能力进行选择](./images/avalonia-custom-control-choice-figure-01.png)
+
 ### 自定义控件类型
 
 | 类型                 | 基类               | 用途           |

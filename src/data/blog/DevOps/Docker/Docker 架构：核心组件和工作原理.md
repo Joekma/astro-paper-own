@@ -31,6 +31,8 @@ Docker 是一个容器化平台，可以把应用及其依赖打包为镜像，�
 | 管理容器生命周期 | containerd |
 | 创建符合 OCI 规范的容器进程 | runc |
 
+![Docker 架构中 Docker Client 通过 API 调用 Docker Daemon，由 BuildKit 构建镜像，containerd 管理生命周期，runc 创建 OCI 容器进程，并协调镜像、容器、网络和数据卷](./images/docker-architecture-components-flow-figure-01.png)
+
 ## 架构概览
 
 Docker 采用 Client-Server 架构。用户通过 Docker CLI 发出命令，Docker Daemon 接收请求，再协调镜像、容器、网络和存储等组件。

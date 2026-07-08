@@ -26,6 +26,8 @@ language: zh-CN
 
 Avalonia 包含一组从 `Panel` 派生的元素，这些元素支持多种复杂布局。本文详细介绍 Avalonia 的布局系统和各种面板控件。
 
+![Avalonia 布局系统通过递归布局树执行 Measure 测量和 Arrange 排列，并由不同 Panel 决定子元素位置](./images/avalonia-layout-measure-arrange-figure-01.png)
+
 ### 布局系统概述
 
 布局是一个递归系统，导致元素被测量、定位和绘制。布局描述了测量和排列 `Panel` 元素子元素集合的过程。

@@ -21,6 +21,8 @@ language: zh-CN
 
 NuGet 是 .NET 平台的包管理器，用于创建、共享和使用可重用的代码包。通过 NuGet，开发人员可以轻松地将第三方库添加到项目中，实现代码复用。
 
+![NuGet 包管理从项目 PackageReference 出发，经 NuGet 源和版本解析生成依赖图，再通过 restore、全局缓存和 build 供项目使用](./images/nuget-package-restore-dependency-flow-figure-01.png)
+
 ### NuGet 的核心功能
 
 | 功能         | 说明                      |

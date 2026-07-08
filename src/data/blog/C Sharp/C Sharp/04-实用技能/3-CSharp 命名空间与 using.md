@@ -22,6 +22,8 @@ language: zh-CN
 
 命名空间是 C# 组织代码的核心机制，它帮助我们避免类型名称冲突，并使代码结构更加清晰。合理使用命名空间可以让大型项目的代码更易于维护和扩展。
 
+![C# 命名空间通过 namespace 层级组织类型，using 和 global using 简化名称解析，完全限定名用于处理命名冲突](./images/csharp-namespace-using-resolution-figure-01.png)
+
 ### 核心概念
 
 | 概念           | 说明                   |

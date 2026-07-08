@@ -23,6 +23,8 @@ language: zh-CN
 
 文件 I/O 是应用程序与文件系统交互的基础。C# 提供了丰富的 API 来读写文件、创建目录、处理路径等。本文将详细介绍这些功能。
 
+![C# 文件 I/O 从 Path、Directory、File 等高级 API 进入 FileStream 和读写器层，最终完成同步或异步磁盘文件访问](./images/csharp-file-io-api-layers-figure-01.png)
+
 ### 核心命名空间
 
 | 命名空间               | 说明          |

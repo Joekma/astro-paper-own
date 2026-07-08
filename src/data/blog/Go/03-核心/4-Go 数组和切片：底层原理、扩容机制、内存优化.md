@@ -22,6 +22,8 @@ language: zh-CN
 
 数组是固定长度、元素类型相同的连续内存区域。
 
+![Go 数组是固定长度连续内存，切片 header 由 ptr、len、cap 指向底层数组，append 可能触发扩容和重新分配，copy、delete 与共享底层数组会影响内存保留](./images/go-array-slice-memory-growth-figure-01.png)
+
 ```go
 var nums [3]int
 nums[0] = 1

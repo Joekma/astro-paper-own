@@ -19,7 +19,7 @@ language: zh-CN
 
 SFT（Supervised Fine-tuning，监督微调）是大模型微调最常见的第一步。它用高质量的“输入-理想输出”样例训练模型，让模型学会任务格式、语气、边界和回答结构。
 
-![SFT 监督微调工作流](./images/04-sft-workflow.svg)
+![SFT 从样例数据、messages 格式、聊天模板到训练验证和模型保存的实战流程](./images/sft-workflow-chat-model-figure-01.png)
 
 ## 核心概念
 
@@ -121,7 +121,6 @@ dataset = load_dataset(
         "validation": "data/valid.jsonl",
     },
 )
-
 
 training_args = SFTConfig(
     output_dir="outputs/sft",

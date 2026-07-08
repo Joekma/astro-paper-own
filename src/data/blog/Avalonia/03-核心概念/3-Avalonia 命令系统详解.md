@@ -23,6 +23,8 @@ language: zh-CN
 
 命令系统将用户操作（按钮点击、菜单选择、键盘快捷键）与视图模型中的逻辑连接起来。Avalonia 使用标准的 .NET `ICommand` 接口，实现了 UI 和业务逻辑的清晰分离。
 
+![Avalonia 命令系统从用户操作进入命令绑定，经 CanExecute 判断后执行 ViewModel 逻辑，并通过 CanExecuteChanged 更新控件状态](./images/avalonia-command-icanexecute-flow-figure-01.png)
+
 ### 命令系统的优势
 
 | 优势         | 说明                              |

@@ -22,6 +22,8 @@ language: zh-CN
 
 > C# 和 Python 具备类似的概念。如果你已经了解 Python，这些熟悉的构造可以帮助你学习 C#。本文档详细介绍两种语言的异同，帮助 Python 开发者平滑过渡到 C#。
 
+![Python 开发者学习 C# 时，可将已有的类型、函数、类、集合、异步和包管理经验映射到 C# 类型系统、委托、接口、LINQ、Task 和 NuGet](./images/python-to-csharp-learning-roadmap-figure-01.png)
+
 ### 学习收益
 
 | 技能提升     | 说明                              |

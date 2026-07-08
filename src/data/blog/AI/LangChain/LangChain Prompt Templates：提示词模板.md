@@ -21,8 +21,6 @@ language: zh-CN
 
 提示词模板的价值不只是少写字符串拼接，而是把“固定指令”和“每次变化的输入”分开。这样做之后，提示词更容易审查、复用和版本管理，也更不容易因为一次临时改动破坏其他调用。
 
-![LangChain Prompt Templates 类型](./images/langchain-prompt-templates.svg)
-
 ### 提示词模板的价值
 
 | 价值 | 说明 |
@@ -31,6 +29,8 @@ language: zh-CN
 | **一致性** | 保持提示词格式统一 |
 | **可维护性** | 修改模板即可更新所有使用处 |
 | **动态性** | 支持变量插值和条件逻辑 |
+
+![LangChain Prompt Templates 通过模板类型、变量、默认值、Few-shot 示例和历史占位符组装 PromptValue 并转换为字符串或消息传给模型](./images/langchain-prompt-templates-assembly-figure-01.png)
 
 ## PromptTemplate
 

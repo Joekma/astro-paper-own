@@ -22,6 +22,8 @@ language: zh-CN
 
 Avalonia 控件在创建、附加到可视树和移除的过程中会引发多个事件。理解这些事件的顺序和用途对于初始化控件、加载数据和清理资源至关重要。
 
+![Avalonia 控件从创建、Initialized、AttachedToVisualTree、布局渲染、Loaded 到 Detached 和 Unloaded 的生命周期事件顺序](./images/avalonia-control-lifecycle-events-figure-01.png)
+
 ### 生命周期事件的作用
 
 | 阶段       | 说明                     |

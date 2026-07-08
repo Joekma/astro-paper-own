@@ -22,6 +22,8 @@ language: zh-CN
 
 记录（Record）是 C# 9 引入的一种新类型，它是一个**类或结构**，为数据模型提供特定的语法和行为。`record` 修饰符使编译器合成对主要角色存储数据的类型有用的成员，包括支持值相等的 `ToString()` 和成员重载。
 
+![C# record 为数据模型生成值相等、init 属性、with 复制修改等成员，并区分 record class 与 record struct](./images/csharp-record-generated-members-figure-01.png)
+
 ## 什么时候使用 Record
 
 在以下情况下，优先考虑使用记录而不是类或结构：

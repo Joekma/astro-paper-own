@@ -23,6 +23,8 @@ language: zh-CN
 
 实现 `ICommandSource` 的控件具有 `HotKey` 属性，你可以设置或绑定它。当用户按下快捷键时，Avalonia 执行绑定到该控件的命令。
 
+![Avalonia 键盘快捷键从按键组合、KeyGesture、HotKey 或 KeyBinding 进入 ICommand，并经过 CanExecute 后执行](./images/avalonia-keyboard-hotkeys-command-flow-figure-01.png)
+
 ### 快捷键的组成
 
 | 组成             | 说明                          |

@@ -290,16 +290,13 @@ import threading
 
 message = Queue.Queue(10)
 
-
 def producer(i):
     while True:
         message.put(i)
 
-
 def consumer(i):
     while True:
         msg = message.get()
-
 
 for i in range(12):
     t = threading.Thread(target=producer, args=(i,))
@@ -349,10 +346,8 @@ channel = connection.channel()
 
 channel.queue_declare(queue='hello')
 
-
 def callback(ch, method, properties, body):
     print(" [x] Received %r" % body)
-
 
 channel.basic_consume(callback, queue='hello', no_ack=True)
 
@@ -377,13 +372,11 @@ channel = connection.channel()
 
 channel.queue_declare(queue='hello')
 
-
 def callback(ch, method, properties, body):
     print(" [x] Received %r" % body)
     time.sleep(10)
     print('ok')
     ch.basic_ack(delivery_tag=method.delivery_tag)
-
 
 channel.basic_consume(callback, queue='hello', no_ack=False)
 
@@ -436,13 +429,11 @@ channel = connection.channel()
 
 channel.queue_declare(queue='hello', durable=True)
 
-
 def callback(ch, method, properties, body):
     print(" [x] Received %r" % body)
     time.sleep(10)
     print('ok')
     ch.basic_ack(delivery_tag=method.delivery_tag)
-
 
 channel.basic_consume(callback, queue='hello', no_ack=False)
 
@@ -467,13 +458,11 @@ channel = connection.channel()
 
 channel.queue_declare(queue='hello')
 
-
 def callback(ch, method, properties, body):
     print(" [x] Received %r" % body)
     time.sleep(10)
     print('ok')
     ch.basic_ack(delivery_tag=method.delivery_tag)
-
 
 channel.basic_qos(prefetch_count=1)
 channel.basic_consume(callback, queue='hello', no_ack=False)
@@ -530,10 +519,8 @@ channel.bind_queue(exchange='logs', queue=queue_name)
 
 print(' [*] Waiting for logs. To exit press CTRL+C')
 
-
 def callback(ch, method, properties, body):
     print(" [x] %r" % body)
-
 
 channel.basic_consume(callback, queue=queue_name, no_ack=True)
 
@@ -602,7 +589,6 @@ channel.queue_declare(queue='task_queue', durable=True)
 
 channel.basic_qos(prefetch_count=1)
 
-
 def callback(ch, method, properties, body):
     task = json.loads(body)
     print(f" [x] Received task: {task}")
@@ -612,7 +598,6 @@ def callback(ch, method, properties, body):
     print(" [x] Task completed")
 
     ch.basic_ack(delivery_tag=method.delivery_tag)
-
 
 channel.basic_consume(callback, queue='task_queue')
 

@@ -12,7 +12,6 @@ tags:
   - 自我提升
   - 心理学
   - 行为改变
-draft: false
 language: zh-CN
 ---
 

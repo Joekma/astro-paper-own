@@ -21,8 +21,6 @@ language: zh-CN
 
 这篇文章可以按一条流水线理解：先把原始资料加载成文档，再清理和补充元数据，接着切分成节点，最后把节点组织成索引。每一步都会影响后续检索质量。
 
-![LlamaIndex 数据连接与索引构建](./images/llamaindex-data-indexing.svg)
-
 ### 数据处理流程
 
 ```
@@ -41,6 +39,8 @@ language: zh-CN
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+![LlamaIndex 数据连接与索引构建从 Sources、Readers、Documents、Metadata、Parser、Nodes、Embeddings 到 Index、Storage 和 Query Engine 的完整流水线](./images/llamaindex-data-connectors-indexing-figure-01.png)
 
 ## 数据连接器 (Readers)
 

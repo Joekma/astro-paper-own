@@ -23,7 +23,7 @@ AI Agent 是一种能够围绕目标持续感知上下文、调用工具、执�
 
 从 OpenClaw 和 Hermes Agent 的设计可以看到，现代 Agent 正在从“带工具的聊天机器人”演进为“长期运行的个人执行环境”。OpenClaw 强调本地优先、Gateway、多通道入口和工作区文件；Hermes Agent 强调技能、记忆、工具集、终端后端、定时任务和多平台运行。
 
-![AI Agent 核心组件](./images/02-agent-core-components.svg)
+![AI Agent 从聊天机器人演进为带模型、工具、状态、策略和安全边界的运行系统](./images/agent-core-concepts-evolution-figure-01.png)
 
 ## Agent 与普通聊天机器人的区别
 
@@ -159,22 +159,18 @@ import sys
 WORKSPACE = Path("workspace")
 WORKSPACE.mkdir(exist_ok=True)
 
-
 def list_files(_: str) -> str:
     return "\n".join(str(p) for p in WORKSPACE.rglob("*") if p.is_file()) or "workspace is empty"
-
 
 def write_note(text: str) -> str:
     path = WORKSPACE / "note.md"
     path.write_text(text, encoding="utf-8")
     return f"wrote {path}"
 
-
 TOOLS = {
     "list_files": list_files,
     "write_note": write_note,
 }
-
 
 def decide(user_input: str) -> tuple[str, str]:
     if "列文件" in user_input or "list" in user_input.lower():
@@ -183,13 +179,11 @@ def decide(user_input: str) -> tuple[str, str]:
         return "write_note", user_input
     return "write_note", f"待处理任务：{user_input}"
 
-
 def run(user_input: str) -> str:
     tool_name, args = decide(user_input)
     print(f"[plan] call tool: {tool_name}")
     result = TOOLS[tool_name](args)
     return f"[result] {result}"
-
 
 if __name__ == "__main__":
     print(run(" ".join(sys.argv[1:]) or "记录：学习 Agent Loop"))

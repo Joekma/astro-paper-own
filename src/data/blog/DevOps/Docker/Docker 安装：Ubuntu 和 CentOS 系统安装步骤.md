@@ -28,6 +28,8 @@ CentOS Linux 7 已在 2024 年 6 月 30 日停止维护，CentOS 6 更早停止�
 
 安装前先确认三件事：系统发行版仍受支持、内核版本满足要求、主机可以访问 Docker 仓库或内部镜像源。
 
+![Docker Engine 在 Linux 上的推荐安装链路：系统检查、移除旧版本、添加官方仓库和 GPG Key、安装 Engine 与 Compose 插件、启用 systemd 并验证](./images/docker-engine-linux-install-flow-figure-01.png)
+
 ## 安装前检查
 
 ```bash

@@ -23,8 +23,6 @@ Skills 是 Agent 的过程记忆。它把“如何完成某类任务”的经验
 
 与长期记忆不同，记忆通常保存事实和偏好；技能保存流程、工具使用方法、检查清单和输出规范。
 
-![Agent Skills 生命周期](./images/07-agent-skills-lifecycle.svg)
-
 ## Skill 的基本形态
 
 一个典型 Skill 目录可能长这样：
@@ -110,6 +108,8 @@ Level 2：技能里的具体 reference/template/script
 
 - 降低 token 成本。
 - 减少无关技能干扰模型判断。
+
+![Agent Skills 通过技能索引、渐进式加载、执行验证和生命周期治理沉淀可复用过程记忆](./images/agent-skills-lifecycle-figure-01.png)
 
 ## Skill 编写模板
 
@@ -254,7 +254,6 @@ import re
 
 SKILLS_DIR = Path("skills")
 
-
 def parse_frontmatter(text: str) -> dict:
     if not text.startswith("---"):
         return {}
@@ -265,7 +264,6 @@ def parse_frontmatter(text: str) -> dict:
             key, value = line.split(":", 1)
             result[key.strip()] = value.strip().strip("'\"")
     return result
-
 
 def skills_list() -> list[dict]:
     skills = []
@@ -281,12 +279,10 @@ def skills_list() -> list[dict]:
         )
     return skills
 
-
 def skill_view(name: str) -> str:
     safe = re.sub(r"[^a-zA-Z0-9_-]", "", name)
     path = SKILLS_DIR / safe / "SKILL.md"
     return path.read_text(encoding="utf-8")
-
 
 if __name__ == "__main__":
     print(skills_list())

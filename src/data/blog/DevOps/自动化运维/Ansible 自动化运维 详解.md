@@ -41,6 +41,8 @@ Ansible 是开源的自动化运维工具，采用 SSH 协议实现远程连接�
 
 如果只是排查线上问题，可以优先看“常见问题与排查”；如果要建设标准化运维仓库，应重点看“Roles 角色”“变量与模板”和“最佳实践”。
 
+![Ansible 自动化运维从控制节点读取 Inventory、Playbook 和 Role，经变量模板、Tasks、Handlers、Modules 通过 SSH 或 WinRM 幂等执行到受管主机](./images/ansible-automation-workflow-figure-01.png)
+
 ## 核心概念
 
 ### 基础架构

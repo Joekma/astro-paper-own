@@ -22,6 +22,8 @@ language: zh-CN
 
 类是 C# 中最核心的概念之一，它是面向对象编程的基础。本文将详细介绍类的定义、对象的创建、继承机制和接口的实现。
 
+![C# 面向对象中类通过 new 创建对象，基类和派生类形成继承层次，接口定义契约并支持多态调用](./images/csharp-oop-class-interface-inheritance-figure-01.png)
+
 ### 核心概念速览
 
 | 概念     | 说明                      |

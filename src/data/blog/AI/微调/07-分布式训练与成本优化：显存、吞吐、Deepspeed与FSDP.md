@@ -20,7 +20,7 @@ language: zh-CN
 
 分布式训练不是“多加几张卡”这么简单。它要同时处理显存、吞吐、通信、失败重跑和成本控制。微调项目真正昂贵的地方，往往不是一次成功训练，而是多次失败实验和不可复现的调参。
 
-![分布式训练与成本优化](./images/07-distributed-cost.svg)
+![分布式微调中显存构成、ZeRO 与 FSDP 分片、吞吐和成本之间的优化关系](./images/distributed-training-memory-cost-figure-01.png)
 
 ## 核心概念
 

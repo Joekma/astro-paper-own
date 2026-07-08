@@ -246,7 +246,6 @@ print(OldboyTeacher.n) #111
 # 自下而上依次注释各个类中的n=xxx，然后重新运行程序，发现n的查找顺序为OldboyTeacher->Foo->Bar->object->Mymeta->type
 ```
 
-
 于是属性查找应该分成两层，一层是对象层（基于c3算法的MRO）的查找，另外一个层则是类层（即元类层）的查找
 
 ```
@@ -639,6 +638,5 @@ class Foo(object,metaclass=Mymeta):  # Foo=Mymeta(...)
 obj=Foo('egon',18,'male')
 print(obj.__dict__)
 ```
-
 
 ---

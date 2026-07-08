@@ -325,7 +325,6 @@ class Mariadb(MySQL):
     def __str__(self):
         return '<%s:%s>' %(self.host,self.port)
 
-
 m=Mariadb.from_conf()
 print(m) # 我们的意图是想触发Mariadb.__str__,但是结果触发了MySQL.__str__的执行，打印就不告诉你：
 
@@ -775,7 +774,6 @@ class Foo:
 
     def __getattr__(self, item):
         print('----> from getattr:你找的属性不存在')
-
 
     def __setattr__(self, key, value):
         print('----> from setattr')

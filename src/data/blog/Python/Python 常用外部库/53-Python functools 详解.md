@@ -91,11 +91,9 @@ print(dir(functools))
 ```python
 import functools
 
-
 def showarg(*args, **kw):
     print(args)
     print(kw)
-
 
 p1 = functools.partial(showarg, 1, 2, 3)
 p1()
@@ -154,10 +152,8 @@ showarg(1, 2, 3, 4, 5, 6)
 ```python
 from functools import partial
 
-
 def power(base, exponent):
     return base ** exponent
-
 
 square = partial(power, exponent=2)
 cube = partial(power, exponent=3)
@@ -174,10 +170,8 @@ print(cube(2))    # 输出: 8
 from functools import partial
 import tkinter as tk
 
-
 def on_click(button_name, event):
     print(f"Button {button_name} clicked")
-
 
 root = tk.Tk()
 btn1 = tk.Button(root, text="Button 1")
@@ -214,12 +208,10 @@ def note(func):
 
     return wrapper
 
-
 @note
 def test():
     "test function"
     print('I am test')
-
 
 test()
 print(test.__doc__)
@@ -240,7 +232,6 @@ wrapper function
 ```python
 import functools
 
-
 def note(func):
     "note function"
 
@@ -252,12 +243,10 @@ def note(func):
 
     return wrapper
 
-
 @note
 def test():
     "test function"
     print('I am test')
-
 
 test()
 print(test.__doc__)
@@ -293,7 +282,6 @@ test function
 
 ```python
 import functools
-
 
 def decorator(func):
     @functools.wraps(func)

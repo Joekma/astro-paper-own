@@ -32,6 +32,8 @@ language: zh-CN
 
 Kafka 适合事件流、异步解耦、日志管道等场景。
 
+![Go 集成 Kafka 时，Producer 通过 Sarama 向 Topic 的多个 Partition 写入消息，Broker 承载分区，Consumer Group 分配分区消费并提交 Offset，同时需要关注 acks、retry、rebalance、context cancel、backpressure 和 DLQ](./images/go-kafka-sarama-partition-consumer-flow-figure-01.png)
+
 ---
 
 ## 安装 Sarama

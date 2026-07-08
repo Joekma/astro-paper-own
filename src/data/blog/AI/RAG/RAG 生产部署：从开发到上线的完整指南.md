@@ -21,8 +21,6 @@ language: zh-CN
 
 将 RAG 系统从开发环境迁移到生产环境需要考虑可靠性、性能、安全性和可维护性等多个方面。本篇将详细介绍生产级 RAG 系统的完整部署流程和最佳实践。
 
-![RAG 生产部署层次](./images/rag-production-deployment.svg)
-
 ### 生产部署架构
 
 ```
@@ -63,6 +61,8 @@ language: zh-CN
 │                                                                      │
 └─────────────────────────────────────────────────────────────────────┘
 ```
+
+![生产级 RAG 架构包含在线请求链、RAG 服务与数据层、异步索引流水线、可观测运维和发布控制面](./images/rag-production-deployment-architecture-figure-01.png)
 
 ## 项目结构
 

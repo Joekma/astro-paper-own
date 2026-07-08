@@ -23,6 +23,8 @@ language: zh-CN
 
 C# 是一种强类型语言，每个变量和表达式都有一个确定的类型。了解数据类型是编写正确、高效 C# 代码的基础。
 
+![C# 类型系统将值类型和引用类型区分为直接存储与引用地址，并通过类型转换、默认值和类型安全约束代码行为](./images/csharp-type-system-memory-model-figure-01.png)
+
 ### C# 类型系统
 
 | 类别         | 说明                                 |
@@ -374,7 +376,6 @@ int result = nullableInt ?? 0;  // 左边为 null → 返回右边值（0）;左
 
 // 空条件访问
 int? length = nullableInt?.ToString()?.Length; //nullableInt 是 null，所以整个表达式的值是 null ;length = null
-
 
 ```
 

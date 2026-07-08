@@ -23,6 +23,8 @@ language: zh-CN
 
 Avalonia 提供了丰富的动画支持，可以在应用程序中创建流畅的用户体验。动画系统基于标准 .NET 属性系统，可以为任何可动画属性创建动画。
 
+![Avalonia 动画系统通过可动画属性、时间轴、关键帧、Easing 曲线和状态转换生成渲染变化](./images/avalonia-animation-timeline-keyframes-figure-01.png)
+
 ### 动画类型
 
 | 类型           | 说明                         |

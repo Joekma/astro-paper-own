@@ -23,6 +23,8 @@ language: zh-CN
 
 本文档介绍 Desktop Application 的多种打包方案，帮助开发者选择最适合的发布方式。
 
+![桌面应用打包方案需要在 dotnet publish 直接发布、framework-dependent、自包含 single-file、Inno Setup 或 WiX 安装包、MSIX 签名和企业部署之间按体积、更新、权限、用户体验与运维成本做取舍](./images/desktop-application-packaging-decision-map-figure-01.png)
+
 ### 核心优势
 
 | 特性 | 说明 |

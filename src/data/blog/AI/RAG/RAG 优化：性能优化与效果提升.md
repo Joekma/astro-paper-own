@@ -20,7 +20,7 @@ language: zh-CN
 
 RAG 系统的性能直接影响用户体验和系统成本。本篇将详细介绍各种优化策略，帮助你构建高效、可靠的 RAG 应用。
 
-![RAG 优化反馈闭环](./images/rag-optimization-loop.svg)
+![RAG 系统从检索、生成、系统性能到评估反馈的持续优化闭环](./images/rag-optimization-feedback-loop-figure-01.png)
 
 ### 优化维度
 

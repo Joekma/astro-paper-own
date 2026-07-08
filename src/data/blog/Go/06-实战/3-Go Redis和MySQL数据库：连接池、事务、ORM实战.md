@@ -66,6 +66,8 @@ func main() {
 
 go-redis 的操作都接收 `context.Context`，方便超时和取消。
 
+![Go 服务集成 Redis 和 MySQL 时，通常先通过 go-redis 和 TTL 做缓存读取，cache miss 后进入 database/sql 连接池查询 MySQL，并结合 context timeout、事务 Tx、Prepare、GORM、慢查询和错误重试控制数据访问链路](./images/go-redis-mysql-cache-aside-data-access-figure-01.png)
+
 ### 基本操作
 
 ```go

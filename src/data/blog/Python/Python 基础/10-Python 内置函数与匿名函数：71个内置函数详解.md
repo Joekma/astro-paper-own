@@ -510,7 +510,6 @@ result = reduce(lambda x, y: x * y, nums)
 print(result)  # 120
 ```
 
-
 ### 异步迭代器增强（aiter/anext）
 
 Python 3.10 引入的 `aiter()` 和 `anext()` 函数在 Python 3.12 中得到进一步完善：
@@ -636,7 +635,6 @@ print(sorted(salaries, key=lambda k: salaries[k], reverse=True))
 3. **一次性使用**：不需要多次调用的简单函数
 
 > **注意**：虽然 lambda 函数简洁，但复杂的逻辑还是应该使用普通函数来保持代码可读性。
-
 
 掌握这些内置函数和 lambda 表达式的使用，可以让你的 Python 代码更加简洁和优雅。
 

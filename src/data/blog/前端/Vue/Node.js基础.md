@@ -1,4 +1,4 @@
-﻿---
+---
 title: Node.js基础
 series: Vue
 seriesOrder: 6

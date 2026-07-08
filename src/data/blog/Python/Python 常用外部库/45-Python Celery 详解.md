@@ -372,7 +372,6 @@ app = Celery("proj")
 app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks()
 
-
 @app.task(bind=True, ignore_result=True)
 def debug_task(self):
     print(f"Request: {self.request!r}")
@@ -417,7 +416,6 @@ from celery import shared_task
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 
-
 @shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def send_welcome_email(self, user_id):
     user = get_user_model().objects.get(pk=user_id)
@@ -438,7 +436,6 @@ from django.db import transaction
 from django.http import JsonResponse
 
 from users.tasks import send_welcome_email
-
 
 def register_done(request, user):
     transaction.on_commit(lambda: send_welcome_email.delay(user.id))

@@ -21,6 +21,8 @@ language: zh-CN
 
 Shell 是用户与操作系统交互的命令解释器。Linux 自动化脚本通常使用 Bash 编写，因此本文示例默认使用 Bash。
 
+![Shell 脚本编程通常从 shebang 和 set -euo pipefail 开始，围绕变量、参数、条件判断、循环、函数和退出码组织流程，并通过引用变量、trap、重定向、管道、stdin、stdout、stderr 控制安全执行](./images/shell-scripting-safe-structure-figure-01.png)
+
 ## 脚本开头
 
 推荐写法：

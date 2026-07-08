@@ -23,8 +23,6 @@ language: zh-CN
 
 如果把 Agent 看成一个系统，模型是推理层，工具是执行层，工具调用协议就是两者之间的契约。
 
-![工具调用与函数调用流程](./images/04-tool-calling-flow.svg)
-
 ## 工具的基本结构
 
 一个工具至少包含四部分：
@@ -90,6 +88,8 @@ Tool Calling 的范围更大，除了函数，还包括浏览器、终端、文�
 ```
 
 这条链路里最容易被忽略的是“工具结果清洗”。网页、命令行输出和第三方 API 返回值都可能很长，也可能包含对模型的恶意指令，不能未经处理直接塞回上下文。
+
+![Agent 工具调用从模型意图、Schema 校验、风险审批到执行、清洗和上下文回写的安全管线](./images/agent-tool-calling-pipeline-figure-01.png)
 
 ## 常见工具类型
 
@@ -223,7 +223,6 @@ import json
 from dataclasses import dataclass
 from typing import Callable
 
-
 @dataclass
 class Tool:
     name: str
@@ -232,7 +231,6 @@ class Tool:
     schema: dict
     handler: Callable[[dict], dict]
     check: Callable[[], bool] = lambda: True
-
 
 class ToolRegistry:
     def __init__(self) -> None:
@@ -278,13 +276,11 @@ from tool_registry import Tool, ToolRegistry
 
 registry = ToolRegistry()
 
-
 def read_text(args: dict) -> dict:
     path = Path(args["path"])
     if not path.exists():
         return {"error": "file not found"}
     return {"content": path.read_text(encoding="utf-8")[:2000]}
-
 
 registry.register(
     Tool(

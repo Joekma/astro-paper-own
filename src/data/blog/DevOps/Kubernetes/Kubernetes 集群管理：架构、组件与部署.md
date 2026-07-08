@@ -26,6 +26,8 @@ Kubernetes（K8s）是容器编排平台，用于自动化部署、扩缩容和�
 
 学习 Kubernetes 时，不要从 YAML 字段硬背开始。更稳的顺序是先理解控制平面如何维护期望状态，再理解 Pod、Deployment、Service 这些对象如何协作，最后再扩展到网络、存储、监控和安全。
 
+![Kubernetes 通过 kubectl 提交 YAML 期望状态，由 API Server、etcd、Scheduler 和 Controller 组成控制平面，再经 kubelet 与 CRI 运行时在 Worker Node 上管理 Pod、Deployment 和 Service，并持续自愈](./images/kubernetes-cluster-architecture-reconciliation-figure-01.png)
+
 ## 核心能力
 
 | 能力 | 说明 |

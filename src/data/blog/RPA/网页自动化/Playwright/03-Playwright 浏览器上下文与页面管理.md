@@ -768,4 +768,3 @@ def parallel_execution():
     print(results)
 ```
 
-

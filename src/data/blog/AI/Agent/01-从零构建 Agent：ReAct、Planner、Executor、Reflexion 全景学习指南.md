@@ -22,8 +22,6 @@ language: zh-CN
 
 > 目标：理解现代 Agent 的核心工作原理，并能够从零实现一个具备规划、执行、反思能力的 Agent 系统。
 
-![从零构建 Agent 能力全景](./images/01-agent-from-scratch.svg)
-
 ---
 
 ## Agent 的定义
@@ -52,6 +50,8 @@ Agent = LLM + Reasoning + Planning + Acting + Reflection + Memory
 | Reflection | 自我纠错 |
 | Memory     | 记忆   |
 | Scheduling | 任务调度 |
+
+![ReAct、Planner、Executor、Reflexion 与 Memory 组成的 Agent 闭环架构](./images/agent-react-planner-executor-reflexion-figure-01.png)
 
 ---
 

@@ -23,7 +23,7 @@ language: zh-CN
 文本 → token → 前向计算 → loss → 反向传播 → 参数更新
 ```
 
-![大模型训练循环](./images/03-training-loop.svg)
+![微调训练循环中 Tokenizer、前向计算、损失函数、反向传播和参数更新的关系](./images/training-loop-token-loss-figure-01.png)
 
 ## 核心概念
 

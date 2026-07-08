@@ -30,6 +30,8 @@ go func() {
 }()
 ```
 
+![Go 并发编程由 runtime scheduler 调度 goroutine，通过 channel、select、WaitGroup、Mutex、RWMutex、Once、Pool 和 context 取消协同完成任务，同时需要明确退出条件并避免 data race](./images/go-concurrency-coordination-map-figure-01.png)
+
 启动 goroutine 很便宜，但不是免费。每个 goroutine 都应该有明确的退出条件。
 
 ---

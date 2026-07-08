@@ -22,6 +22,8 @@ language: zh-CN
 
 领域驱动设计（Domain-Driven Design，简称 DDD）是一种软件开发方法论，强调将软件的核心业务逻辑放在领域模型中。DDD 通过深入理解业务领域，建立通用语言（Ubiquitous Language），使技术团队和业务团队能够有效沟通，共同构建符合业务价值的软件系统。
 
+![DDD 通过通用语言建立领域模型，在聚合边界内组织实体和值对象，并通过应用服务、仓储接口和基础设施完成业务用例落地](./images/ddd-domain-driven-design-architecture-figure-01.png)
+
 ### 为什么要使用 DDD
 
 | 动因             | 说明                                       |

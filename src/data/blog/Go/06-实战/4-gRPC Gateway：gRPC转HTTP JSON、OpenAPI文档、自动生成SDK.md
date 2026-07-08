@@ -29,6 +29,8 @@ gRPC-Gateway 是 protoc 插件，可以根据 proto 中的 HTTP 注解生成反�
 - 外部客户端或浏览器使用 HTTP/JSON。
 - 从同一份 proto 生成 gRPC 代码、Gateway 代码和 OpenAPI 文档。
 
+![gRPC-Gateway 通过 proto 中的 google.api.http 注解生成 gateway 反向代理代码，把 Browser 或 REST Client 的 HTTP JSON 请求转换为 gRPC 调用，同时从同一契约生成 grpc code、gateway code、OpenAPI docs 和 SDK](./images/grpc-gateway-dual-protocol-architecture-figure-01.png)
+
 ---
 
 ## 安装工具

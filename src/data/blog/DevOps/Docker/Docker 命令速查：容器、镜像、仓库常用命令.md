@@ -23,6 +23,8 @@ language: zh-CN
 
 速查命令前先判断操作对象：容器、镜像、网络、数据卷还是 Compose 项目。涉及删除、清理、覆盖标签和生产镜像推送时，先用查看命令确认目标，再执行变更命令。
 
+![Docker 常用命令按容器、镜像、网络、数据卷、Compose 和系统清理分类，并遵循先查看、再操作、再验证、最后谨慎清理的安全路径](./images/docker-commands-taxonomy-reference-figure-01.png)
+
 ## 容器生命周期
 
 | 命令 | 说明 |

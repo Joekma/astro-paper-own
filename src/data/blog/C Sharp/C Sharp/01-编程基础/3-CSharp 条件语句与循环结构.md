@@ -25,6 +25,8 @@ language: zh-CN
 
 程序的核心能力之一是根据不同条件做出决策并重复执行代码。本文将详细介绍 C# 中的条件语句和循环结构。
 
+![C# 控制流通过 if else、switch、for、while 和 foreach 在条件分支、循环体与退出路径之间组织程序执行](./images/csharp-branches-loops-control-flow-figure-01.png)
+
 ### 概念速览
 
 | 结构类型     | 用途                 | 关键字                          |

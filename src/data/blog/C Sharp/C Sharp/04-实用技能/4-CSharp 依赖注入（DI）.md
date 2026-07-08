@@ -27,6 +27,8 @@ language: zh-CN
 - **依赖关系注册**：在服务容器中注册依赖关系
 - **依赖关系解析**：将服务注入到使用它的类的构造函数中
 
+![.NET 依赖注入通过接口抽象、服务注册、DI 容器生命周期和构造函数注入完成依赖解析与控制反转](./images/csharp-dependency-injection-container-figure-01.png)
+
 ## 为什么需要依赖注入
 
 ### 传统方式的缺点

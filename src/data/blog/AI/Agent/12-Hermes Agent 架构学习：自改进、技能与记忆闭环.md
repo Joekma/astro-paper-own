@@ -23,8 +23,6 @@ Hermes Agent 是 Nous Research 推出的开源 AI Agent 框架，定位于终端
 
 如果说 OpenClaw 更强调个人助手的入口和 Gateway，那么 Hermes Agent 更强调 Agent 如何在使用过程中积累经验，并把经验沉淀为可复用技能。
 
-![Hermes 自改进闭环](./images/12-hermes-self-improvement.svg)
-
 ## 总体架构
 
 ```text
@@ -40,6 +38,8 @@ CLI / IDE / Messaging Gateway
 ```
 
 Hermes 文档中列出的能力非常广：Web 搜索、浏览器自动化、终端执行、文件编辑、记忆、委派、RL training、消息投递、Home Assistant、MCP 等。
+
+![Hermes Agent 架构通过 Toolsets、Skills、Memory、Terminal Backends、Cron、Delegation、Curator 和安全控制面形成自改进任务执行系统](./images/hermes-agent-self-improvement-figure-01.png)
 
 ## Toolsets
 
@@ -214,11 +214,9 @@ hermes-mini/
 ```python
 from pathlib import Path
 
-
 def list_workspace(_: dict) -> dict:
     files = [str(p) for p in Path(".").rglob("*") if p.is_file()]
     return {"files": files[:50]}
-
 
 TOOLS = {
     "list_workspace": {
@@ -235,11 +233,9 @@ from pathlib import Path
 
 MEMORY = Path("MEMORY.md")
 
-
 def remember(text: str) -> None:
     old = MEMORY.read_text(encoding="utf-8") if MEMORY.exists() else ""
     MEMORY.write_text((old + f"\n- {text}\n")[-8000:], encoding="utf-8")
-
 
 def read_memory() -> str:
     return MEMORY.read_text(encoding="utf-8") if MEMORY.exists() else ""
@@ -264,10 +260,8 @@ from pathlib import Path
 from tools import TOOLS
 from memory import remember, read_memory
 
-
 def load_skill(name: str) -> str:
     return (Path("skills") / name / "SKILL.md").read_text(encoding="utf-8")
-
 
 def run(task: str) -> str:
     memory = read_memory()
@@ -279,7 +273,6 @@ def run(task: str) -> str:
     result = TOOLS["list_workspace"]["handler"]({})
     remember(f"用户执行过任务：{task}")
     return f"根据 {len(result['files'])} 个文件生成摘要。"
-
 
 if __name__ == "__main__":
     print(run("总结当前工作区"))

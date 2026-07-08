@@ -33,6 +33,8 @@ gRPC 是基于 HTTP/2 的高性能 RPC 框架，默认使用 Protocol Buffers �
 | 错误模型 | 使用标准状态码表达错误 |
 | 多语言 | 适合跨语言微服务 |
 
+![Go gRPC 微服务开发从 .proto 契约定义 service 和 message 开始，经 protoc 生成 client stub 与 server interface，再通过 HTTP/2 完成 RPC 调用，并结合 streaming、status code、interceptor、metadata、TLS 和 deadline 支持生产通信](./images/go-grpc-microservice-workflow-figure-01.png)
+
 ---
 
 ## 安装工具

@@ -21,6 +21,8 @@ language: zh-CN
 
 Linux 是开源的 Unix-like 操作系统内核，由 Linus Torvalds 于 1991 年发布。日常所说的 Linux 系统一般是 Linux 内核加 GNU 工具、系统服务、包管理器和发行版配置共同组成的操作系统。
 
+![Linux 系统结构从用户应用、Shell 或 GUI、系统调用和 libc 进入 Linux 内核，再由内核管理进程、内存、文件系统、网络和设备驱动，同时通过 systemd、权限、用户组、日志和防火墙完成系统管理](./images/linux-system-architecture-overview-figure-01.png)
+
 ## 系统架构
 
 ```text

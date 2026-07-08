@@ -23,6 +23,8 @@ language: zh-CN
 
 Go 的 `if` 条件不需要小括号，但左大括号必须和 `if` 在同一行。
 
+![Go 流程控制结构由 if 条件判断、for 三段式与条件式循环、range 遍历、switch 和 type switch 分支、select channel 选择以及 break、continue、fallthrough、goto 控制语句组成](./images/go-control-flow-structure-figure-01.png)
+
 ```go
 if score >= 90 {
     fmt.Println("A")

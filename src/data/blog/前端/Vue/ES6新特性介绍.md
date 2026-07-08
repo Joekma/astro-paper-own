@@ -1,4 +1,4 @@
-﻿---
+---
 title: ES6新特性介绍
 series: Vue
 seriesOrder: 7

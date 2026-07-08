@@ -20,7 +20,7 @@ language: zh-CN
 
 数据处理是 RAG 系统的第一步，也是至关重要的一环。高质量的文档处理能够显著提升后续检索和生成的效果。本篇将详细介绍各种文档格式的加载方法、文本分割策略以及元数据管理技巧。
 
-![RAG 数据处理流水线](./images/rag-data-processing.svg)
+![RAG 文档从加载、提取、清洗、分块到元数据增强的处理流水线](./images/rag-data-processing-pipeline-figure-01.png)
 
 ### 数据处理流程
 

@@ -23,6 +23,8 @@ language: zh-CN
 
 Avalonia UI 是一个跨平台的 .NET UI 框架，支持 Windows、macOS、Linux 以及 Web 和移动端。本文将帮助你快速搭建 Avalonia 开发环境并创建第一个应用程序。
 
+![Avalonia 从开发环境、项目模板、XAML 界面到 .NET 运行时和跨平台输出的入门架构](./images/avalonia-getting-started-architecture-figure-01.png)
+
 ### Avalonia 支持的平台
 
 | 平台               | 支持状态      |

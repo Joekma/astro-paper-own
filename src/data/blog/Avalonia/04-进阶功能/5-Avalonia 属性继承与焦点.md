@@ -31,6 +31,8 @@ language: zh-CN
 
 焦点是指预期接收键盘输入的 `InputElement`。理解焦点如何工作，有助于构建可访问的、支持键盘操作的应用程序。
 
+![Avalonia 中父元素属性值沿可视树继承给子元素，同时焦点系统通过 FocusedElement、Tab 导航和方向键导航管理键盘输入](./images/avalonia-property-inheritance-focus-figure-01.png)
+
 ---
 
 ## 属性继承详解

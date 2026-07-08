@@ -23,6 +23,8 @@ language: zh-CN
 
 异步编程是现代 C# 开发的核心技能之一。它允许程序在等待长时间操作（如 I/O 操作）时继续执行其他任务，从而提高应用程序的响应性和吞吐量。
 
+![C# async 方法返回 Task，await 在 I/O 等待期间释放线程，并在操作完成后通过 continuation 恢复执行](./images/csharp-async-await-execution-model-figure-01.png)
+
 ### 异步编程的优势
 
 | 优势         | 说明                                   |

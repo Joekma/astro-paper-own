@@ -26,8 +26,6 @@ OpenClaw 与 Hermes Agent 都属于现代个人 Agent 系统，但侧重点不�
 
 把两者放在一起看，可以总结出一套比较完整的 Agent 系统设计模式。
 
-![OpenClaw 与 Hermes 设计模式对比](./images/13-openclaw-hermes-comparison.svg)
-
 ## 总体对比
 
 | 维度 | OpenClaw | Hermes Agent |
@@ -41,6 +39,8 @@ OpenClaw 与 Hermes Agent 都属于现代个人 Agent 系统，但侧重点不�
 | 自动化 | Hooks、Heartbeat、Cron/Webhook 方向 | `cronjob` 工具、delivery、fresh session |
 | 多 Agent | Multi-agent routing、workspace 隔离 | Delegation、Kanban、多 profile |
 | 安全重点 | Gateway auth、loopback、sandbox、remote access | Approval、container isolation、Tirith、context scanning |
+
+![OpenClaw 与 Hermes Agent 在 Gateway、Workspace、Toolsets、Backends、Skills、Memory、安全、自动化和多 Agent 模式上的设计模式对比](./images/openclaw-hermes-design-patterns-figure-01.png)
 
 ## 设计模式一：Gateway 作为控制平面
 
@@ -287,7 +287,6 @@ from pathlib import Path
 
 CONFIG = json.loads(Path("config.json").read_text(encoding="utf-8"))
 
-
 def load_workspace() -> str:
     root = Path(CONFIG["workspace"])
     chunks = []
@@ -296,7 +295,6 @@ def load_workspace() -> str:
         if path.exists():
             chunks.append(f"# {name}\n{path.read_text(encoding='utf-8')}")
     return "\n\n".join(chunks)
-
 
 def agent_loop(task: str) -> str:
     context = load_workspace()
@@ -311,7 +309,6 @@ def agent_loop(task: str) -> str:
             steps.append("输出结果")
             break
     return "\n".join(steps)
-
 
 if __name__ == "__main__":
     print(agent_loop("生成 Agent 系列文章的改进建议"))

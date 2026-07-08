@@ -23,6 +23,8 @@ language: zh-CN
 
 异常处理是保证程序健壮性的关键机制。当程序发生错误时，异常处理允许我们捕获错误、记录日志，并向用户提供有意义的反馈，而不是让程序直接崩溃。
 
+![C# 异常处理通过 try 捕获风险代码、throw 触发异常传播、catch 执行恢复处理，并在 finally 中清理资源](./images/csharp-exception-handling-flow-figure-01.png)
+
 ### 核心概念
 
 | 概念          | 说明                         |

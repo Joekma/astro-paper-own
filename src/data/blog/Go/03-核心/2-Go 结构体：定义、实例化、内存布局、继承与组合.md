@@ -31,6 +31,8 @@ type User struct {
 }
 ```
 
+![Go 结构体把字段组合成新类型，并通过零值、字段名初始化、内存对齐、方法接收器、嵌入组合和 JSON tag 支持工程化建模](./images/go-struct-memory-methods-figure-01.png)
+
 字段首字母大写表示可导出，其他包可以访问；首字母小写表示仅包内可见。
 
 ```go

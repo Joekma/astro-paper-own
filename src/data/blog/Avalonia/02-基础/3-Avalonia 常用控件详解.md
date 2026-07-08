@@ -26,6 +26,8 @@ language: zh-CN
 
 Avalonia 提供了丰富的内置控件，用于构建用户界面。本文介绍最常用的基础控件。
 
+![Avalonia 常用控件按按钮、文本、选择、容器和列表分类，并通过属性、事件、Command 与 Binding 连接 ViewModel](./images/avalonia-common-controls-interaction-model-figure-01.png)
+
 ### 控件分类
 
 | 类别       | 控件                                             |

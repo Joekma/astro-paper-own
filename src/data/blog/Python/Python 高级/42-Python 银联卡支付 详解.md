@@ -100,7 +100,6 @@ import json
 import base64
 from urllib.parse import urlencode
 
-
 class UnionPayClient:
     def __init__(self, config):
         self.mer_id = config['MERID']

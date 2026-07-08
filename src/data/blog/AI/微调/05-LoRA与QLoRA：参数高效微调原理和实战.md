@@ -20,7 +20,7 @@ language: zh-CN
 
 全参数微调成本高、显存压力大，不适合大多数团队作为第一选择。LoRA 和 QLoRA 属于参数高效微调（PEFT）方法，它们通过训练少量新增参数，让模型在较低成本下适应新任务。
 
-![LoRA 与 QLoRA 参数高效微调](./images/05-lora-qlora.svg)
+![LoRA 通过冻结基座权重并训练低秩 Adapter，QLoRA 进一步用 4-bit 量化节省显存](./images/lora-qlora-adapter-architecture-figure-01.png)
 
 ## 核心概念
 

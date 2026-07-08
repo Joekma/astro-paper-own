@@ -24,6 +24,8 @@ language: zh-CN
 
 泛型允许编写适用于任何类型的代码，同时保持完整的类型安全性。本文将详细介绍泛型类型、泛型方法、类型约束，以及常用的泛型集合。
 
+![C# 泛型通过类型参数 T 和 where 约束实现类型安全复用，并形成 List、Dictionary、HashSet 等常用集合访问模型](./images/csharp-generics-collections-model-figure-01.png)
+
 ### 泛型的优势
 
 | 优势         | 说明                   |

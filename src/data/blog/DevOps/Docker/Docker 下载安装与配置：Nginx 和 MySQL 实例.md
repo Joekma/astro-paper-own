@@ -29,6 +29,8 @@ language: zh-CN
 
 Nginx 代表无状态服务，重点在镜像版本、端口映射和静态文件交付。MySQL 代表有状态服务，重点在数据卷、密码、配置文件和备份策略。两类服务的运行方式不同，不能用同一套心智模型处理。
 
+![Docker 中 Nginx 作为无状态服务侧重端口映射和静态文件，MySQL 作为有状态服务侧重环境变量、数据卷、配置文件和备份](./images/docker-nginx-mysql-service-comparison-figure-01.png)
+
 ## Nginx 示例
 
 ### 拉取官方镜像

@@ -25,6 +25,8 @@ language: zh-CN
 
 Avalonia 样式系统是一种在控件之间共享属性设置的机制。Avalonia 提供三种主要机制进行样式设置：样式、控件主题和容器查询。
 
+![Avalonia 样式系统从逻辑树搜索、Selector 匹配、Setter 应用到资源字典、控件主题和局部覆盖的解析流程](./images/avalonia-styles-themes-resolution-figure-01.png)
+
 ### 样式系统概述
 
 ```

@@ -20,6 +20,8 @@ language: zh-CN
 
 C# 中的运算符和特殊符号是语法的基础构件。本文系统介绍各类运算符的含义、用法和注意事项。
 
+![C# 特殊运算符按 Lambda、空安全、范围索引、类型检查、位运算和字符串插值等语义角色分组](./images/csharp-operators-semantic-map-figure-01.png)
+
 ---
 
 ## => - Lambda 与表达式体成员
@@ -233,8 +235,6 @@ using Col = System.Collections.Generic;
 // 使用别名（:: 确保不会与同名的类型/变量混淆）
 var list = new Col::List<string>();
 var form = new Win::Form();
-
-
 
 // global:: 始终指向全局命名空间（解决命名冲突）
 namespace MyNamespace

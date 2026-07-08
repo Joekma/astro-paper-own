@@ -20,7 +20,7 @@ language: zh-CN
 
 向量检索是 RAG 系统的核心环节。通过将文本转换为向量表示，我们可以利用向量数据库高效的相似度搜索能力，快速找到与用户查询最相关的文档。本篇将详细介绍嵌入模型、向量数据库和相似度检索的原理与实践。
 
-![RAG 向量检索链路](./images/rag-vector-search.svg)
+![RAG 查询经过嵌入模型进入语义空间，并通过向量数据库返回 Top-K 文档片段](./images/rag-vector-retrieval-semantic-search-figure-01.png)
 
 ### 向量检索流程
 

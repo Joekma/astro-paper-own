@@ -24,6 +24,8 @@ language: zh-CN
 
 现代应用程序需要同时处理多个任务，C# 提供了丰富的多线程和并发编程支持。从基础的 `Thread` 类到高级的 `Task` 并行库，本教程将帮助你全面掌握 C# 的并发编程能力。
 
+![C# 并发编程将工作项调度到线程池和 Task，同时用 lock、SemaphoreSlim 等同步机制保护共享状态并避免竞态条件](./images/csharp-concurrency-threadpool-synchronization-figure-01.png)
+
 ## 线程基础
 
 ### 创建和启动线程

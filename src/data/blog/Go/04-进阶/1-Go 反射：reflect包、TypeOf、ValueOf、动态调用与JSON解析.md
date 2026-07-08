@@ -25,6 +25,8 @@ language: zh-CN
 
 反射的代价是：代码更难读、运行时开销更高、错误更容易推迟到运行时暴露。
 
+![Go 反射把静态值转换为运行时 Type 和 Value 元数据，通过 TypeOf、ValueOf、Type 与 Kind、Elem、CanSet、字段和 tag 支持 JSON、ORM 与通用库，但会带来运行时开销和错误延后暴露](./images/go-reflection-runtime-metadata-figure-01.png)
+
 ---
 
 ## TypeOf 和 ValueOf

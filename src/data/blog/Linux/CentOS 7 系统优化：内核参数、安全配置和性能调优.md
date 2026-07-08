@@ -34,6 +34,8 @@ CentOS Linux 7 已在 2024 年 6 月 30 日停止维护。新系统不建议继�
 | **可观测再修改** | 根据监控、日志和压测结果调整 |
 | **保留回滚路径** | 每次只改少量参数，并记录原值 |
 
+![CentOS 7 存量系统优化需要先识别 EOL 风险，再按备份配置、小步变更、测试环境验证、监控观察和回滚预案推进，调优范围包括 SSH 安全、sysctl 内核参数、limits 资源限制、磁盘 IO、网络队列和 firewalld](./images/centos7-optimization-safe-workflow-figure-01.png)
+
 ## 内核参数管理
 
 建议把自定义参数放在独立文件中，避免直接堆到 `/etc/sysctl.conf`：

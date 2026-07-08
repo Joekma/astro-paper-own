@@ -21,8 +21,6 @@ Output Parsers（输出解析器）是 LangChain 中用于将 LLM 的原始文�
 
 在真实应用里，模型回答通常不是给人直接看的，而是要进入数据库、表单、接口或下一段流程。Parser 的作用就是把“看起来像 JSON 的文本”变成真正可验证、可处理的数据。
 
-![LangChain 输出解析器分类](./images/langchain-output-parsers.svg)
-
 ### 为什么需要 Output Parser？
 
 | 问题 | Parser 解决方案 |
@@ -40,6 +38,8 @@ Output Parsers（输出解析器）是 LangChain 中用于将 LLM 的原始文�
 | **JsonOutputParser** | JSON 解析 | dict |
 | **PydanticOutputParser** | Pydantic 验证 | Pydantic 模型 |
 | **CommaSeparatedListOutputParser** | 列表解析 | List[str] |
+
+![LangChain Output Parsers 通过 format_instructions、模型原始输出、解析校验和错误恢复，将文本变成可用的结构化数据](./images/langchain-output-parsers-validation-figure-01.png)
 
 ## StrOutputParser
 

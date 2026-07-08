@@ -23,6 +23,8 @@ language: zh-CN
 
 初学时可以按这个顺序练习：先运行一次性容器，再运行后台服务，随后学习端口映射、日志查看、进入容器和清理资源。等这些动作熟悉后，再进入镜像构建、数据卷和 Compose。
 
+![Docker 容器从镜像经 docker run 创建并运行，再通过停止、重启、删除、端口映射、日志和 exec 调试完成生命周期管理](./images/docker-container-lifecycle-operations-figure-01.png)
+
 ## Hello World
 
 ```bash

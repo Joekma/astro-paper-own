@@ -18,6 +18,8 @@ language: zh-CN
 
 Git 是一个分布式版本控制系统，由 Linux 内核开发者 Linus Torvalds 于 2005 年创建。它让每个开发者都拥有完整的本地仓库，可以离线提交、创建分支、查看历史，并在需要时与远程仓库同步。
 
+![Git 版本控制心智模型包含工作区、暂存区、本地仓库和远程仓库，代码通过 git add、git commit、git push 与 git pull 在区域之间流转](./images/git-version-control-mental-model-figure-01.png)
+
 ## 为什么选择 Git
 
 | 特性 | 说明 |

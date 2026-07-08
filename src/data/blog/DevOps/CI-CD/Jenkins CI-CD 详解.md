@@ -25,6 +25,8 @@ Jenkins 是开源的、用 Java 编写的持续集成和持续交付（CI/CD）�
 
 Jenkins 拥有超过 1800 个插件，生态系统极为丰富，可以与 Git、Docker、Kubernetes、Slack 等几乎所有主流开发工具无缝集成。
 
+![Jenkins CI/CD 从 Git Webhook 触发 Pipeline，经 Agent 执行构建、测试、打包、镜像发布和审批部署，并支持通知与回滚](./images/jenkins-cicd-pipeline-flow-figure-01.png)
+
 ## 阅读路线
 
 Jenkins 的落地重点不只是“把命令搬进界面”，而是把交付流程固化为可审查、可回滚、可复用的流水线代码。建议按下面顺序阅读：

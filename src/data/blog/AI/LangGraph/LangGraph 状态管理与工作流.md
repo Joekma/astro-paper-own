@@ -11,7 +11,7 @@ tags:
   - Workflow
 draft: false
 series: LangGraph
-seriesOrder: 4
+seriesOrder: 2
 language: zh-CN
 ---
 
@@ -20,34 +20,11 @@ language: zh-CN
 状态管理是 LangGraph 的核心特性之一。它通过强类型的状态定义，确保数据在整个图中的流动是可预测和可控的。
 在 LangGraph 中，节点之间不直接互相传参，而是共同读写同一份状态。理解状态如何定义、如何更新、如何被检查点保存，是理解复杂工作流的关键。
 
-> 版本基线：本文示例按 `langgraph>=1.2.7` 的 1.x API 校验。内存检查点随 `langgraph` 安装；PostgreSQL / SQLite 持久化检查点需要额外安装对应包。
-
-![LangGraph 状态管理与工作流](./images/langgraph-state-workflow.svg)
+> 版本基线：本文示例按 `langgraph>=1.2.8` 的 1.x API 校验。内存检查点随 `langgraph` 安装；PostgreSQL / SQLite 持久化检查点需要额外安装对应包。
 
 ### 状态管理架构
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    LangGraph 状态管理                          │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│   ┌─────────────────────────────────────────────────────┐  │
-│   │                    State 定义                         │  │
-│   │   class AgentState(TypedDict):                       │  │
-│   │       messages: list                                │  │
-│   │       context: str                                  │  │
-│   │       result: str                                    │  │
-│   └─────────────────────────────────────────────────────┘  │
-│                           │                                  │
-│                           ▼                                  │
-│   ┌─────────────────────────────────────────────────────┐  │
-│   │              状态更新 (节点返回值)                    │  │
-│   │   def node(state):                                   │  │
-│   │       return {"key": "new_value"}                   │  │
-│   └─────────────────────────────────────────────────────┘  │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
-```
+![LangGraph 状态管理通过 TypedDict 或 MessagesState 定义状态，节点返回局部更新，再由覆盖或 reducer 合并策略写入 checkpointer 并按 thread_id 隔离会话](./images/langgraph-state-management-workflow-figure-01.png)
 
 ## 状态定义
 
@@ -136,7 +113,7 @@ def another_message(state: MessageState):
 ### MessagesState
 
 ```python
-from langgraph.graph import MessagesState
+from langgraph.graph.message import MessagesState
 
 def process_messages(state: MessagesState):
     return {"messages": [{"role": "assistant", "content": "处理后的消息"}]}
@@ -161,7 +138,8 @@ class CustomMessagesState(TypedDict):
 
 ```python
 from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.graph import StateGraph, START, MessagesState
+from langgraph.graph import StateGraph, START
+from langgraph.graph.message import MessagesState
 
 memory = InMemorySaver()
 
@@ -190,19 +168,50 @@ pip install -U langgraph-checkpoint-sqlite
 
 ### PostgreSQL Checkpointer
 
+官方推荐使用 `langgraph-checkpoint-postgres` 包，它通过 psycopg 3 连接 PostgreSQL。根据使用场景，官方文档给出了三种连接方式：连接池、单连接、连接字符串。生产环境建议使用 `ConnectionPool`，并显式设置 `autocommit=True`（`setup()` 创建表所必需）以及 `row_factory=dict_row`（否则读取会报 `TypeError`）。
+
 ```python
 from langgraph.checkpoint.postgres import PostgresSaver
 from psycopg_pool import ConnectionPool
 
-DB_URI = "postgresql://user:pass@localhost/db"
-connection_kwargs = {"autocommit": True, "prepare_threshold": 0}
+DB_URI = "postgresql://user:pass@localhost:5442/postgres?sslmode=disable"
+connection_kwargs = {
+    "autocommit": True,
+    "prepare_threshold": 0,
+}
 
-with ConnectionPool(conninfo=DB_URI, kwargs=connection_kwargs) as pool:
+with ConnectionPool(
+    conninfo=DB_URI,
+    max_size=20,
+    kwargs=connection_kwargs,
+) as pool:
     checkpointer = PostgresSaver(pool)
+
+    # 首次使用前需要调用 setup() 创建检查点表
     checkpointer.setup()
 
     app = graph.compile(checkpointer=checkpointer)
 ```
+
+如果不想自己管理连接池，也可以直接传入一条连接：
+
+```python
+from psycopg import Connection
+
+with Connection.connect(DB_URI, **connection_kwargs) as conn:
+    checkpointer = PostgresSaver(conn)
+    # checkpointer.setup()  # 首次使用需要执行
+    app = graph.compile(checkpointer=checkpointer)
+```
+
+最简单的方式是直接传连接字符串，`from_conn_string` 内部会处理连接生命周期：
+
+```python
+with PostgresSaver.from_conn_string(DB_URI) as checkpointer:
+    app = graph.compile(checkpointer=checkpointer)
+```
+
+异步版本位于 `langgraph.checkpoint.postgres.aio`，对应使用 `AsyncPostgresSaver` 与 `AsyncConnectionPool`，方法名前缀为 `a`（如 `aput`、`aget`、`alist`）。
 
 `setup()` 会创建或更新检查点表，通常只在初始化或迁移阶段运行。长生命周期服务中，连接池应和应用一起启动、一起关闭，不要在每次请求里重复创建。
 

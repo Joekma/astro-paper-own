@@ -44,6 +44,8 @@ ELK 的学习主线可以拆成四层：采集、处理、存储、消费。排�
 
 如果是本地验证，可以先用 Docker Compose 跑通最小链路；如果是生产建设，应重点看索引生命周期、权限、TLS、告警和容量规划。
 
+![ELK Stack 日志管理链路从应用、容器、系统和 Nginx 日志进入 Beats 采集层，经 Logstash 解析过滤后写入 Elasticsearch，并由 Kibana 检索、看板和告警消费](./images/elk-stack-log-pipeline-figure-01.png)
+
 ## 核心组件
 
 ### Elasticsearch（ES）

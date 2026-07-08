@@ -184,7 +184,6 @@ MD5 函数示例：
 ```python
 import hashlib
 
-
 def MD5(value):
     md5 = hashlib.md5()
     md5.update(value.encode('utf-8'))

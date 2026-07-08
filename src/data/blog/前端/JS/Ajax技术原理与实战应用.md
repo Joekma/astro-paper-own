@@ -1,4 +1,4 @@
-﻿---
+---
 title: Ajax技术原理与实战应用
 author: Joekma
 pubDatetime: 2019-02-18T00:00:00.000+08:00

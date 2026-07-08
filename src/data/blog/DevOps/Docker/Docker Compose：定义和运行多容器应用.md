@@ -25,6 +25,8 @@ Docker Compose 用一个 YAML 文件描述一组相关服务，让开发者可�
 
 Compose 最适合把一组本地开发或测试服务一次性拉起，例如 Web、数据库、缓存和消息队列。它能让依赖关系、网络、端口、环境变量和数据卷写进同一个文件，但生产发布仍要结合目标平台的密钥、网络和健康检查能力设计。
 
+![Docker Compose 通过 compose.yaml 定义项目中的 service、network 和 volume，并由 docker compose up 创建多容器应用及其共享资源](./images/docker-compose-project-resources-figure-01.png)
+
 ## 核心概念
 
 | 概念 | 说明 |

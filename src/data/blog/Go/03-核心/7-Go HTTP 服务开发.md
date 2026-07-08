@@ -22,6 +22,8 @@ language: zh-CN
 
 Go 标准库 `net/http` 已经能完成大量 Web/API 服务开发工作。Go 1.22 起，`http.ServeMux` 支持更强的路由模式，包括 HTTP 方法和路径通配符，小型服务未必需要第三方路由器。
 
+![Go HTTP 服务请求生命周期从 Client 进入 http.Server，经 ServeMux 路由、中间件、Handler 生成 JSON Response，并通过超时、限流、恢复和 graceful shutdown 提升生产稳定性](./images/go-http-request-lifecycle-figure-01.png)
+
 ---
 
 ## 最小 HTTP 服务

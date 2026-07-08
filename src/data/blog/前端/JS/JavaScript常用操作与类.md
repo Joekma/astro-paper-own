@@ -1,4 +1,4 @@
-﻿---
+---
 title: JavaScript常用操作与类
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00

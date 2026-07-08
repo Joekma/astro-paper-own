@@ -1,4 +1,4 @@
-﻿---
+---
 title: Elasticsearch 集群健康和索引状态
 series: Elasticsearch
 seriesOrder: 3
@@ -22,6 +22,8 @@ language: zh-CN
 ## 排查顺序
 
 看到 `yellow` 或 `red` 时，先不要急着改副本数。更稳的排查顺序是：看集群健康摘要，看未分配分片，看 allocation explain，再结合节点磁盘、节点离线、索引设置和分片损坏判断原因。
+
+![Elasticsearch 集群健康排查从 green、yellow、red 状态进入，依次查看健康摘要、分片状态、allocation explain、故障原因和修复动作](./images/elasticsearch-cluster-health-troubleshooting-figure-01.png)
 
 ## 健康状态详解
 

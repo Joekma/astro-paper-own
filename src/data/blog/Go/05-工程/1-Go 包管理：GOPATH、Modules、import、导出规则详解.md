@@ -22,6 +22,8 @@ language: zh-CN
 
 Go 代码按包组织。每个 `.go` 文件第一行非注释代码必须是包声明。
 
+![Go 包管理以 module 和 package 组织代码，import 连接包依赖，go.mod 声明模块路径和版本，go.sum 做校验，GOPROXY 与 module cache 支撑依赖下载，internal 包和大写导出规则控制访问边界](./images/go-modules-package-management-figure-01.png)
+
 ```go
 package user
 ```

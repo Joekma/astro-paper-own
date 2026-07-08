@@ -21,7 +21,7 @@ language: zh-CN
 
 需要注意的是，平台能力和可微调模型会变化，实际项目应以当前官方文档和账号权限为准。
 
-![平台 API 微调流程](./images/09-api-finetuning.svg)
+![托管平台 API 微调从 JSONL 数据上传、创建任务、状态监控到模型调用和评估迭代的流程](./images/hosted-api-fine-tuning-flow-figure-01.png)
 
 ## 核心概念
 

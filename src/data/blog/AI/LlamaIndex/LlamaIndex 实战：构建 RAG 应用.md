@@ -21,8 +21,6 @@ language: zh-CN
 
 这个项目按“数据加载、文本分割、索引构建、查询回答”四个模块展开。每个模块都可以单独替换，但前后传递的对象要保持一致：文档进入分割器，节点进入索引，索引再生成查询引擎。
 
-![LlamaIndex RAG 应用模块](./images/llamaindex-rag-application.svg)
-
 ### 项目架构
 
 ```
@@ -40,6 +38,8 @@ language: zh-CN
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+![LlamaIndex RAG 应用通过离线索引构建和在线查询生成两条流水线连接文档、向量索引、查询引擎、检索器、上下文、LLM 和带来源的答案](./images/llamaindex-rag-application-architecture-figure-01.png)
 
 ## 项目初始化
 
