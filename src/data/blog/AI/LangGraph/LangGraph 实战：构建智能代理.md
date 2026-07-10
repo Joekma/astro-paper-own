@@ -2,9 +2,9 @@
 title: LangGraph 实战：构建智能代理
 author: Joekma
 pubDatetime: 2026-05-11T00:00:00.000+08:00
-modDatetime: 2026-05-11T00:00:00.000+08:00
+modDatetime: 2026-07-10T00:00:00.000+08:00
 slug: langgraph-agent-pratice
-description: "使用LangGraph构建完整的智能代理应用，包括工具调用、决策逻辑和多Agent协作。"
+description: "使用LangGraph构建智能代理应用，包括工具调用、自定义状态、决策逻辑和多节点协调。"
 tags:
   - LangGraph
   - Agent
@@ -17,411 +17,360 @@ language: zh-CN
 
 ## 概述
 
-本文将通过实战项目展示如何使用 LangGraph 构建智能代理。我们将创建一个能够自主决策、使用工具并完成复杂任务的 Agent 系统。
-实战里的关键不是让所有逻辑都塞进一个大函数，而是把“模型思考”“工具执行”“状态记录”“条件路由”拆成清晰节点。这样每一步都能单独观察，也更容易定位 Agent 为什么走到了某个分支。
+本文构建一个可调用工具、记录业务状态并持久化对话的自定义 Agent。标准 Agent 应优先使用 LangChain 1.x 的 `create_agent`；这里直接使用 LangGraph，是为了完整观察“模型 → 工具 → 模型”的执行循环并自定义路由。
 
-> 版本基线：本文示例按 `langgraph>=1.2.8` 的 1.x API 校验。Agent 示例会调用 OpenAI 模型，运行前需要安装 `langchain-openai` 并配置 `OPENAI_API_KEY`。
-
-### 项目目标
+> 版本基线：本文在 2026-07-10 按 Python 3.10+、`langgraph==1.2.8`、`langchain==1.3.11` 和 `langchain-openai==1.3.3` 校验。模型调用需要配置 `OPENAI_API_KEY` 和 `OPENAI_MODEL`。
 
 ![LangGraph 智能代理通过 Model Node、tools_condition、ToolNode 和工具结果回环实现带状态的工具调用 Agent，并用迭代计数防止无限循环](./images/langgraph-agent-tool-loop-figure-01.png)
 
 ## 环境配置
 
-### 安装依赖
-
 ```bash
-pip install -U "langgraph>=1.2.8" langchain-openai
+python -m pip install "langgraph==1.2.8" "langchain==1.3.11" "langchain-openai==1.3.3"
+export OPENAI_API_KEY="your-api-key"
+export OPENAI_MODEL="your-available-model"
 ```
 
-本文的工具示例使用内置字典和本地函数，不依赖 `langchain-community`。只有接入第三方检索器、向量库或社区集成时，才需要按对应集成文档额外安装 `langchain-community`。
+Windows PowerShell 使用 `$env:OPENAI_API_KEY` 和 `$env:OPENAI_MODEL`。工具均为本地函数，不需要 `langchain-community`。
 
 ## 定义工具
 
-### 创建工具集
+工具签名和 docstring 会成为模型看到的工具 schema。计算工具使用受控参数，不执行任意表达式。
 
 ```python
-from langchain_core.tools import tool
-from langgraph.prebuilt import ToolNode, tools_condition
-from langgraph.graph import StateGraph, START, END
-from langgraph.graph.message import MessagesState
-from langchain_openai import ChatOpenAI
+from datetime import datetime
 from typing import Literal
+
+from langchain.tools import tool
 
 @tool
 def search_knowledge_base(query: str) -> str:
-    """搜索知识库获取相关信息"""
+    """根据查询词搜索本地编程语言知识库。"""
     knowledge = {
-        "python": "Python是一门高级编程语言...",
-        "java": "Java是一种面向对象编程语言...",
-        "javascript": "JavaScript是一种脚本语言..."
+        "python": "Python 是一门高级编程语言。",
+        "java": "Java 是一门面向对象编程语言。",
+        "javascript": "JavaScript 常用于 Web 开发。",
     }
+    query_lower = query.lower()
     for key, value in knowledge.items():
-        if key in query.lower():
+        if key in query_lower:
             return value
     return "未找到相关信息"
 
 @tool
-def calculate(a: float, b: float, operation: Literal["add", "subtract", "multiply", "divide"]) -> str:
-    """执行受控的四则运算"""
+def calculate(
+    a: float,
+    b: float,
+    operation: Literal["add", "subtract", "multiply", "divide"],
+) -> str:
+    """执行受控的四则运算。"""
     if operation == "add":
         return str(a + b)
     if operation == "subtract":
         return str(a - b)
     if operation == "multiply":
         return str(a * b)
-    if operation == "divide":
-        return "除数不能为 0" if b == 0 else str(a / b)
-    return "未知操作"
+    return "除数不能为 0" if b == 0 else str(a / b)
 
 @tool
 def get_current_time() -> str:
-    """获取当前时间"""
-    from datetime import datetime
-    return datetime.now().strftime("%Y年%m月%d日 %H:%M:%S")
+    """获取服务器当前本地时间。"""
+    return datetime.now().astimezone().isoformat(timespec="seconds")
 
-@tool
-def send_notification(message: str, recipient: str) -> str:
-    """发送通知"""
-    return f"通知已发送给{recipient}：{message}"
-
-tools = [search_knowledge_base, calculate, get_current_time, send_notification]
+tools = [search_knowledge_base, calculate, get_current_time]
 ```
 
-工具函数的签名会影响模型如何生成工具调用参数。这里的计算工具使用明确的参数和操作枚举，避免让示例执行任意表达式。
+## 基础工具调用 Agent
 
-## Agent 实现
-
-### 基础 Agent 图
-
-基础 Agent 图由两个核心节点组成：`model` 负责判断是否需要工具，`tools` 负责执行工具调用。`tools_condition` 会把模型输出路由到工具节点或结束。
+下面的代码块接续上一节的 `tools`。模型对象在建图时创建一次，而不是在每次节点执行时重复创建。
 
 ```python
-def create_agent_graph():
-    graph = StateGraph(MessagesState)
+import os
 
-    def call_model(state: MessagesState):
-        messages = state["messages"]
-        llm = ChatOpenAI(model="gpt-4o")
-        llm_with_tools = llm.bind_tools(tools)
-        response = llm_with_tools.invoke(messages)
-        return {"messages": [response]}
+from langchain_openai import ChatOpenAI
+from langgraph.graph import START, MessagesState, StateGraph
+from langgraph.prebuilt import ToolNode, tools_condition
 
-    tool_node = ToolNode(tools)
+model = ChatOpenAI(model=os.environ["OPENAI_MODEL"]).bind_tools(tools)
 
-    graph.add_node("model", call_model)
-    graph.add_node("tools", tool_node)
+def call_model(state: MessagesState) -> dict:
+    response = model.invoke(state["messages"])
+    return {"messages": [response]}
 
-    graph.add_edge(START, "model")
-    graph.add_conditional_edges(
-        "model",
-        tools_condition,
-    )
-    graph.add_edge("tools", "model")
+builder = StateGraph(MessagesState)
+builder.add_node("model", call_model)
+builder.add_node("tools", ToolNode(tools))
+builder.add_edge(START, "model")
+builder.add_conditional_edges("model", tools_condition)
+builder.add_edge("tools", "model")
 
-    return graph.compile()
-
-agent = create_agent_graph()
-
-result = agent.invoke({
-    "messages": [{"role": "user", "content": "Python是什么编程语言？"}]
-})
+agent = builder.compile()
+result = agent.invoke(
+    {"messages": [{"role": "user", "content": "Python 是什么？"}]}
+)
 print(result["messages"][-1].content)
 ```
 
-这段图会在“模型 -> 工具 -> 模型”之间循环，直到模型不再请求工具。循环边让工具结果回到模型，模型才能基于工具结果生成最终回答。
+`tools_condition` 在最后一条 AI 消息包含工具调用时返回 `tools`，否则返回 `END`。工具执行后必须回到模型节点，才能生成面向用户的最终回复。
 
-## 带状态的 Agent
+## 带自定义状态和循环上限的 Agent
 
-### 自定义状态
-
-自定义状态适合保存业务字段，例如上下文、迭代次数和最终结果。`iterations` 是循环保护字段，避免 Agent 在没有明确答案时无限自我调用。
+继承 `MessagesState` 可以保留正确的消息 reducer，并增加业务字段。不要用普通 `operator.add` 混合字典消息和消息对象。
 
 ```python
-from typing import TypedDict, Annotated
-import operator
-
-class AgentState(TypedDict):
-    messages: Annotated[list, operator.add]
-    context: str
-    iterations: int
-    final_result: str
-
-def create_advanced_agent():
-    graph = StateGraph(AgentState)
-
-    def model_node(state: AgentState):
-        messages = state["messages"]
-        context = state.get("context", "")
-        iterations = state.get("iterations", 0)
-
-        if context:
-            prompt = f"上下文：{context}\n\n用户：{messages[-1].content}"
-        else:
-            prompt = messages[-1].content
-
-        llm = ChatOpenAI(model="gpt-4o")
-        response = llm.invoke([{"role": "user", "content": prompt}])
-
-        return {
-            "messages": [response],
-            "iterations": iterations + 1
-        }
-
-    def should_continue(state: AgentState):
-        if state["iterations"] >= 3:
-            return "end"
-        last_message = state["messages"][-1]
-        if hasattr(last_message, "content"):
-            if "完成" in last_message.content or "结束" in last_message.content:
-                return "end"
-        return "continue"
-
-    graph.add_node("model", model_node)
-    graph.add_edge(START, "model")
-    graph.add_conditional_edges("model", should_continue, {"continue": "model", "end": END})
-
-    return graph.compile()
-
-agent = create_advanced_agent()
-```
-
-## 多工具协调
-
-### 复杂任务处理
-
-```python
+import os
 from typing import Literal
 
-def create_coordinator_agent():
-    class CoordinatorState(TypedDict):
-        messages: list
-        current_task: str
-        completed_tasks: list
-        results: dict
+from langchain_openai import ChatOpenAI
+from langgraph.graph import END, START, MessagesState, StateGraph
+from langgraph.prebuilt import ToolNode
 
-    graph = StateGraph(CoordinatorState)
+class AgentState(MessagesState):
+    context: str
+    iterations: int
 
-    def analyze_task(state: CoordinatorState):
-        task = state["current_task"]
-        return {"completed_tasks": state.get("completed_tasks", []) + [task]}
+model = ChatOpenAI(model=os.environ["OPENAI_MODEL"]).bind_tools(tools)
 
-    def route_task(state: CoordinatorState) -> Literal["calculator", "searcher", "time_checker", "model"]:
-        task = state["current_task"]
-        if "计算" in task:
-            return "calculator"
-        elif "搜索" in task:
-            return "searcher"
-        elif "时间" in task:
-            return "time_checker"
-        return "model"
+def call_model(state: AgentState) -> dict:
+    messages = state["messages"]
+    if state["context"]:
+        messages = [
+            {"role": "system", "content": f"业务上下文：{state['context']}"},
+            *messages,
+        ]
+    response = model.invoke(messages)
+    return {
+        "messages": [response],
+        "iterations": state["iterations"] + 1,
+    }
 
-    def calculator_node(state: CoordinatorState):
-        result = 10 + 20
-        return {"results": {**state.get("results", {}), "calc": result}}
+def route_after_model(state: AgentState) -> Literal["tools", "__end__"]:
+    last_message = state["messages"][-1]
+    if state["iterations"] >= 3:
+        return END
+    return "tools" if last_message.tool_calls else END
 
-    graph.add_node("analyzer", analyze_task)
-    graph.add_node("calculator", calculator_node)
-    graph.add_node("searcher", lambda s: {"results": {**s.get("results", {}), "search": "搜索结果"}})
-    graph.add_node("time_checker", lambda s: {"results": {**s.get("results", {}), "time": "当前时间"}})
-    graph.add_node("model", lambda s: {"messages": s["messages"]})
+builder = StateGraph(AgentState)
+builder.add_node("model", call_model)
+builder.add_node("tools", ToolNode(tools))
+builder.add_edge(START, "model")
+builder.add_conditional_edges("model", route_after_model)
+builder.add_edge("tools", "model")
 
-    graph.add_edge(START, "analyzer")
-    graph.add_conditional_edges("analyzer", route_task)
-    graph.add_edge("calculator", END)
-    graph.add_edge("searcher", END)
-    graph.add_edge("time_checker", END)
-    graph.add_edge("model", END)
-
-    return graph.compile()
-
-agent = create_coordinator_agent()
+agent = builder.compile()
+result = agent.invoke(
+    {
+        "messages": [{"role": "user", "content": "计算 10 加 20"}],
+        "context": "请使用工具完成数值计算",
+        "iterations": 0,
+    },
+    config={"recursion_limit": 10},
+)
+print(result["iterations"], result["messages"][-1].content)
 ```
 
-协调型 Agent 的重点是先识别任务类型，再把任务交给专门节点。条件路由返回的字符串必须和节点名一致，或者通过映射表转换。
+`iterations` 记录模型调用次数。达到上限时结束只是保护措施；实际系统还应记录“因达到上限而结束”，方便监控与重试。
 
 ## 带记忆的 Agent
 
-### 持久化对话
+`InMemorySaver` 会在进程内按 `thread_id` 保存消息历史。下面的完整示例不依赖前面的 Agent 变量。
 
 ```python
+import os
+
+from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.graph import START, MessagesState, StateGraph
 
-def create_memory_agent():
-    memory = InMemorySaver()
+model = ChatOpenAI(model=os.environ["OPENAI_MODEL"])
 
-    graph = StateGraph(MessagesState)
+def call_model(state: MessagesState) -> dict:
+    return {"messages": [model.invoke(state["messages"])]}
 
-    def call_model(state: MessagesState):
-        messages = state["messages"]
-        llm = ChatOpenAI(model="gpt-4o")
-        response = llm.invoke(messages)
-        return {"messages": [response]}
+builder = StateGraph(MessagesState)
+builder.add_node("model", call_model)
+builder.add_edge(START, "model")
+agent = builder.compile(checkpointer=InMemorySaver())
 
-    graph.add_node("model", call_model)
-    graph.add_edge(START, "model")
-
-    return graph.compile(checkpointer=memory)
-
-agent = create_memory_agent()
-config = {"configurable": {"thread_id": "user_123"}}
-
-result1 = agent.invoke(
+config = {"configurable": {"thread_id": "user-123"}}
+agent.invoke(
     {"messages": [{"role": "user", "content": "我叫张三"}]},
-    config=config
+    config,
 )
-
-result2 = agent.invoke(
+result = agent.invoke(
     {"messages": [{"role": "user", "content": "我叫什么名字？"}]},
-    config=config
+    config,
 )
+print(result["messages"][-1].content)
 ```
 
-同一个 `thread_id` 会让后续调用读取同一条会话历史。示例使用内存型 checkpointer 方便演示，服务重启后仍要保留状态时应换成数据库持久化。
+同一 `thread_id` 会读取同一条线程的检查点。服务重启后仍需保留状态时，应改用 PostgreSQL 等持久化 checkpointer。
 
-## 决策 Agent
+## 规则决策工作流
 
-### 条件路由
-
-当规则足够明确时，可以先用普通函数完成决策，再把 LLM 放到需要语言理解或生成的节点里。这样能降低成本，也让路由逻辑更可预测。
+规则明确的分支不需要交给 LLM。确定性节点成本更低、结果更容易测试。
 
 ```python
-from typing import Literal
+from typing import Literal, TypedDict
 
-def create_decision_agent():
-    class DecisionState(TypedDict):
-        user_input: str
-        decision: str
-        result: str
+from langgraph.graph import END, START, StateGraph
 
-    graph = StateGraph(DecisionState)
+class DecisionState(TypedDict):
+    user_input: str
+    decision: str
+    result: str
 
-    def make_decision(state: DecisionState):
-        user_input = state["user_input"]
+def classify(state: DecisionState) -> dict:
+    text = state["user_input"]
+    if "天气" in text:
+        decision = "weather"
+    elif any(word in text for word in ["计算", "数学"]):
+        decision = "calculation"
+    else:
+        decision = "general"
+    return {"decision": decision}
 
-        if "天气" in user_input:
-            decision = "weather"
-            result = "今天天气晴朗"
-        elif "新闻" in user_input:
-            decision = "news"
-            result = "今日新闻摘要..."
-        elif any(word in user_input for word in ["计算", "数学"]):
-            decision = "calculation"
-            result = "计算完成"
-        else:
-            decision = "general"
-            result = "这是通用响应"
+def route(state: DecisionState) -> Literal["weather", "calculation", "general"]:
+    return state["decision"]
 
-        return {"decision": decision, "result": result}
+def weather(state: DecisionState) -> dict:
+    return {"result": "天气节点结果"}
 
-    graph.add_node("decision_maker", make_decision)
-    graph.add_edge(START, "decision_maker")
+def calculation(state: DecisionState) -> dict:
+    return {"result": "计算节点结果"}
 
-    return graph.compile()
+def general(state: DecisionState) -> dict:
+    return {"result": "通用节点结果"}
 
-agent = create_decision_agent()
-result = agent.invoke({"user_input": "今天天气怎么样？", "decision": "", "result": ""})
-print(result["result"])
+builder = StateGraph(DecisionState)
+builder.add_node("classify", classify)
+builder.add_node("weather", weather)
+builder.add_node("calculation", calculation)
+builder.add_node("general", general)
+builder.add_edge(START, "classify")
+builder.add_conditional_edges("classify", route)
+builder.add_edge("weather", END)
+builder.add_edge("calculation", END)
+builder.add_edge("general", END)
+
+workflow = builder.compile()
+result = workflow.invoke(
+    {"user_input": "今天天气怎么样？", "decision": "", "result": ""}
+)
+assert result["decision"] == "weather"
 ```
 
-## 实际应用
+## 多节点协调
 
-### 研究助手 Agent
+这不是多个自主 Agent，而是一个确定性的协调工作流：先分类，再执行专用节点，最后统一汇总。任务只有在执行节点完成后才加入 `completed_tasks`。
 
 ```python
-from typing import Literal
+import operator
+from typing import Annotated, Literal, TypedDict
 
-def create_research_agent():
-    class ResearchState(TypedDict):
-        topic: str
-        research_steps: list
-        findings: list
-        final_report: str
+from langgraph.graph import END, START, StateGraph
 
-    graph = StateGraph(ResearchState)
+class CoordinatorState(TypedDict):
+    current_task: str
+    completed_tasks: Annotated[list[str], operator.add]
+    results: dict
 
-    def research_step(state: ResearchState):
-        topic = state["topic"]
-        findings = state.get("findings", [])
+def analyze_task(
+    state: CoordinatorState,
+) -> Literal["calculator", "searcher", "time_checker"]:
+    task = state["current_task"]
+    if "计算" in task:
+        return "calculator"
+    if "时间" in task:
+        return "time_checker"
+    return "searcher"
 
-        new_finding = f"关于'{topic}'的研究发现..."
-        return {"findings": findings + [new_finding]}
+def calculator_node(state: CoordinatorState) -> dict:
+    return {
+        "completed_tasks": [state["current_task"]],
+        "results": {"calculation": 10 + 20},
+    }
 
-    def compile_report(state: ResearchState):
-        findings = state.get("findings", [])
-        report = "\n".join(findings)
-        return {"final_report": report}
+def search_node(state: CoordinatorState) -> dict:
+    return {
+        "completed_tasks": [state["current_task"]],
+        "results": {"search": "本地搜索结果"},
+    }
 
-    def should_continue(state: ResearchState) -> Literal["research", "compile"]:
-        if len(state.get("findings", [])) >= 3:
-            return "compile"
-        return "research"
+def time_node(state: CoordinatorState) -> dict:
+    return {
+        "completed_tasks": [state["current_task"]],
+        "results": {"time": "当前时间结果"},
+    }
 
-    graph.add_node("research", research_step)
-    graph.add_node("compile", compile_report)
+builder = StateGraph(CoordinatorState)
+builder.add_node("router", lambda state: {})
+builder.add_node("calculator", calculator_node)
+builder.add_node("searcher", search_node)
+builder.add_node("time_checker", time_node)
+builder.add_edge(START, "router")
+builder.add_conditional_edges("router", analyze_task)
+builder.add_edge("calculator", END)
+builder.add_edge("searcher", END)
+builder.add_edge("time_checker", END)
 
-    graph.add_edge(START, "research")
-    graph.add_conditional_edges("research", should_continue, {"research": "research", "compile": "compile"})
-    graph.add_edge("compile", END)
-
-    return graph.compile()
-
-agent = create_research_agent()
-result = agent.invoke({"topic": "人工智能", "research_steps": [], "findings": [], "final_report": ""})
-print(result["final_report"])
+coordinator = builder.compile()
+result = coordinator.invoke(
+    {"current_task": "计算 10 加 20", "completed_tasks": [], "results": {}}
+)
+assert result["completed_tasks"] == ["计算 10 加 20"]
 ```
 
-这里的 `compile` 分支必须先进入 `compile` 节点，再连接到 `END`。如果直接把 `"compile"` 映射到 `END`，报告生成节点就不会执行。
+如果每个专用节点本身是独立 Agent，可以把编译后的子图放入这些节点，或把子 Agent 包装成工具；此时才属于多 Agent 协作。
+
+## 研究工作流
+
+这个不调用模型的示例展示“循环收集 → 生成报告”的基本结构。
+
+```python
+from typing import Literal, TypedDict
+
+from langgraph.graph import END, START, StateGraph
+
+class ResearchState(TypedDict):
+    topic: str
+    findings: list[str]
+    final_report: str
+
+def research_step(state: ResearchState) -> dict:
+    index = len(state["findings"]) + 1
+    return {"findings": [*state["findings"], f"发现 {index}：{state['topic']}"]}
+
+def route_research(state: ResearchState) -> Literal["research", "compile_report"]:
+    return "compile_report" if len(state["findings"]) >= 3 else "research"
+
+def compile_report(state: ResearchState) -> dict:
+    return {"final_report": "\n".join(state["findings"])}
+
+builder = StateGraph(ResearchState)
+builder.add_node("research", research_step)
+builder.add_node("compile_report", compile_report)
+builder.add_edge(START, "research")
+builder.add_conditional_edges("research", route_research)
+builder.add_edge("compile_report", END)
+
+workflow = builder.compile()
+result = workflow.invoke({"topic": "人工智能", "findings": [], "final_report": ""})
+assert len(result["findings"]) == 3
+assert result["final_report"]
+```
+
+路由必须先进入 `compile_report` 节点，再由该节点连接 `END`；如果把该分支直接映射到 `END`，报告不会生成。
 
 ## 最佳实践
 
-### 1. 工具设计原则
-
-```python
-@tool
-def well_designed_tool(query: str) -> str:
-    """清晰描述工具功能
-
-    Args:
-        query: 搜索查询词
-
-    Returns:
-        搜索结果
-    """
-    return f"结果：{query}"
-```
-
-### 2. 错误处理
-
-```python
-def safe_tool_call(func, *args, **kwargs):
-    try:
-        return func(*args, **kwargs)
-    except Exception as e:
-        return f"错误：{str(e)}"
-```
-
-### 3. 状态管理
-
-```python
-class OptimizedState(TypedDict):
-    messages: Annotated[list, operator.add]
-    metadata: dict
-
-def get_recent_messages(state: OptimizedState, n: int = 5):
-    return state["messages"][-n:]
-```
+- 工具必须有明确 docstring、窄参数类型和可预测返回值。
+- 模型对象与绑定后的工具集在建图时创建并复用。
+- 消息使用 `MessagesState`，业务字段通过继承扩展。
+- 循环同时设置业务退出条件、迭代记录和 `recursion_limit`。
+- 已完成任务只在工作实际成功后写入状态。
+- 标准 Agent 使用 `create_agent`；只有需要自定义执行图时才直接维护工具循环。
 
 ## 总结
 
-本文实现的智能代理特性：
-
-| 特性           | 实现方式                            |
-| -------------- | ----------------------------------- |
-| **工具调用**   | ToolNode + tools_condition          |
-| **状态管理**   | TypedDict 自定义状态                |
-| **记忆持久化** | InMemorySaver / 持久化 checkpointer |
-| **条件路由**   | add_conditional_edges               |
-| **多步骤处理** | 循环 + 状态更新                     |
-
-LangGraph 的图结构让构建复杂的 Agent 系统变得直观和可控。
+一个可靠的 LangGraph Agent 应把模型决策、工具执行、业务状态、路由和持久化分开。这样每个节点都可以单独测试，执行历史也能通过检查点恢复和审计。
