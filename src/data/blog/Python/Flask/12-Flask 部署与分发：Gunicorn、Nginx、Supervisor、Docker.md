@@ -21,6 +21,8 @@ language: zh-CN
 
 >Flask应用开发完成后，需要将应用部署到生产环境。本文介绍多种Flask部署方案，包括开发服务器、生产级WSGI服务器、Docker容器化等。
 
+![Flask 生产部署中客户端请求经过 Nginx、Gunicorn Worker、Flask 应用、数据库缓存以及 Supervisor 和 Docker 的拓扑图](./images/flask-production-deployment-topology-figure-01.png)
+
 ## 开发环境 vs 生产环境
 
 ### 配置差异

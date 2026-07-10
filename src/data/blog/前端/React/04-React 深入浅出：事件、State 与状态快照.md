@@ -29,6 +29,8 @@ React 的交互建立在事件和状态之上。用户触发事件，事件处�
 - https://react.dev/learn/state-as-a-snapshot
 - https://react.dev/learn/queueing-a-series-of-state-updates
 
+![React 事件触发状态更新入队，经过批量处理后创建新的状态快照并提交 DOM](./images/react-events-state-snapshot-figure-01.png)
+
 ## 事件处理
 
 ```jsx

@@ -34,6 +34,8 @@ language: zh-CN
 
 这些问题的根源都在 **"Node.js 默认用 Buffer 表示原始字节"**。这一篇系统讲清楚 Buffer 与编码。
 
+![Node.js Buffer 在字符串、编码和字节之间建立转换关系，并提醒安全分配与切片引用风险](./images/nodejs-buffer-encoding-bytes-figure-01.png)
+
 ## 二、先用一句话讲清楚
 
 **Buffer 是 Node.js 用来表示"固定长度的字节数组"的对象，用来处理二进制数据（图片、音频、网络包、加密结果）。它和字符串之间通过"字符编码"（UTF-8、Base64、Hex）相互转换。**

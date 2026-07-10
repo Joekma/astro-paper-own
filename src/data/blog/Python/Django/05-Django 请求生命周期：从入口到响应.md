@@ -21,6 +21,8 @@ description: "深入讲解Django从入口到请求到响应的完整生命周期
 
 一般运行 django 程序都是通过: `python manage.py runserver` 开始的，那我们就从这个入口开始。
 
+![Django 请求生命周期从 manage.py runserver 入口开始，经过动态加载、WSGIHandler、中间件、URL 解析、视图和模板模型访问，最终生成响应](./images/django-request-lifecycle-entry-response-figure-01.png)
+
 ## 入口文件
 
 `manage.py` 文件里只有简单的几行代码：

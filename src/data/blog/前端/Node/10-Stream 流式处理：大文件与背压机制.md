@@ -29,6 +29,8 @@ language: zh-CN
 
 这些问题都靠 **Stream（流）** 解决。流是 Node.js 处理"边读边处理"场景的统一抽象，也是 fs、http、net、crypto、zlib 等模块的底层共同语言。
 
+![Node.js Stream 通过分块管道、pipeline 错误传播和背压机制处理大文件数据流](./images/nodejs-stream-backpressure-pipeline-figure-01.png)
+
 ## 二、先用一句话讲清楚
 
 **Node.js 的 Stream 是一种"分块（chunk）传递数据"的接口：Readable 是"可读流"、Writable 是"可写流"、Duplex 是"双工流"、Transform 是"转换流"；用 `pipe()` 或 `pipeline()` 把它们连起来就形成"管道"，自动处理背压。**

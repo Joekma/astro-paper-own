@@ -20,6 +20,8 @@ language: zh-CN
 
 Astro 是一个现代化的静态站点生成器（SSG）框架，专注于**内容驱动的网站**开发。它独特的**岛屿架构**（Islands Architecture）能够在保持高性能的同时，提供丰富的交互能力。Astro 支持多种 UI 框架（React、Vue、Svelte 等），但默认只发送 JavaScript，减少不必要的客户端代码。
 
+![Astro 岛屿架构与项目结构示意图](./images/astro-islands-project-architecture-figure-01.png)
+
 ### Astro 的核心特点
 
 | 特性 | 说明 |

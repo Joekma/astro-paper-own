@@ -30,6 +30,8 @@ React 官方文档把 Ref 和 Effect 称为 Escape Hatches，也就是“逃生�
 - https://react.dev/learn/you-might-not-need-an-effect
 - https://react.dev/learn/removing-effect-dependencies
 
+![React Ref 保存跨渲染的可变值，Effect 在提交后同步外部系统并在更新或卸载时清理](./images/react-ref-effect-sync-figure-01.png)
+
 ## Ref 是什么
 
 `useRef` 可以让组件在多次渲染之间记住一个值，但修改它不会触发重新渲染。

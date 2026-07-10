@@ -20,6 +20,8 @@ language: zh-CN
 
 pytest 是 Python 最流行的测试框架之一，与 Selenium 结合可以构建强大的自动化测试套件。本教程将详细介绍两者的集成方法。
 
+![Selenium 与 pytest 集成生命周期图](./images/selenium-pytest-integration-lifecycle-figure-01.png)
+
 ### pytest 优势
 
 | 特性 | 说明 |

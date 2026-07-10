@@ -20,6 +20,8 @@ language: zh-CN
 
 UI Automation 提供了丰富的控件操作能力。本教程将详细介绍如何操作各种 UI 控件，包括按钮点击、文本输入、列表选择等常见操作。
 
+![UI Automation 控件类型与 Pattern 操作映射图](./images/uia-control-pattern-operations-figure-01.png)
+
 ### 控件操作类型
 
 ```text

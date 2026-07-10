@@ -22,6 +22,8 @@ language: zh-CN
 
 在 Web 实时通信中，轮询（Polling）和长轮询（Long Polling）是两种实现服务端推送的经典技术。虽然 WebSocket 提供了更优雅的解决方案，但在某些场景下，了解这两种技术仍然非常重要。
 
+![Polling 定时发送请求且经常得到空响应，Long Polling 则保持请求挂起直到数据到达或超时后再发起下一轮](./images/polling-long-polling-timeline-figure-01.png)
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                      实时通信技术对比                            │

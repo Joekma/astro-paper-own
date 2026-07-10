@@ -21,6 +21,8 @@ language: zh-CN
 
 Electron 应用的安全性至关重要，本文将详细介绍如何配置安全选项、实现内容安全策略、防止 XSS 攻击，以及其他安全最佳实践。🔒
 
+![Electron 安全最佳实践纵深防御控制面](./images/electron-security-defense-in-depth-figure-01.png)
+
 ## 安全配置
 
 ### 推荐的 WebPreferences 配置

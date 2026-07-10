@@ -21,6 +21,8 @@ language: zh-CN
 
 pywin32 是 Python 访问 Windows 操作的桥梁，它提供了对 Windows COM 组件和 Win32 API 的访问能力。通过 pywin32，Python 可以操作 Windows 应用程序、访问系统功能、管理进程等。
 
+![pywin32 核心概念与 Windows 对象关系图](./images/pywin32-core-concepts-architecture-figure-01.png)
+
 ### 为什么选择 pywin32？
 
 | 特性 | 说明 |

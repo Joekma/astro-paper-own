@@ -18,6 +18,8 @@ language: zh-CN
 
 Vite 是现代前端项目常用的构建工具。开发阶段依赖浏览器原生 ESM 和快速预构建，生产阶段使用 Rollup 打包。
 
+![Vite 开发服务器与生产构建流程](./images/vite-dev-build-engineering-flow-figure-01.png)
+
 ## 创建项目
 
 ```bash

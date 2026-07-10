@@ -20,6 +20,8 @@ language: zh-CN
 
 > Python 提供了丰富的标准模块来处理时间、随机数、文件和系统操作。本文将详细介绍 time、datetime、random、os、sys 等常用模块的使用方法。
 
+![Python 常用模块 time、datetime、random、os、sys 和 functools.partial 分别处理时间转换、随机数、路径文件、系统信息和函数绑定](./images/python-common-modules-time-os-sys-figure-01.png)
+
 ## time 与 datetime 模块
 
 ### 时间的三种表示方式

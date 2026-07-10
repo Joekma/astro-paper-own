@@ -30,6 +30,8 @@ React 官方文档分为 Learn 和 Reference。Learn 适合建立概念，Refere
 - https://react.dev/reference/rules/rules-of-hooks
 - https://react.dev/reference/react-compiler
 
+![React API、性能优化和工程实践围绕测量、定位、优化、验证与质量门禁形成闭环](./images/react-api-performance-practice-figure-01.png)
+
 ## React Reference 结构
 
 | 分类                      | 内容                       |

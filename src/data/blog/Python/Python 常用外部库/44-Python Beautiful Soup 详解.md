@@ -24,6 +24,8 @@ Beautiful Soup 是一个可以从HTML或XML文件中提取数据的Python库。�
 
 > **重要提示**: Beautiful Soup 3 目前已经停止开发，官网推荐在现在的项目中使用 Beautiful Soup 4。
 
+![Beautiful Soup 从 HTML XML 原始文档到解析器选择、文档树遍历、查找筛选和数据提取的流程图](./images/python-beautifulsoup-parse-tree-figure-01.png)
+
 ### 核心特性
 
 - **强大的容错能力**: 自动处理不完整的HTML/XML文档

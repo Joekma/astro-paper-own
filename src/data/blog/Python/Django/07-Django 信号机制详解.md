@@ -21,6 +21,8 @@ Django提供一种信号机制。其实就是观察者模式，又叫发布-订�
 
 通俗来讲，就是一些动作发生的时候，信号允许特定的发送者去提醒一些接受者。用于在框架执行操作时解耦。
 
+![Django 信号机制通过 Sender 发出 Signal，再由 connect 或 @receiver 注册的 Receiver 响应内置信号或自定义信号，实现框架操作解耦](./images/django-signal-dispatch-receiver-figure-01.png)
+
 ## Django内置信号
 
 ### Model signals

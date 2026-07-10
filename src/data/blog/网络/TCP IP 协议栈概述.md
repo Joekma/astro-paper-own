@@ -20,6 +20,8 @@ language: zh-CN
 
 TCP/IP（传输控制协议/互联网协议）是互联网的基础协议族，采用四层模型实现网络通信。
 
+![TCP/IP 协议栈按应用层、传输层、网络层和网络接口层逐层封装数据，并在接收端逐层解封装](./images/tcp-ip-stack-encapsulation-figure-01.png)
+
 ## TCP/IP 四层模型
 
 ```

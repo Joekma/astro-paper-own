@@ -21,6 +21,8 @@ language: zh-CN
 
 Electron 应用开发过程中，调试和性能优化是非常重要的环节。本文将详细介绍如何使用 Chrome DevTools 调试 Electron 应用，以及常见的性能优化策略。🔍
 
+![Electron 调试诊断与性能优化反馈闭环](./images/electron-debug-performance-feedback-loop-figure-01.png)
+
 ## 调试工具
 
 ### 打开开发者工具

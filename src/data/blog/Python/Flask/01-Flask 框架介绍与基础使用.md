@@ -19,6 +19,8 @@ language: zh-CN
 
 Flask 是一个基于 Python 的轻量级 Web 框架，它的核心设计理念是"微"（micro）。这意味着 Flask 致力于保持核心简单、易于扩展，同时给予开发者最大的灵活性。
 
+![Flask 请求经过路由、视图函数、Werkzeug WSGI 层并接入扩展组件的基础流程图](./images/flask-framework-wsgi-overview-figure-01.png)
+
 ### Flask 的核心依赖
 
 Flask 依赖两个关键的 Python 库：

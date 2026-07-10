@@ -30,6 +30,8 @@ DNS（Domain Name System，域名系统）是互联网的基础设施之一，�
 浏览器连接到目标服务器
 ```
 
+![DNS 解析从浏览器和系统缓存开始，经递归解析器、根服务器、顶级域和权威服务器获得记录并按 TTL 缓存](./images/dns-resolution-chain-figure-01.png)
+
 ## 域名结构
 
 ### 层级结构

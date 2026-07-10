@@ -17,6 +17,8 @@ description: "MySQL体系结构、数据类型和数据库、表、记录的基�
 
 > MySQL 基本操作包括库、表、记录的增删改查。
 
+![MySQL 基础操作可以从服务器、数据库、表、列和行的层级理解，再区分 DDL 结构变更与 DML 数据读写](./images/mysql-basic-operations-hierarchy-figure-01.png)
+
 ## 体系结构
 
 | 层级       | 说明                                    |

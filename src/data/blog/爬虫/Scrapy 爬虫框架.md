@@ -20,6 +20,8 @@ description: 'Python Scrapy 爬虫框架，详细讲解Spider编写、CSS/XPath�
 
 > Scrapy 是一个基于 Python 的高级爬虫框架，提供了完整的爬虫解决方案，包括请求调度、数据提取、数据存储等功能。
 
+![Scrapy 引擎与请求响应数据流](./images/scrapy-engine-dataflow-figure-01.png)
+
 ## 安装
 
 ```bash

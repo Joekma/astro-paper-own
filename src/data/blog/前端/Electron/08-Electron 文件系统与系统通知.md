@@ -21,6 +21,8 @@ language: zh-CN
 
 Electron 通过集成 Node.js 的 `fs` 模块，提供了强大的文件系统操作能力，同时支持系统通知功能。本文将详细介绍这些功能的使用方法。📁
 
+![Electron 文件系统与系统通知能力链路](./images/electron-filesystem-notification-capability-figure-01.png)
+
 ## 文件系统操作
 
 ### 基础文件操作

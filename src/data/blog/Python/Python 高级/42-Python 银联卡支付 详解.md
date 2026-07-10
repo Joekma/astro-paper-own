@@ -25,6 +25,8 @@ description: 银联卡支付Python接入指南，涵盖网关支付、无跳转�
 
 文中的代码和流程保留了原始实践内容，按接入顺序重新组织，方便直接查阅和排障。
 
+![Python 接入银联卡支付时从构建请求、商户证书签名、网关或无跳转支付到前后台回调验签的流程图](./images/python-unionpay-integration-flow-figure-01.png)
+
 ## 接入场景与前置条件
 
 ### 典型需求

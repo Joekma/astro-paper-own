@@ -20,6 +20,8 @@ language: zh-CN
 
 Playwright 是由 Microsoft 开发的一款强大的端到端测试和网页自动化框架。它支持所有现代浏览器的自动化操作，包括 Chromium（Chrome/Edge）、Firefox 和 WebKit（Safari）。与其他自动化工具相比，Playwright 提供了更现代的 API、更好的稳定性和更丰富的功能集。
 
+![Playwright 核心架构层级图](./images/playwright-core-architecture-figure-01.png)
+
 ### 为什么选择 Playwright？
 
 | 特性 | 说明 |

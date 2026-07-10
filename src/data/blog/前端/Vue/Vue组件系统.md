@@ -19,6 +19,8 @@ description: '系统学习 Vue 3 组件拆分、Props、事件、插槽、依赖
 
 > Vue 3 的组件系统以单文件组件和 Composition API 为核心。组件负责拆分界面，组合式函数负责复用逻辑，Pinia 或依赖注入负责跨层状态协作。
 
+![Vue 3 组件系统中 Props、事件、插槽、依赖注入、组合函数和共享状态的协作关系](./images/vue-component-system-communication-figure-01.png)
+
 ## 组件基础
 
 一个典型组件由 `<script setup>`、`<template>` 和 `<style scoped>` 组成：

@@ -20,6 +20,8 @@ language: zh-CN
 
 网页是动态的，元素的加载、网络请求等都是异步的。Selenium 提供了多种等待机制来处理这些异步操作。本教程将详细介绍各种等待策略及其使用场景。
 
+![Selenium 隐式显式与 Fluent 等待时间轴](./images/selenium-wait-mechanisms-timeline-figure-01.png)
+
 ### 为什么需要等待
 
 ```text

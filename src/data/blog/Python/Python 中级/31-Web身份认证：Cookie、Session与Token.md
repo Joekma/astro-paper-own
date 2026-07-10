@@ -21,6 +21,8 @@ language: zh-CN
 
 > Web身份认证是Web开发的核心技术，本文详细介绍Cookie、Session、Token的原理和实践。
 
+![Web 身份认证从 HTTP 无状态出发，逐步演化出 Cookie、Session、Token 和 JWT，并通过 Authorization 与安全防护完成请求身份识别](./images/python-web-auth-cookie-session-token-figure-01.png)
+
 ## 认证技术发展史
 
 ### 阶段一：无状态时代

@@ -19,6 +19,8 @@ description: "MySQL客户端工具及SQL命令"
 
 MySQL 提供多种客户端工具，涵盖命令行和图形界面，满足不同使用场景的需求。
 
+![MySQL 客户端工具链覆盖连接、管理、导入导出、binlog 分析、GUI 操作和 EXPLAIN 性能诊断等工作流](./images/mysql-client-tools-workflow-figure-01.png)
+
 ## 命令行工具
 
 ### mysql

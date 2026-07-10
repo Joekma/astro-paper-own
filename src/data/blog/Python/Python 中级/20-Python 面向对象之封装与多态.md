@@ -28,6 +28,8 @@ language: zh-CN
 - 理解多态的原理和优势
 - 了解鸭子类型和接口设计
 
+![Python 面向对象的封装与多态可以通过私有属性、名字改写、property、接口约定、鸭子类型和方法多态来理解](./images/python-oop-encapsulation-polymorphism-figure-01.png)
+
 # 面向对象三大特性之封装与多态
 
 ## 封装

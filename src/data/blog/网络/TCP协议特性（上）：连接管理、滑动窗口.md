@@ -20,6 +20,8 @@ language: zh-CN
 
 TCP（Transmission Control Protocol，传输控制协议）是 Internet 上最重要的协议之一，提供面向连接、可靠传输、流控制的服务。
 
+![TCP 连接生命周期包含三次握手、带序列号和确认号的数据传输、滑动窗口推进以及四次挥手关闭](./images/tcp-connection-window-lifecycle-figure-01.png)
+
 ## TCP 核心特性
 
 | 特性 | 说明 |

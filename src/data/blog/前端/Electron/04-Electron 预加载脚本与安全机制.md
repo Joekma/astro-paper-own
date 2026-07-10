@@ -20,6 +20,8 @@ language: zh-CN
 
 预加载脚本（Preload Script）是 Electron 安全架构的核心组件，它在渲染进程加载之前执行，可以安全地暴露主进程 API 给渲染进程，同时保持**上下文隔离（Context Isolation）**。🔐
 
+![Electron 预加载脚本与安全桥接机制](./images/electron-preload-security-bridge-figure-01.png)
+
 ## 为什么需要预加载脚本
 
 ### 安全问题

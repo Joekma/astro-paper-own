@@ -20,6 +20,8 @@ language: zh-CN
 
 RPA（Robotic Process Automation，机器人流程自动化）是一种利用软件机器人自动执行重复性业务流程的技术。Playwright 作为现代网页自动化工具，非常适合构建网页端的 RPA 解决方案。本教程将带你从零构建一个企业级的 RPA 系统。
 
+![Playwright RPA 工作流系统架构图](./images/playwright-rpa-workflow-system-figure-01.png)
+
 ### RPA 架构图
 
 ```text

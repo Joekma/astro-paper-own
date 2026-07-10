@@ -29,6 +29,8 @@ language: zh-CN
 
 这篇文章把两部分内容合并整理，方便你从 Python 角度快速理解它们的定位、安装方式和常见操作。
 
+![Python 操作 Memcached key value 缓存和 RabbitMQ 生产者、Exchange、Queue、消费者消息队列的架构对比图](./images/python-rabbitmq-memcached-figure-01.png)
+
 ## Memcached 基础与 Python 操作
 
 ### Memcached 是什么

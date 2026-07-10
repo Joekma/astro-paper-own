@@ -32,6 +32,8 @@ language: zh-CN
 - Node.js "单线程"的真相（**libuv 线程池**）；
 - 为什么"CPU 密集"会卡死 Node。
 
+![Node.js 事件循环通过阶段队列、微任务队列和 libuv 线程池协调异步任务执行顺序](./images/nodejs-event-loop-phases-microtasks-figure-01.png)
+
 ## 二、先用一句话讲清楚
 
 **Node.js 的事件循环 = libuv 提供的一个"循环跑"机制。它有 6 个阶段，每个阶段处理一类异步任务，阶段之间会清空所有微任务。`setTimeout` 走 Timers 阶段，`setImmediate` 走 Check 阶段，`Promise.then` 走微任务队列，`process.nextTick` 优先级最高。**

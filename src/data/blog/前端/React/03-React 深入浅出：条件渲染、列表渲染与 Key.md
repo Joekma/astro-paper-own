@@ -26,6 +26,8 @@ React 没有专门的模板指令。条件和列表都使用 JavaScript 本身�
 - https://react.dev/learn/conditional-rendering
 - https://react.dev/learn/rendering-lists
 
+![React 条件渲染、列表渲染与稳定 Key 共同决定元素显示、身份保持和状态复用](./images/react-conditional-list-key-figure-01.png)
+
 ## 条件渲染
 
 最直接的条件渲染方式是使用 `if`。

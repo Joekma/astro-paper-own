@@ -19,6 +19,8 @@ language: zh-CN
 
 前端安全的核心不是“把所有危险 API 都记住”，而是建立边界意识：**用户输入不可信、外部内容不可信、展示到页面前必须经过合适的处理**。
 
+![前端安全围绕不可信输入、安全输出、危险 API、CSP 与服务端校验建立多层信任边界](./images/frontend-security-trust-boundary-figure-01.png)
+
 ## XSS 类型
 
 ### 存储型 XSS

@@ -22,6 +22,8 @@ description: 'Python HTML解析库，深入讲解re正则表达式、BeautifulSo
 
 > 在爬虫程序中，获取到网页源代码后，需要从海量 HTML 代码中提取出有用的数据。常用的解析库有三种：re、BeautifulSoup、pyquery。
 
+![Python HTML 解析工具对比图](./images/python-html-parsing-tool-comparison-figure-01.png)
+
 ## 正则表达式 re
 
 ### 简介

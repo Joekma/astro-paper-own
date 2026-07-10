@@ -18,6 +18,8 @@ description: "MySQL索引原理、慢查询分析和优化技巧"
 
 > 索引是提升查询性能的关键。
 
+![MySQL 查询优化通过 B+Tree 索引缩小扫描范围，结合优化器、EXPLAIN、慢查询日志和监控形成调优闭环](./images/mysql-index-explain-optimization-figure-01.png)
+
 ## 索引类型
 
 | 类型         | 说明                     |

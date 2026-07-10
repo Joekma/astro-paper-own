@@ -54,6 +54,8 @@ def index():
 
 蓝图是对 Flask 项目进行模块化组织的机制，适用于中小型项目。
 
+![Flask 蓝图注册、并发请求上下文、threading local 与 DBUtils PooledDB 连接池协作示意图](./images/flask-blueprint-dbutils-context-figure-01.png)
+
 ## 小中型项目示例
 
 ```python

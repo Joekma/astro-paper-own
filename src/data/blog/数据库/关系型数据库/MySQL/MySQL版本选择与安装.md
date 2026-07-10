@@ -18,6 +18,8 @@ description: "MySQL版本选择、Windows/Linux/Docker安装和配置管理方�
 
 > MySQL 是最流行的开源关系型数据库之一，了解各版本区别有助于选择合适的版本进行开发和部署。
 
+![MySQL 版本选择和安装流程从 5.7 与 8.0 决策开始，经平台安装、配置服务、客户端连接到最终验证](./images/mysql-version-install-workflow-figure-01.png)
+
 ## MySQL 简介
 
 | 特点             | 说明                                  |

@@ -20,6 +20,8 @@ language: zh-CN
 
 Redis 管理涉及配置优化、运维监控、安全设置等方面，是保证 Redis 高效稳定运行的关键。
 
+![Redis 运维控制面围绕配置、内存、持久化、安全、备份恢复、监控告警和性能调优形成闭环](./images/redis-operations-control-plane-figure-01.png)
+
 ## 核心配置
 
 ### 内存配置

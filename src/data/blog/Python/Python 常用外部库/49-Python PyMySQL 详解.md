@@ -34,6 +34,8 @@ language: zh-CN
 
 ## pymysql模块
 
+![PyMySQL 通过连接、游标、参数化 SQL、事务提交回滚和 fetch 方法访问 MySQL 的安全操作流程图](./images/python-pymysql-query-transaction-figure-01.png)
+
 ### 安装
 
 ```bash

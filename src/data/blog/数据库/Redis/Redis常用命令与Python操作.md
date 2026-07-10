@@ -19,6 +19,8 @@ language: zh-CN
 
 > Redis 操作包括命令行、Python 客户端和应用程序集成接口。
 
+![应用通过 API 和连接池复用 Redis 连接，发送命令并处理响应、超时和重试等集成边界](./images/redis-command-connection-pool-figure-01.png)
+
 ## 常用命令
 
 ```bash

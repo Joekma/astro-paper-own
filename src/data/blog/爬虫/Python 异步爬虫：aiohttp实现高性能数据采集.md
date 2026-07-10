@@ -22,6 +22,8 @@ description: 'Python高性能异步爬虫，深入讲解asyncio异步编程、ai
 
 > 同步爬虫效率低下，使用异步编程可以大幅提升爬取效率。
 
+![aiohttp 异步爬虫事件循环与并发模型](./images/aiohttp-async-scraping-event-loop-figure-01.png)
+
 ## 性能对比
 
 | 方式 | 1000个页面 | 耗时 |

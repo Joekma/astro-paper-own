@@ -19,6 +19,8 @@ language: zh-CN
 
 > 异常是程序运行时发生错误的信号。学会处理异常可以让程序更加健壮和容错。本文将详细介绍 Python 的异常处理机制。
 
+![Python 异常处理通过 try、except、else、finally、raise、assert 和自定义异常组织错误捕获、成功分支与清理逻辑](./images/python-exception-handling-flow-figure-01.png)
+
 ## 什么是异常
 
 异常就是程序运行时发生错误的信号。当程序出现错误时，会产生一个异常，若程序没有处理它，则会抛出该异常，程序的运行也随之终止。

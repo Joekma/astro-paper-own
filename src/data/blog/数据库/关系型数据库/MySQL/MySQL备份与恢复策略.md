@@ -18,6 +18,8 @@ description: "MySQL备份与恢复方法"
 
 > 数据库备份是保障数据安全的重要手段。
 
+![MySQL 备份策略由逻辑备份、物理备份和 binlog 增量备份组成，并通过验证、回滚和按时间点恢复保障数据安全](./images/mysql-backup-recovery-strategy-figure-01.png)
+
 ## 逻辑备份
 
 ### mysqldump

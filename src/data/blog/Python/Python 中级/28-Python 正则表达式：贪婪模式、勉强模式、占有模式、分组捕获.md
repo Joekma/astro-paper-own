@@ -27,6 +27,8 @@ language: zh-CN
 - 了解 Unicode 字符的匹配方法
 - 提升正则表达式的性能优化技巧
 
+![Python 正则表达式高级用法需要区分贪婪、勉强和占有量词，并结合分组捕获、反向引用、提取验证和性能风险来使用](./images/python-regex-advanced-matching-modes-figure-01.png)
+
 ## 正则表达式的三种模式【贪婪、勉强、侵占】
 
 为了更好地理解三种模式的区别，我们使用字符串 `xfooxxxxxxfoo` 作为测试目标。

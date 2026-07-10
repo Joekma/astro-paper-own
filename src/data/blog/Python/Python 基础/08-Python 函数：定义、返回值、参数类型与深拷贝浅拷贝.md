@@ -21,6 +21,8 @@ language: zh-CN
 
 > 函数是 Python 编程的核心概念之一。本文将详细介绍函数的定义、返回值、各种参数类型以及深拷贝与浅拷贝的概念，帮助你掌握函数的高级用法。
 
+![Python 函数从 def 定义到调用、返回值、位置参数、默认参数、可变参数和引用传递构成完整的参数绑定与执行流程](./images/python-function-parameters-reference-flow-figure-01.png)
+
 ## 函数的定义
 
 ### 基本概念

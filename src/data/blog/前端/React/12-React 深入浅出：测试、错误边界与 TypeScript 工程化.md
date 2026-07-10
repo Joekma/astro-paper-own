@@ -19,6 +19,8 @@ language: zh-CN
 
 React 入门关注“怎么写组件”，工程实践关注“组件坏了怎么发现、错误怎么兜底、接口怎么约束”。这篇补齐测试、错误边界和 TypeScript 三块内容。
 
+![React 工程化质量体系由组件测试、错误边界、TypeScript Props 契约和 CI 质量门禁组成](./images/react-testing-error-boundary-typescript-figure-01.png)
+
 ## 组件测试目标
 
 组件测试不应该测试内部实现细节，而应该测试用户能看到和操作的行为。

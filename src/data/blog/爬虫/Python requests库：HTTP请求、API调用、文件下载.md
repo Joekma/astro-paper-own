@@ -23,6 +23,8 @@ description: 'Python requests库，深入讲解GET/POST请求、文件上传下�
 
 > requests 是 Python 中最流行的 HTTP 库，简洁易用的 API 使其成为网络请求的首选工具。
 
+![Python requests HTTP 客户端工作流](./images/python-requests-http-client-workflow-figure-01.png)
+
 ## 基本用法
 
 ### GET 请求

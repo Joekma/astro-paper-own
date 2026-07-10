@@ -20,6 +20,8 @@ language: zh-CN
 
 BrowserWindow 是 Electron 中最核心的 API，用于创建和管理应用窗口。本篇文章将详细介绍 BrowserWindow 的配置选项、操作方法和最佳实践。🪟
 
+![Electron BrowserWindow 生命周期与多窗口管理](./images/electron-browserwindow-lifecycle-figure-01.png)
+
 ## BrowserWindow 基础
 
 ### 创建窗口

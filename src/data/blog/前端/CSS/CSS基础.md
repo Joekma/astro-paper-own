@@ -19,6 +19,8 @@ language: zh-CN
 
 > CSS 是前端开发的核心技能之一，盒模型是 CSS 布局的基础。掌握常用语法和盒模型是布局的前提。
 
+![CSS 选择器级联与盒模型结构图](./images/css-box-model-cascade-selectors-figure-01.png)
+
 ## 基础选择器
 
 ### 常用选择器

@@ -22,6 +22,8 @@ Tailwind CSS 是一个**实用优先**（Utility-First）的 CSS 框架，它提
 
 本文以 Tailwind CSS 4 的 CSS-first 配置为主，同时保留 `tailwind.config.js` 给 v3 或迁移项目参考。
 
+![Tailwind CSS 工具类优先与按需生成流程](./images/tailwind-utility-first-build-workflow-figure-01.png)
+
 ### 为什么选择 Tailwind CSS？
 
 | 特性 | 说明 |

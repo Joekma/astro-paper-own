@@ -20,6 +20,8 @@ language: zh-CN
 
 RPA（Robotic Process Automation，机器人流程自动化）是一种利用软件机器人自动执行重复性业务流程的技术。Selenium 作为网页自动化工具，非常适合构建网页端的 RPA 解决方案。
 
+![Selenium RPA 业务工作流系统图](./images/selenium-rpa-workflow-system-figure-01.png)
+
 ### RPA 系统架构
 
 ```text

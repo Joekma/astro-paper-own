@@ -22,6 +22,8 @@ language: zh-CN
 
 Redis 主从复制是指将主节点的数据同步到从节点，实现数据冗余和读写分离，是 Redis 高可用架构的基础。
 
+![Redis 主从复制先通过 RDB 全量同步建立副本，再以命令传播和复制偏移量维持增量同步，并由 Sentinel 负责故障转移](./images/redis-replication-sentinel-failover-figure-01.png)
+
 ## 主从复制架构
 
 ```

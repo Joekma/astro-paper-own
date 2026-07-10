@@ -21,6 +21,8 @@ language: zh-CN
 
 > Python 中一切皆为对象，每个对象都有其内置的方法。本文将详细介绍数字、字符串、列表、元组、字典和集合等数据类型的内置方法。
 
+![Python 常用数据类型可按数字、字符串、列表、元组、字典和集合分类，并通过可变性、顺序性和哈希性理解它们的使用边界](./images/python-data-types-methods-taxonomy-figure-01.png)
+
 ## 数字类型
 
 ### 整型 int

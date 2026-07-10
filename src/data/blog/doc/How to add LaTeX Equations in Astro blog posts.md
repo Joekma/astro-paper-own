@@ -21,6 +21,8 @@ This document demonstrates how to use LaTeX equations in your Markdown files for
   </figcaption>
 </figure>
 
+![Astro Markdown 中的 LaTeX 公式通过 remark-math、rehype-katex 和 KaTeX CSS 渲染为页面内公式](./images/astro-latex-equations-pipeline-figure-01.png)
+
 ## Table of contents
 
 ## Instructions

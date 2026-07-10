@@ -28,6 +28,8 @@ language: zh-CN
 | **超文本** | 页面内可包含图片、链接、音乐等非文字元素 |
 | **标记语言** | 由标签（Tag）构成的计算机语言，通过标签来定义内容的结构和语义 |
 
+![HTML 文档结构语义化与浏览器解析流程](./images/html-document-semantic-structure-figure-01.png)
+
 ### HTML 与 CSS、JavaScript 的关系
 
 - **HTML** — 内容结构（"这座房子有什么？"）

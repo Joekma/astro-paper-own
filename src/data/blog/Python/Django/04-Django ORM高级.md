@@ -18,6 +18,8 @@ description: 'Django ORM高级特性，包括QuerySet缓存、关联查询、性
 
 > 本篇介绍 Django ORM 的高级特性，包括 QuerySet 惰性查询、缓存机制、关联查询优化等。
 
+![Django ORM 高级优化围绕 QuerySet 惰性查询、缓存、exists、count、select_related、prefetch_related、annotate 和 N+1 查询治理展开](./images/django-orm-advanced-query-optimization-figure-01.png)
+
 ## QuerySet特性
 
 ### 惰性查询

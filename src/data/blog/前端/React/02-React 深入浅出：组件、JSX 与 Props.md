@@ -28,6 +28,8 @@ React 官方文档把“描述 UI”作为学习 React 的第一大章节。原�
 - https://react.dev/learn/writing-markup-with-jsx
 - https://react.dev/learn/passing-props-to-a-component
 
+![React 组件通过 JSX 描述界面结构，并使用只读 props 与 children 组合构建组件树](./images/react-components-jsx-props-figure-01.png)
+
 ## 组件是什么
 
 组件是 React 应用的基本单元。一个组件可以表示按钮、头像、导航栏，也可以表示完整页面。

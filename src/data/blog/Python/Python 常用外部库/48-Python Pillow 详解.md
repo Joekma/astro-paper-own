@@ -25,6 +25,8 @@ PIL：Python Imaging Library，已经是Python平台事实上的图像处理标�
 
 由于PIL仅支持到Python 2.7，加上年久失修，于是一群志愿者在PIL的基础上创建了兼容的版本，名字叫**Pillow**，支持最新Python 3.x，又加入了许多新特性，因此，我们可以直接安装使用Pillow。
 
+![Pillow 图像处理从打开图片、几何变换、滤镜、绘制、通道合成到保存格式和验证码生成的流程图](./images/python-pillow-image-processing-figure-01.png)
+
 ## 安装
 
 ```bash

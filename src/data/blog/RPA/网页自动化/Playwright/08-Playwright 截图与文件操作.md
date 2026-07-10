@@ -20,6 +20,8 @@ language: zh-CN
 
 在网页自动化中，截图和文件操作是两个非常实用的功能。截图可以用于调试、报告生成和视觉测试，而文件操作则涵盖了下载、上传和处理各种文件类型。本教程将详细介绍这些功能的使用方法和最佳实践。
 
+![Playwright 截图 PDF 下载上传文件流图](./images/playwright-screenshot-file-io-figure-01.png)
+
 ### 功能概览
 
 ```text

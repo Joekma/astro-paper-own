@@ -21,6 +21,8 @@ language: zh-CN
 
 > 流程控制是编程的基础，让计算机能够像人一样具有判断和重复执行的能力。本文将详细介绍 Python 中的条件判断和循环语句。
 
+![Python 流程控制由 if 条件分支、while 循环、for 迭代、break 退出和 continue 跳过共同组成程序执行路径](./images/python-flow-control-branches-loops-figure-01.png)
+
 ## if 语句
 
 ### 什么是 if 语句

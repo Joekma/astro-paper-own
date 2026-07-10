@@ -22,6 +22,9 @@ language: zh-CN
 ## 什么是元类
 
 一切源自于一句话：python中一切皆为对象。让我们先定义一个类，然后逐步分析
+
+![Python 元类会参与 class 创建、类对象生成和实例调用过程，自定义 __new__、__init__、__call__ 后还能实现单例缓存等模式](./images/python-metaclass-singleton-pipeline-figure-01.png)
+
 ```python
 class Teather(object):
     school='xindongfang'

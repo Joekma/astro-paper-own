@@ -28,6 +28,8 @@ language: zh-CN
 - 理解绑定方法和 self 的含义
 - 掌握 __init__ 构造方法的用法
 
+![Python 面向对象设计可以从类蓝图、对象实例、属性方法、类属性与实例属性、绑定方法和命名空间查找顺序建立整体模型](./images/python-oop-class-object-namespace-figure-01.png)
+
 # 面向对象的思维去设计程序
 
 ## 什么是面向对象编程

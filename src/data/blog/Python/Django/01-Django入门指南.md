@@ -20,6 +20,8 @@ description: 'Django入门指南，涵盖虚拟环境配置、项目创建、MTV
 
 > Django 是一个高级 Python Web 框架，鼓励快速开发和简洁实用的设计。
 
+![Django 入门可以从虚拟环境、项目结构、settings 配置、MTV 模型、URLconf 路由、视图函数和模板响应建立整体流程](./images/django-getting-started-mtv-flow-figure-01.png)
+
 ## 虚拟环境
 
 ### 什么是虚拟环境

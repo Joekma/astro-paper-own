@@ -18,6 +18,8 @@ description: "MySQL大数据分页优化方案，解决深度分页性能问题"
 
 > 大数据量分页需要优化。
 
+![MySQL 深度分页的 OFFSET 会扫描并丢弃大量行，可通过延迟关联、游标分页和索引范围查询降低扫描成本](./images/mysql-deep-pagination-optimization-figure-01.png)
+
 ## 基础分页
 
 ```sql

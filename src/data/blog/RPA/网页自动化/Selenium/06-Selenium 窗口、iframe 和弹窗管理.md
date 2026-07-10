@@ -21,6 +21,8 @@ language: zh-CN
 
 现代网页通常包含多窗口、嵌套 iframe 和各种弹窗。Selenium 提供了完整的方法来管理这些复杂的页面结构。本教程将详细介绍这些场景的处理方法。
 
+![Selenium 窗口 iframe 弹窗上下文切换图](./images/selenium-window-frame-alert-context-figure-01.png)
+
 ### 场景概览
 
 ```text

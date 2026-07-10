@@ -32,6 +32,8 @@ Node.js 是**单进程**的——只有一个主线程跑 JS。这带来两个�
 
 这一篇聚焦在 **`process` + `child_process`**：什么时候用、怎么用、父子进程怎么通信。
 
+![Node.js process 与 child_process 通过 spawn、exec、execFile、fork 和 IPC 扩展单进程能力](./images/nodejs-process-child-process-model-figure-01.png)
+
 ## 二、先用一句话讲清楚
 
 **Node.js 单进程 + 事件循环虽然高效，但 CPU 密集和多核场景需要多进程。`child_process` 提供 `spawn`/`exec`/`execFile`/`fork` 四种方式开子进程；`process` 全局对象让你拿到当前进程的 PID、env、argv、内存、信号。**

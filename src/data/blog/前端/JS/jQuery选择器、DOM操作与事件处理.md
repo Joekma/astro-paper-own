@@ -22,6 +22,8 @@ language: zh-CN
 
 > jQuery 是一个快速、简洁的 JavaScript 库，简化了 HTML 文档遍历、事件处理和动画等操作。
 
+![jQuery 通过选择器、集合和链式调用组织 DOM、样式、事件、动画与 Ajax 操作](./images/jquery-selector-chain-workflow-figure-01.png)
+
 ## jQuery 简介
 
 ### 特点

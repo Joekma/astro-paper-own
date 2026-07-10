@@ -20,6 +20,8 @@ language: zh-CN
 
 断言是自动化测试的核心，用于验证预期结果与实际结果是否一致。本教程将详细介绍 Selenium 中的各种断言方法。
 
+![Selenium 断言验证与失败证据链图](./images/selenium-assertion-evidence-flow-figure-01.png)
+
 ### 断言类型
 
 ```text

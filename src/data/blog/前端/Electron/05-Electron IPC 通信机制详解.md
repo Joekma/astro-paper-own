@@ -20,6 +20,8 @@ language: zh-CN
 
 IPC（Inter-Process Communication，进程间通信）是 Electron 中主进程和渲染进程之间通信的桥梁。由于渲染进程无法直接访问 Node.js 和系统资源，所有跨进程的操作都需要通过 IPC 完成。🔄
 
+![Electron IPC 通信模式与安全控制点](./images/electron-ipc-communication-patterns-figure-01.png)
+
 ## IPC 通信方式
 
 Electron 提供了三种主要的 IPC 通信方式：

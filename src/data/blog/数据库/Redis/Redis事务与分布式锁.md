@@ -21,6 +21,8 @@ language: zh-CN
 
 Redis 提供了事务和锁机制来保证数据一致性和并发控制，适用于电商库存、账户转账等场景。
 
+![Redis 事务通过 MULTI 和 EXEC 顺序提交命令，WATCH 负责乐观锁冲突检测，Lua 脚本提供服务端原子执行](./images/redis-transaction-watch-lua-figure-01.png)
+
 ## 管道
 
 管道用于把多个命令一次性发送到 Redis，减少网络往返次数。它不等同于事务，但常和批量读写、统计更新一起使用。

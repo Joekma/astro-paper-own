@@ -20,6 +20,8 @@ language: zh-CN
 
 Electron 的核心架构基于**多进程模型**，主要由**主进程（Main Process）**和**渲染进程（Renderer Process）**组成。理解这两种进程的职责边界和协作方式，是掌握 Electron 开发的关键。🔑
 
+![Electron 主进程与渲染进程职责边界](./images/electron-main-renderer-responsibilities-figure-01.png)
+
 ## 主进程详解
 
 ### 主进程的角色

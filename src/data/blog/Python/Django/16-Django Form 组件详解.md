@@ -39,6 +39,8 @@ Django提供的用于数据校验和模板渲染的组件。
 <!-- myform.as_table/as_p/as_ul（不推荐使用） -->
 ```
 
+![Django Form 组件把 request.POST 输入交给字段、Widget、is_valid、局部 clean、全局 clean、errors 和 cleaned_data，完成数据校验与模板渲染](./images/django-form-validation-rendering-flow-figure-01.png)
+
 ### Forms组件的渲染错误信息
 
 在模板中：`<span>{{ foo.errors.0 }}</span>`

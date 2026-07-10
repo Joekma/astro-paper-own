@@ -20,6 +20,8 @@ language: zh-CN
 
 在网页自动化中，等待是一个核心概念。网页是动态的，元素的加载、网络请求、表单提交等都是异步的。如果不恰当地处理这些异步操作，脚本可能会因为找不到元素或时机不对而失败。Playwright 提供了智能的自动等待机制，同时也支持灵活的显式等待策略。
 
+![Playwright 等待策略与异步处理时间轴](./images/playwright-waiting-async-timeline-figure-01.png)
+
 ### 等待问题场景
 
 ```text

@@ -22,6 +22,8 @@ description: "深入讲解Django settings懒加载机制的实现原理。"
 
 - `__import__(module)` 等价于 `import module`
 
+![Django Settings 懒加载通过 LazySettings 代理、DJANGO_SETTINGS_MODULE、importlib、global_settings 默认值和项目配置覆盖完成首次访问时的配置初始化](./images/django-settings-lazy-loading-figure-01.png)
+
 **示例：** 创建 `lib/aa.py`，然后在同级模块中动态导入：
 
 ```python

@@ -20,6 +20,8 @@ language: zh-CN
 
 Vue 3 新项目通常从 `create-vue` 开始，它基于 Vite，默认支持单文件组件、快速热更新和现代构建流程。
 
+![Vue 3 项目结构与组合式 API 工作流](./images/vue3-vite-composition-project-structure-figure-01.png)
+
 ## 创建项目
 
 ```bash

@@ -19,6 +19,8 @@ description: "深入讲解Django源码目录结构和主要模块的功能。"
 
 Django是一个功能完善的Python Web框架，其源码结构清晰模块化。了解源码结构有助于深入理解Django的工作原理。
 
+![Django 源码目录可以按配置、核心处理、数据库、HTTP、管理命令和请求响应模块来理解，各模块共同支撑请求处理与 ORM 操作](./images/django-source-directory-module-map-figure-01.png)
+
 **Django源码目录位置**：
 
 - 虚拟环境：`venv/lib/python3.x/site-packages/django/`

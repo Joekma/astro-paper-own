@@ -22,6 +22,8 @@ language: zh-CN
 
 NumPy（Numerical Python）是高性能科学计算和数据分析的基础包。它是 Pandas 等其他各种工具的基础，为 Python 提供了强大的多维数组对象和用于处理这些数组的工具。
 
+![NumPy ndarray 的 shape、dtype、strides、索引切片、视图副本和向量化计算关系图](./images/python-numpy-ndarray-vectorization-figure-01.png)
+
 ### 核心特性
 
 - **高性能计算**：基于 C 语言实现，运算速度远超纯 Python 代码

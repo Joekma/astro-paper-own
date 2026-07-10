@@ -27,6 +27,8 @@ language: zh-CN
 
 这一切的根源是：**路径分隔符在 Windows 是 `\`，在 Mac/Linux 是 `/`**。Node.js 用 `path` 模块帮你抹平这个差异。
 
+![Node.js path 模块通过 join、resolve、dirname、basename 和 extname 抹平跨平台路径差异](./images/nodejs-path-cross-platform-normalization-figure-01.png)
+
 ## 二、先用一句话讲清楚
 
 **`path` 模块是 Node.js 内置的"路径工具箱"，提供 `join`、`resolve`、`basename`、`extname` 等方法，帮你在 Windows、Mac、Linux 三种系统上用同一份代码正确处理文件路径。**

@@ -20,6 +20,8 @@ language: zh-CN
 
 Selenium 是目前最流行的网页自动化测试框架之一，最初由 Jason Huggins 于 2004 年开发。经过近二十年的发展，Selenium 已经成为 Web 自动化领域的行业标准。本教程将带你全面了解 Selenium 的核心概念和架构。
 
+![Selenium WebDriver 核心架构图](./images/selenium-webdriver-architecture-figure-01.png)
+
 ### Selenium 工具集
 
 Selenium 不仅仅是一个工具，而是一套完整的工具集：

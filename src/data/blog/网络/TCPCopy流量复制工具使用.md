@@ -21,6 +21,8 @@ language: zh-CN
 
 TCPCopy 是一款流量复制工具，用于将生产环境的流量复制到测试环境，进行真实环境测试和性能压测。
 
+![TCPCopy 从生产服务旁路复制真实请求到测试服务，并通过 intercept 拦截测试响应以隔离真实客户端](./images/tcpcopy-traffic-replay-topology-figure-01.png)
+
 ## 工作原理
 
 ```

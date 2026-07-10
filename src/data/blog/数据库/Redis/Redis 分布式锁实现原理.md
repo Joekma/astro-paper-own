@@ -19,6 +19,8 @@ language: zh-CN
 
 分布式锁用于在分布式系统中协调多进程/多节点的并发访问，确保同一时刻只有一个节点能执行关键操作。
 
+![Redis 分布式锁通过 SET NX PX、唯一 token、TTL 和 Lua 比较删除保护临界区，避免误删其他客户端的锁](./images/redis-distributed-lock-token-ttl-figure-01.png)
+
 ## 为什么需要分布式锁
 
 ### 单机锁的问题

@@ -20,6 +20,8 @@ language: zh-CN
 
 元素定位是网页自动化的核心技能。Playwright 提供了丰富多样的定位策略，让你能够准确、可靠地找到页面上的任何元素。本教程将详细介绍各种定位方法、选择器语法以及最佳实践。
 
+![Playwright 定位器策略稳定性图](./images/playwright-locator-strategy-figure-01.png)
+
 ### 选择器策略概览
 
 | 策略类型 | 语法前缀 | 示例 | 适用场景 |

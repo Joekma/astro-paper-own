@@ -21,6 +21,8 @@ language: zh-CN
 
 窗口操作是 Windows 自动化中最常见的任务。本教程将详细介绍如何使用 pywin32 进行窗口的查找、遍历、操作和控制。
 
+![pywin32 窗口句柄查找与消息操作图](./images/pywin32-window-handle-message-flow-figure-01.png)
+
 ### 窗口操作类型
 
 ```text

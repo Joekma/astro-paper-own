@@ -19,6 +19,8 @@ description: "深入讲解Django自动重载机制的实现原理和工作方式
 
 关于重载的实现方式在`django/utils/autoreload.py`中，重启的设置在`python_reloader`函数中：
 
+![Django 自动重载通过父进程监控文件变化、设置 RUN_MAIN、启动子进程运行开发服务器，并在代码变更后重启子进程](./images/django-auto-reload-process-monitor-figure-01.png)
+
 ```python
 def restart_with_reloader():
     while True:

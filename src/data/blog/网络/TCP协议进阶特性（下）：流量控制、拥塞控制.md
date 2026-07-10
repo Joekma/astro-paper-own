@@ -20,6 +20,8 @@ language: zh-CN
 
 本篇文章深入探讨 TCP 的流量控制和拥塞控制机制，这是保证网络稳定高效运行的关键技术。
 
+![TCP 发送窗口同时受接收窗口 rwnd 与拥塞窗口 cwnd 约束，丢包后进入快速重传和恢复过程](./images/tcp-flow-congestion-control-figure-01.png)
+
 ## 滑动窗口详解
 
 ### 窗口结构

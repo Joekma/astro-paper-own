@@ -21,6 +21,8 @@ language: zh-CN
 
 进程和线程管理是 Windows 自动化的核心部分。本教程将详细介绍如何使用 pywin32 进行进程和线程的各种操作。
 
+![pywin32 进程线程句柄生命周期图](./images/pywin32-process-thread-lifecycle-figure-01.png)
+
 ### 进程 vs 线程
 
 ```text

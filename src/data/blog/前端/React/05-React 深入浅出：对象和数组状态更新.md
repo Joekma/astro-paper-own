@@ -26,6 +26,8 @@ React state 可以保存对象和数组，但官方文档强调：应该把 stat
 - https://react.dev/learn/updating-objects-in-state
 - https://react.dev/learn/updating-arrays-in-state
 
+![React 对象和数组状态应通过创建新引用进行不可变更新，避免直接修改旧状态](./images/react-immutable-state-update-figure-01.png)
+
 ## 为什么不能直接修改
 
 错误示例：

@@ -21,6 +21,8 @@ description: 'Python网络爬虫，详细讲解HTTP协议、requests请求、Bea
 
 > 网络爬虫是通过程序自动获取网页内容的技术，是数据采集的重要手段。
 
+![网络爬虫生命周期流程图](./images/web-scraping-lifecycle-pipeline-figure-01.png)
+
 ## 基本原理
 
 ### 爬虫流程

@@ -28,6 +28,8 @@ language: zh-CN
 
 这一篇就系统解决"Node.js 项目的工程化"问题：包管理、版本号、脚本、lockfile、发布。
 
+![npm 工程体系中 package.json、依赖、脚本、lockfile、仓库和发布流程的关系](./images/npm-package-engineering-workflow-figure-01.png)
+
 ## 二、先用一句话讲清楚
 
 **npm = Node.js 自带的"包管理工具 + 全球最大开源包仓库"。它让你的项目能装别人写的库、能用 `npm run` 跑脚本、能通过 `package.json` + `package-lock.json` 锁定依赖版本。**

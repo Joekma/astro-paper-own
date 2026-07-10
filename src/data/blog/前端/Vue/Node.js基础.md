@@ -18,6 +18,8 @@ description: 'Node.js基础，包括安装、npm包管理、模块系统和Expre
 
 > Node.js 是基于 Chrome V8 引擎的 JavaScript 运行环境。
 
+![Node.js 运行时、事件循环、模块系统、npm 依赖管理与 Express 输出的关系](./images/nodejs-runtime-package-flow-figure-01.png)
+
 ## 安装
 
 ```bash

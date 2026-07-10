@@ -16,6 +16,8 @@ description:
 
 This post will explain how you can enable/disable light & dark mode for the website. Moreover, you'll learn how you can customize color schemes of the entire website.
 
+![AstroPaper 主题色配置从 src/config.ts、theme.ts、用户偏好和系统偏好解析到 CSS 变量与明暗模式 UI](./images/astropaper-theme-color-scheme-flow-figure-01.png)
+
 ## Table of contents
 
 ## Enable/disable light & dark mode

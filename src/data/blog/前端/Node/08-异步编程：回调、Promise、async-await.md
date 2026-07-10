@@ -34,6 +34,8 @@ Node.js 是**异步 I/O** 的运行时——几乎所有"慢操作"（读文件�
 
 这一篇系统讲清楚这三种写法 + 实战套路。
 
+![Node.js 异步编程从回调、Promise 到 async/await，并通过串行、并发和并发限制组织慢操作](./images/nodejs-async-programming-patterns-figure-01.png)
+
 ## 二、先用一句话讲清楚
 
 **Node.js 的异步编程从「回调」演进到「Promise」再演进到「async/await」。新代码统一用 `async/await`，底层是 Promise；老库用 `util.promisify` 包装；并发用 `Promise.all` / `Promise.allSettled`，串行用 `for...of` + `await`。**

@@ -33,6 +33,8 @@ Thinking in React 是 React 官方文档中非常经典的一篇教程。它讲�
 4. 确定状态应该放在哪里。
 5. 添加反向数据流。
 
+![Thinking in React 从拆分组件、构建静态版本、找最小状态到确定状态位置和反向数据流](./images/react-thinking-in-react-workflow-figure-01.png)
+
 ## 示例需求
 
 实现一个商品搜索表格：

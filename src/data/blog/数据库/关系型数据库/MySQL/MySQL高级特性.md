@@ -19,6 +19,8 @@ description: "MySQL视图、触发器、事务、存储过程和函数的使用�
 
 > MySQL 高级特性包括视图、触发器、事务、存储过程等。
 
+![MySQL 高级特性围绕视图、触发器、事务、存储过程和函数组织业务逻辑，并用提交与回滚维护一致性](./images/mysql-advanced-features-control-plane-figure-01.png)
+
 ## 视图
 
 ### 创建视图

@@ -21,6 +21,8 @@ language: zh-CN
 
 ping 和 traceroute 是最常用的网络诊断工具，用于测试网络连通性和分析网络路径。
 
+![ping 通过 ICMP Echo 测量往返时延和丢包，traceroute 通过递增 TTL 逐跳定位网络路径](./images/ping-traceroute-diagnostics-figure-01.png)
+
 ## ping 命令
 
 ### 基本用法

@@ -23,6 +23,8 @@ language: zh-CN
 
 > JavaScript 通过 DOM 和 BOM 两大对象模型与浏览器进行交互。
 
+![浏览器中 DOM 文档树与 BOM 环境对象如何共同支撑事件和渲染](./images/javascript-dom-bom-browser-model-figure-01.png)
+
 ## DOM（文档对象模型）
 
 ### DOM 树结构

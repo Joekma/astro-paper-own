@@ -20,6 +20,8 @@ language: zh-CN
 
 HTTPS（HTTP Secure）是 HTTP 的安全版本，通过 TLS/SSL 协议对通信进行加密，确保数据传输的安全性。
 
+![HTTPS 在 HTTP 与 TCP 之间加入 TLS，通过证书链验证、密钥交换和会话密钥保护传输数据](./images/https-tls-handshake-chain-figure-01.png)
+
 ## HTTP vs HTTPS
 
 | 特性 | HTTP | HTTPS |

@@ -22,6 +22,8 @@ language: zh-CN
 
 > Ajax（异步 JavaScript 和 XML）用于在不刷新页面的情况下与服务器交换数据。
 
+![Ajax 异步请求从用户操作、HTTP 通信、响应解析到局部 DOM 更新的生命周期](./images/ajax-async-request-lifecycle-figure-01.png)
+
 ## Ajax 简介
 
 ### 什么是 Ajax

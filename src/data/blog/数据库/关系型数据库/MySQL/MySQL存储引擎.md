@@ -19,6 +19,8 @@ description: "MySQL存储引擎介绍，包括InnoDB、MyISAM、Memory等"
 
 > 存储引擎决定数据的存储方式。
 
+![MySQL SQL 层按表选择存储引擎，InnoDB、MyISAM 和 Memory 在事务、锁粒度、索引和恢复能力上各有边界](./images/mysql-storage-engine-comparison-figure-01.png)
+
 ## 常用引擎
 
 | 引擎        | 特点           |

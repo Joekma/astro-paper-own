@@ -25,6 +25,8 @@ AJAX（Asynchronous Javascript And XML）翻译成中文就是"异步Javascript�
 
 AJAX除了**异步**的特点外，还有一个就是：浏览器页面**局部刷新**；（这一特点给用户的感受是在不知不觉中完成请求和响应过程）
 
+![Django 与 Ajax 异步交互中，浏览器通过 jQuery 或 FormData 发起请求，Django View 根据 Content-Type 处理表单、JSON 或文件上传并返回局部更新数据](./images/django-ajax-async-interaction-flow-figure-01.png)
+
 ### 优点
 
 - AJAX使用Javascript技术向服务器发送异步请求

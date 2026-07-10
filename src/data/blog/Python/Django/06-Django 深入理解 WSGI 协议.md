@@ -31,6 +31,8 @@ WSGI（Web Server Gateway Interface）是用来指定Web服务器与Python Web�
 
 WSGI的目标是促进现有服务器和应用程序的轻松互联，而**不是创建新的Web框架**。
 
+![WSGI 协议定义 Web 服务器调用 Python 应用的标准接口，通过 environ、start_response、application 可调用对象和响应体完成 HTTP 请求响应转换](./images/django-wsgi-protocol-callable-flow-figure-01.png)
+
 ## 调用方式
 
 WSGI协议要面对两个端：一个是服务器或者说是网关端，另一个是应用程序或者说框架端。就需要处理一个问题，是谁调用了另一方。

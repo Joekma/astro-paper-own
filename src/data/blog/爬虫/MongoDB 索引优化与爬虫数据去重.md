@@ -22,6 +22,8 @@ description: 'MongoDB高级特性，深入讲解索引优化策略、爬虫数�
 
 > MongoDB 是爬虫项目中常用的数据存储方案，本文介绍索引创建和爬虫数据去重方法。
 
+![MongoDB 索引优化与爬虫去重策略](./images/mongodb-index-dedup-strategy-figure-01.png)
+
 ## 索引
 
 ### 索引的作用

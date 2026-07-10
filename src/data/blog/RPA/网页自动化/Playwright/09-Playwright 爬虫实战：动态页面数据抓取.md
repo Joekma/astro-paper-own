@@ -20,6 +20,8 @@ language: zh-CN
 
 传统爬虫基于 HTTP 请求的方案在面对现代 SPA（单页应用）和动态渲染页面时显得力不从心。Playwright 的出现完美解决了这个问题——它能像真实浏览器一样执行 JavaScript，渲染页面，等待动态内容加载。本教程将带你从零构建一个强大的网页爬虫。
 
+![Playwright 动态页面爬虫数据管线图](./images/playwright-dynamic-scraping-pipeline-figure-01.png)
+
 ### 传统爬虫 vs Playwright 爬虫
 
 ```text

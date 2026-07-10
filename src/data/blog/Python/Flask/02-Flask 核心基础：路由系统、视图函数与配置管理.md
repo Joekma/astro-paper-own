@@ -32,6 +32,8 @@ language: zh-CN
 app = Flask(__name__, template_folder='templates', static_url_path='/xxxxxx')
 ```
 
+![Flask 路由映射、视图函数、请求响应对象与配置加载之间的核心机制关系图](./images/flask-routing-config-core-figure-01.png)
+
 ### 两种添加路由的方式
 
 ```python

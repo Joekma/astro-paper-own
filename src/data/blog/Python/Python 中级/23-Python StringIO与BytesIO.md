@@ -25,6 +25,8 @@ language: zh-CN
 
 StringIO顾名思义就是在内存中读写str。
 
+![StringIO 与 BytesIO 分别提供内存中的文本流和字节流，可像文件一样 read、write、seek、tell 并用于测试、压缩和二进制处理](./images/python-stringio-bytesio-memory-streams-figure-01.png)
+
 要把str写入StringIO，我们需要先创建一个StringIO，然后，像文件一样写入即可：
 ```python
 from io import StringIO

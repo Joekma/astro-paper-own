@@ -20,6 +20,8 @@ language: zh-CN
 
 Milvus 支持多种部署方式，从单机测试到大规模生产环境。本文将详细介绍 Milvus 的安装部署方法，包括 Docker Compose 单机部署、Kubernetes 分布式部署以及配置优化。
 
+![Milvus 部署可从单机模式扩展到集群模式，并围绕对象存储、元数据、消息队列、SDK、监控和备份恢复配置运行环境](./images/milvus-deployment-topology-figure-01.png)
+
 ### 部署方式对比
 
 | 方式               | 适用场景   | 优点     | 缺点          |

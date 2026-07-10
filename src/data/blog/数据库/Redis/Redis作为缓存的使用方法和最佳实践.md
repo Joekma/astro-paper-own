@@ -18,6 +18,8 @@ language: zh-CN
 
 > Redis 常用于缓存加速应用。
 
+![Redis Cache-Aside 路径先查缓存，命中直接返回，未命中查数据库并回写，同时用 TTL 抖动、布隆过滤和互斥锁降低风险](./images/redis-cache-aside-best-practices-figure-01.png)
+
 ## 缓存策略
 
 | 策略              | 说明         |

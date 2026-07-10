@@ -20,6 +20,8 @@ language: zh-CN
 
 > Python 为我们提供了 71 个内置函数，它们可以直接使用。本文将详细介绍常用的内置函数和匿名函数 lambda 的使用方法，并涵盖 Python 3.12 的新特性。
 
+![Python 内置函数可以按作用域、类型转换、输入输出、反射、数据结构、映射过滤归约和 lambda 等用途分类学习](./images/python-builtins-lambda-taxonomy-figure-01.png)
+
 ## 内置函数一览
 
 截止到 Python 3.12，Python 一共为我们提供了 **71 个内置函数**。

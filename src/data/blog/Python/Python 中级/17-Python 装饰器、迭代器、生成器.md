@@ -18,6 +18,8 @@ language: zh-CN
 
 # Python 装饰器、迭代器、生成器
 
+![Python 装饰器、迭代器和生成器分别通过函数包装、迭代器协议和 yield 暂停恢复机制，扩展函数调用与数据遍历方式](./images/python-decorators-iterators-generators-figure-01.png)
+
 ## 装饰器
 
 ### 什么是装饰器

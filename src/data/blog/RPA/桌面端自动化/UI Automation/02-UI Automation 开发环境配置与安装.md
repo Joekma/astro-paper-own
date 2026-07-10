@@ -20,6 +20,8 @@ language: zh-CN
 
 UI Automation 是 Windows 内置的辅助功能框架，提供了统一的编程接口来访问 Windows 应用程序的用户界面。本教程将介绍如何配置开发环境来使用 UI Automation。
 
+![UI Automation 开发环境与工具选型图](./images/uia-development-setup-map-figure-01.png)
+
 ### 支持的开发环境
 
 | 环境 | 支持程度 | 说明 |

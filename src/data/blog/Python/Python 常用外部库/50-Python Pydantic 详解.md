@@ -20,6 +20,8 @@ language: zh-CN
 
 Pydantic 是一个基于 Python 类型注解的数据验证库。它使用 Python 的类型注解系统来定义数据模型，自动进行数据验证和转换。Pydantic 在现代 Python 应用中广泛使用，尤其在 FastAPI、Django Ninja 等框架中作为核心组件。
 
+![Pydantic v2 从输入数据进入 BaseModel 类型解析、Field 约束、验证器、嵌套模型、序列化和 FastAPI 集成的流程图](./images/python-pydantic-validation-serialization-figure-01.png)
+
 ### 为什么选择 Pydantic？
 
 | 特性 | 说明 |

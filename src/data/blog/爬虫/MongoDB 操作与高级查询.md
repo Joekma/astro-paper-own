@@ -21,6 +21,8 @@ description: 'MongoDB使用指南，涵盖基础知识、CRUD操作、聚合管�
 
 > MongoDB 是一款强大、灵活、易于扩展的通用型数据库，采用文档存储模式。
 
+![MongoDB 文档模型与查询聚合流程](./images/mongodb-operations-query-model-figure-01.png)
+
 ## MongoDB 特点
 
 | 特性 | 说明 |

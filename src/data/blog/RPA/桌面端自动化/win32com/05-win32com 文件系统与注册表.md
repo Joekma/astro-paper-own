@@ -21,6 +21,8 @@ language: zh-CN
 
 Windows 文件系统和注册表是 Windows 系统的核心组成部分。本教程将详细介绍如何使用 pywin32 进行文件和注册表的各种操作。
 
+![pywin32 文件系统与注册表操作流程图](./images/pywin32-filesystem-registry-flow-figure-01.png)
+
 ### 模块一览
 
 | 模块 | 功能 |

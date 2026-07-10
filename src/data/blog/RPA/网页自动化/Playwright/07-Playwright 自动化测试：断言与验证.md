@@ -20,6 +20,8 @@ language: zh-CN
 
 自动化测试的核心是验证——确认网页行为符合预期。Playwright 提供了强大的断言系统，结合 `expect` API，你可以编写清晰、可靠的测试用例。本教程将详细介绍 Playwright 的断言语法和测试最佳实践。
 
+![Playwright 断言验证与失败证据链路图](./images/playwright-assertion-validation-figure-01.png)
+
 ### 断言在测试中的位置
 
 ```text

@@ -30,6 +30,8 @@ Django的文档中有那么一节，详细的描述了[DB部分优化](https://d
 
 优化，很多时候意味着代码可能变得不太清晰。当你遇到选择清晰的代码，还是牺牲清晰代码来获取性能上的一点点提高的时候，请优先考虑要代码的清晰整洁。
 
+![Django ORM 性能优化应先用 connection.queries 和 Debug Toolbar 定位问题，再治理 N+1 查询、count 与 exists、字段裁剪、批量写入和关联预取](./images/django-orm-performance-optimization-figure-01.png)
+
 ## 工具
 
 解决问题的第一步是找到问题，面对ORM，有时间事情可以做。

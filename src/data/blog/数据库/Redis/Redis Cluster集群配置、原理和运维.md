@@ -20,6 +20,8 @@ language: zh-CN
 
 Redis Cluster 是 Redis 官方提供的分布式集群解决方案，支持数据分片和高可用，能够在部分节点故障时继续提供服务。
 
+![Redis Cluster 通过 16384 个槽位分片到多个主节点，并借助副本、重定向和故障转移维持集群可用性](./images/redis-cluster-slots-failover-figure-01.png)
+
 ## 集群架构
 
 ```

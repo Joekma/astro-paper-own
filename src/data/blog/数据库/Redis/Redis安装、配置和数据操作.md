@@ -19,6 +19,8 @@ language: zh-CN
 
 > Redis 是高性能的内存键值存储数据库，广泛用于缓存、消息队列、排行榜等场景。
 
+![Redis 从部署、配置、客户端连接到 String、Hash、List、Set、ZSet 等核心数据类型构成基础使用路径](./images/redis-deploy-config-data-types-figure-01.png)
+
 ## Redis 特性
 
 | 特性             | 说明                                |

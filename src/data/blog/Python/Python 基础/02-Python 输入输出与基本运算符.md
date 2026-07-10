@@ -18,6 +18,8 @@ language: zh-CN
 
 > Python 中的输入输出和基本运算符是编程的基础。本文将详细介绍 input() 和 print() 的使用，以及算术运算、比较运算、赋值运算和逻辑运算等基本运算符。
 
+![Python 输入输出与基本运算符可以理解为从 input 获取字符串、进行类型转换和运算，再通过 print 输出结果的数据流](./images/python-input-output-operators-flow-figure-01.png)
+
 ## 输入与输出
 
 ### input() 函数

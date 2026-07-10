@@ -20,6 +20,8 @@ language: zh-CN
 
 元素定位是 Selenium 自动化测试的核心。找到正确的元素后，我们才能对其进行各种操作。本教程将详细介绍各种定位策略和元素操作方法。
 
+![Selenium 定位器与 WebElement 操作关系图](./images/selenium-locator-webelement-operations-figure-01.png)
+
 ### 定位器优先级
 
 | 优先级 | 定位方式 | 速度 | 稳定性 | 推荐场景 |

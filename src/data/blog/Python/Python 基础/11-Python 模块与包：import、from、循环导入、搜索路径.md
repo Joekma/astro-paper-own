@@ -19,6 +19,8 @@ language: zh-CN
 
 > 模块是 Python 编程的核心概念之一。本文将详细介绍模块的定义、导入方式、循环导入问题，以及模块搜索路径和编译文件等高级主题。
 
+![Python 模块与包的导入机制涉及 import、from import、sys.modules 缓存、循环导入、__name__、sys.path、pyc 和 __init__.py](./images/python-modules-packages-import-system-figure-01.png)
+
 ## 模块
 
 ### 什么是模块

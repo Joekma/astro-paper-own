@@ -21,6 +21,8 @@ language: zh-CN
 
 Electron 提供了丰富的系统集成能力，包括应用菜单、上下文菜单、系统托盘、快捷键等。本文将详细介绍这些功能的实现方法。🍎
 
+![Electron 菜单托盘快捷键与系统集成拓扑](./images/electron-menu-system-integration-figure-01.png)
+
 ## 菜单系统
 
 ### 应用菜单结构

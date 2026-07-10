@@ -29,6 +29,8 @@ language: zh-CN
 - 避免悬挂指针
 - 提高开发效率
 
+![Python 垃圾回收以引用计数为主，并通过分代回收、标记清除、weakref、gc 模块和内存分析工具处理循环引用与内存泄漏](./images/python-garbage-collection-memory-model-figure-01.png)
+
 ## Python 内存管理基础
 
 ### 引用计数

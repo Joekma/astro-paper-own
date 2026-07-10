@@ -18,6 +18,8 @@ description: "MySQL常见错误与解决方案汇总"
 
 > MySQL 常见错误与解决方案汇总。
 
+![MySQL 常见错误可先按认证、网络、服务、复制、性能和数据问题分类，再进入检查、修复和验证闭环](./images/mysql-error-troubleshooting-flow-figure-01.png)
+
 ## 连接错误
 
 ### 1045 - 权限拒绝

@@ -20,6 +20,8 @@ language: zh-CN
 
 Qdrant 提供了功能完整的 Python SDK，支持 Collection 管理、向量操作、搜索查询等功能。本教程将详细介绍 Python SDK 的使用方法。
 
+![Qdrant SDK 使用流程从连接服务开始，依次完成 Collection 管理、向量 Upsert、Payload 写入、过滤搜索、滚动分页和批量错误处理](./images/qdrant-sdk-vector-workflow-figure-01.png)
+
 ### 安装
 
 ```bash

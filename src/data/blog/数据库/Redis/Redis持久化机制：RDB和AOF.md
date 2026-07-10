@@ -20,6 +20,8 @@ language: zh-CN
 
 > Redis 持久化是保证数据安全的关键机制，RDB 和 AOF 是两种主要的持久化方式，各有优缺点。
 
+![Redis 内存数据可以通过 RDB 快照和 AOF 追加日志落盘，重写与混合持久化共同服务重启恢复](./images/redis-rdb-aof-recovery-figure-01.png)
+
 ## 持久化概述
 
 ### 两种方式对比

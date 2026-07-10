@@ -26,6 +26,8 @@ Python 中常见的格式化方式主要有三种：
 - 功能更完整的 `str.format()`
 - 语法更简洁的 f-string
 
+![Python 字符串格式化可以在百分号格式化、format 方法和 f-string 之间选择，并结合占位符、对齐补位、精度和进制控制输出](/blog-images/python/python-string-formatting-options-figure-01.png)
+
 ## 为什么需要格式化输出
 
 如果只是简单拼接字符串，往往会写出可读性较差的代码：

@@ -29,6 +29,8 @@ http.createServer((req, res) => {...})
 
 Node.js 几乎所有"会随时间变化"的对象（HTTP、Stream、Process、Socket、ChildProcess……）都继承自 [`EventEmitter`](https://nodejs.cn/api/events.html)。这一篇就是搞懂它：怎么订阅事件、怎么触发事件、怎么避免内存泄漏、错误怎么处理。
 
+![Node.js EventEmitter 以事件总线连接发布者和多个监听器，并通过 error 和监听器数量约束管理风险](./images/nodejs-eventemitter-observer-pattern-figure-01.png)
+
 ## 二、先用一句话讲清楚
 
 **`EventEmitter` 是 Node.js 内置的"事件总线"基类：你可以 `on()` 监听事件，`emit()` 触发事件，`once()` 只监听一次，`off()` 移除监听——这就是 Node.js 异步协作的统一模式。**

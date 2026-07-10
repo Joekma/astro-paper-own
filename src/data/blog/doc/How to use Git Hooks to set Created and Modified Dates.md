@@ -15,6 +15,8 @@ description: How to use Git Hooks to set your Created and Modified Dates on Astr
 
 In this post I will explain how to use the pre-commit Git hook to automate the input of the created (`pubDatetime`) and modified (`modDatetime`) in the AstroPaper blog theme frontmatter
 
+![Git pre-commit hook 在提交前检测 Markdown 变更、解析 frontmatter，并维护 pubDatetime 与 modDatetime](./images/git-hooks-frontmatter-dates-figure-01.png)
+
 ## Table of contents
 
 ## Have them Everywhere

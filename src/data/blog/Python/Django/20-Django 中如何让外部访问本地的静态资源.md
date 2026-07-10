@@ -18,6 +18,8 @@ description: "Django 中如何让外部访问本地的静态资源"
 
 > 在 Django 中开放外部访问 media 文件的入口
 
+![Django 开放本地静态或媒体资源访问，需要在 settings.py 配置路径，并在 urls.py 中把 URL 路由映射到本地文件目录](./images/django-static-media-external-access-figure-01.png)
+
 ### 第一步：配置 settings
 
 ```python

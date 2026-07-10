@@ -21,6 +21,8 @@ description: '深入理解 X-Forwarded-For 头部的工作原理，学习如何�
 
 > X-Forwarded-For (XFF) 是 HTTP 协议中用于标识客户端真实IP的重要头部，理解其工作原理对于爬虫开发和反爬策略都有重要意义。
 
+![X-Forwarded-For 可信代理边界示意图](./images/xff-trust-boundary-proxy-chain-figure-01.png)
+
 ## 什么是 X-Forwarded-For
 
 ### 背景故事

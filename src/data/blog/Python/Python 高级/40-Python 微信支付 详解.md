@@ -24,6 +24,8 @@ description: 微信支付Python接入指南，涵盖统一下单、支付签名�
 
 文中的代码和流程保留了原始实践内容，但会按接入顺序重新组织，方便直接查阅和排障。
 
+![Python 接入微信支付时从获取 code、换取 openid、统一下单、签名、前端调起支付到回调验签和订单查询的流程图](./images/python-wechat-pay-flow-figure-01.png)
+
 ##  接入场景与前置条件
 
 ### 典型需求

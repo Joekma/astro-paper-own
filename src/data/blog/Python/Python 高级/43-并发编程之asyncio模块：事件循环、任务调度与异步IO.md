@@ -39,6 +39,8 @@ description: "系统讲解Python asyncio模块，涵盖事件循环、协程、T
 
 > `asyncio` 适合高并发 IO 和结构化网络代码；CPU 密集任务仍然优先考虑多进程，或者交给会释放 GIL 的扩展库。
 
+![Python asyncio 中协程对象、Task、事件循环、ready 队列、await 挂起恢复、同步原语和异步 IO 的调度机制图](./images/python-asyncio-event-loop-figure-01.png)
+
 ## asyncio 解决的核心问题
 
 同步代码里，一个请求没返回，当前线程就停在原地：

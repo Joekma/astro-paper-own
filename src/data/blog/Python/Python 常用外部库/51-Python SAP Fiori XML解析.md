@@ -30,6 +30,8 @@ language: zh-CN
 
 > **推荐**：正常情况下，优先考虑SAX，因为DOM实在太占内存。
 
+![Python XML 解析中 DOM、SAX、ElementTree 与 SAP Fiori XML 命名空间、控件和数据绑定提取的对比图](./images/python-xml-fiori-parsing-figure-01.png)
+
 ### SAX 事件处理机制
 
 在Python中使用SAX解析XML非常简洁，通常关心的事件是：

@@ -20,6 +20,8 @@ language: zh-CN
 
 Electron 是一个使用 **JavaScript、HTML 和 CSS** 构建桌面应用程序的框架。它允许开发者使用熟悉的 Web 技术栈开发跨平台桌面应用，一套代码即可打包为 Windows、macOS、Linux 三个平台的安装包。🎉
 
+![Electron 应用栈与多进程流程模型](./images/electron-process-model-stack-figure-01.png)
+
 ### Electron 的核心特点
 
 | 特性 | 说明 |

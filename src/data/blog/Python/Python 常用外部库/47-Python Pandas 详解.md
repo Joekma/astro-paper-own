@@ -22,6 +22,8 @@ language: zh-CN
 
 Pandas 是一个强大的 Python 数据分析工具包，基于 NumPy 构建，为 Python 提供了高性能、易于使用的数据结构和数据分析工具。
 
+![Pandas Series 与 DataFrame 的索引列结构、loc iloc 选择、缺失值处理、groupby、合并和时间序列流程图](./images/python-pandas-dataframe-workflow-figure-01.png)
+
 ### 核心特性
 
 - **强大的数据结构**：DataFrame 和 Series 提供灵活的数据操作能力

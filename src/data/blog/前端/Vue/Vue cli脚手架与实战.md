@@ -19,6 +19,8 @@ description: '使用 Vue 3 官方脚手架 create-vue 搭建项目，并结合 V
 
 > Vue 3 新项目推荐使用 `create-vue` 创建 Vite 工程。它启动快、配置轻，并且天然支持 Vue Router 4、Pinia、TypeScript、Vitest 和 ESLint。
 
+![create-vue 从脚手架选项生成项目结构，再接入 Router、Pinia、开发服务器和构建产物](./images/vue-create-vue-project-flow-figure-01.png)
+
 ## 创建项目
 
 ```bash

@@ -20,6 +20,8 @@ language: zh-CN
 
 UI Automation（用户界面自动化）是 Microsoft 提供的一个辅助功能框架，用于 Windows 应用程序的自动化测试、无障碍访问和自动化工具开发。UI Automation 提供了对 Windows 应用程序用户界面的编程访问，使测试工具和其他自动化工具能够与 UI 元素进行交互。
 
+![UI Automation 核心架构与自动化树图](./images/uia-core-automation-tree-architecture-figure-01.png)
+
 ### 为什么选择 UI Automation？
 
 | 特性 | 说明 |

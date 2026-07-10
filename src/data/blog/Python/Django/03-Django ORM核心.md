@@ -18,6 +18,8 @@ description: 'Django ORM核心详解，包括模型定义、字段类型、关�
 
 > ORM（对象-关系-映射）让开发者无需直接写SQL，通过Python对象操作数据库。
 
+![Django ORM 将 Model 类映射到数据库表，并通过字段、关系、CRUD、QuerySet、F 对象和 Q 对象组织数据库操作](./images/django-orm-core-model-queryset-figure-01.png)
+
 ## ORM简介
 
 ### ORM vs SQL

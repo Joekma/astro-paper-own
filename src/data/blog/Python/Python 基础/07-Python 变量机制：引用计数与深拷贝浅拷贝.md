@@ -20,6 +20,8 @@ language: zh-CN
 
 > Python 中的变量与数据类型是编程基础中的基础。本文将详细介绍变量的定义与使用、基本数据类型以及深拷贝与浅拷贝的概念，帮助你建立扎实的 Python 基础。
 
+![Python 变量机制可以理解为变量名引用对象，配合引用计数、身份比较、LEGB 查找、浅拷贝和深拷贝共同决定对象行为](./images/python-variable-reference-copy-model-figure-01.png)
+
 ## 变量
 
 ### 什么是变量

@@ -20,6 +20,8 @@ language: zh-CN
 
 本文将详细介绍如何搭建 Electron 开发环境，并从零开始创建一个完整的 Electron 应用程序。通过本教程，你将掌握项目初始化、代码编写、开发调试的基础技能。🚀
 
+![Electron 开发环境搭建与最小应用启动链路](./images/electron-environment-quickstart-pipeline-figure-01.png)
+
 ## 环境准备
 
 ### 前置要求

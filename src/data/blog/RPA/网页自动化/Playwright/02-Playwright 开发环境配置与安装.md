@@ -20,6 +20,8 @@ language: zh-CN
 
 在开始使用 Playwright 之前，我们需要正确配置开发环境。Playwright 支持多种编程语言，包括 Python、JavaScript/TypeScript、Java 和 .NET。本教程以 Python 为主要示例，同时提供其他语言的简要说明。
 
+![Playwright 开发环境与安装流程图](./images/playwright-install-environment-figure-01.png)
+
 ### 系统要求
 
 | 要求 | 说明 |

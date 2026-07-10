@@ -20,6 +20,8 @@ language: zh-CN
 
 TypeScript 是 JavaScript 的超集，由微软开发并维护。它添加了**类型系统**和**面向对象编程**特性，使代码更加健壮和可维护。
 
+![TypeScript 类型系统与静态检查流程](./images/typescript-type-system-checking-flow-figure-01.png)
+
 ### 为什么选择 TypeScript？
 
 | 特性 | 说明 |

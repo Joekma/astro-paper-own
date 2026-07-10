@@ -28,6 +28,8 @@ language: zh-CN
 
 Node.js 在历史上先后支持了两套模块系统——**CommonJS（CJS）** 和 **ES Modules（ESM）**。它们长得像但本质不同，新人最大的坑就是"混着用报错却不知道为什么"。
 
+![Node.js 中 CommonJS 与 ES Modules 的加载模型、解析规则和互操作方式](./images/nodejs-cjs-esm-module-system-figure-01.png)
+
 ## 二、先用一句话讲清楚
 
 **Node.js 的模块系统 = 把多个 JS 文件拆开组织、按需加载的规则。CommonJS 是 Node.js 原生老方案（`require`/`module.exports`），ES Modules 是浏览器和现代 Node 都采用的官方标准（`import`/`export`）。**

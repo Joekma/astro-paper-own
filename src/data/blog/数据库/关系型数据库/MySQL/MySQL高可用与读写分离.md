@@ -19,6 +19,8 @@ description: "MySQL主从复制、高可用架构MHA及读写分离方案"
 
 > MySQL 高可用架构保障服务稳定性。
 
+![MySQL 高可用架构通过代理分离读写请求，将写入发送到主库、读取发送到从库，并在故障时提升从库接管路由](./images/mysql-ha-read-write-splitting-figure-01.png)
+
 ## 主从复制
 
 主从复制通过 binlog、relay log、IO 线程和 SQL 线程把主库变更同步到从库。

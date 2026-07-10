@@ -20,6 +20,8 @@ language: zh-CN
 
 Redis 提供了多种实现消息队列的方式，包括基于 List 的队列和基于 Pub/Sub 的发布订阅模式。
 
+![Redis 消息队列可由 List 阻塞队列、Pub/Sub 广播、带 ACK 的可靠队列和基于 ZSet 的延时队列组成](./images/redis-message-queue-patterns-figure-01.png)
+
 ## 基于 List 的消息队列
 
 ### 生产者消费者模式

@@ -22,6 +22,8 @@ My experience about developing my first portfolio website and a blog using NextJ
 
 ![Building portfolio](https://satnaing.dev/_ipx/w_2048,q_75/https%3A%2F%2Fres.cloudinary.com%2Fnoezectz%2Fimage%2Fupload%2Fv1653050141%2FSatNaing%2Fblog_at_cafe_ei1wf4.jpg?url=https%3A%2F%2Fres.cloudinary.com%2Fnoezectz%2Fimage%2Fupload%2Fv1653050141%2FSatNaing%2Fblog_at_cafe_ei1wf4.jpg&w=2048&q=75)
 
+![作品集博客从 Markdown 内容集合进入 Astro 页面、组件、SEO、搜索和静态部署的整体架构](./images/portfolio-blog-architecture-figure-01.png)
+
 ## Motivation
 
 I've been always thinking about launching my own website with my custom domain name (**satnaing.dev**) since my college student life. But that never happened until this project. I've done several projects and works about web application development but I didn't make an effort to do this.

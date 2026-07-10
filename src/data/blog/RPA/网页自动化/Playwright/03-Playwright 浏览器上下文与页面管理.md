@@ -20,6 +20,8 @@ language: zh-CN
 
 在 Playwright 中，浏览器上下文（BrowserContext）和页面（Page）是两个核心概念。理解它们的关系和管理方法对于构建稳定、高效的自动化脚本至关重要。
 
+![Playwright 浏览器上下文与页面隔离关系图](./images/playwright-context-page-management-figure-01.png)
+
 ### 核心概念图
 
 ```text

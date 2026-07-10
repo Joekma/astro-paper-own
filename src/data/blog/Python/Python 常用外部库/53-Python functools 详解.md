@@ -30,6 +30,8 @@ language: zh-CN
 
 这篇文章重点整理这两个最常见、最实用的工具。
 
+![functools partial 固定参数生成新函数以及 wraps 在装饰器中保留函数元信息的机制图](./images/python-functools-partial-wraps-figure-01.png)
+
 ## functools 是什么
 
 `functools` 在 Python 2.5 中引入，用于集中提供一些与函数相关的辅助能力。

@@ -20,6 +20,8 @@ language: zh-CN
 
 > Python 提供了丰富的标准模块来处理哈希算法、子进程、日志、正则表达式和特殊容器数据类型。本文将详细介绍 hashlib、subprocess、logging、re 和 collections 等常用模块的使用方法。
 
+![Python 常用模块 hashlib、subprocess、logging、re 和 collections 分别覆盖哈希摘要、子进程执行、日志记录、正则匹配和特殊容器](./images/python-common-modules-hash-subprocess-logging-figure-01.png)
+
 ## hashlib 模块
 
 `hashlib` 是哈希算法模块，提供 SHA1、SHA224、SHA256、SHA384、SHA512、MD5 等算法。

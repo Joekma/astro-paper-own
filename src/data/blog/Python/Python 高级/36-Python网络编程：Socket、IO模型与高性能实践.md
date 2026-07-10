@@ -28,6 +28,8 @@ Socket（套接字）是应用层与TCP/IP协议族通信的中间软件抽象�
 
 **Socket = IP地址 + 端口号**，唯一标识互联网上的一台主机上的一个应用程序。
 
+![Python 网络编程中 TCP UDP Socket 生命周期、阻塞和非阻塞 IO、多路复用以及高性能优化手段的总览图](./images/python-network-socket-io-models-figure-01.png)
+
 ### Socket起源
 
 Socket起源于1970年的BSD Unix，"一切皆文件"的Unix哲学使得Socket可以用"打开→读写→关闭"的模式操作。

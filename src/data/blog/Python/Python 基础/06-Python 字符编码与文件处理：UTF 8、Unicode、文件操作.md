@@ -19,6 +19,8 @@ language: zh-CN
 
 > 字符编码和文件处理是 Python 编程中的重要基础。本文将详细介绍字符编码的发展历程、编码与解码的原理，以及 Python 中的文件操作方法。
 
+![Python 字符编码与文件处理的关键是区分内存文本和磁盘字节，理解 Unicode、UTF-8、编码解码、文件模式和文件指针](./images/python-encoding-file-handling-figure-01.png)
+
 ## 字符编码
 
 ### 前提摘要

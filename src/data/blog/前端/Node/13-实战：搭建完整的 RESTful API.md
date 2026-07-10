@@ -32,6 +32,8 @@ language: zh-CN
 
 这一篇我们就**从零搭一个生产级的 RESTful API**，把前 12 篇知识全用上——登录注册、JWT 鉴权、CRUD、文件上传、错误处理、日志、优雅关停。**学完这篇，你就能写一个能上线的 Node.js 后端了。**
 
+![生产级 RESTful API 通过 Express 中间件链组织日志、CORS、Body 解析、鉴权、路由、数据层和错误处理](./images/nodejs-restful-api-middleware-chain-figure-01.png)
+
 ## 二、先用一句话讲清楚
 
 **生产级 Node.js API = Express/Koa/Fastify 框架（路由 + 中间件）+ 鉴权（JWT/Cookie）+ 数据存储（DB/ORM）+ 错误处理（统一响应格式）+ 文件上传（multer）+ 优雅关停（SIGTERM 处理）。**

@@ -19,6 +19,8 @@ language: zh-CN
 
 > JavaScript 提供了丰富的内置对象和 API，用于处理各种数据类型和操作。
 
+![JavaScript 常用内置对象和 API 围绕字符串、数组、对象、日期、正则、JSON、数学和类展开](./images/javascript-common-api-toolbox-figure-01.png)
+
 ## 字符串 String
 
 ### 创建

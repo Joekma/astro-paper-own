@@ -19,6 +19,8 @@ language: zh-CN
 
 > JavaScript 是网页开发的核心语言，掌握基础语法是前端开发的必经之路。
 
+![JavaScript 基础语法从语句、绑定、类型判断到条件循环的推理流程](./images/javascript-type-reasoning-flow-figure-01.png)
+
 ## 基础语法
 
 ### 变量声明

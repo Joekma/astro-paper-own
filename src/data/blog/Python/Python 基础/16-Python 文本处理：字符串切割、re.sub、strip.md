@@ -27,6 +27,8 @@ language: zh-CN
 | **re.sub()** | 复杂的正则表达式替换 | `re.sub(r'正则', '替换', str)` |
 | **strip()** | 去除字符串两端的空白字符 | `str.strip()` |
 
+![Python 文本处理可以把原始文本经过 strip 去空白、split 切割、replace 替换、re.sub 正则清洗和结构化提取，变成可用数据](./images/python-text-processing-cleaning-pipeline-figure-01.png)
+
 ---
 
 ## 字符串切割

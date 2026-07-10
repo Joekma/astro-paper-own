@@ -20,6 +20,8 @@ language: zh-CN
 
 元素定位是 UI Automation 的核心技能。本教程将详细介绍各种查找策略和技巧，帮助你准确定位 UI 元素。
 
+![UI Automation 元素查找管线与缓存图](./images/uia-element-search-pipeline-figure-01.png)
+
 ### 查找方法对比
 
 | 方法 | 说明 | 适用场景 |

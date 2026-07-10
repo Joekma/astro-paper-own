@@ -20,6 +20,8 @@ language: zh-CN
 
 传统爬虫基于 HTTP 请求的方案在面对现代 SPA（单页应用）和动态渲染页面时显得力不从心。Selenium 能像真实浏览器一样执行 JavaScript，渲染页面，等待动态内容加载。本教程将带你从零构建一个强大的网页爬虫。
 
+![Selenium 动态页面爬虫流程与稳定性控制图](./images/selenium-dynamic-scraping-pipeline-figure-01.png)
+
 ### 爬虫 vs 传统方法
 
 ```text

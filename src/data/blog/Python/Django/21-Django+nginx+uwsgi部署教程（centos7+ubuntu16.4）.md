@@ -51,6 +51,8 @@ description: "Django+nginx+uwsgi 部署教程（centos7+ubuntu16.4）"
 
 **注：不同的组件之间传递信息涉及到数据格式和协议的转换**
 
+![Django 配合 Nginx 和 uWSGI 部署时，浏览器请求先到 Nginx，静态资源由 Nginx 处理，动态请求经 uWSGI 进入虚拟环境中的 Django 应用并访问数据库](./images/django-nginx-uwsgi-deployment-topology-figure-01.png)
+
 ### 作用
 
 1. 第一级的nginx并不是必须的，uwsgi完全可以完成整个的和浏览器交互的流程

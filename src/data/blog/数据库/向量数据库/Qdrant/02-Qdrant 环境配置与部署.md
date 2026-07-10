@@ -20,6 +20,8 @@ language: zh-CN
 
 Qdrant 支持多种部署方式，从轻量级的单机部署到生产级别的高可用集群。本文将详细介绍 Qdrant 的安装部署方法、环境配置和性能优化技巧。
 
+![Qdrant 部署需要同时规划服务配置、索引与存储、API Key、TLS、SDK 连接、监控日志、快照备份和资源检查](./images/qdrant-deployment-security-ops-figure-01.png)
+
 ### 部署方式
 
 | 方式               | 适用场景   | 优点     |

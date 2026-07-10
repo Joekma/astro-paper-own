@@ -19,6 +19,8 @@ language: zh-CN
 
 > DOM（文档对象模型）是 JavaScript 操作网页内容的主要接口。
 
+![JavaScript DOM 操作围绕选择、属性内容修改、节点变更和事件更新形成闭环](./images/javascript-dom-manipulation-loop-figure-01.png)
+
 ## 选择元素
 
 ### getElementById

@@ -18,6 +18,8 @@ description: '从 Vue 3 的 createApp、响应式状态和常用模板指令入�
 
 > Vue 3 是一个渐进式 JavaScript 框架，适合从简单交互逐步扩展到完整的单页应用。它的核心体验围绕 `createApp`、单文件组件和 Composition API 展开。
 
+![Vue 3 从响应式状态到模板指令再到 DOM 更新的核心心智模型](./images/vue-directives-reactivity-flow-figure-01.png)
+
 ## Vue 3 的核心特点
 
 | 特性 | 说明 |

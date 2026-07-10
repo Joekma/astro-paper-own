@@ -23,6 +23,8 @@ Auth模块是Django自带的用户认证模块。
 
 Django作为一个完美主义者的终极框架，当然也会想到用户的这些痛点。它内置了强大的用户认证系统--auth，它默认使用auth_user表来存储用户数据。
 
+![Django Auth 模块围绕 User 表、authenticate、login、request.user、logout、is_authenticated、login_required 和密码哈希完成用户认证流程](./images/django-auth-user-session-flow-figure-01.png)
+
 ### Auth模块主要功能
 
 1. Django自带的用户认证模块，可以快速的实现登录、注销、修改密码等

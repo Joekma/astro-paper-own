@@ -19,6 +19,8 @@ language: zh-CN
 
 TCP RST（Reset）是一种用于强制关闭连接的信号，当收到 RST 时，连接会立即断开，不会进行四次挥手。
 
+![TCP RST 可能由端口未监听、进程崩溃或防火墙注入触发，收到复位包后连接立即关闭并向应用层暴露错误](./images/tcp-rst-reset-diagnostics-figure-01.png)
+
 ## RST 产生场景
 
 ### 场景一：端口未监听

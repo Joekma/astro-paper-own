@@ -22,6 +22,8 @@ language: zh-CN
 
 > CSS 布局是将网页内容放到合适位置的技术。
 
+![CSS 布局方式选择与核心模型图](./images/css-layout-flex-grid-bfc-figure-01.png)
+
 ## 布局基础
 
 ### 布局方式

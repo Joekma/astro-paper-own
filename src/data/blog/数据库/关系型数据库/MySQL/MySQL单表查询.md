@@ -17,6 +17,8 @@ description: "MySQL单表查询，从基础查询到高级技巧"
 
 > 单表查询是 SQL 的基础，掌握好单表查询的各种技巧能大大提高数据处理效率。
 
+![MySQL 单表查询可以理解为从表数据进入 SELECT、WHERE、GROUP BY、聚合、排序和 LIMIT 的结果集生成管线](./images/mysql-single-table-query-pipeline-figure-01.png)
+
 ## 基础查询
 
 ### SELECT 语句

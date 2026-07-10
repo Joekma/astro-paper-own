@@ -37,6 +37,8 @@ React 的核心不是直接操作 DOM，而是用数据描述 UI。当数据变�
 React 更新 DOM
 ```
 
+![React 通过组件函数把 props 和 state 转成 JSX，再经过渲染与提交同步到 DOM](./images/react-core-rendering-flow-figure-01.png)
+
 ## 第一个组件
 
 React 组件本质上是返回 JSX 的 JavaScript 函数。

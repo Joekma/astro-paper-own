@@ -20,6 +20,8 @@ language: zh-CN
 
 IPython 是一个增强的交互式 shell，提供了比标准 Python 解释器更强大的功能和更好的用户体验。它是数据科学、科学计算和量化投资领域的重要工具。
 
+![IPython 通过增强 REPL、魔术命令、历史记录、调试器和 Jupyter Notebook 单元格工作流提升交互式 Python 开发效率](./images/python-ipython-jupyter-workflow-figure-01.png)
+
 ## 核心特性
 
 - **增强的交互性**：提供更友好的交互式环境

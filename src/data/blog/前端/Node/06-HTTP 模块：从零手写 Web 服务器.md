@@ -30,6 +30,8 @@ language: zh-CN
 
 这篇文章就带你用 Node.js 内置的 [`http`](https://nodejs.cn/api/http.html) 模块，从零实现一个**简易但完整**的 Web 服务器，写完你就理解了"Express 到底帮我省了什么"。
 
+![Node.js 原生 HTTP 服务器从 request 事件、req 解析、路由分发到 res 响应结束的生命周期](./images/nodejs-http-server-lifecycle-figure-01.png)
+
 ## 二、先用一句话讲清楚
 
 **Node.js 内置的 `http` 模块是实现 Web 服务器的"地基"，它提供 `createServer` 监听请求、构造响应；Express/Koa/Nest 都是在它之上做的封装。**

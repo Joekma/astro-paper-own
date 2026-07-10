@@ -31,6 +31,8 @@ language: zh-CN
 
 这篇文章就带你搞清楚：Node.js 到底是什么、为什么前端必须学它、和浏览器里的 JS 有啥区别、以及如何跑出你的第一段 Node.js 代码。
 
+![Node.js 让同一份 JavaScript 进入浏览器之外的运行时能力边界](./images/nodejs-runtime-frontend-capabilities-figure-01.png)
+
 ## 一、先用一句话讲清楚
 
 **Node.js = 把 Chrome V8 引擎（跑 JavaScript 最快的引擎之一）搬出浏览器，让 JavaScript 可以直接读写文件、起 HTTP 服务、调系统命令的"运行时"环境。**

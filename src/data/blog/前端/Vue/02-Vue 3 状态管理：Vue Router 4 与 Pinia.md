@@ -20,6 +20,8 @@ language: zh-CN
 
 Vue 3 项目中，页面切换通常交给 Vue Router 4，全局客户端状态通常交给 Pinia。二者解决的问题不同：路由描述 URL 和页面关系，Pinia 描述跨组件共享状态。
 
+![Vue Router 与 Pinia 在 Vue 3 应用中的状态边界和数据流](./images/vue-router-pinia-state-flow-figure-01.png)
+
 ## 安装
 
 ```bash

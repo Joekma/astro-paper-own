@@ -17,6 +17,8 @@ description: "SQL查询语句的执行顺序"
 
 > SQL 查询语句有其固定的执行顺序。
 
+![SQL 书写顺序不同于逻辑执行顺序，查询会依次完成 FROM/JOIN、WHERE、GROUP BY、HAVING、SELECT、ORDER BY 和 LIMIT](./images/sql-logical-execution-order-figure-01.png)
+
 ## 执行顺序
 
 | 顺序 | 关键字   | 说明         |

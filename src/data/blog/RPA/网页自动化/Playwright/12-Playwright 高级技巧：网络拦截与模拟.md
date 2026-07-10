@@ -20,6 +20,8 @@ language: zh-CN
 
 网络拦截是 Playwright 最强大的功能之一，它允许你监控、修改、阻止和模拟网络请求和响应。通过网络拦截，你可以实现 API 测试、模拟后端服务、测试错误处理等高级场景。
 
+![Playwright 网络拦截与模拟分支图](./images/playwright-network-interception-figure-01.png)
+
 ### 网络拦截能力
 
 ```text

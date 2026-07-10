@@ -20,6 +20,8 @@ language: zh-CN
 
 ## wtforms源码流程
 
+![WTForms 在 Flask 中完成表单实例化、字段处理、Widget 渲染、验证器链与错误回填的源码流程图](./images/flask-wtforms-validation-flow-figure-01.png)
+
 ### 实例化流程分析
 
 ```python

@@ -21,6 +21,8 @@ language: zh-CN
 
 pywin32 是 Python 操作 Windows 的核心库，提供了对 Windows API 和 COM 组件的完整访问能力。本教程将详细介绍 pywin32 的安装、配置和基本使用方法。
 
+![pywin32 开发环境配置与模块族图](./images/pywin32-development-setup-map-figure-01.png)
+
 ### pywin32 模块一览
 
 | 模块 | 功能 |

@@ -20,6 +20,8 @@ language: zh-CN
 
 Qdrant 是一个开源的高性能向量搜索数据库和向量相似度搜索引擎，专为下一代 AI 应用设计。它提供了方便的 API，支持存储、搜索和管理带负载向量的点（points）。Qdrant 支持微服务部署，并提供有状态的过滤和查询功能。
 
+![Qdrant 以 Collection 管理 Point，每个 Point 包含 ID、Vector 和 Payload，并通过 HNSW、过滤条件和距离度量完成 Top K 检索](./images/qdrant-core-concepts-hnsw-filter-figure-01.png)
+
 ### 为什么选择 Qdrant？
 
 | 特性         | 说明                            |

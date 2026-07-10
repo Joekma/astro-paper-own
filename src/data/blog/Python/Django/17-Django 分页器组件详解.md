@@ -19,6 +19,8 @@ description: "深入讲解Django分页器组件的使用方法和实践技巧。
 
 在页面显示分页数据，需要用到Django分页器组件：
 
+![Django 分页器通过 Paginator、Page 对象、object_list、count、num_pages、page_range 和模板分页控件组织列表数据的分页展示](./images/django-paginator-page-controls-figure-01.png)
+
 ```python
 from django.core.paginator import Paginator
 ```

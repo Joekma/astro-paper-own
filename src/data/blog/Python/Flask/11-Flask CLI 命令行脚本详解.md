@@ -21,6 +21,8 @@ language: zh-CN
 
 Flask 现在内置了基于 Click 的命令行系统，可以通过 `app.cli.command()` 注册自定义命令。新项目不再需要 Flask-Script；数据库迁移也推荐配合 Flask-Migrate 提供的 `flask db ...` 命令使用。
 
+![Flask CLI 通过 Click 解析参数、执行 app.cli.command 并进入应用上下文完成迁移和用户管理的流程图](./images/flask-cli-click-command-flow-figure-01.png)
+
 ### 安装依赖
 
 ```bash

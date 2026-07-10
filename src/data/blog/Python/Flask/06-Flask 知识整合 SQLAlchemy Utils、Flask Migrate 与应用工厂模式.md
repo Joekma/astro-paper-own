@@ -22,6 +22,8 @@ language: zh-CN
 
 由于sqlalchemy中没有提供choice方法，所以借助SQLAlchemy-Utils组件提供的choice方法。
 
+![Flask 应用工厂、扩展初始化、scoped session、ChoiceType 模型与 Flask Migrate 数据库迁移关系图](./images/flask-sqlalchemy-migrate-factory-figure-01.png)
+
 ```python
 import datetime
 from sqlalchemy import create_engine

@@ -29,6 +29,8 @@ language: zh-CN
 
 > **注意**：缩进时只允许使用空格，相同层级的元素左侧必须对齐。
 
+![YAML 文件通过缩进层级、键值对、对象、数组、标量、锚点、多文档和配置场景表达结构化数据](./images/python-yaml-syntax-use-cases-figure-01.png)
+
 ## 数据结构
 
 YAML 支持三种数据结构：

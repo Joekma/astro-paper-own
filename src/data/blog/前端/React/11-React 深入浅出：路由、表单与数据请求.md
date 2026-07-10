@@ -19,6 +19,8 @@ language: zh-CN
 
 前面几篇文章已经覆盖组件、状态、Effect、Reducer 和 Context。真实项目还会遇到三个高频问题：页面如何切换、表单如何组织、数据如何请求。
 
+![React 应用常把 URL 路由、受控表单和数据请求状态分开建模以保持单向数据流](./images/react-routing-forms-fetching-figure-01.png)
+
 ## 路由职责
 
 React 本身不内置路由。单页应用通常使用 React Router；Next.js、Remix、Astro 等框架则会提供自己的路由系统。

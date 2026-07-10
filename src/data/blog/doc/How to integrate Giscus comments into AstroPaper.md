@@ -15,6 +15,8 @@ description: Comment function on a static blog hosted on GitHub Pages with Giscu
 
 Hosting a thin static blog on a platform like [GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site) has numerous advantages, but also takes away some interactivity. Fortunately, [Giscus](https://giscus.app/) exists and offers a way to embed user comments on static sites.
 
+![AstroPaper 静态文章通过 Giscus 脚本或组件连接 GitHub Discussions，并以 iframe 形式嵌入评论区](./images/astropaper-giscus-comments-flow-figure-01.png)
+
 ## Table of contents
 
 ## How _Giscus_ works

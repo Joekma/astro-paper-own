@@ -26,6 +26,8 @@ Hooks 是 React 函数组件使用 React 能力的入口。`useState`、`useEffe
 - https://react.dev/reference/rules/rules-of-hooks
 - https://react.dev/learn/reusing-logic-with-custom-hooks
 
+![React Hook 依赖稳定调用顺序保存状态，自定义 Hook 复用逻辑但每次调用拥有独立状态](./images/react-custom-hooks-rules-figure-01.png)
+
 ## Hook 是什么
 
 Hook 是以 `use` 开头的函数，它可以让组件使用 React 特性。

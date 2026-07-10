@@ -22,6 +22,8 @@ language: zh-CN
 
 Celery的架构由三部分组成：消息中间件（message broker）、任务执行单元（worker）和任务执行结果存储（task result store）组成。
 
+![Celery 分布式任务从生产者进入 Broker 队列、Worker 执行、结果后端存储并由 Beat 调度定时任务的架构图](./images/python-celery-task-queue-figure-01.png)
+
 ### 消息中间件
 
 Celery本身不提供消息服务，但是可以方便的和第三方提供的消息中间件集成，包括RabbitMQ、Redis等。

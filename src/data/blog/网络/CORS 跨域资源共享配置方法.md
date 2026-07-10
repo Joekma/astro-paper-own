@@ -21,6 +21,8 @@ language: zh-CN
 
 CORS（Cross-Origin Resource Sharing）是 W3C 制定的跨域资源共享标准，通过 HTTP 头部允许浏览器跨域请求资源。
 
+![CORS 通过同源策略检查、简单请求、OPTIONS 预检和响应头白名单控制跨域资源访问](./images/cors-cross-origin-flow-figure-01.png)
+
 ## 同源策略
 
 ### 什么是同源

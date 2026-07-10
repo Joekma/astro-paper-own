@@ -19,6 +19,8 @@ language: zh-CN
 
 > JavaScript 高级特性包括原型链、闭包、作用域等。
 
+![JavaScript 高级语法中原型链、闭包、作用域链和 DOM 选择器的运行关系](./images/javascript-prototype-closure-scope-selectors-figure-01.png)
+
 ## 原型链
 
 ```javascript

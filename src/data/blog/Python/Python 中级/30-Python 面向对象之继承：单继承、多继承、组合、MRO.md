@@ -28,6 +28,8 @@ language: zh-CN
 - 理解 Python 的 MRO（方法解析顺序）
 - 学会使用抽象类和接口设计
 
+![Python 面向对象继承需要同时理解单继承、多继承、MRO、派生、组合、接口归一化和抽象类之间的代码复用边界](./images/python-inheritance-composition-mro-figure-01.png)
+
 # 面向对象三大特性之继承
 
 ## 继承

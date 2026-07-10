@@ -20,6 +20,8 @@ language: zh-CN
 
 JavaScript 执行是 Selenium 中最强大的功能之一。通过 `execute_script` 和 `execute_async_script` 方法，我们可以直接与页面 DOM 交互，执行复杂操作，实现 Selenium API 无法完成的任务。
 
+![Selenium JavaScript 执行同步异步边界图](./images/selenium-javascript-execution-boundary-figure-01.png)
+
 ### JavaScript 执行能力
 
 ```text

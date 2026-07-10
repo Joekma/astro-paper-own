@@ -20,6 +20,8 @@ language: zh-CN
 
 表单是网页交互的核心部分，包括登录、注册、搜索、购物车等场景。本教程将详细介绍 Selenium 中各种表单元素的操作方法。
 
+![Selenium 表单定位输入验证提交流程图](./images/selenium-form-interaction-flow-figure-01.png)
+
 ### 表单元素类型
 
 ```text

@@ -30,6 +30,8 @@ language: zh-CN
 - https://react.dev/learn/passing-data-deeply-with-context
 - https://react.dev/learn/scaling-up-with-reducer-and-context
 
+![React 状态管理从本地状态、状态提升扩展到 Reducer 状态机与 Context 跨层共享](./images/react-reducer-context-state-management-figure-01.png)
+
 ## 用状态驱动 UI
 
 React 推荐描述不同状态下的 UI，而不是命令式地操作 UI。

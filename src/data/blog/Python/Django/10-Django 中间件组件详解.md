@@ -26,6 +26,8 @@ Middleware is a framework of hooks into Django's request/response processing.
 It's a light, low-level "plugin" system for globally altering Django's input or output.
 ```
 
+![Django 中间件在请求进入时顺序执行 process_request 和 process_view，在响应返回时逆序执行 process_response，并可通过 process_exception 处理异常](./images/django-middleware-execution-chain-figure-01.png)
+
 ### 中间件是什么
 
 - 中间件是介于request与response处理之间的一道处理过程

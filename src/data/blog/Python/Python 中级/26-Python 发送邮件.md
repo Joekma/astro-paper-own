@@ -18,6 +18,8 @@ language: zh-CN
 
 # Python 发送邮件
 
+![Python 发送邮件通常包含 smtplib 连接 SMTP、TLS 登录、构造 MIME 文本或 HTML、添加附件、选择端口并发送到收件人](./images/python-email-smtp-mime-flow-figure-01.png)
+
 ##  使用smtplib模块发送邮件
 ```python
 import smtplib

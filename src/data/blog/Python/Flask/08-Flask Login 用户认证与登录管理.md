@@ -20,6 +20,8 @@ language: zh-CN
 
 Flask-Login是Flask官方提供的一个扩展，专门用于处理用户会话管理和身份认证。它提供了简单而强大的功能，可以轻松实现用户登录、登出、记住我等功能。
 
+![Flask Login 从用户模型、LoginManager、user loader 到路由保护和登出的认证流程图](./images/flask-login-auth-flow-figure-01.png)
+
 ### Flask-Login的主要功能
 
 - 用户登录和登出管理

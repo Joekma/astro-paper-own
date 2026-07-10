@@ -34,6 +34,8 @@ description: "深入讲解Django缓存机制的实现，包括内存缓存、文
 
 经常使用的有文件缓存和Memcache缓存。
 
+![Django 缓存机制通过缓存 Key、TTL、命中与未命中流程连接内存缓存、文件缓存、数据库缓存、Memcached、视图缓存和模板片段缓存](./images/django-cache-backends-hit-miss-figure-01.png)
+
 ## Django6种缓存的配置
 
 ### 开发调试（此模式为开发调试使用，实际上不执行任何操作）

@@ -19,6 +19,8 @@ description: "深入讲解Django服务器结构的演变和各个Handler之间�
 
 根据前面的分析实在是有太多太多`Handler`，绕来绕去，今天就从头整理，将一个最基础的服务器慢慢改成类似django的服务器结构。
 
+![Django 服务器结构可以从 simple_server 演变到 StaticFilesHandler 外层包装、WSGI application、request 封装、handler 分发和 response 封装](./images/django-server-structure-evolution-figure-01.png)
+
 ## 从simple_server说起
 
 根据django运行的服务器`django.core.servers.basehttp`的`run`函数，我们也利用`simpler_server`模块起一个很简单的服务：

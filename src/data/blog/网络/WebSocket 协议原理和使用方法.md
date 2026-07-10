@@ -20,6 +20,8 @@ language: zh-CN
 
 WebSocket 是一种在单个 TCP 连接上进行全双工通信的协议。与传统 HTTP 轮询相比，WebSocket 提供真正的双向实时通信能力。
 
+![WebSocket 通过 HTTP Upgrade 握手建立持久全双工通道，并依靠心跳和重连机制维持实时通信](./images/websocket-upgrade-full-duplex-figure-01.png)
+
 ## HTTP vs WebSocket
 
 | 特性 | HTTP | WebSocket |

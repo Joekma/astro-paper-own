@@ -22,6 +22,8 @@ description: 'Python爬虫数据存储，详细讲解MongoDB、Redis、MySQL的�
 
 > 在爬虫程序中，获取到数据后需要将数据存储起来。根据数据类型和访问频率选择合适的存储方案。
 
+![爬虫数据存储选型流程图](./images/scraping-data-storage-choice-figure-01.png)
+
 ## 存储方案选择
 
 | 数据类型 | 推荐存储 | 原因 |

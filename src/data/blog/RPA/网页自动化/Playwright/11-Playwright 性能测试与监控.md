@@ -20,6 +20,8 @@ language: zh-CN
 
 性能是用户体验的关键因素。使用 Playwright，你不仅可以进行功能测试，还可以进行全面的性能测试和监控。本教程将详细介绍如何测量页面加载时间、网络性能、JavaScript 执行效率等关键指标。
 
+![Playwright 性能测试指标采集与监控图](./images/playwright-performance-monitoring-figure-01.png)
+
 ### 性能测试类型
 
 ```text

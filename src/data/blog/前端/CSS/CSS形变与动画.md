@@ -22,6 +22,8 @@ language: zh-CN
 
 > CSS 形变和动画可以为网页添加丰富的视觉效果。
 
+![CSS 形变动画与浏览器渲染管线](./images/css-transform-animation-pipeline-figure-01.png)
+
 ## 2D 转换
 
 ### 常用转换函数

@@ -24,6 +24,8 @@ The `@tailwindcss/typography` plugin is our attempt to give you what you _actual
 
 It adds a new `prose` class that you can slap on any block of vanilla HTML content and turn it into a beautiful, well-formatted document:
 
+![Tailwind Typography 通过 prose 类为 Markdown 和富文本内容恢复标题、段落、列表、代码块、表格和图片的可读排版](./images/tailwind-typography-plugin-model-figure-01.png)
+
 ```html
 <article class="prose">
   <h1>Garlic bread with cheese: What the science tells us</h1>

@@ -20,6 +20,8 @@ language: zh-CN
 
 网页自动化最核心的部分就是模拟用户的各种交互操作。Playwright 提供了丰富的 API 来模拟真实用户的点击、输入、拖拽、滚动等行为。本教程将详细介绍这些交互操作的用法和技巧。
 
+![Playwright 用户交互动作链路图](./images/playwright-user-interactions-figure-01.png)
+
 ### 交互操作分类
 
 | 类型 | 操作 | 说明 |

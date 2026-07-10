@@ -19,6 +19,8 @@ language: zh-CN
 
 ## Flask实现的分页组件
 
+![Flask 自定义 Pagination 组件从 page 参数计算切片索引、页码窗口并渲染 HTML 的流程图](./images/flask-custom-pagination-window-figure-01.png)
+
 ```python
 from urllib.parse import urlencode, quote, unquote
 

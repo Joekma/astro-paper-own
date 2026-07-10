@@ -20,6 +20,8 @@ language: zh-CN
 
 截图和文件操作是 Selenium 自动化中的重要功能。截图可用于调试和报告，文件操作则涵盖下载、上传和处理各种文件类型。
 
+![Selenium 截图下载上传文件通道图](./images/selenium-screenshot-file-operations-figure-01.png)
+
 ### 功能概览
 
 ```text

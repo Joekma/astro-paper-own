@@ -34,6 +34,8 @@ language: zh-CN
 - 怎么生成火焰图、定位 CPU 热点？
 - 生产环境的"性能最佳实践"清单。
 
+![Node.js 运行时由 JS 代码、核心模块、V8、libuv、事件循环和诊断优化闭环共同构成](./images/nodejs-runtime-performance-optimization-figure-01.png)
+
 ## 二、先用一句话讲清楚
 
 **Node.js 运行时 = V8（执行 JS）+ libuv（处理 I/O + 事件循环 + 线程池）+ 核心模块（http/fs/...）+ 你的代码。理解这四者的协作，你就能讲清"setTimeout 怎么工作"、"HTTP 请求怎么流转"、"内存为什么涨"。**

@@ -20,6 +20,8 @@ Django的后台我们只要加少些代码，就可以实现强大的功能。�
 
 下面示例是做一个后台添加博客文章的例子。
 
+![Django Admin 后台管理从 models.py 定义模型、admin.py 注册、migrate 建表和 createsuperuser 登录开始，再通过列表显示、搜索过滤、内联和自定义动作增强管理能力](./images/django-admin-management-customization-figure-01.png)
+
 ## 新建项目
 
 ### 新建一个名称为zqxt_admin的项目

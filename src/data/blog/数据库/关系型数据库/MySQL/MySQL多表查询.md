@@ -20,6 +20,8 @@ description: "MySQL多表查询，包括连接查询、子查询和联合查询"
 
 多表查询是处理关联数据的关键技术，包括连接查询、子查询和联合查询等多种方式。
 
+![MySQL 多表查询围绕连接键匹配两张表，INNER、LEFT、RIGHT 和 UNION 分别产生不同的结果集合并方式](./images/mysql-multi-table-join-patterns-figure-01.png)
+
 ## 连接查询
 
 ### 连接类型对比

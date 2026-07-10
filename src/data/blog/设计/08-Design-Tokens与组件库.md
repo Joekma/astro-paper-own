@@ -23,6 +23,8 @@ AI 生成页面最大的问题之一，是每次都重新发明风格：这次�
 
 解决办法不是反复说“高级一点”，而是给 AI 明确的 Design Tokens、组件库和页面模式。
 
+![Design Tokens 将颜色、字体、间距等基础约束传递到组件、页面模式和 AI 提示词，再通过评审反馈控制风格漂移](./images/design-tokens-component-pipeline-figure-01.png)
+
 ## Design Tokens
 
 Design Tokens 是设计系统的最小单位。它把颜色、字号、间距、圆角、阴影、动效等抽象成命名变量。

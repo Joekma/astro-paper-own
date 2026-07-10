@@ -21,6 +21,8 @@ language: zh-CN
 
 > JavaScript 是 Web 开发的核心语言。
 
+![JavaScript 入门中的变量、值、运算符和控制结构学习地图](./images/javascript-beginner-syntax-map-figure-01.png)
+
 ## 变量
 
 ```javascript

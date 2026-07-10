@@ -21,6 +21,8 @@ language: zh-CN
 
 开发完 Electron 应用后，需要将其打包成分发给用户的可执行文件。本文将详细介绍如何使用 electron-builder 打包应用，以及常见的配置选项和分发策略。📦
 
+![Electron 打包签名分发与自动更新流水线](./images/electron-packaging-distribution-pipeline-figure-01.png)
+
 ## 打包工具
 
 ### 主流打包工具

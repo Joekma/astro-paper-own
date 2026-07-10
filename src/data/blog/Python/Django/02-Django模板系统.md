@@ -17,6 +17,8 @@ description: 'Django模板系统详解，包括模板语法、变量传递、过
 
 > Django 模板系统用于将 Python 数据渲染成 HTML 页面。
 
+![Django 模板系统会把视图传入的上下文数据通过变量、过滤器、标签、模板继承和 include 渲染成最终 HTML 响应](./images/django-template-rendering-inheritance-figure-01.png)
+
 ## 模板语法
 
 ### 变量

@@ -20,6 +20,8 @@ language: zh-CN
 
 HTTP（HyperText Transfer Protocol）是万维网的数据通信基础，是客户端与服务器之间的请求-响应协议。
 
+![HTTP 请求响应模型由请求方法、URL、头部和正文进入服务端处理，再返回状态码、响应头和响应体](./images/http-request-response-model-figure-01.png)
+
 ## HTTP 工作流程
 
 ```

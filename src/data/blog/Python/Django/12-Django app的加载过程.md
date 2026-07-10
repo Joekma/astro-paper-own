@@ -35,6 +35,8 @@ def setup(set_prefix=True):
 
 > `Apps` 是一个全局类实例，是已安装应用的注册表，存储配置信息并维护模型列表，定义于 `django.apps.registry`
 
+![Django app 加载过程从 django.setup 开始，读取 settings 和 INSTALLED_APPS，创建 AppConfig，加载应用模型并注册到全局 apps registry](./images/django-app-loading-registry-figure-01.png)
+
 ```python
 apps = Apps(installed_apps=None)
 ```

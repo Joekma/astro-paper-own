@@ -30,6 +30,8 @@ language: zh-CN
 - 学会使用 isinstance 和 issubclass 进行类型检查
 - 提升代码的动态性和灵活性
 
+![Python 面向对象中的实例方法、类方法、静态方法、反射函数和类型检查共同决定对象属性如何动态访问与调用](./images/python-oop-bound-methods-reflection-figure-01.png)
+
 # 面向对象之绑定方法、反射与类型检查
 
 ## isinstance 和 issubclass

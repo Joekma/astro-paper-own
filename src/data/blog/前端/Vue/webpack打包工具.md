@@ -19,6 +19,8 @@ description: '使用 webpack 5 配置 Vue 3 项目，覆盖 loader、plugin、�
 
 > Vue 3 新项目通常首选 Vite；当项目需要接入既有 webpack 体系、复杂构建链路或自定义产物时，webpack 5 依然是可靠选择。
 
+![webpack 5 构建 Vue 3 项目时从入口、依赖图、Loader、Plugin 到优化产物的流程](./images/webpack-vue-build-pipeline-figure-01.png)
+
 ## webpack 核心概念
 
 | 概念 | 说明 |

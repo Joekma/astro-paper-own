@@ -20,6 +20,8 @@ language: zh-CN
 
 Selenium 支持多种编程语言，包括 Python、Java、C#、JavaScript 等。本教程以 Python 为主要示例，同时提供其他语言的简要说明。
 
+![Selenium 安装流程与浏览器驱动兼容关系图](./images/selenium-install-driver-compatibility-figure-01.png)
+
 ### 系统要求
 
 | 要求 | 说明 |

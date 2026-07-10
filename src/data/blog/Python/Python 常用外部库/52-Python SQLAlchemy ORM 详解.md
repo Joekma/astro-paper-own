@@ -24,6 +24,8 @@ language: zh-CN
 
 SQLAlchemy是一个基于Python实现的ORM框架。该框架建立在 DB API之上，使用关系对象映射进行数据库操作，简言之便是：**将类和对象转换成SQL，然后使用数据API执行SQL并获取执行结果。**
 
+![SQLAlchemy ORM 中 Engine 连接池、Session、ORM 模型、关系映射、查询构造和事务管理的工作流程图](./images/python-sqlalchemy-orm-workflow-figure-01.png)
+
 ```bash
 pip3 install sqlalchemy
 ```

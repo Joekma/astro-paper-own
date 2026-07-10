@@ -21,6 +21,8 @@ language: zh-CN
 
 > Python 提供了丰富的标准模块来处理文件操作、序列化和配置文件。本文将详细介绍 shutil、json、pickle、shelve、xml 和 configparser 等常用模块的使用方法。
 
+![Python 文件与数据模块 shutil、json、pickle、shelve、xml 和 configparser 可以分别用于文件操作、压缩归档、序列化、持久化和配置读取](./images/python-file-serialization-config-modules-figure-01.png)
+
 ## shutil 模块
 
 `shutil` 是高级的文件、文件夹、压缩包处理模块。

@@ -20,6 +20,8 @@ language: zh-CN
 
 Milvus 是 LF AI & Data Foundation 旗下的开源向量数据库，专为处理海量向量数据设计，支持十亿级别的向量检索。作为云原生且分布式的向量数据库，Milvus 广泛应用于语义搜索、推荐系统、图像检索、自然语言处理等场景。
 
+![Milvus 将数据转成向量后写入 Collection 和 Partition，通过 IVF 或 HNSW 索引支持相似度检索并服务 RAG 应用](./images/milvus-core-architecture-vector-search-figure-01.png)
+
 ### 为什么选择 Milvus？
 
 | 特性         | 说明                                  |

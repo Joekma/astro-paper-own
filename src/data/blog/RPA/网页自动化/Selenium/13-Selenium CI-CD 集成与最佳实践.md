@@ -20,6 +20,8 @@ language: zh-CN
 
 将 Selenium 集成到 CI/CD 流程中可以实现自动化测试、持续监控和快速反馈。本教程将详细介绍如何在各种 CI/CD 平台上配置 Selenium。
 
+![Selenium CI CD 与 Grid 浏览器矩阵流水线图](./images/selenium-cicd-grid-pipeline-figure-01.png)
+
 ### CI/CD 集成架构
 
 ```text

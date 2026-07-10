@@ -27,6 +27,8 @@ flask-session是flask框架的session组件，由于原来flask内置session使�
 - mongodb
 - sqlalchemy：那数据存到数据库表里面
 
+![Flask Session 将浏览器 session id 映射到 Redis、Memcached、文件系统或 MongoDB 等服务端存储的架构图](./images/flask-session-storage-backends-figure-01.png)
+
 **安装：**
 
 ```bash

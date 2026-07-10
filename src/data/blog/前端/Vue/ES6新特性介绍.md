@@ -18,6 +18,8 @@ description: 'ES6新特性介绍，包括let、const、箭头函数、模板字�
 
 > ES6（ECMAScript 2015）是 JavaScript 的重要更新，引入许多新语法和特性。
 
+![ES6 语法特性围绕作用域、函数、模板、解构、模块和异步能力展开](./images/es6-modern-javascript-feature-map-figure-01.png)
+
 ## 变量声明
 
 ### let 和 const

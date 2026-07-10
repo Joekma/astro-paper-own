@@ -20,6 +20,8 @@ language: zh-CN
 
 现代 CSS 的重点已经不只是“写出布局”，还包括组件在不同容器里的适配、主题变量、层叠管理以及动画对用户偏好的尊重。
 
+![现代 CSS 响应式布局与可访问动效控制面](./images/modern-css-responsive-accessible-motion-figure-01.png)
+
 ## 响应式策略
 
 ### 视口断点

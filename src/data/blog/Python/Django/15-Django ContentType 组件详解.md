@@ -31,6 +31,8 @@ ContentType组件是Django提供的一个快速连表操作的组件，可以追
 
 方便反向查询可以定义GenericRelation字段。
 
+![Django ContentType 组件通过 app_label、model、object_id、GenericForeignKey 和 GenericRelation 实现评论、点赞等跨模型通用关联](./images/django-contenttype-generic-relation-figure-01.png)
+
 **使用，在models.py中：**
 
 ```python

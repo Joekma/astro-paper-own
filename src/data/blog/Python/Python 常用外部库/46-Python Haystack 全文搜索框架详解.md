@@ -22,6 +22,8 @@ language: zh-CN
 
 Haystack是Django的开源全文搜索框架（全文检索不同于特定字段的模糊查询，使用全文检索的效率更高），该框架支持 **Solr**、**Elasticsearch**、**Whoosh**、**Xapian** 搜索引擎。它是一个可插拔的后端（很像Django的数据库层），所以几乎你所有写的代码都可以在不同搜索引擎之间便捷切换。
 
+![Django Haystack 将模型数据通过 SearchIndex 和索引模板写入搜索后端，再由 SearchView 查询并展示结果的架构图](./images/python-haystack-search-index-figure-01.png)
+
 ## 安装
 
 ```bash

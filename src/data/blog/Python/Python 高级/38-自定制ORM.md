@@ -39,6 +39,8 @@ language: zh-CN
 - `__getattr__` 拦截点号运算。当对未定义的属性名称和实例进行点号运算时，就会用属性名作为字符串调用这个方法。如果继承树可以找到该属性，则不调用此方法
 - `__setattr__` 会拦截所有属性的赋值语句。如果定义了这个方法，`self.attr = value` 就会变成 `self.__setattr__("attr", value)`。这个需要注意。当在 `__setattr__` 方法内对属性进行赋值是，不可使用 `self.attr = value`，因为他会再次调用 `self.__setattr__("attr", value)`，则会形成无穷递归循环，最后导致堆栈溢出异常。应该通过对属性字典做索引运算来赋值任何实例属性，也就是使用 `self.__dict__['name'] = value`
 
+![自定制 Python ORM 中 Model 基类、Field 描述符、元类收集映射、SQL 生成和 pymysql 连接池执行的架构图](./images/python-custom-orm-metaclass-descriptor-figure-01.png)
+
 ## 定义Model基类
 
 ```python
