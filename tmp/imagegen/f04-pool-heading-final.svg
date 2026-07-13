@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
-  <rect x="452" y="176" width="292" height="87" fill="#FFFFFF" />
-  <text x="458" y="199" font-family="Microsoft YaHei, Noto Sans CJK SC, Arial, sans-serif" font-size="22" font-weight="700" fill="#267985">P1–P6 物理块池</text>
-  <rect x="542" y="211" width="125" height="46" rx="9" fill="#F5FBFC" stroke="#4E9FAD" stroke-width="3" />
-  <text x="604.5" y="234" font-family="Arial, sans-serif" font-size="27" font-weight="700" text-anchor="middle" dominant-baseline="middle" fill="#267985">P1</text>
-</svg>
