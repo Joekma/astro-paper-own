@@ -2,7 +2,7 @@
 title: Python 模块与包：import、from、循环导入、搜索路径
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-03T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-modules-and-packages
 description: '深入理解Python的模块与包组织结构，详解import、from...import、模块搜索路径、循环导入问题和__all__控制导入，包含实战技巧。'
 tags:
@@ -42,6 +42,7 @@ language: zh-CN
 
 模块可以包含可执行的语句和函数的定义，这些语句的目的是初始化模块。它们只在模块名第一次遇到导入语句时才执行。
 
+<!-- snippet: id=python-modules-and-packages-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # spam.py
 import spam
@@ -64,6 +65,7 @@ import spam
 
 我们可以从 `sys.module` 中找到当前已经加载的模块，它是一个字典，包含模块名与模块对象的映射。
 
+<!-- snippet: id=python-modules-and-packages-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import sys
 print(sys.modules)  # 查看所有已加载的模块
@@ -73,6 +75,7 @@ print(sys.modules)  # 查看所有已加载的模块
 
 每个模块都是一个独立的名称空间，定义在这个模块中的函数把这个模块的名称空间当做全局名称空间。
 
+<!-- snippet: id=python-modules-and-packages-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # test.py
 import spam
@@ -84,6 +87,7 @@ print(spam.money)  # 1000
 
 为已经导入的模块起别名的方式对编写可扩展的代码很有用：
 
+<!-- snippet: id=python-modules-and-packages-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import spam as sm
 print(sm.money)
@@ -91,6 +95,7 @@ print(sm.money)
 
 ### 逻辑内导入
 
+<!-- snippet: id=python-modules-and-packages-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 if file_format == 'xml':
     import xmlreader as reader
@@ -102,12 +107,14 @@ data = reader.read_data(filename)
 
 ### 一行导入多个模块
 
+<!-- snippet: id=python-modules-and-packages-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import sys, os, json
 ```
 
 ## from...import... 的使用
 
+<!-- snippet: id=python-modules-and-packages-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from spam import read1, read2
 ```
@@ -119,6 +126,7 @@ from spam import read1, read2
 **好处**：使用起来方便了
 **坏处**：容易与当前执行文件中的名字冲突
 
+<!-- snippet: id=python-modules-and-packages-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 导入的函数 read1，执行时仍然回到 spam.py 中寻找全局变量 money
 from spam import read1
@@ -130,6 +138,7 @@ read1()
 
 ### 重名覆盖
 
+<!-- snippet: id=python-modules-and-packages-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from spam import read1
 
@@ -141,12 +150,14 @@ read1()  # 执行结果: ==========
 
 ### 支持 as
 
+<!-- snippet: id=python-modules-and-packages-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from spam import read1 as read
 ```
 
 ### 一行导入多个名字
 
+<!-- snippet: id=python-modules-and-packages-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from spam import read1, read2, money
 ```
@@ -157,6 +168,7 @@ from spam import read1, read2, money
 
 可以使用 `__all__` 来控制 `*` 导入：
 
+<!-- snippet: id=python-modules-and-packages-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # spam.py
 __all__ = ['money', 'read1']  # 只允许导入这两个名字
@@ -171,6 +183,7 @@ from spam import *  # 只能导入 money 和 read1
 
 模块循环/嵌套导入抛出异常的根本原因是由于在 Python 中模块被导入一次之后，就不会重新导入，只会在第一次导入时执行模块内代码。
 
+<!-- snippet: id=python-modules-and-packages-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # m1.py
 print('正在导入m1')
@@ -188,7 +201,8 @@ import m1
 
 **执行结果**：
 
-```
+<!-- snippet: id=python-modules-and-packages-14 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 正在导入m1
 正在导入m2
 Traceback (most recent call last):
@@ -205,6 +219,7 @@ ImportError: cannot import name 'x'
 
 **方法一**：导入语句放到最后
 
+<!-- snippet: id=python-modules-and-packages-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # m1.py
 print('正在导入m1')
@@ -219,6 +234,7 @@ from m1 import x
 
 **方法二**：导入语句放到函数中
 
+<!-- snippet: id=python-modules-and-packages-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # m1.py
 print('正在导入m1')
@@ -241,6 +257,7 @@ y = 'm2'
 
 ## __name__ 的使用
 
+<!-- snippet: id=python-modules-and-packages-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # fib.py
 def fib(n):
@@ -272,6 +289,7 @@ if __name__ == "__main__":
 
 考虑到性能的原因，每个模块只被导入一次。如果你想交互测试一个模块，可以使用 `importlib.reload()`：
 
+<!-- snippet: id=python-modules-and-packages-18 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import importlib
 import aa
@@ -303,6 +321,7 @@ aa.func1()
 
 在初始化后，Python 程序可以修改 `sys.path`：
 
+<!-- snippet: id=python-modules-and-packages-19 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import sys
 
@@ -317,6 +336,7 @@ sys.path.insert(0, '/x/y/z')
 
 `sys.path` 中还可能包含 .zip 归档文件和 .egg 文件：
 
+<!-- snippet: id=python-modules-and-packages-20 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 制作归档文件
 zip module.zip foo.py bar.py
@@ -336,6 +356,7 @@ import foo, bar
 
 ### 编译命令
 
+<!-- snippet: id=python-modules-and-packages-21 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 编译成 pyc 文件
 python -m py_compile file.py
@@ -347,6 +368,7 @@ python -O -m py_compile file.py
 
 或者使用代码：
 
+<!-- snippet: id=python-modules-and-packages-22 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import py_compile
 py_compile.compile('path')
@@ -367,7 +389,8 @@ py_compile.compile('path')
 
 ### 包的结构
 
-```
+<!-- snippet: id=python-modules-and-packages-23 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 my_package/
 ├── __init__.py
 ├── module1.py
@@ -379,6 +402,7 @@ my_package/
 
 ### 导入包的方式
 
+<!-- snippet: id=python-modules-and-packages-24 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 导入整个包
 import my_package
@@ -399,6 +423,7 @@ from my_package import module1 as m1
 2. **初始化代码**：包被导入时自动执行的代码
 3. **控制导出**：可以在 `__init__.py` 中设置 `__all__` 来控制 `from package import *` 的行为
 
+<!-- snippet: id=python-modules-and-packages-25 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # my_package/__init__.py
 from .module1 import my_function

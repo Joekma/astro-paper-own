@@ -2,9 +2,9 @@
 title: RAG 多模态：处理图像、视频与音频
 author: Joekma
 pubDatetime: 2026-05-11T00:00:00.000+08:00
-modDatetime: 2026-05-11T00:00:00.000+08:00
+modDatetime: 2026-07-12T00:00:00.000+08:00
 slug: rag-multimodal
-description: '深入讲解RAG系统的多模态扩展，包括图像、视频、音频等多种数据类型处理与检索技术。'
+description: "从模态解析、时间与空间定位、跨模态检索、分数融合、引用和评测六个方面构建多模态 RAG。"
 tags:
   - RAG
   - 多模态
@@ -13,1031 +13,314 @@ tags:
   - 音频处理
 draft: false
 series: RAG
-seriesOrder: 1
+seriesOrder: 7
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
 
-传统 RAG 主要处理文本数据，但现实世界中的信息往往是多模态的。本篇将介绍如何扩展 RAG 系统以支持图像、视频、音频等多种模态数据的处理与检索。
+本文假设你已经理解文本 RAG 的 Chunk、Embedding、混合检索和四层评测。读完后，你应该能够：
 
-### 多模态 RAG 架构
+- 区分“先转成文本再检索”和“使用原生多模态向量”两类路径。
+- 为图片区域、视频片段和音频时间段设计稳定定位信息。
+- 说明跨模态检索为何需要共享空间或分数校准。
+- 构建带页码、坐标和时间码的多模态引用。
+- 分别评估解析、检索、答案和引用误差。
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                       多模态 RAG 架构                                │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐        │
-│  │  图像   │    │  视频   │    │  音频   │    │  文档   │        │
-│  │  输入   │    │  输入   │    │  输入   │    │  输入   │        │
-│  └────┬────┘    └────┬────┘    └────┬────┘    └────┬────┘        │
-│       │              │              │              │              │
-│       ▼              ▼              ▼              ▼              │
-│  ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐        │
-│  │  视觉   │    │  视频   │    │  语音   │    │  文本   │        │
-│  │  嵌入   │    │  处理   │    │  识别   │    │  嵌入   │        │
-│  └────┬────┘    └────┬────┘    └────┬────┘    └────┬────┘        │
-│       │              │              │              │              │
-│       ▼              ▼              ▼              ▼              │
-│  ┌─────────────────────────────────────────────────────────┐      │
-│  │                    统一向量空间                           │      │
-│  │   [图像向量] [视频向量] [音频向量] [文本向量]             │      │
-│  └─────────────────────────────────────────────────────────┘      │
-│                              │                                    │
-│                              ▼                                    │
-│  ┌─────────────────────────────────────────────────────────┐      │
-│  │                    多模态检索引擎                         │      │
-│  └─────────────────────────────────────────────────────────┘      │
-│                              │                                    │
-│                              ▼                                    │
-│  ┌─────────────────────────────────────────────────────────┐      │
-│  │                    多模态生成模型                         │      │
-│  └─────────────────────────────────────────────────────────┘      │
-│                                                                      │
-└─────────────────────────────────────────────────────────────────────┘
+贯穿问题：
+
+> “培训视频中演示住宿超标审批入口的画面出现在什么时候？”
+
+答案必须定位到视频时间段，而不是只返回整段视频文件。
+
+## 多模态 RAG 的完整链路
+
+![建立四模态到带定位答案的总坐标](./images/r07-f01-multimodal-pipeline.png)
+
+```text
+图片 → OCR / Caption / Region embedding ─┐
+视频 → Shot / Keyframe / ASR / Timestamp ├→ 模态索引 → 融合 → 多模态 Context
+音频 → ASR / Speaker / Timestamp ─────────┤                    ↓
+文本 → Parse / Chunk / Metadata ──────────┘             Answer + Locator
 ```
 
-![多模态 RAG 将图像、视频、音频和文档分别经过 OCR、ASR、抽帧、摘要、嵌入和元数据对齐后进入统一检索索引，并用多模态模型生成带来源答案](./images/rag-multimodal-architecture-figure-01.png)
+多模态系统首先是“可定位的数据系统”，其次才是模型能力展示。
 
-## 图像模态处理
+## 两种索引路线
 
-### 图像加载与预处理
+![区分文本代理与原生多模态向量](./images/r07-f02-text-proxy-vs-native.png)
+
+### 路线 A：文本代理
+
+先把非文本内容转换为文本：
+
+- 图片：OCR、Caption、图表结构描述。
+- 视频：ASR、关键帧 Caption、镜头摘要。
+- 音频：ASR、说话人和声音事件标签。
+
+优点是可以复用成熟的文本检索和生成链路；缺点是转换过程会丢失颜色、布局、动作、语调等信息，且错误会层层传播。
+
+### 路线 B：原生多模态向量
+
+把文本和图像映射到共享空间，或分别建立图像、音频、视频向量索引。它能支持“用文字找图片”“用图片找相似画面”，但要确认模型是否真的支持目标模态对，并在自己的数据上评估跨模态召回。
+
+两条路线常常并行：文本代理负责可解释关键词和 OCR，原生向量负责视觉或声音语义，再通过 Rank Fusion 合并。
+
+## 统一资产与片段数据契约
+
+![统一页码、区域和时间码](./images/r07-f03-media-segment-contract.png)
 
 ```python
-import os
-from PIL import Image
+from dataclasses import dataclass
 
-class ImageLoader:
-    def __init__(self):
-        self.supported_formats = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"]
-
-    def load_image(self, image_path):
-        if not any(image_path.endswith(ext) for ext in self.supported_formats):
-            raise ValueError(f"不支持的图像格式: {image_path}")
-
-        image = Image.open(image_path)
-
-        return {
-            "path": image_path,
-            "size": image.size,
-            "mode": image.mode,
-            "format": image.format
-        }
-
-    def load_directory(self, directory):
-        images = []
-        for root, dirs, files in os.walk(directory):
-            for file in files:
-                if any(file.endswith(ext) for ext in self.supported_formats):
-                    image_path = os.path.join(root, file)
-                    images.append(self.load_image(image_path))
-
-        return images
-
-# 使用示例
-# loader = ImageLoader()
-# images = loader.load_directory("./images")
-# print(f"加载了 {len(images)} 张图片")
+@dataclass(frozen=True)
+class MediaSegment:
+    segment_id: str
+    asset_id: str
+    modality: str  # image, video, audio, text
+    text_proxy: str
+    source_uri: str
+    start_ms: int | None = None
+    end_ms: int | None = None
+    page: int | None = None
+    region_xywh: tuple[float, float, float, float] | None = None
+    acl: frozenset[str] = frozenset()
 ```
 
-### 图像描述生成
+- 视频与音频使用 `start_ms/end_ms`。
+- PDF 图片使用页码和归一化 `region_xywh`。
+- 单张独立图片也可以保存区域坐标。
+- 所有派生产物必须能追溯到原始 `asset_id` 和处理流水线版本。
+
+## 图像处理
+
+![区分 OCR、Caption 与 Region](./images/r07-f04-ocr-caption-region.png)
+
+![理解归一化区域引用](./images/r07-f05-image-region-locator.png)
+
+### OCR、Caption 与 Region 的职责
+
+| 产物    | 擅长                         | 容易丢失                     |
+| ------- | ---------------------------- | ---------------------------- |
+| OCR     | 图片中的文字、编号、金额     | 非文字视觉语义、复杂表格结构 |
+| Caption | 场景、对象和整体关系         | 小字、精确数值、局部细节     |
+| Region  | 局部对象、图表区域、界面控件 | 全局关系和跨区域上下文       |
+
+不要用一条泛化 Caption 代替 OCR，也不要把整页截图作为不可定位的单个 Chunk。
+
+### 图像质量门
 
 ```python
-from langchain_openai import ChatOpenAI
-from transformers import BlipProcessor, BlipForConditionalGeneration
-from PIL import Image
-import torch
-
-class ImageCaptioner:
-    def __init__(self, model_name="Salesforce/blip-image-captioning-base"):
-        self.processor = BlipProcessor.from_pretrained(model_name)
-        self.model = BlipForConditionalGeneration.from_pretrained(model_name)
-
-    def generate_caption(self, image_path, max_length=100):
-        image = Image.open(image_path).convert("RGB")
-
-        inputs = self.processor(image, return_tensors="pt")
-
-        out = self.model.generate(
-            **inputs,
-            max_length=max_length,
-            num_beams=5,
-            no_repeat_ngram_size=2
-        )
-
-        caption = self.processor.decode(out[0], skip_special_tokens=True)
-
-        return caption
-
-    def batch_generate(self, image_paths, batch_size=8):
-        captions = []
-
-        for i in range(0, len(image_paths), batch_size):
-            batch = image_paths[i:i+batch_size]
-
-            for path in batch:
-                caption = self.generate_caption(path)
-                captions.append({
-                    "path": path,
-                    "caption": caption
-                })
-
-            print(f"处理进度: {min(i+batch_size, len(image_paths))}/{len(image_paths)}")
-
-        return captions
-
-captioner = ImageCaptioner()
-captions = captioner.batch_generate(["./img1.jpg", "./img2.png"])
+def validate_region(region: tuple[float, float, float, float]) -> None:
+    x, y, width, height = region
+    if not all(0.0 <= value <= 1.0 for value in region):
+        raise ValueError("坐标必须归一化到 0..1")
+    if width == 0 or height == 0 or x + width > 1 or y + height > 1:
+        raise ValueError("区域必须位于图像内部且面积大于 0")
 ```
 
-### 视觉嵌入模型
+还应记录 OCR 置信度、图像分辨率、旋转、语言和处理模型版本。低置信内容进入人工复核或降权支路，而不是静默当作事实。
+
+## 视频处理
+
+![从镜头、关键帧和 ASR 构建片段](./images/r07-f06-video-shot-pipeline.png)
+
+### 先分镜头，再选关键帧
+
+固定每 N 秒抽一帧很简单，但可能漏掉短暂画面并产生大量重复帧。更稳妥的流程是：
+
+1. 检测镜头边界。
+2. 为每个镜头选择代表帧。
+3. 对语音做 ASR 并保留词级或句级时间码。
+4. 对关键帧做 OCR 与 Caption。
+5. 将相邻、语义一致的片段组合成可检索 Segment。
+
+### 时间对齐
 
 ```python
-from transformers import CLIPProcessor, CLIPModel
-import torch
+def overlaps(a_start: int, a_end: int, b_start: int, b_end: int) -> bool:
+    return max(a_start, b_start) < min(a_end, b_end)
 
-class VisualEmbedder:
-    def __init__(self, model_name="openai/clip-vit-base-patch32"):
-        self.processor = CLIPProcessor.from_pretrained(model_name)
-        self.model = CLIPModel.from_pretrained(model_name)
-
-    def embed_image(self, image_path):
-        image = Image.open(image_path).convert("RGB")
-
-        inputs = self.processor(images=image, return_tensors="pt")
-
-        with torch.no_grad():
-            image_embeddings = self.model.get_image_features(**inputs)
-
-        return image_embeddings[0].numpy()
-
-    def embed_text(self, text):
-        inputs = self.processor(text=[text], return_tensors="pt", padding=True)
-
-        with torch.no_grad():
-            text_embeddings = self.model.get_text_features(**inputs)
-
-        return text_embeddings[0].numpy()
-
-    def compute_similarity(self, image_path, text):
-        image_vec = self.embed_image(image_path)
-        text_vec = self.embed_text(text)
-
-        similarity = torch.nn.functional.cosine_similarity(
-            torch.tensor(image_vec),
-            torch.tensor(text_vec),
-            dim=0
-        )
-
-        return similarity.item()
-
-embedder = VisualEmbedder()
-image_vector = embedder.embed_image("photo.jpg")
-text_vector = embedder.embed_text("a beautiful sunset")
-
-print(f"图像向量维度: {len(image_vector)}")
-print(f"文本向量维度: {len(text_vector)}")
+def align_transcript_to_shot(transcript_segments, shot):
+    return [
+        segment
+        for segment in transcript_segments
+        if overlaps(segment.start_ms, segment.end_ms, shot.start_ms, shot.end_ms)
+    ]
 ```
 
-### 多模态向量数据库存储
+生成回答时可以同时提供关键帧、OCR 和同时间段 ASR，但必须避免把相距很远的音频与画面错误对齐。
+
+## 音频处理
+
+![区分 ASR、Speaker 与 Sound Event](./images/r07-f07-audio-evidence-types.png)
+
+音频 RAG 不等于“转录文本 RAG”。可能需要保存：
+
+- 说话人标签。
+- 词或句子的时间码。
+- 语言、置信度和重叠说话。
+- 非语音事件，如警报、音乐或机械声。
+- 原始音频片段 URI。
+
+如果用户问“谁说了这句话”，ASR 文本本身不够，还需要可靠的 Speaker Diarization；如果问“哪里出现警报声”，则需要声音事件模型而非文本 Embedding。
+
+## 跨模态检索与融合
+
+![理解多模态分数需融合或校准](./images/r07-f08-cross-modal-fusion.png)
+
+### 共享空间
+
+Query 与多个模态由同一跨模态模型映射到共享空间时，可以直接形成候选排序。但模型在通用图片上的表现不能代表它能理解企业界面截图、医学影像或工业声音。
+
+### 分离空间
+
+图像、ASR、OCR 和文本可能使用不同检索器。它们的原始分数不可直接相加，可使用：
+
+- RRF 等名次融合。
+- 在标注集上做分数校准。
+- 学习跨模态排序模型。
 
 ```python
-from langchain_community.vectorstores import Chroma
-from langchain_openai import OpenAIEmbeddings
-import chromadb
-
-class MultimodalVectorStore:
-    def __init__(self, persist_directory="./multimodal_db"):
-        self.embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
-        self.client = chromadb.PersistentClient(persist_directory)
-
-        self.text_collection = self.client.create_collection("texts")
-        self.image_collection = self.client.create_collection("images")
-
-    def add_text(self, texts, metadatas, ids):
-        embeddings = self.embeddings.embed_documents(texts)
-
-        self.text_collection.add(
-            embeddings=embeddings,
-            documents=texts,
-            metadatas=metadatas,
-            ids=ids
-        )
-
-    def add_images(self, image_paths, captions, image_embeddings, metadata_list):
-        for i, (path, caption, embedding, meta) in enumerate(
-            zip(image_paths, captions, image_embeddings, metadata_list)
-        ):
-            self.image_collection.add(
-                embeddings=[embedding],
-                documents=[caption],
-                metadatas=[{
-                    **meta,
-                    "image_path": path,
-                    "type": "image"
-                }],
-                ids=[f"img_{i}"]
-            )
-
-    def search_text(self, query, k=5):
-        query_embedding = self.embeddings.embed_query(query)
-
-        results = self.text_collection.query(
-            query_embeddings=[query_embedding],
-            n_results=k
-        )
-
-        return results
-
-    def search_images(self, query, k=5):
-        query_embedding = self.embeddings.embed_query(query)
-
-        results = self.image_collection.query(
-            query_embeddings=[query_embedding],
-            n_results=k
-        )
-
-        return results
-
-    def multimodal_search(self, query, k=5):
-        text_results = self.search_text(query, k=k)
-        image_results = self.search_images(query, k=k)
-
-        combined_results = {
-            "texts": text_results,
-            "images": image_results
-        }
-
-        return combined_results
-
-vectorstore = MultimodalVectorStore()
+def fuse_by_rank(results_by_modality: dict[str, list[str]], smooth: int = 60):
+    scores: dict[str, float] = {}
+    for ranking in results_by_modality.values():
+        for rank, segment_id in enumerate(ranking, start=1):
+            scores[segment_id] = scores.get(segment_id, 0.0) + 1 / (smooth + rank)
+    return sorted(scores, key=lambda segment_id: (-scores[segment_id], segment_id))
 ```
 
-## 视频模态处理
+融合键是稳定 `segment_id`。同一资产的相邻片段还需要时间去重或合并，避免上下文充满连续重复帧。
 
-### 视频帧提取
+## 多模态 Context 构建
 
-```python
-import cv2
-from pathlib import Path
+![同时控制文本、图片和媒体预算](./images/r07-f09-multimodal-budget.png)
 
-class VideoFrameExtractor:
-    def __init__(self, fps=1):
-        self.fps = fps
+Context Builder 需要同时控制：
 
-    def extract_frames(self, video_path, output_dir, fps=1):
-        Path(output_dir).mkdir(parents=True, exist_ok=True)
+- 文本 Token。
+- 图片数量与分辨率预算。
+- 视频/音频片段数量与时长。
+- 同一资产的重复覆盖。
+- 模态支持和模型输入限制。
+- 权限、版权和敏感信息。
 
-        video_capture = cv2.VideoCapture(video_path)
+建议以 Segment Manifest 记录实际输入：
 
-        video_fps = video_capture.get(cv2.CAP_PROP_FPS)
-        frame_interval = int(video_fps / fps)
-
-        frame_count = 0
-        saved_count = 0
-
-        while True:
-            ret, frame = video_capture.read()
-
-            if not ret:
-                break
-
-            if frame_count % frame_interval == 0:
-                output_path = Path(output_dir) / f"frame_{saved_count:04d}.jpg"
-                cv2.imwrite(str(output_path), frame)
-                saved_count += 1
-
-            frame_count += 1
-
-        video_capture.release()
-
-        return saved_count
-
-    def extract_keyframes(self, video_path, num_keyframes=10):
-        video_capture = cv2.VideoCapture(video_path)
-
-        total_frames = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
-
-        keyframe_indices = [
-            int(i * total_frames / num_keyframes)
-            for i in range(num_keyframes)
-        ]
-
-        keyframes = []
-        frame_count = 0
-
-        while True:
-            ret, frame = video_capture.read()
-
-            if not ret:
-                break
-
-            if frame_count in keyframe_indices:
-                keyframes.append(frame)
-
-            frame_count += 1
-
-        video_capture.release()
-
-        return keyframes
-
-extractor = VideoFrameExtractor()
-num_frames = extractor.extract_frames("video.mp4", "./frames", fps=1)
-keyframes = extractor.extract_keyframes("video.mp4", num_keyframes=20)
-
-print(f"提取了 {num_frames} 帧")
-print(f"提取了 {len(keyframes)} 个关键帧")
+```json
+{
+  "segment_id": "training-video:v2:shot-018",
+  "source": "差旅系统培训.mp4",
+  "locator": "00:03:12.400–00:03:27.900",
+  "modalities": ["keyframe", "ocr", "asr"],
+  "evidence": "画面显示‘超标准审批’，讲解说明由直属部门负责人审批"
+}
 ```
 
-### 视频描述生成
+## 引用粒度
 
-```python
-# 视频描述生成：实际方案是按帧提取后用图像描述模型
-# 这里使用 BLIP 处理关键帧并拼接为视频描述
-from transformers import BlipProcessor, BlipForConditionalGeneration
-import torch
-from PIL import Image
+| 模态          | 推荐 Locator                   |
+| ------------- | ------------------------------ |
+| PDF 文本      | 页码 + 章节 + Chunk ID         |
+| PDF 图片/图表 | 页码 + 区域坐标                |
+| 独立图片      | Asset ID + 区域坐标            |
+| 视频          | 起止时间码 + 关键帧 ID         |
+| 音频          | 起止时间码 + Speaker（如可靠） |
 
-class VideoCaptioner:
-    """视频描述生成器：对关键帧逐帧生成描述后拼接。"""
+回答“03:12 附近”只能算粗定位；如果系统实际证据覆盖 03:12.400–03:27.900，应保留完整区间供用户复核。
 
-    def __init__(self, model_name="Salesforce/blip-image-captioning-base"):
-        self.processor = BlipProcessor.from_pretrained(model_name)
-        self.model = BlipForConditionalGeneration.from_pretrained(model_name)
+## 误差传播
 
-    def caption_frame(self, frame, max_length=100):
-        """为单帧生成描述。"""
-        if isinstance(frame, str):
-            image = Image.open(frame).convert("RGB")
-        else:
-            image = frame if isinstance(frame, Image.Image) else Image.fromarray(frame)
+![从 OCR 错误追踪到最终回答](./images/r07-f10-multimodal-error-propagation.png)
 
-        inputs = self.processor(image, return_tensors="pt")
-        with torch.no_grad():
-            output = self.model.generate(
-                **inputs,
-                max_length=max_length,
-                num_beams=5,
-                no_repeat_ngram_size=2
-            )
-        return self.processor.decode(output[0], skip_special_tokens=True)
-
-    def caption_video(self, frames, max_length=100):
-        """为整个视频（关键帧列表）生成综合描述。"""
-        frame_captions = [self.caption_frame(f, max_length) for f in frames]
-        # 简单拼接作为视频描述
-        return " ".join(frame_captions)
-
-    def caption_video_with_timestamps(self, frames, timestamps, max_length=100):
-        """为每个关键帧生成带时间戳的描述。"""
-        captions = []
-        for frame, ts in zip(frames, timestamps):
-            captions.append({
-                "timestamp": ts,
-                "caption": self.caption_frame(frame, max_length),
-            })
-        return captions
-
-# 使用示例
-# captioner = VideoCaptioner()
-# keyframes = [...]  # 关键帧列表（numpy 数组或 PIL Image）
-# video_caption = captioner.caption_video(keyframes)
+```text
+低清图片
+  → OCR 把“直属”识别成“直屋”
+  → 文本检索未命中
+  → Context 缺少正确证据
+  → 模型拒答或错误回答
 ```
 
-### 视频向量存储
+只评估最终答案会把根因误判为生成问题。多模态系统应保存每一步派生产物和置信信息，允许回放。
 
-```python
-class VideoVectorStore:
-    def __init__(self, client, embedder):
-        self.client = client
-        self.embedder = embedder
-        self.collection = client.create_collection("videos")
+## 分模态评测
 
-    def add_video(self, video_path, video_caption, frame_captions, metadata):
-        """添加视频到向量库。
+![按处理层和检索方向拆分评测](./images/r07-f11-modality-evaluation-matrix.png)
 
-        Args:
-            video_path: 视频文件路径
-            video_caption: 视频整体描述
-            frame_captions: 关键帧描述与向量字典 {caption: vector} 或 [(caption, vector), ...]
-            metadata: 视频元数据
-        """
-        video_embedding = self.embedder.embed_text(video_caption)
+### 解析层
 
-        self.collection.add(
-            embeddings=[video_embedding],
-            documents=[video_caption],
-            metadatas=[{
-                **metadata,
-                "video_path": video_path,
-                "type": "video",
-                "frame_count": len(frame_captions)
-            }],
-            ids=[f"video_{hash(video_path)}"]
-        )
+- OCR 字符/词错误率与关键字段准确率。
+- ASR 词错误率、时间码误差。
+- 镜头边界、关键帧覆盖和 Speaker 识别。
 
-        for i, (caption, frame_vec) in enumerate(frame_captions.items()):
-            self.collection.add(
-                embeddings=[frame_vec],
-                documents=[caption],
-                metadatas=[{
-                    "video_path": video_path,
-                    "frame_index": i,
-                    "type": "video_frame"
-                }],
-                ids=[f"video_{hash(video_path)}_frame_{i}"]
-            )
+### 检索层
 
-    def search_videos(self, query, k=5):
-        query_embedding = self.embedder.embed_text(query)
+- Text→Image、Text→Video、Image→Image 等方向分别计算 Recall@k。
+- 按模态、文档类型、语言和质量等级切片。
+- 比较文本代理、原生向量和融合策略。
 
-        results = self.collection.query(
-            query_embeddings=[query_embedding],
-            n_results=k,
-            where={"type": "video"}
-        )
+### 生成与引用层
 
-        return results
-```
+- 答案是否由选中片段支持。
+- 图片区域或时间码是否覆盖实际证据。
+- 模态之间冲突时是否说明不确定性。
+- 没有视觉或声音证据时是否拒答。
 
-## 音频模态处理
+## 安全、隐私与版权
 
-### 音频加载与转录
+- OCR 和 ASR 可能提取屏幕、身份证、电话号码和私密对话。
+- 图像、音频和视频中可以隐藏间接提示注入。
+- 人脸、声纹和位置数据可能属于敏感个人信息。
+- 检索结果必须继承原始资产 ACL 和许可范围。
+- 生成缩略图、转录和 Embedding 也要遵守保留与删除策略。
+- 对外展示片段前应确认版权与最小披露原则。
 
-```python
-import speech_recognition as sr
-from pydub import AudioSegment
+不要假设“只保存向量”就不涉及隐私或重识别风险。
 
-class AudioProcessor:
-    def __init__(self):
-        self.recognizer = sr.Recognizer()
+## 常见误区
 
-    def load_audio(self, audio_path):
-        audio = AudioSegment.from_file(audio_path)
+- 把多模态 RAG 简化为“给图片生成 Caption”。
+- 为视频固定间隔抽帧却不评估短镜头漏检。
+- 把不同模态的原始分数直接加权相加。
+- 只返回整个视频文件，不提供时间码。
+- 使用 ASR 文本回答“谁说的”，却没有 Speaker 证据。
+- 把 OCR/ASR 错误归因于 LLM。
+- 忽略多模态内容中的间接提示注入和隐私。
 
-        return {
-            "duration": len(audio) / 1000,
-            "channels": audio.channels,
-            "sample_rate": audio.frame_rate,
-            "path": audio_path
-        }
+## 自检题
 
-    def transcribe_audio(self, audio_path, language="zh-CN"):
-        with sr.AudioFile(audio_path) as source:
-            audio_data = self.recognizer.record(source)
+<details>
+<summary>1. “用文字找截图中的按钮”为什么通常同时需要 OCR 与视觉检索？</summary>
 
-        text = self.recognizer.recognize_google(audio_data, language=language)
+OCR 擅长按钮文字，视觉检索能利用布局、图标和界面语义。并行召回再融合通常比单一路径覆盖更全面。
 
-        return text
+</details>
 
-    def transcribe_with_timestamps(self, audio_path, chunk_duration=30):
-        audio = AudioSegment.from_file(audio_path)
-        total_duration = len(audio) / 1000
+<details>
+<summary>2. 视频检索命中正确文件，但时间码偏差一分钟，引用是否合格？</summary>
 
-        transcriptions = []
+通常不合格。文件级命中不能替代片段级定位，应单独评估时间码是否覆盖真实证据。
 
-        current_time = 0
-        while current_time < total_duration:
-            end_time = min(current_time + chunk_duration, total_duration)
+</details>
 
-            chunk = audio[current_time * 1000:end_time * 1000]
-            chunk_path = f"/tmp/audio_chunk_{current_time}.wav"
-            chunk.export(chunk_path, format="wav")
+<details>
+<summary>3. 为什么图片相似度与 ASR 文本相似度不能直接相加？</summary>
 
-            with sr.AudioFile(chunk_path) as source:
-                audio_data = self.recognizer.record(source)
+它们来自不同模型和数值分布，没有共享概率尺度。应使用名次融合、校准或学习排序。
 
-            try:
-                text = self.recognizer.recognize_google(audio_data)
-                transcriptions.append({
-                    "start": current_time,
-                    "end": end_time,
-                    "text": text
-                })
-            except:
-                transcriptions.append({
-                    "start": current_time,
-                    "end": end_time,
-                    "text": ""
-                })
+</details>
 
-            current_time = end_time
+## 总结与下一篇
 
-        return transcriptions
+多模态 RAG 的难点不是支持更多文件扩展名，而是让每个派生片段可定位、可授权、可融合、可评测。文本代理和原生向量各有盲区，必须用分模态黄金集验证。
 
-processor = AudioProcessor()
-audio_info = processor.load_audio("audio.mp3")
-transcriptions = processor.transcribe_with_timestamps("audio.mp3")
-```
+下一篇将把整个系列带入生产环境：索引控制面、在线服务、可观测性、安全、回滚和恢复演练。
 
-### Whisper 语音转文本
+## 对应资料来源
 
-```python
-import whisper
+- [CLIP: Learning Transferable Visual Models From Natural Language Supervision](https://arxiv.org/abs/2103.00020)
+- [Whisper: Robust Speech Recognition via Large-Scale Weak Supervision](https://arxiv.org/abs/2212.04356)
+- [NIST AI RMF: Generative Artificial Intelligence Profile](https://www.nist.gov/publications/artificial-intelligence-risk-management-framework-generative-artificial-intelligence)
+- [OWASP Prompt Injection Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html)
 
-class WhisperTranscriber:
-    def __init__(self, model_name="base"):
-        self.model = whisper.load_model(model_name)
-
-    def transcribe(self, audio_path, language=None):
-        result = self.model.transcribe(
-            audio_path,
-            language=language,
-            fp16=False
-        )
-
-        return {
-            "text": result["text"],
-            "language": result["language"],
-            "segments": result["segments"]
-        }
-
-    def transcribe_with_timestamps(self, audio_path, language=None):
-        result = self.model.transcribe(
-            audio_path,
-            language=language,
-            word_timestamps=True,
-            fp16=False
-        )
-
-        segments = []
-        for segment in result["segments"]:
-            words = []
-            for word in segment.get("words", []):
-                words.append({
-                    "word": word["word"],
-                    "start": word["start"],
-                    "end": word["end"]
-                })
-
-            segments.append({
-                "start": segment["start"],
-                "end": segment["end"],
-                "text": segment["text"],
-                "words": words
-            })
-
-        return segments
-
-transcriber = WhisperTranscriber(model_name="base")
-result = transcriber.transcribe_with_timestamps("speech.wav")
-
-print(f"转录结果: {result['text']}")
-for segment in result["segments"][:3]:
-    print(f"[{segment['start']:.1f}s - {segment['end']:.1f}s]: {segment['text']}")
-```
-
-### 音频特征提取与嵌入
-
-```python
-import librosa
-import numpy as np
-import torch
-from transformers import Wav2Vec2Model, Wav2Vec2Processor
-
-class AudioEmbedder:
-    def __init__(self, model_name="facebook/wav2vec2-base-960h"):
-        self.processor = Wav2Vec2Processor.from_pretrained(model_name)
-        self.model = Wav2Vec2Model.from_pretrained(model_name)
-
-    def extract_features(self, audio_path):
-        audio, sr = librosa.load(audio_path, sr=16000)
-
-        inputs = self.processor(audio, sampling_rate=16000, return_tensors="pt")
-
-        with torch.no_grad():
-            outputs = self.model(**inputs)
-
-        embeddings = outputs.last_hidden_state.mean(dim=1)
-
-        return embeddings[0].numpy()
-
-    def embed_transcription(self, text, embedding_model):
-        return embedding_model.embed_query(text)
-
-    def create_audio_document(self, audio_path, transcription, embedding_model):
-        audio_embedding = self.extract_features(audio_path)
-
-        text_embedding = self.embed_transcription(transcription, embedding_model)
-
-        combined_embedding = (audio_embedding + text_embedding) / 2
-
-        return {
-            "audio_path": audio_path,
-            "transcription": transcription,
-            "audio_embedding": audio_embedding,
-            "text_embedding": text_embedding,
-            "combined_embedding": combined_embedding
-        }
-
-# 使用示例
-# embedder = AudioEmbedder()
-# transcription_text = "示例转录文本"
-# embeddings_model = OpenAIEmbeddings(model="text-embedding-3-small")
-# audio_doc = embedder.create_audio_document("audio.wav", transcription_text, embeddings_model)
-```
-
-### 音频向量存储
-
-```python
-class AudioVectorStore:
-    def __init__(self, client, embeddings_model):
-        self.client = client
-        self.embeddings_model = embeddings_model
-        self.collection = client.create_collection("audio")
-
-    def add_audio(self, audio_doc, metadata):
-        self.collection.add(
-            embeddings=[audio_doc["combined_embedding"]],
-            documents=[audio_doc["transcription"]],
-            metadatas=[{
-                **metadata,
-                "audio_path": audio_doc["audio_path"],
-                "type": "audio"
-            }],
-            ids=[f"audio_{hash(audio_doc['audio_path'])}"]
-        )
-
-    def search_audio(self, query, k=5):
-        query_embedding = self.embeddings_model.embed_query(query)
-
-        results = self.collection.query(
-            query_embeddings=[query_embedding],
-            n_results=k
-        )
-
-        return results
-
-# 使用示例
-# import chromadb
-# client = chromadb.PersistentClient("./audio_db")
-# embeddings_model = OpenAIEmbeddings(model="text-embedding-3-small")
-# audio_store = AudioVectorStore(client, embeddings_model)
-```
-
-## 多模态检索
-
-### 跨模态检索
-
-```python
-class CrossModalRetriever:
-    def __init__(self, image_vectorstore, text_vectorstore, audio_vectorstore, image_embedder):
-        self.image_store = image_vectorstore
-        self.text_store = text_vectorstore
-        self.audio_store = audio_vectorstore
-        self.image_embedder = image_embedder
-
-    def retrieve(self, query, modalities=["text", "image", "audio"], k=5):
-        results = {"texts": [], "images": [], "audios": []}
-
-        if "text" in modalities:
-            text_results = self.text_store.search_text(query, k=k)
-            results["texts"] = text_results
-
-        if "image" in modalities:
-            image_results = self.image_store.search_images(query, k=k)
-            results["images"] = image_results
-
-        if "audio" in modalities:
-            audio_results = self.audio_store.search_audio(query, k=k)
-            results["audios"] = audio_results
-
-        return results
-
-    def image_to_text_search(self, image_path, k=5):
-        """以图搜文：使用图像向量在文本库中检索。"""
-        image_embedding = self.image_embedder.embed_image(image_path)
-        # 注意：需要 Chroma 集合直接支持按向量查询
-        results = self.text_store.text_collection.query(
-            query_embeddings=[image_embedding],
-            n_results=k
-        )
-        return results
-
-    def text_to_image_search(self, text_query, k=5):
-        """以文搜图：使用文本向量在图像库中检索。"""
-        text_embedding = self.image_embedder.embed_text(text_query)
-        results = self.image_store.image_collection.query(
-            query_embeddings=[text_embedding],
-            n_results=k
-        )
-        return results
-
-# 使用示例
-# retriever = CrossModalRetriever(image_store, text_store, audio_store, image_embedder)
-# multimodal_results = retriever.retrieve(
-#     query="日落风景",
-#     modalities=["text", "image"],
-#     k=5
-# )
-```
-
-### 多模态相似度融合
-
-```python
-class MultimodalFusion:
-    def __init__(self, weights=None):
-        self.weights = weights or {
-            "text": 0.4,
-            "image": 0.3,
-            "audio": 0.3
-        }
-
-    def fuse_scores(self, results_by_modality):
-        fused = {}
-
-        for modality, results in results_by_modality.items():
-            if not results:
-                continue
-
-            weight = self.weights.get(modality, 0)
-
-            for i, item in enumerate(results):
-                score = (1 / (1 + i)) * weight
-
-                key = item.get("id", item.get("path", i))
-
-                if key not in fused:
-                    fused[key] = {
-                        "item": item,
-                        "score": score
-                    }
-                else:
-                    fused[key]["score"] += score
-
-        sorted_results = sorted(
-            fused.values(),
-            key=lambda x: x["score"],
-            reverse=True
-        )
-
-        return [r["item"] for r in sorted_results]
-
-fusion = MultimodalFusion(weights={
-    "text": 0.5,
-    "image": 0.3,
-    "audio": 0.2
-})
-
-fused_results = fusion.fuse_scores({
-    "text": text_results,
-    "image": image_results,
-    "audio": audio_results
-})
-```
-
-## 多模态生成
-
-### 多模态上下文构建
-
-```python
-class MultimodalContextBuilder:
-    def __init__(self):
-        self.captioner = ImageCaptioner()
-        self.transcriber = WhisperTranscriber()
-
-    def build_context(self, retrieved_items):
-        context_parts = []
-
-        for item in retrieved_items:
-            modality = item.get("type", "text")
-
-            if modality == "text":
-                context_parts.append(f"[文本] {item.get('content', '')}")
-
-            elif modality == "image":
-                caption = item.get("caption", item.get("description", ""))
-                context_parts.append(f"[图像] {caption}")
-
-            elif modality == "video":
-                description = item.get("description", "")
-                context_parts.append(f"[视频] {description}")
-
-            elif modality == "audio":
-                transcription = item.get("transcription", item.get("content", ""))
-                context_parts.append(f"[音频] {transcription}")
-
-        return "\n\n".join(context_parts)
-
-context_builder = MultimodalContextBuilder()
-context = context_builder.build_context(retrieved_items)
-```
-
-### 多模态回答生成
-
-```python
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import PromptTemplate
-
-class MultimodalGenerator:
-    def __init__(self, model="gpt-4o"):
-        self.llm = ChatOpenAI(model=model)
-
-        self.prompt = PromptTemplate.from_template(
-            """你是一个多模态助手，可以理解和回答关于文本、图像、视频和音频的问题。
-
-基于以下多模态上下文信息回答用户的问题。
-
-多模态上下文：
-{context}
-
-用户问题：{question}
-
-请根据上下文提供准确的回答。如果涉及特定媒体，请明确指出。
-"""
-        )
-
-        self.chain = self.prompt | self.llm
-
-    def generate(self, context, question):
-        return self.chain.invoke({
-            "context": context,
-            "question": question
-        })
-
-    def generate_with_media_refs(self, context, question):
-        response = self.generate(context, question)
-
-        media_refs = []
-
-        if "[图像]" in context:
-            media_refs.append("images")
-
-        if "[视频]" in context:
-            media_refs.append("videos")
-
-        if "[音频]" in context:
-            media_refs.append("audios")
-
-        return {
-            "answer": response.content,
-            "referenced_media": media_refs
-        }
-
-generator = MultimodalGenerator(model="gpt-4o")
-answer = generator.generate(context, "这张图片描述了什么场景？")
-```
-
-## 实战：构建多模态 RAG 系统
-
-```python
-import cv2
-import chromadb
-from langchain_openai import OpenAIEmbeddings
-
-class MultimodalRAGSystem:
-    """多模态 RAG 系统：整合图像、视频、音频处理与检索。"""
-
-    def __init__(self):
-        self.image_loader = ImageLoader()
-        self.video_extractor = VideoFrameExtractor()
-        self.audio_processor = AudioProcessor()
-        self.image_captioner = ImageCaptioner()
-
-        self.image_embedder = VisualEmbedder()
-        self.text_embedder = OpenAIEmbeddings(model="text-embedding-3-small")
-        self.audio_embedder = AudioEmbedder()
-        self.transcriber = WhisperTranscriber()
-
-        # Chroma 客户端
-        self.client = chromadb.PersistentClient("./multimodal_db")
-
-        # 各模态向量库
-        self.text_vectorstore = MultimodalVectorStore("./text_db")
-        self.image_vectorstore = MultimodalVectorStore("./image_db")
-        self.video_vectorstore = VideoVectorStore(self.client, self.text_embedder)
-        self.audio_vectorstore = AudioVectorStore(self.client, self.text_embedder)
-
-        # 跨模态检索器
-        self.retriever = CrossModalRetriever(
-            image_vectorstore=self.image_vectorstore,
-            text_vectorstore=self.text_vectorstore,
-            audio_vectorstore=self.audio_vectorstore,
-            image_embedder=self.image_embedder
-        )
-
-        self.context_builder = MultimodalContextBuilder()
-        self.generator = MultimodalGenerator()
-
-    def process_image(self, image_path):
-        caption = self.image_captioner.generate_caption(image_path)
-        embedding = self.image_embedder.embed_image(image_path)
-        self.image_vectorstore.add_images(
-            [image_path], [caption], [embedding], [{"source": image_path}]
-        )
-
-    def process_video(self, video_path):
-        frames = self.video_extractor.extract_keyframes(video_path, num_keyframes=20)
-
-        captions = []
-        for i, frame in enumerate(frames):
-            frame_path = f"/tmp/frame_{i}.jpg"
-            cv2.imwrite(frame_path, frame)
-            caption = self.image_captioner.generate_caption(frame_path)
-            captions.append(caption)
-
-        self.video_vectorstore.add_video(
-            video_path,
-            " ".join(captions),
-            {i: cap for i, cap in enumerate(captions)},
-            {"source": video_path}
-        )
-
-    def process_audio(self, audio_path):
-        transcription = self.transcriber.transcribe(audio_path)
-        audio_doc = self.audio_embedder.create_audio_document(
-            audio_path,
-            transcription["text"],
-            self.text_embedder
-        )
-        self.audio_vectorstore.add_audio(
-            audio_doc, {"source": audio_path}
-        )
-
-    def query(self, question, modalities=None):
-        modalities = modalities or ["text", "image", "audio"]
-        retrieved = self.retriever.retrieve(question, modalities=modalities, k=5)
-        context = self.context_builder.build_context(
-            self.flatten_results(retrieved)
-        )
-        answer = self.generator.generate(context, question)
-        return {"answer": answer, "sources": retrieved}
-
-    def flatten_results(self, results):
-        all_items = []
-        for modality in ["texts", "images", "audios"]:
-            if modality in results:
-                items = results[modality]
-                if items and "documents" in items:
-                    docs = items["documents"]
-                    metas = items.get("metadatas", [{}] * len(docs))
-                    for i, doc in enumerate(docs):
-                        all_items.append({
-                            "type": modality[:-1] if modality.endswith("s") else modality,
-                            "content": doc,
-                            "metadata": metas[i] if i < len(metas) else {}
-                        })
-        return all_items
-
-# 使用示例
-# system = MultimodalRAGSystem()
-# system.process_image("photo.jpg")
-# system.process_video("video.mp4")
-# system.process_audio("speech.wav")
-# result = system.query("描述这个视频的内容", modalities=["video", "text"])
-# print(result["answer"])
-```
-
-## 最佳实践
-
-### 多模态处理选择指南
-
-| 场景 | 推荐方案 | 说明 |
-|------|---------|------|
-| **图像为主** | CLIP + BLIP | 视觉理解能力强 |
-| **视频为主** | VideoCLIP + 帧提取 | 兼顾时序信息 |
-| **音频为主** | Whisper + Wav2Vec2 | 高质量转录 |
-| **混合场景** | 统一嵌入 + 融合 | 灵活组合 |
-
-### 性能优化
-
-```python
-class MultimodalOptimizer:
-    def __init__(self):
-        self.cache = {}
-
-    def parallel_process(self, items, process_fn, max_workers=4):
-        from concurrent.futures import ThreadPoolExecutor
-
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            results = list(executor.map(process_fn, items))
-
-        return results
-
-    def cache_embeddings(self, key, embedding):
-        self.cache[key] = embedding
-
-    def get_cached(self, key):
-        return self.cache.get(key)
-
-optimizer = MultimodalOptimizer()
-```
-
-## 总结
-
-| 模态 | 处理工具 | 嵌入模型 |
-|------|---------|---------|
-| **图像** | PIL, OpenCV | CLIP, BLIP |
-| **视频** | OpenCV, FFmpeg | VideoCLIP |
-| **音频** | Librosa, Whisper | Wav2Vec2 |
-| **文本** | LangChain | OpenAI Embeddings |
-
-多模态 RAG 扩展了传统文本 RAG 的能力，可以处理更加丰富的多媒体信息。
-
-## 后续内容
-
-本系列后续将深入讲解：
-- RAG 与 Agents 结合
-- 生产级 RAG 最佳实践
-- RAG 安全与隐私保护
+> 验证说明：代码只表达跨模态数据与融合协议；具体 OCR、ASR、视觉和多模态模型必须根据数据、语言、许可和部署环境固定版本并独立评测。

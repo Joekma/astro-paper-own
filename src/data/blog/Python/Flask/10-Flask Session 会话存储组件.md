@@ -2,7 +2,7 @@
 title: Flask Session 会话存储组件
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: flask-8-session
 description: '深入讲解Flask-Session组件的多种会话存储方式，包括Redis、Memcached、文件系统、MongoDB等配置与使用方法，以及与内置session的对比。'
 tags:
@@ -31,14 +31,16 @@ flask-session是flask框架的session组件，由于原来flask内置session使�
 
 **安装：**
 
+<!-- snippet: id=flask-8-session-01 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
-pip3 install flask-session
+python -m pip install flask-session
 ```
 
 ## 存储方式
 
 ### redis
 
+<!-- snippet: id=flask-8-session-02 mode=compile python=3.12-3.14 deps=Flask-Session==0.8.0,Flask==3.1.3 -->
 ```python
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
@@ -69,6 +71,7 @@ if __name__ == '__main__':
 
 ### memcached
 
+<!-- snippet: id=flask-8-session-03 mode=compile python=3.12-3.14 deps=Flask-Session==0.8.0,Flask==3.1.3 -->
 ```python
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
@@ -100,6 +103,7 @@ if __name__ == '__main__':
 
 ### filesystem
 
+<!-- snippet: id=flask-8-session-04 mode=compile python=3.12-3.14 deps=Flask-Session==0.8.0,Flask==3.1.3 -->
 ```python
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
@@ -134,6 +138,7 @@ if __name__ == '__main__':
 
 ### mongodb
 
+<!-- snippet: id=flask-8-session-05 mode=compile python=3.12-3.14 deps=Flask-Session==0.8.0,Flask==3.1.3 -->
 ```python
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
@@ -170,6 +175,7 @@ if __name__ == '__main__':
 
 ### mongodb操作简单示例
 
+<!-- snippet: id=flask-8-session-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-

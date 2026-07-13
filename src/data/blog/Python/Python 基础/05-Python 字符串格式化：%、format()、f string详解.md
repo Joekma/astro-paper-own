@@ -2,7 +2,7 @@
 title: Python 字符串格式化：%、format()、f string详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-03T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-string-formatting-guide
 description: '深入讲解Python的三种字符串格式化方式：传统%格式化、format()方法和f-string，详解对齐、补位、精度控制、进制转换等实战技巧。'
 tags:
@@ -32,6 +32,7 @@ Python 中常见的格式化方式主要有三种：
 
 如果只是简单拼接字符串，往往会写出可读性较差的代码：
 
+<!-- snippet: id=python-string-formatting-guide-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 name = "Jack"
 age = 18
@@ -56,6 +57,7 @@ print("my name is " + name + ", age is " + str(age))
 - `%d`：十进制
 - `%x`：十六进制
 
+<!-- snippet: id=python-string-formatting-guide-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print('%o' % 20)   # 24
 print('%d' % 20)   # 20
@@ -71,6 +73,7 @@ print('%x' % 20)   # 14
 - `%e`：科学计数法
 - `%g`：在普通表示法与科学计数法之间自动切换
 
+<!-- snippet: id=python-string-formatting-guide-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print('%f' % 1.11)      # 默认保留 6 位小数
 print('%.1f' % 1.11)    # 保留 1 位小数
@@ -90,6 +93,7 @@ print('%.2g' % 1111.1111)
 - `%-10s`：左对齐，占 10 位
 - `%.2s`：截取前 2 个字符
 
+<!-- snippet: id=python-string-formatting-guide-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print('%s' % 'hello world')
 print('%20s' % 'hello world')
@@ -141,6 +145,7 @@ print('%-10.2s' % 'hello world')
 
 `format()` 支持按位置、编号和关键字进行匹配。
 
+<!-- snippet: id=python-string-formatting-guide-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print('{} {}'.format('hello', 'world'))
 print('{0} {1}'.format('hello', 'world'))
@@ -151,6 +156,7 @@ print('{a} {tom} {a}'.format(tom='hello', a='world'))
 
 ### 通过位置匹配对象
 
+<!-- snippet: id=python-string-formatting-guide-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print('{0}, {1}, {2}'.format('a', 'b', 'c'))
 print('{}, {}, {}'.format('a', 'b', 'c'))
@@ -161,6 +167,7 @@ print('{0}{1}{0}'.format('abra', 'cad'))
 
 ### 通过名字匹配对象
 
+<!-- snippet: id=python-string-formatting-guide-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print('Coordinates: {latitude}, {longitude}'.format(
     latitude='37.24N',
@@ -173,6 +180,7 @@ print('Coordinates: {latitude}, {longitude}'.format(**coord))
 
 ### 通过对象属性匹配
 
+<!-- snippet: id=python-string-formatting-guide-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 c = 3 - 5j
 print(
@@ -193,6 +201,7 @@ print(Point(4, 2))
 
 ### 通过下标或 key 取值
 
+<!-- snippet: id=python-string-formatting-guide-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 coord = (3, 5)
 print('X: {0[0]}; Y: {0[1]}'.format(coord))
@@ -203,6 +212,7 @@ print('X: {0[a]}; Y: {0[b]}'.format(a))
 
 ### 常见格式转换
 
+<!-- snippet: id=python-string-formatting-guide-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print('{0:b}'.format(3))
 print('{:c}'.format(20))
@@ -231,6 +241,7 @@ print('{:%}'.format(20))
 
 ### 进制转换
 
+<!-- snippet: id=python-string-formatting-guide-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print("int: {0:d}; hex: {0:x}; oct: {0:o}; bin: {0:b}".format(42))
 print("int: {0:d}; hex: {0:#x}; oct: {0:#o}; bin: {0:#b}".format(42))
@@ -245,6 +256,7 @@ print("int: {0:d}; hex: {0:#x}; oct: {0:#o}; bin: {0:#b}".format(42))
 - `^`：居中对齐
 - `=`：数字补位时常用
 
+<!-- snippet: id=python-string-formatting-guide-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print('{} and {}'.format('hello', 'world'))
 print('{:10s} and {:>10s}'.format('hello', 'world'))
@@ -261,6 +273,7 @@ print('{:0=30}'.format(11))
 
 ### 正负号显示
 
+<!-- snippet: id=python-string-formatting-guide-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print('{:+f}; {:+f}'.format(3.14, -3.14))
 print('{: f}; {: f}'.format(3.14, -3.14))
@@ -269,6 +282,7 @@ print('{:-f}; {:-f}'.format(3.14, -3.14))
 
 ### 百分数输出
 
+<!-- snippet: id=python-string-formatting-guide-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 points = 19
 total = 22
@@ -277,6 +291,7 @@ print('Correct answers: {:.2%}'.format(points / total))
 
 ### 时间格式化
 
+<!-- snippet: id=python-string-formatting-guide-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import datetime
 
@@ -286,12 +301,14 @@ print('{:%Y-%m-%d %H:%M:%S}'.format(d))
 
 ### 千分位分隔
 
+<!-- snippet: id=python-string-formatting-guide-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print('{:,}'.format(1234567890))
 ```
 
 ### 占位符嵌套
 
+<!-- snippet: id=python-string-formatting-guide-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 for align, text in zip('<^>', ['left', 'center', 'right']):
     print('{0:{fill}{align}16}'.format(text, fill=align, align=align))
@@ -314,6 +331,7 @@ for num in range(5, 12):
 - `!r`：调用 `repr()`
 - `!a`：调用 `ascii()`
 
+<!-- snippet: id=python-string-formatting-guide-18 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print("repr() shows quotes: {!r}; str() doesn't: {!s}".format('test1', 'test2'))
 ```
@@ -343,6 +361,7 @@ print("repr() shows quotes: {!r}; str() doesn't: {!s}".format('test1', 'test2'))
 
 f-string 是现代 Python 中最推荐的字符串格式化方式，语法简洁、可读性强。
 
+<!-- snippet: id=python-string-formatting-guide-19 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 name = "小明"
 age = 25

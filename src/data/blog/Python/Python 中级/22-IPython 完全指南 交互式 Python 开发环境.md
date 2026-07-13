@@ -2,7 +2,7 @@
 title: IPython 完全指南   交互式 Python 开发环境
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-ipython-guide
 description: 'IPython 完全指南，涵盖交互式 Python 开发环境、魔术命令、Jupyter Notebook 等核心概念。'
 tags:
@@ -45,19 +45,21 @@ IPython 是一个增强的交互式 shell，提供了比标准 Python 解释器�
 
 ### 安装 IPython
 
+<!-- snippet: id=python-ipython-guide-01 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 使用 pip 安装
-pip install ipython
+python -m pip install ipython
 
 # 使用 conda 安装
 conda install ipython
 
 # 安装完整版（包含所有依赖）
-pip install ipython[all]
+python -m pip install ipython[all]
 ```
 
 ### 启动 IPython
 
+<!-- snippet: id=python-ipython-guide-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 启动 IPython
 ipython
@@ -68,6 +70,7 @@ ipython3
 
 ### 基本配置
 
+<!-- snippet: id=python-ipython-guide-03 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 在 IPython 中执行以下命令
 # 查看配置文件位置
@@ -96,7 +99,8 @@ ipython3
 
 ### 基本使用示例
 
-```python
+<!-- snippet: id=python-ipython-guide-04 mode=display python=3.12-3.14 deps=ipython==9.15.0 -->
+```text
 # TAB 自动补全
 import numpy as np
 np.<TAB>  # 显示所有可用属性和方法
@@ -119,6 +123,7 @@ np.*array*  # 搜索包含 array 的属性
 
 IPython 提供了便捷的输入输出引用机制，可以方便地访问之前的计算结果。
 
+<!-- snippet: id=python-ipython-guide-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 In [28]: 3+2
 Out[28]: 5
@@ -146,6 +151,7 @@ Out[31]: 5
 
 ### 历史记录管理
 
+<!-- snippet: id=python-ipython-guide-06 mode=display python=3.12-3.14 deps=stdlib -->
 ```dockerfile
 # 查看历史记录
 %history
@@ -178,19 +184,21 @@ Jupyter Notebook（原 IPython Notebook）是基于 Web 的交互式计算环境
 
 ### 安装 Jupyter
 
+<!-- snippet: id=python-ipython-guide-07 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 安装完整的 Jupyter 套件
-pip install jupyter
+python -m pip install jupyter
 
 # 使用 conda 安装
 conda install jupyter
 
 # 或者只安装 notebook
-pip install notebook
+python -m pip install notebook
 ```
 
 ### 启动 Jupyter
 
+<!-- snippet: id=python-ipython-guide-08 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 启动 Jupyter Notebook
 jupyter notebook
@@ -278,6 +286,7 @@ jupyter notebook --no-browser
 ### 1. 配置优化
 
 #### 创建配置文件
+<!-- snippet: id=python-ipython-guide-09 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 生成默认配置文件
 ipython profile create
@@ -287,6 +296,7 @@ ipython profile edit
 ```
 
 #### 常用配置选项
+<!-- snippet: id=python-ipython-guide-10 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # ~/.ipython/profile_default/ipython_config.py
 c = get_config()
@@ -307,14 +317,16 @@ c.HistoryManager.hist_file = '~/.ipython/profile_default/history.sqlite'
 ### 2. 扩展插件
 
 #### 安装常用扩展
-```
+<!-- snippet: id=python-ipython-guide-11 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 # 安装IPython扩展
-pip install ipython-genutils
-pip install ipyparallel
-pip install ipython-widgets
+python -m pip install ipython-genutils
+python -m pip install ipyparallel
+python -m pip install ipython-widgets
 ```
 
 #### 加载扩展
+<!-- snippet: id=python-ipython-guide-12 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 在IPython中加载扩展
 %load_ext autoreload
@@ -325,7 +337,8 @@ pip install ipython-widgets
 ### 3. 数据科学工作流
 
 #### 数据分析示例
-```python
+<!-- snippet: id=python-ipython-guide-13 mode=display python=3.12-3.14 deps=ipython==9.15.0 -->
+```text
 # 导入常用库
 import numpy as np
 import pandas as pd
@@ -334,7 +347,7 @@ import matplotlib.pyplot as plt
 # 设置显示选项
 %matplotlib inline
 pd.set_option('display.max_columns', 50)
-p.set_printoptions(precision=4, suppress=True)
+np.set_printoptions(precision=4, suppress=True)
 
 # 快速数据探索
 %whos  # 查看当前变量
@@ -344,6 +357,7 @@ p.set_printoptions(precision=4, suppress=True)
 ### 4. 性能优化技巧
 
 #### 使用魔法命令优化
+<!-- snippet: id=python-ipython-guide-14 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 测试代码性能
 %timeit [x**2 for x in range(1000)]

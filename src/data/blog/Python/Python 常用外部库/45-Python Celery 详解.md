@@ -3,7 +3,7 @@ title: Python Celery 详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: celery
-modDatetime: 2026-04-22T00:00:00Z
+modDatetime: 2026-07-11T00:00:00.000+08:00
 featured: false
 draft: false
 tags:
@@ -36,24 +36,9 @@ Worker是Celery提供的任务执行的单元，worker并发的运行在分布�
 
 Task result store用来存储Worker执行的任务的结果，Celery支持以不同方式存储任务的结果，包括AMQP、Redis等。
 
-## 版本支持情况
+## 版本基线
 
-**现代 Celery 运行环境：**
-
-- 建议使用 Python 3.10+ 的受支持版本
-- 新项目优先选择 Celery 5.x 及更新版本
-
-Celery 4.x 和 Python 2 相关组合只适合维护历史项目，新项目不建议再选择。
-
-**如果你运行的是较旧的Python版本，需要运行较旧的Celery版本：**
-
-| Python版本 | Celery版本 |
-|-----------|------------|
-| Python 2.6 | Celery series 3.1 or earlier |
-| Python 2.5 | Celery series 3.0 or earlier |
-| Python 2.4 | Celery series 2.2 or earlier |
-
-> **注意**：Celery是一个资金最少的项目，所以我们不支持Microsoft Windows。请不要打开与该平台相关的任何问题。
+本文锁定 Celery 5.6.3，并以 Python 3.12–3.14 为验证范围。Broker、结果后端及其客户端还需分别锁定版本；升级时先检查任务序列化、重试语义和 worker 滚动发布兼容性。
 
 ## 使用场景
 
@@ -67,12 +52,14 @@ Celery 4.x 和 Python 2 相关组合只适合维护历史项目，新项目不�
 
 ## Celery的安装配置
 
+<!-- snippet: id=celery-01 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
-pip install celery
+python -m pip install celery
 ```
 
 消息中间件：RabbitMQ/Redis
 
+<!-- snippet: id=celery-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 app = Celery('任务名', backend='xxx', broker='xxx')
 ```
@@ -85,6 +72,7 @@ app = Celery('任务名', backend='xxx', broker='xxx')
 
 #### 创建py文件：celery_app_task.py
 
+<!-- snippet: id=celery-03 mode=compile python=3.12-3.14 deps=celery==5.6.3 -->
 ```python
 import celery
 import time
@@ -101,6 +89,7 @@ def add(x,y):
 
 #### 创建py文件：add_task.py, 添加任务
 
+<!-- snippet: id=celery-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from celery_app_task import add
 
@@ -114,6 +103,7 @@ print(result.id)
 
 > 注：Windows下：`celery worker -A celery_app_task -l info -P eventlet`
 
+<!-- snippet: id=celery-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from celery_app_task import cel
 
@@ -124,6 +114,7 @@ if __name__ == '__main__':
 
 #### 创建py文件：result.py，查看任务执行结果
 
+<!-- snippet: id=celery-06 mode=compile python=3.12-3.14 deps=celery==5.6.3 -->
 ```python
 from celery.result import AsyncResult
 from celery_app_task import cel
@@ -154,7 +145,8 @@ elif task_result.status == 'STARTED':
 
 #### 项目结构
 
-```
+<!-- snippet: id=celery-07 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 pro_cel
 ├── celery_task        # celery相关文件夹
 │   ├── celery.py       # celery连接和配置相关文件，必须叫这个名字
@@ -166,6 +158,7 @@ pro_cel
 
 #### celery.py
 
+<!-- snippet: id=celery-08 mode=compile python=3.12-3.14 deps=celery==5.6.3 -->
 ```python
 from celery import Celery
 
@@ -186,6 +179,7 @@ cel.conf.enable_utc = False
 
 #### tasks1.py
 
+<!-- snippet: id=celery-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import time
 from celery_task.celery import cel
@@ -198,6 +192,7 @@ def test_celery(res):
 
 #### tasks2.py
 
+<!-- snippet: id=celery-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import time
 from celery_task.celery import cel
@@ -210,6 +205,7 @@ def test_celery2(res):
 
 #### check_result.py
 
+<!-- snippet: id=celery-11 mode=compile python=3.12-3.14 deps=celery==5.6.3 -->
 ```python
 from celery.result import AsyncResult
 from celery_task.celery import cel
@@ -234,6 +230,7 @@ elif task_result.status == 'STARTED':
 
 #### send_task.py
 
+<!-- snippet: id=celery-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from celery_task.tasks1 import test_celery
 from celery_task.tasks2 import test_celery2
@@ -255,6 +252,7 @@ print(result.id)
 
 #### add_task.py
 
+<!-- snippet: id=celery-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from celery_app_task import add
 from datetime import datetime
@@ -284,6 +282,7 @@ print(result.id)
 
 #### 多任务结构中celery.py修改如下
 
+<!-- snippet: id=celery-14 mode=compile python=3.12-3.14 deps=celery==5.6.3 -->
 ```python
 from datetime import timedelta
 from celery import Celery
@@ -331,24 +330,28 @@ cel.conf.beat_schedule = {
 
 ### 安装
 
+<!-- snippet: id=celery-15 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
-pip install celery redis
+python -m pip install celery redis
 ```
 
 如果需要在 Django Admin 中管理定时任务，再安装：
 
+<!-- snippet: id=celery-16 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
-pip install django-celery-beat
+python -m pip install django-celery-beat
 ```
 
 如果需要 Web 监控界面，再安装：
 
+<!-- snippet: id=celery-17 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
-pip install flower
+python -m pip install flower
 ```
 
 ### 项目结构
 
+<!-- snippet: id=celery-18 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
 proj/
   manage.py
@@ -363,6 +366,7 @@ proj/
 
 ### 创建 `proj/celery.py`
 
+<!-- snippet: id=celery-19 mode=compile python=3.12-3.14 deps=celery==5.6.3 -->
 ```python
 import os
 
@@ -381,6 +385,7 @@ def debug_task(self):
 
 ### 在 `proj/__init__.py` 中加载 Celery
 
+<!-- snippet: id=celery-20 mode=compile python=3.12-3.14 deps=celery==5.6.3 -->
 ```python
 from .celery import app as celery_app
 
@@ -391,6 +396,7 @@ __all__ = ("celery_app",)
 
 ### 在 `settings.py` 中配置
 
+<!-- snippet: id=celery-21 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 INSTALLED_APPS += [
     "django_celery_beat",
@@ -407,12 +413,14 @@ CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 
 如果使用 `django-celery-beat`，需要执行迁移：
 
+<!-- snippet: id=celery-22 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 python manage.py migrate django_celery_beat
 ```
 
 ### 创建任务
 
+<!-- snippet: id=celery-23 mode=compile python=3.12-3.14 deps=Django==6.0.7,celery==5.6.3 -->
 ```python
 from celery import shared_task
 from django.contrib.auth import get_user_model
@@ -433,6 +441,7 @@ def send_welcome_email(self, user_id):
 
 如果任务依赖刚写入数据库的数据，建议在事务提交后再投递，避免 worker 先执行却查不到数据。
 
+<!-- snippet: id=celery-24 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.db import transaction
 from django.http import JsonResponse
@@ -446,6 +455,7 @@ def register_done(request, user):
 
 普通异步调用可以直接使用：
 
+<!-- snippet: id=celery-25 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 result = send_welcome_email.delay(user_id=1)
 print(result.id)
@@ -455,6 +465,7 @@ print(result.id)
 
 简单固定计划可以直接写在配置中：
 
+<!-- snippet: id=celery-26 mode=compile python=3.12-3.14 deps=celery==5.6.3 -->
 ```python
 from celery.schedules import crontab
 
@@ -471,6 +482,7 @@ CELERY_BEAT_SCHEDULE = {
 
 ### 启动命令
 
+<!-- snippet: id=celery-27 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 celery -A proj worker -l INFO
 celery -A proj beat -l INFO

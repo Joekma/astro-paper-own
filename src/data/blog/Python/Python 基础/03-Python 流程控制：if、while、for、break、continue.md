@@ -2,7 +2,7 @@
 title: Python 流程控制：if、while、for、break、continue
 author: Joekma
 pubDatetime: 2018-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-03T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-control-flow-if-while-for
 description: '深入理解Python的流程控制语句：条件判断if、循环while和for、break和continue控制关键字，包含大量实战示例。'
 tags:
@@ -34,6 +34,7 @@ language: zh-CN
 
 #### 语法 1：单分支
 
+<!-- snippet: id=python-control-flow-if-while-for-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 if 条件1:
     code1
@@ -43,6 +44,7 @@ if 条件1:
 
 **示例**：
 
+<!-- snippet: id=python-control-flow-if-while-for-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 age = 18
 if age != 18:
@@ -53,6 +55,7 @@ if age != 18:
 
 #### 语法 2：双分支
 
+<!-- snippet: id=python-control-flow-if-while-for-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 if 条件:
     code1
@@ -65,6 +68,7 @@ else:
 
 **示例**：
 
+<!-- snippet: id=python-control-flow-if-while-for-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 age = 18
 sex = 'male'
@@ -80,6 +84,7 @@ else:
 
 #### 语法 3：多分支（多个 if）
 
+<!-- snippet: id=python-control-flow-if-while-for-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 if 条件1:
     code1
@@ -91,6 +96,7 @@ if 条件2:
 
 **示例**：
 
+<!-- snippet: id=python-control-flow-if-while-for-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 a = 88
 if a >= 90:
@@ -105,6 +111,7 @@ else:
 
 #### 语法 4：多分支（if-elif-else）
 
+<!-- snippet: id=python-control-flow-if-while-for-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 if 条件1:
     子代码块1
@@ -120,6 +127,7 @@ else:
 
 **示例**：
 
+<!-- snippet: id=python-control-flow-if-while-for-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 a = 88
 if a >= 90:
@@ -152,6 +160,7 @@ else:
 
 `while` 循环又称为条件循环，循环的次数取决于条件。
 
+<!-- snippet: id=python-control-flow-if-while-for-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 while 条件:
     子代码1
@@ -161,6 +170,7 @@ while 条件:
 
 **示例**：
 
+<!-- snippet: id=python-control-flow-if-while-for-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print('start....')
 while True:
@@ -177,6 +187,7 @@ print('end...')
 
 #### 方式一：操作条件
 
+<!-- snippet: id=python-control-flow-if-while-for-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print('start....')
 tag = True
@@ -196,6 +207,7 @@ print('end...')
 
 `break` 用于强行终止本层循环。
 
+<!-- snippet: id=python-control-flow-if-while-for-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 count = 1
 while True:
@@ -207,6 +219,7 @@ while True:
 
 **示例**：
 
+<!-- snippet: id=python-control-flow-if-while-for-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print('start....')
 while True:
@@ -225,6 +238,7 @@ print('end...')
 
 **方式一**：计数器方式
 
+<!-- snippet: id=python-control-flow-if-while-for-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print('start....')
 count = 0
@@ -242,6 +256,7 @@ print('end...')
 
 **方式二**：使用 break
 
+<!-- snippet: id=python-control-flow-if-while-for-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print('start....')
 count = 0
@@ -264,6 +279,7 @@ print('end...')
 
 `continue` 代表结束本次循环，直接进入下一次。
 
+<!-- snippet: id=python-control-flow-if-while-for-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 count = 1
 while count < 6:
@@ -276,6 +292,7 @@ while count < 6:
 
 > **注意**：不应该将 continue 作为循环体最后一步执行的代码。
 
+<!-- snippet: id=python-control-flow-if-while-for-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 while True:
     print('11111')
@@ -290,6 +307,7 @@ while True:
 
 **示例**：
 
+<!-- snippet: id=python-control-flow-if-while-for-18 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 count = 1
 while count < 6:
@@ -303,6 +321,7 @@ else:
 
 ### while 循环的嵌套
 
+<!-- snippet: id=python-control-flow-if-while-for-19 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 name_of_db = 'Mark'
 pwd_of_db = '123'
@@ -343,6 +362,7 @@ print('end...')
 
 使用 `tag` 控制所有 while 循环（相当于一个 while 循环的开关）。
 
+<!-- snippet: id=python-control-flow-if-while-for-20 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 name_of_db = 'Mark'
 pwd_of_db = '123'
@@ -384,6 +404,7 @@ print('end...')
 
 ### for 循环主要用于循环取值
 
+<!-- snippet: id=python-control-flow-if-while-for-21 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 student = ['Mark', '虎老师', 'lxxdsb', 'alexdsb', 'wupeiqisb']
 
@@ -423,7 +444,8 @@ for i in range(len(student)):
 #### 打印九九乘法表
 
 **分析**：
-```
+<!-- snippet: id=python-control-flow-if-while-for-22 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 1*1=1
 1*2=2 2*2=4
 1*3=3 2*3=6 3*3=9
@@ -433,6 +455,7 @@ for i in range(len(student)):
 
 **代码实现**：
 
+<!-- snippet: id=python-control-flow-if-while-for-23 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 for i in range(1, 10):
     for j in range(1, i + 1):
@@ -443,7 +466,8 @@ for i in range(1, 10):
 #### 打印金字塔
 
 **分析**：
-```
+<!-- snippet: id=python-control-flow-if-while-for-24 mode=display python=3.12-3.14 deps=stdlib -->
+```text
         *        max_level=5, current_level=1, blank=4, *号数=1
        ***       max_level=5, current_level=2, blank=3, *号数=3
       *****      max_level=5, current_level=3, blank=2, *号数=5
@@ -457,6 +481,7 @@ for i in range(1, 10):
 
 **代码实现**：
 
+<!-- snippet: id=python-control-flow-if-while-for-25 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 max_level = 5
 for current_level in range(1, max_level + 1):

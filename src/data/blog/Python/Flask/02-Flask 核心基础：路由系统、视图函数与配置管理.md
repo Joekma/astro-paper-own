@@ -2,7 +2,7 @@
 title: Flask 核心基础：路由系统、视图函数与配置管理
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: flask-2-basics
 description: '深入讲解Flask路由系统配置、视图函数编写、请求响应处理、Session会话管理以及配置文件的各种加载方式。'
 tags:
@@ -28,6 +28,7 @@ language: zh-CN
 - `static_url_path`：静态文件的URL路径
 - `static_folder`：静态文件的目录
 
+<!-- snippet: id=flask-2-basics-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 app = Flask(__name__, template_folder='templates', static_url_path='/xxxxxx')
 ```
@@ -36,6 +37,7 @@ app = Flask(__name__, template_folder='templates', static_url_path='/xxxxxx')
 
 ### 两种添加路由的方式
 
+<!-- snippet: id=flask-2-basics-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 方式一：
 @app.route('/xxxx')  # @decorator
@@ -59,6 +61,7 @@ app.add_url_rule('/xxx', "n1", index)  # n1是别名
 - 视图函数装饰器：`@wrapper`
 - 其他装饰器：如`@login_required`、`@admin_required`等
 
+<!-- snippet: id=flask-2-basics-03 mode=compile python=3.12-3.14 deps=Flask==3.1.3 -->
 ```python
 from flask import Flask, render_template, request, redirect, session
 app = Flask(__name__)
@@ -118,6 +121,7 @@ if __name__ == '__main__':
 
 Flask中的配置文件是一个flask.config.Config对象（继承字典），默认配置为：
 
+<!-- snippet: id=flask-2-basics-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 {
     'DEBUG': get_debug_flag(default=False),  # 是否开启Debug模式
@@ -155,6 +159,7 @@ Flask中的配置文件是一个flask.config.Config对象（继承字典），�
 
 **方式一：**
 
+<!-- snippet: id=flask-2-basics-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 app.config['DEBUG'] = True
 # 由于Config对象本质上是字典，所以还可以使用app.config.update(...)
@@ -162,6 +167,7 @@ app.config['DEBUG'] = True
 
 **方式二：**
 
+<!-- snippet: id=flask-2-basics-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 app.config.from_pyfile("python文件名称")
 # 如：settings.py中定义DEBUG = True，然后app.config.from_pyfile("settings.py")
@@ -169,6 +175,7 @@ app.config.from_pyfile("python文件名称")
 
 **方式三：**
 
+<!-- snippet: id=flask-2-basics-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 app.config.from_envvar("环境变量名称")
 # 环境变量的值为python文件名称，内部调用from_pyfile方法
@@ -176,6 +183,7 @@ app.config.from_envvar("环境变量名称")
 
 **方式四：**
 
+<!-- snippet: id=flask-2-basics-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 app.config.from_json("json文件名称")
 # JSON文件名称，必须是json格式，因为内部会执行json.loads
@@ -183,6 +191,7 @@ app.config.from_json("json文件名称")
 
 **方式五：**
 
+<!-- snippet: id=flask-2-basics-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 app.config.from_mapping({'DEBUG': True})
 # 字典格式
@@ -190,6 +199,7 @@ app.config.from_mapping({'DEBUG': True})
 
 **方式六：**
 
+<!-- snippet: id=flask-2-basics-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 app.config.from_object("python类或类的路径")
 # app.config.from_object('pro_flask.settings.TestingConfig')
@@ -197,6 +207,7 @@ app.config.from_object("python类或类的路径")
 
 settings.py示例：
 
+<!-- snippet: id=flask-2-basics-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Config(object):
     DEBUG = False
@@ -219,6 +230,7 @@ class TestingConfig(Config):
 
 ### 可传入参数
 
+<!-- snippet: id=flask-2-basics-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 @app.route('/user/<username>')   # 常用的，不加参数的时候默认是字符串形式的
 @app.route('/post/<int:post_id>')  # 常用的，指定int，说明是整型的
@@ -231,6 +243,7 @@ def route_example(**kwargs):
 
 ### 常用路由系统有以上五种，所有的路由系统都是基于以下对应关系来处理
 
+<!-- snippet: id=flask-2-basics-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 DEFAULT_CONVERTERS = {
     'default': UnicodeConverter,
@@ -249,6 +262,7 @@ DEFAULT_CONVERTERS = {
 
 **反向解析**需要导入：
 
+<!-- snippet: id=flask-2-basics-14 mode=compile python=3.12-3.14 deps=Flask==3.1.3 -->
 ```python
 from flask import Flask, url_for
 

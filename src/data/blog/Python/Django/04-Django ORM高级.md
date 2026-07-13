@@ -2,12 +2,12 @@
 title: Django ORM高级
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-04T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: django-orm-advanced
 featured: false
 draft: false
 series: django
-seriesOrder: 5
+seriesOrder: 4
 tags:
   - Python
   - Django
@@ -26,6 +26,7 @@ description: 'Django ORM高级特性，包括QuerySet缓存、关联查询、性
 
 QuerySet 是惰性的，创建查询集不会立即访问数据库：
 
+<!-- snippet: id=django-orm-advanced-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 queryset = Book.objects.all()  # 不访问数据库
 print(queryset)                # 访问数据库
@@ -33,6 +34,7 @@ print(queryset)                # 访问数据库
 
 ### 可切片
 
+<!-- snippet: id=django-orm-advanced-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 Book.objects.all()[:5]     # LIMIT 5
 Book.objects.all()[5:10]   # OFFSET 5 LIMIT 5
@@ -42,6 +44,7 @@ Book.objects.all()[5:10]   # OFFSET 5 LIMIT 5
 
 每个 QuerySet 都包含缓存，第一次求值时查询数据库并缓存结果：
 
+<!-- snippet: id=django-orm-advanced-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 错误：两次查询
 print([book.title for book in Book.objects.all()])
@@ -55,6 +58,7 @@ print([book.price for book in books])  # 复用缓存
 
 ### exists和count
 
+<!-- snippet: id=django-orm-advanced-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 检查是否存在（不加载所有数据）
 if Book.objects.filter(title="Python").exists():
@@ -70,6 +74,7 @@ count = Book.objects.count()
 
 用于一对一和多对一关系，预加载关联数据，减少查询次数：
 
+<!-- snippet: id=django-orm-advanced-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 无select_related：N+1问题
 books = Book.objects.all()
@@ -86,6 +91,7 @@ for book in books:
 
 用于多对多和反向外键，预加载关联数据：
 
+<!-- snippet: id=django-orm-advanced-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 无prefetch_related：N+1问题
 books = Book.objects.all()
@@ -104,6 +110,7 @@ for book in books:
 
 聚合查询，为每个对象添加注解：
 
+<!-- snippet: id=django-orm-advanced-07 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.db.models import Count
 
@@ -117,6 +124,7 @@ for author in authors:
 
 ### 选择合适字段
 
+<!-- snippet: id=django-orm-advanced-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 使用notull=False而非null=True
 name = models.CharField(max_length=100, null=False)
@@ -127,6 +135,7 @@ title = models.CharField(max_length=200)
 
 ### 批量操作
 
+<!-- snippet: id=django-orm-advanced-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 批量插入
 Book.objects.bulk_create([
@@ -141,6 +150,7 @@ Book.objects.filter(id__gt=100).update(price=F("price") * 0.9)
 
 ### 避免循环查询
 
+<!-- snippet: id=django-orm-advanced-10 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 # 错误：循环中查询
 for author in authors:
@@ -155,6 +165,7 @@ for author in authors:
 
 ### only和defer
 
+<!-- snippet: id=django-orm-advanced-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 只读取title字段
 books = Book.objects.only("title")
@@ -165,6 +176,7 @@ books = Book.objects.defer("content")
 
 ### values和values_list
 
+<!-- snippet: id=django-orm-advanced-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 返回字典列表
 books = Book.objects.values("title", "price")

@@ -2,12 +2,12 @@
 title: Django 缓存机制详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: django-cache-mechanism
 featured: false
 draft: false
 series: django
-seriesOrder: 9
+seriesOrder: 8
 tags:
   - Python
   - Django
@@ -40,6 +40,7 @@ description: "深入讲解Django缓存机制的实现，包括内存缓存、文
 
 ### 开发调试（此模式为开发调试使用，实际上不执行任何操作）
 
+<!-- snippet: id=django-cache-mechanism-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 CACHES = {
     'default': {
@@ -55,6 +56,7 @@ CACHES = {
 
 ### 内存缓存（将缓存内容保存至内存区域中）
 
+<!-- snippet: id=django-cache-mechanism-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 CACHES = {
     'default': {
@@ -71,6 +73,7 @@ CACHES = {
 
 ### 文件缓存（把缓存数据存储在文件中）
 
+<!-- snippet: id=django-cache-mechanism-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 CACHES = {
     'default': {
@@ -87,6 +90,7 @@ CACHES = {
 
 ### 数据库缓存（把缓存数据存储在数据库中）
 
+<!-- snippet: id=django-cache-mechanism-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 CACHES = {
     'default': {
@@ -102,6 +106,7 @@ CACHES = {
 
 **注意**：创建缓存的数据库表使用的语句：
 
+<!-- snippet: id=django-cache-mechanism-05 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 python manage.py createcachetable
 ```
@@ -110,6 +115,7 @@ python manage.py createcachetable
 
 Memcached是Django原生支持的缓存系统。要使用Memcached，需要下载Memcached的支持库python-memcached或pylibmc。
 
+<!-- snippet: id=django-cache-mechanism-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 CACHES = {
     'default': {
@@ -125,6 +131,7 @@ CACHES = {
 
 LOCATION也可以配置成如下：
 
+<!-- snippet: id=django-cache-mechanism-07 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
 'LOCATION': 'unix:/tmp/memcached.sock',  # 指定局域网内的主机名加socket套接字为Memcache缓存服务器
 
@@ -137,6 +144,7 @@ LOCATION也可以配置成如下：
 
 ### Memcache缓存（使用pylibmc模块连接memcache）
 
+<!-- snippet: id=django-cache-mechanism-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 CACHES = {
     'default': {
@@ -152,6 +160,7 @@ CACHES = {
 
 LOCATION也可以配置成如下：
 
+<!-- snippet: id=django-cache-mechanism-09 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
 'LOCATION': '/tmp/memcached.sock',  # 指定某个路径为缓存目录
 
@@ -170,6 +179,7 @@ Django提供了不同粒度的缓存，可以缓存某个页面，可以只缓�
 
 ### Model定义
 
+<!-- snippet: id=django-cache-mechanism-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Book(models.Model):
     name = models.CharField(max_length=32)
@@ -178,6 +188,7 @@ class Book(models.Model):
 
 ### 视图函数使用缓存
 
+<!-- snippet: id=django-cache-mechanism-11 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.views.decorators.cache import cache_page
 import time
@@ -192,6 +203,7 @@ def index(request):
 
 ### 模板中使用缓存
 
+<!-- snippet: id=django-cache-mechanism-12 mode=display python=3.12-3.14 deps=stdlib -->
 ```html
 {% load cache %}
 

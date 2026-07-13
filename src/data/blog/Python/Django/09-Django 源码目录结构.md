@@ -2,12 +2,12 @@
 title: Django 源码目录结构
 author: Joekma
 pubDatetime: 2024-08-11T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: django-source-code-structure
 featured: false
 draft: false
 series: django
-seriesOrder: 10
+seriesOrder: 9
 tags:
   - Python
   - Django
@@ -28,7 +28,8 @@ Django是一个功能完善的Python Web框架，其源码结构清晰模块化�
 
 ## 主要目录结构
 
-```
+<!-- snippet: id=django-source-code-structure-01 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 django/
 ├── __init__.py              # 包初始化
 ├── apps/                    # 核心应用配置
@@ -65,6 +66,7 @@ django/
 
 管理Django的全局配置。
 
+<!-- snippet: id=django-source-code-structure-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # django/conf/global_settings.py 部分配置
 DEBUG = False
@@ -81,6 +83,7 @@ MIDDLEWARE = []
 ROOT_URLCONF = ''
 ```
 
+<!-- snippet: id=django-source-code-structure-03 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 # 使用配置
 from django.conf import settings
@@ -94,6 +97,7 @@ print(settings.DATABASES)
 
 #### 2.1 请求处理器
 
+<!-- snippet: id=django-source-code-structure-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # django/core/handlers/base.py
 class BaseHandler:
@@ -108,6 +112,7 @@ class BaseHandler:
 
 #### 2.2 管理命令
 
+<!-- snippet: id=django-source-code-structure-05 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 # django/core/management/__init__.py
 from django.core.management import execute_from_command_line
@@ -120,6 +125,7 @@ execute_from_command_line(['manage.py', 'runserver'])
 
 #### 3.1 ORM模型
 
+<!-- snippet: id=django-source-code-structure-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # django/db/models/query.py
 class QuerySet:
@@ -146,6 +152,7 @@ class QuerySet:
 
 #### 3.2 数据库后端
 
+<!-- snippet: id=django-source-code-structure-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # django/db/backends/sqlite3/base.py
 class DatabaseWrapper:
@@ -164,6 +171,7 @@ class DatabaseWrapper:
 
 #### 4.1 请求对象
 
+<!-- snippet: id=django-source-code-structure-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # django/http/request.py
 class HttpRequest:
@@ -189,6 +197,7 @@ class HttpRequest:
 
 #### 4.2 响应对象
 
+<!-- snippet: id=django-source-code-structure-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # django/http/responses.py
 class HttpResponse:
@@ -223,6 +232,7 @@ class HttpResponse:
 
 ### 配置模块
 
+<!-- snippet: id=django-source-code-structure-10 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.conf import settings
 from django.conf import global_settings
@@ -237,6 +247,7 @@ settings.DEBUG = True
 
 ### 数据库模块
 
+<!-- snippet: id=django-source-code-structure-11 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.db import models
 from django.db.models import Q
@@ -256,6 +267,7 @@ articles = Article.objects.filter(Q(title__icontains='django'))
 
 ### HTTP模块
 
+<!-- snippet: id=django-source-code-structure-12 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.http import HttpResponse, JsonResponse
 from django.http import HttpRequest
@@ -271,6 +283,7 @@ def api(request):
 
 ### 视图模块
 
+<!-- snippet: id=django-source-code-structure-13 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.views import View
 from django.shortcuts import render, redirect

@@ -2,7 +2,7 @@
 title: Python 常用模块：shutil、json、pickle、shelve、xml、configparser
 author: Joekma
 pubDatetime: 2018-10-17T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-common-modules-serializtion-config
 description: '深入讲解Python常用模块：文件操作、序列化和配置文件处理。'
 tags:
@@ -23,215 +23,68 @@ language: zh-CN
 
 ![Python 文件与数据模块 shutil、json、pickle、shelve、xml 和 configparser 可以分别用于文件操作、压缩归档、序列化、持久化和配置读取](./images/python-file-serialization-config-modules-figure-01.png)
 
-## shutil 模块
+## shutil 与安全归档
 
-`shutil` 是高级的文件、文件夹、压缩包处理模块。
+`shutil` 适合复制、移动、删除和创建归档。所有路径先解析到预期根目录内；递归删除前再次确认目标，避免把空变量或父目录当成删除目标。
 
-### 文件复制
+解压来自外部的 ZIP/TAR 时不能直接调用无检查的批量解压。先限制成员数量和总大小，再验证每个成员解析后的路径仍位于目标目录；符号链接和设备文件默认拒绝。
 
+<!-- snippet: id=python-safe-zip-extraction mode=run python=3.12-3.14 deps=stdlib -->
 ```python
-import shutil
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from zipfile import ZIP_DEFLATED, ZipFile
 
-# 复制文件内容
-shutil.copyfileobj(open('old.xml', 'r'), open('new.xml', 'w'))
+def safe_extract_zip(archive: Path, destination: Path, *, max_bytes: int = 1_000_000) -> None:
+    root = destination.resolve()
+    with ZipFile(archive) as zf:
+        infos = zf.infolist()
+        if len(infos) > 100 or sum(item.file_size for item in infos) > max_bytes:
+            raise ValueError("archive is too large")
+        for item in infos:
+            target = (root / item.filename).resolve()
+            if not target.is_relative_to(root):
+                raise ValueError("archive member escapes destination")
+        zf.extractall(root)
 
-# 拷贝文件（目标文件无需存在）
-shutil.copyfile('f1.log', 'f2.log')
-
-# 仅拷贝权限
-shutil.copymode('f1.log', 'f2.log')  # 目标文件必须存在
-
-# 仅拷贝状态信息
-shutil.copystat('f1.log', 'f2.log')
-
-# 拷贝文件和权限
-shutil.copy('f1.log', 'f2.log')
-
-# 拷贝文件和状态信息
-shutil.copy2('f1.log', 'f2.log')
+with TemporaryDirectory() as tmp:
+    root = Path(tmp)
+    archive = root / "example.zip"
+    with ZipFile(archive, "w", ZIP_DEFLATED) as zf:
+        zf.writestr("docs/readme.txt", "safe")
+    out = root / "out"
+    safe_extract_zip(archive, out)
+    assert (out / "docs/readme.txt").read_text() == "safe"
 ```
 
-### 文件夹操作
+## JSON 与 pickle 的信任边界
 
-```python
-# 递归拷贝文件夹（目标目录不能存在）
-shutil.copytree('folder1', 'folder2', ignore=shutil.ignore_patterns('*.pyc', 'tmp*'))
+JSON 只表示字符串、数字、布尔值、空值、数组和对象，适合作为跨进程/跨语言交换格式。解析后仍要验证结构、字段类型、数值范围和输入大小。
 
-# 递归拷贝（保留软链接）
-shutil.copytree('f1', 'f2', symlinks=True, ignore=shutil.ignore_patterns('*.pyc', 'tmp*'))
-
-# 递归删除文件夹
-shutil.rmtree('folder1')
-
-# 递归移动文件
-shutil.move('folder1', 'folder3')
-```
-
-### 压缩包操作
-
-```python
-import shutil
-
-# 创建压缩包
-ret = shutil.make_archive("data_bak", 'gztar', root_dir='/data')
-
-# 解压
-shutil.unpack_archive("1111.zip")
-```
-
-### zipfile 模块
-
-```python
-import zipfile
-
-# 压缩
-z = zipfile.ZipFile('laxi.zip', 'w')
-z.write('user_data.json')
-z.close()
-
-# 解压
-z = zipfile.ZipFile("laxi.zip", "r")
-z.extractall(path=".")
-z.close()
-```
-
-### tarfile 模块
-
-```python
-import tarfile
-
-# 压缩
-t = tarfile.open(r'egon.tar', 'w')
-t.add('/test1/a.py', arcname='a.bak')
-t.add('/test1/b.py', arcname='b.bak')
-t.close()
-
-# 解压
-t = tarfile.open('/tmp/egon.tar', 'r')
-t.extractall('/egon')
-t.close()
-```
-
-## json 与 pickle
-
-### 什么是序列化
-
-将原本的字典、列表等内容转换成一个字符串的过程就叫做**序列化**。
-
-### 为什么不用 eval 反序列化
-
-> **注意**：eval 方法安全性较低，不推荐使用。如果从文件中读出的是破坏性语句，后果不堪设想。
-
-### 序列化的目的
-
-1. **持久保存状态**：将数据保存到磁盘
-2. **跨平台数据交互**：在不同系统/语言之间传递数据
-
-## json 模块
-
-JSON 是标准格式，比 XML 更快，可以在 Web 页面中直接读取。
-
-### JSON 与 Python 数据类型对应
-
-| JSON 类型 | Python 类型 |
-|-----------|------------|
-| `{}` | 字典 dict |
-| `[]` | 列表 list |
-| `string ""` | 字符串 str |
-| `int/float` | int/float |
-| `true/false` | True/False |
-| `null` | None |
-
-### json 模块核心函数
-
+<!-- snippet: id=python-json-validated-roundtrip mode=run python=3.12-3.14 deps=stdlib -->
 ```python
 import json
 
-dic = {'k1': 'v1', 'k2': 'v2', 'k3': 'v3'}
+text = '{"name": "Ada", "roles": ["reader"]}'
+data = json.loads(text)
+if not isinstance(data.get("name"), str) or not all(
+    isinstance(role, str) for role in data.get("roles", [])
+):
+    raise ValueError("invalid payload")
 
-# dumps：序列化（字典转字符串）
-str_dic = json.dumps(dic)
-print(type(str_dic), str_dic)
-# <class 'str'> {"k3": "v3", "k1": "v1", "k2": "v2"}
-
-# loads：反序列化（字符串转字典）
-dic2 = json.loads(str_dic)
-print(type(dic2), dic2)
-# <class 'dict'> {'k1': 'v1', 'k2': 'v2', 'k3': 'v3'}
-
-# dump：写入文件
-f = open('json_file', 'w')
-json.dump(dic, f)
-f.close()
-
-# load：读取文件
-f = open('json_file')
-dic2 = json.load(f)
-f.close()
+encoded = json.dumps(data, ensure_ascii=False, sort_keys=True)
+assert json.loads(encoded) == data
 ```
 
-### ensure_ascii 参数
+`pickle` 能在反序列化时导入模块并调用对象构造逻辑，因此加载恶意数据可能直接执行代码。它只适用于同一信任域内、由当前应用自己生成并完整保护的数据；不得读取上传文件、Cookie、缓存中的不可信值或网络消息。`shelve` 内部同样使用 pickle，信任边界完全相同。
 
-```python
-import json
-
-f = open('file', 'w')
-
-# 中文显示
-json.dump({'国籍': '中国'}, f)
-json.dump({'国籍': '美国'}, f, ensure_ascii=False)
-
-f.close()
-```
-
-### 其他参数说明
-
-```python
-import json
-
-data = {'username': ['李华', '二愣子'], 'sex': 'male', 'age': 16}
-json_dic = json.dumps(data, sort_keys=True, indent=2, separators=(',', ':'), ensure_ascii=False)
-print(json_dic)
-```
-
-| 参数 | 说明 |
-|------|------|
-| `skipkeys` | 跳过非基本类型的 key |
-| `ensure_ascii` | 是否使用 ASCII 编码 |
-| `indent` | 缩进空格数 |
-| `separators` | 分隔符元组 |
-| `sort_keys` | 是否排序 keys |
-
-## pickle 模块
-
-`pickle` 支持 Python 中所有的数据类型。
-
-```python
-import pickle
-
-user = {"name": "高跟", "password": "123", "height": 1.5, "hobby": ["吃", "喝", "赌", "飘", {1, 2, 3}]}
-
-# dumps：序列化为字节
-userbytes = pickle.dumps(user)
-
-# loads：反序列化
-user = pickle.loads(userbytes)
-
-# dump：直接序列化到文件
-with open("userdb.pkl", "wb") as f:
-    pickle.dump(user, f)
-
-# load：从文件反序列化
-with open("userdb.pkl", "rb") as f:
-    user = pickle.load(f)
-```
-
-> **注意**：pickle 序列化的数据只能被 Python 读取，无法与其他语言通用。
+如果只需要保存普通数据，选择 JSON；需要带 schema 的跨系统协议时选择明确的序列化格式并验证 schema。不要把“签名了 pickle”当成长期存储设计：密钥泄露、算法迁移和对象代码变化都会放大风险。
 
 ## shelve 模块
 
 `shelve` 类似字典，可以直接对数据进行修改。
 
+<!-- snippet: id=python-common-modules-serializtion-config-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import shelve
 
@@ -253,6 +106,7 @@ s.close()
 
 XML 是实现不同语言或程序之间数据交换的协议。
 
+<!-- snippet: id=python-common-modules-serializtion-config-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import xml.etree.ElementTree as ET
 
@@ -290,6 +144,7 @@ tree.write("f.xml", encoding="utf-8")
 
 ### 创建 XML 文档
 
+<!-- snippet: id=python-common-modules-serializtion-config-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import xml.etree.ElementTree as ET
 
@@ -309,6 +164,7 @@ et.write("test.xml", encoding="utf-8", xml_declaration=True)
 
 ### 配置文件示例
 
+<!-- snippet: id=python-common-modules-serializtion-config-13 mode=display python=3.12-3.14 deps=stdlib -->
 ```ini
 [db]
 db_port = 3306
@@ -323,6 +179,7 @@ thread = 10
 
 ### 读取配置
 
+<!-- snippet: id=python-common-modules-serializtion-config-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import configparser
 
@@ -346,6 +203,7 @@ print(config.getboolean('section1', 'is_admin'))
 
 ### 修改配置
 
+<!-- snippet: id=python-common-modules-serializtion-config-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import configparser
 

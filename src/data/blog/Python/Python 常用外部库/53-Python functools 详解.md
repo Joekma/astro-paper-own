@@ -3,7 +3,7 @@ title: Python functools 详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: python-functools
-modDatetime: 2026-04-22T00:00:00Z
+modDatetime: 2026-07-11T00:00:00.000+08:00
 featured: false
 draft: false
 tags:
@@ -38,6 +38,7 @@ language: zh-CN
 
 在 Python 3 中，它已经扩展得更完整。比如在 Python 3.6 中，可以看到它包含如下成员：
 
+<!-- snippet: id=python-functools-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import functools
 
@@ -46,6 +47,7 @@ print(dir(functools))
 
 示例输出：
 
+<!-- snippet: id=python-functools-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 [
     'MappingProxyType', 'RLock', 'WRAPPER_ASSIGNMENTS',
@@ -90,6 +92,7 @@ print(dir(functools))
 
 ### 基本示例
 
+<!-- snippet: id=python-functools-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import functools
 
@@ -110,6 +113,7 @@ p2(a='python', b='itcast')
 
 输出结果：
 
+<!-- snippet: id=python-functools-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 (1, 2, 3)
 {}
@@ -129,6 +133,7 @@ p2(a='python', b='itcast')
 
 例如：
 
+<!-- snippet: id=python-functools-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 p1 = functools.partial(showarg, 1, 2, 3)
 ```
@@ -137,12 +142,14 @@ p1 = functools.partial(showarg, 1, 2, 3)
 
 后续调用：
 
+<!-- snippet: id=python-functools-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 p1(4, 5, 6)
 ```
 
 本质上相当于：
 
+<!-- snippet: id=python-functools-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 showarg(1, 2, 3, 4, 5, 6)
 ```
@@ -151,6 +158,7 @@ showarg(1, 2, 3, 4, 5, 6)
 
 #### 场景一：为通用函数生成专用版本
 
+<!-- snippet: id=python-functools-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from functools import partial
 
@@ -168,6 +176,7 @@ print(cube(2))    # 输出: 8
 
 在 GUI、异步任务或调度系统中，`partial` 常用来把回调函数和固定参数组合在一起。
 
+<!-- snippet: id=python-functools-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from functools import partial
 import tkinter as tk
@@ -199,6 +208,7 @@ root.mainloop()
 
 ### 不使用 `wraps` 的示例
 
+<!-- snippet: id=python-functools-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def note(func):
     "note function"
@@ -221,6 +231,7 @@ print(test.__doc__)
 
 输出结果：
 
+<!-- snippet: id=python-functools-11 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
 note something
 I am test
@@ -231,6 +242,7 @@ wrapper function
 
 ### 使用 `wraps` 的示例
 
+<!-- snippet: id=python-functools-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import functools
 
@@ -256,6 +268,7 @@ print(test.__doc__)
 
 输出结果：
 
+<!-- snippet: id=python-functools-13 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
 note something
 I am test
@@ -274,6 +287,7 @@ test function
 
 所以在写装饰器时，一个非常实用的习惯是：
 
+<!-- snippet: id=python-functools-14 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
 @functools.wraps(func)
 ```
@@ -282,6 +296,7 @@ test function
 
 ### 推荐写法模板
 
+<!-- snippet: id=python-functools-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import functools
 

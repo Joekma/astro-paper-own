@@ -2,7 +2,7 @@
 title: Flask 蓝图机制与数据库连接池
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: flask-3-blueprint-dbutils
 description: '深入讲解Flask蓝图（Blueprint）的使用、基于DBUtils实现数据库连接池（两种模式）、本地线程（threading.local）以及Flask上下文管理机制。'
 tags:
@@ -21,6 +21,7 @@ language: zh-CN
 
 ## 设置配置文件的几种方式
 
+<!-- snippet: id=flask-3-blueprint-dbutils-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 方式一：直接赋值
 app.config['DEBUG'] = True
@@ -41,6 +42,7 @@ app.config.from_object('settings.DevConfig')
 
 **获取配置：** 在视图函数中使用 `current_app.config` 获取当前应用的配置
 
+<!-- snippet: id=flask-3-blueprint-dbutils-02 mode=compile python=3.12-3.14 deps=Flask==3.1.3 -->
 ```python
 from flask import current_app
 
@@ -58,6 +60,7 @@ def index():
 
 ## 小中型项目示例
 
+<!-- snippet: id=flask-3-blueprint-dbutils-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # manage.py
 import fcrm
@@ -66,6 +69,7 @@ if __name__ == '__main__':
     fcrm.app.run()
 ```
 
+<!-- snippet: id=flask-3-blueprint-dbutils-04 mode=compile python=3.12-3.14 deps=Flask==3.1.3 -->
 ```python
 # __init__.py
 from flask import Flask
@@ -76,6 +80,7 @@ app.register_blueprint(account.account)
 app.register_blueprint(order.order)
 ```
 
+<!-- snippet: id=flask-3-blueprint-dbutils-05 mode=compile python=3.12-3.14 deps=Flask==3.1.3 -->
 ```python
 # account.py
 from flask import Blueprint, render_template
@@ -91,6 +96,7 @@ def login():
     return render_template("login.html")
 ```
 
+<!-- snippet: id=flask-3-blueprint-dbutils-06 mode=compile python=3.12-3.14 deps=Flask==3.1.3 -->
 ```python
 # order.py
 from flask import Blueprint
@@ -110,7 +116,8 @@ def register():
 
 ## 大型项目目录结构
 
-```
+<!-- snippet: id=flask-3-blueprint-dbutils-07 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 fcrm/
 ├── __init__.py           # 创建Flask应用并注册蓝图
 ├── views/                # 视图模块目录
@@ -141,6 +148,7 @@ fcrm/
 
 每个线程拥有独立的数据库连接，基于 `threading.local` 实现。
 
+<!-- snippet: id=flask-3-blueprint-dbutils-08 mode=compile python=3.12-3.14 deps=PyMySQL==1.1.2 -->
 ```python
 from DBUtils.PersistentDB import PersistentDB
 import pymysql
@@ -175,6 +183,7 @@ def func():
 
 所有线程共享连接池中的连接，用完归还，**更常用**。
 
+<!-- snippet: id=flask-3-blueprint-dbutils-09 mode=compile python=3.12-3.14 deps=PyMySQL==1.1.2 -->
 ```python
 from DBUtils.PooledDB import PooledDB
 import pymysql
@@ -212,6 +221,7 @@ def func():
 
 `threading.local()` 为每个线程提供独立的变量空间，线程间互不干扰。
 
+<!-- snippet: id=flask-3-blueprint-dbutils-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import threading
 import time
@@ -240,6 +250,7 @@ def func(num):
 
 ## 工作原理
 
+<!-- snippet: id=flask-3-blueprint-dbutils-11 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
 # Flask 内部使用 LocalStack 管理请求上下文
 {
@@ -253,6 +264,7 @@ def func(num):
 2. 视图函数 → `top` 获取数据
 3. 请求结束 → `pop` 移除数据
 
+<!-- snippet: id=flask-3-blueprint-dbutils-12 mode=compile python=3.12-3.14 deps=Flask==3.1.3 -->
 ```python
 from flask import Flask, request, session, g
 
@@ -271,6 +283,7 @@ def index():
 
 ## 核心类实现
 
+<!-- snippet: id=flask-3-blueprint-dbutils-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Local:
     """基于协程 ID 的线程安全存储"""

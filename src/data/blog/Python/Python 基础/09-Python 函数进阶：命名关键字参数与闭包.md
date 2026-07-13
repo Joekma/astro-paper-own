@@ -2,7 +2,7 @@
 title: Python 函数进阶：命名关键字参数与闭包
 author: Joekma
 pubDatetime: 2018-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-advanced-functions-closure
 description: '深入讲解Python的命名关键字参数、函数对象、嵌套、名称空间与作用域、闭包等高级概念。'
 tags:
@@ -27,6 +27,7 @@ language: zh-CN
 
 以 `person()` 函数为例，我们检查是否有传入的 `city` 和 `job` 参数：
 
+<!-- snippet: id=python-advanced-functions-closure-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def person(name, age, **ss):
     if 'city' in ss:
@@ -47,6 +48,7 @@ person('Joek', 24, city='shanghai', addr='yang', number=123456)
 
 如果要限制关键字参数的名字，就可以用命名关键字参数。例如，只接收 `city` 和 `job` 作为关键字参数：
 
+<!-- snippet: id=python-advanced-functions-closure-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def person(name, age, *, city, job):
     print(name, age, city, job)
@@ -64,6 +66,7 @@ person('Joek', 24, city='shanghai', job='it')
 
 如果函数定义中已经有了一个可变参数，后面跟着的命名关键字参数就不再需要一个特殊分隔符 `*` 了：
 
+<!-- snippet: id=python-advanced-functions-closure-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def person(name, age, *args, city, job):
     print(name, age, args, city, job)
@@ -73,6 +76,7 @@ def person(name, age, *args, city, job):
 
 命名关键字参数必须传入参数名，这和位置参数不同。如果没有传入参数名，调用将报错：
 
+<!-- snippet: id=python-advanced-functions-closure-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def person(name, age, *, city, job):
     print(name, age, city, job)
@@ -85,6 +89,7 @@ person('Joek', 24, 'shanghai', 'it')
 
 命名关键字参数可以有默认值，从而简化调用：
 
+<!-- snippet: id=python-advanced-functions-closure-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def person(name, age, *, city='shanghai', job):
     print(name, age, city, job)
@@ -97,6 +102,7 @@ person('Joek', 24, job='it')
 
 > 如果没有可变参数，就必须加一个 `*` 作为特殊分隔符。如果缺少 `*`，Python 解释器将无法识别位置参数和命名关键字参数：
 
+<!-- snippet: id=python-advanced-functions-closure-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def person(name, age, city, job):
     # 缺少 *，city和job被视为位置参数
@@ -114,6 +120,7 @@ def person(name, age, city, job):
 
 ### 函数值可以被引用
 
+<!-- snippet: id=python-advanced-functions-closure-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def person(name):
     print(name)
@@ -131,6 +138,7 @@ per('joek')
 
 ### 变量值可以当作参数传给另外一个函数
 
+<!-- snippet: id=python-advanced-functions-closure-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def person(name):
     print(name)
@@ -145,6 +153,7 @@ show(person)
 
 ### 变量值可以当作函数的返回值
 
+<!-- snippet: id=python-advanced-functions-closure-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def person(name):
     print(name)
@@ -162,6 +171,7 @@ put(person)('joek')
 
 Python 内置函数中，典型的高阶函数是 `map` 函数：
 
+<!-- snippet: id=python-advanced-functions-closure-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def person(name):
     print(name)
@@ -178,6 +188,7 @@ print(list(lens))
 
 `map` 函数的作用相当于：
 
+<!-- snippet: id=python-advanced-functions-closure-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print([person(i) for i in ["the", "zen", "of", "python"]])
 ```
@@ -186,6 +197,7 @@ print([person(i) for i in ["the", "zen", "of", "python"]])
 
 ### 变量值可以当作容器类型的元素
 
+<!-- snippet: id=python-advanced-functions-closure-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def person(name):
     print(name)
@@ -204,6 +216,7 @@ funcs[0]("joek")
 
 在 Python 中，一切皆为对象。数字是对象，列表是对象，函数也是对象，任何东西都是对象。而变量是对象的一个引用（又称为名字或者标签）。
 
+<!-- snippet: id=python-advanced-functions-closure-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 a = []
 a.append(1)
@@ -215,6 +228,7 @@ a.append(1)
 
 Python 函数中，**参数的传递本质上是一种赋值操作**，而赋值操作是一种名字到对象的绑定过程。
 
+<!-- snippet: id=python-advanced-functions-closure-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def foo(arg):
     arg = 2
@@ -227,6 +241,7 @@ print(a)  # 输出: 1
 
 在例子中，变量 a 绑定了 1，调用函数 `foo(a)` 时，相当于给参数 `arg` 赋值 `arg=1`。在函数里面 `arg` 重新赋值为 2 之后，相当于把 1 上的 `arg` 标签撕掉，贴到 2 身上，而 1 上的另外一个标签 `a` 一直存在。
 
+<!-- snippet: id=python-advanced-functions-closure-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def bar(args):
     args.append(1)
@@ -246,6 +261,7 @@ print(id(b))   # 输出: 4324106952
 
 ### 默认参数的陷阱
 
+<!-- snippet: id=python-advanced-functions-closure-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def bad_append(new_item, a_list=[]):
     a_list.append(new_item)
@@ -259,6 +275,7 @@ print(bad_append('one'))  # ['one', 'one']  ← 问题所在！
 
 正确的方式是，把参数默认值指定为 `None`：
 
+<!-- snippet: id=python-advanced-functions-closure-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def good_append(new_item, a_list=None):
     if a_list is None:
@@ -276,6 +293,7 @@ print(good_append('one'))  # ['one']
 
 在一个函数内部又调用其他函数：
 
+<!-- snippet: id=python-advanced-functions-closure-18 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def max2(x, y):
     if x > y:
@@ -296,6 +314,7 @@ print(max4(1, 2, 3, 4))  # 4
 
 在函数内又定义了其他函数：
 
+<!-- snippet: id=python-advanced-functions-closure-19 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def func():
     def foo():
@@ -310,6 +329,7 @@ func()
 
 ### 实现了 __call__ 的类也可以作为函数
 
+<!-- snippet: id=python-advanced-functions-closure-20 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Add:
     def __init__(self, n):
@@ -326,6 +346,7 @@ print(add(4))  # 5
 
 ### 判断对象是否可调用
 
+<!-- snippet: id=python-advanced-functions-closure-21 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print(callable(1))     # False
 print(callable(int))   # True
@@ -368,6 +389,7 @@ print(callable(int))   # True
 
 ### 作用域关系是在函数定义阶段就已经固定死了
 
+<!-- snippet: id=python-advanced-functions-closure-22 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 xxx = 111
 
@@ -387,6 +409,7 @@ f2()  # 输出: 111
 
 如果确实想要在函数内部改变全局变量的值，可以使用 `global` 关键字：
 
+<!-- snippet: id=python-advanced-functions-closure-23 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 count = 5
 
@@ -403,6 +426,7 @@ print(myfun())    # 输出: 10
 
 `nonlocal` 关键字用于在内层函数中修改外层函数的变量：
 
+<!-- snippet: id=python-advanced-functions-closure-24 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def f1():
     a = 5
@@ -437,6 +461,7 @@ print(f1())
 2. 最内层嵌套函数访问函数外的局部变量
 3. 函数返回内嵌套函数对象
 
+<!-- snippet: id=python-advanced-functions-closure-25 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def outter():
     x = 1
@@ -457,6 +482,7 @@ foo()
 
 **方式一**：直接以参数的形式传入
 
+<!-- snippet: id=python-advanced-functions-closure-26 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def foo(name):
     print('hello %s' % name)
@@ -468,6 +494,7 @@ foo('egon')
 
 **方式二**：闭包函数
 
+<!-- snippet: id=python-advanced-functions-closure-27 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def outter(name):
     def foo():
@@ -487,6 +514,7 @@ f1()
 
 ### 彻底理解闭包
 
+<!-- snippet: id=python-advanced-functions-closure-28 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def make_mul(n):
     def mul(x):
@@ -518,6 +546,7 @@ print(test2.__closure__[0].cell_contents)  # 5
 
 闭包的重要特性是**封存上下文**，这一特性可以巧妙的被用于现有函数的包装，从而为现有函数增加功能，这就是**装饰器**。
 
+<!-- snippet: id=python-advanced-functions-closure-29 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 alist = range(1, 101)
 

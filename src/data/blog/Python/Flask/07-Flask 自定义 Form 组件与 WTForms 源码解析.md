@@ -2,7 +2,7 @@
 title: Flask 自定义 Form 组件与 WTForms 源码解析
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: flask-10-custom-form
 description: '深入分析 WTForms 源码流程，包括 Form 实例化流程和验证流程。讲解如何自定义 Form 组件、字段、插件，以及使用 Flask-WTF 实现 CSRF 保护和文件上传表单'
 tags:
@@ -24,6 +24,7 @@ language: zh-CN
 
 ### 实例化流程分析
 
+<!-- snippet: id=flask-10-custom-form-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 '''
 源码流程
@@ -106,6 +107,7 @@ def process(self, formdata, data=unset_value):
 
 ### 验证流程分析
 
+<!-- snippet: id=flask-10-custom-form-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # a. 执行form的validate方法，获取钩子方法
 def validate(self):
@@ -140,6 +142,7 @@ def validate(self, extra_validators=None):
 
 ### 完整示例
 
+<!-- snippet: id=flask-10-custom-form-03 mode=compile python=3.12-3.14 deps=Flask==3.1.3 -->
 ```python
 #!usr/bin/env python
 # -*- coding:utf-8 -*-
@@ -211,6 +214,7 @@ class EmailField(Field):
 
 ## 进阶：自定义验证器
 
+<!-- snippet: id=flask-10-custom-form-04 mode=compile python=3.12-3.14 deps=WTForms==3.2.2 -->
 ```python
 from wtforms import Form, StringField, IntegerField
 from wtforms.validators import DataRequired, Length, Email
@@ -239,6 +243,7 @@ class MyForm(Form):
 
 ## 使用Flask-WTF
 
+<!-- snippet: id=flask-10-custom-form-05 mode=compile python=3.12-3.14 deps=Flask==3.1.3,WTForms==3.2.2 -->
 ```python
 from flask import Flask, render_template, request
 from flask_wtf import FlaskForm
@@ -270,6 +275,7 @@ def register():
 
 ### 模板中使用
 
+<!-- snippet: id=flask-10-custom-form-06 mode=display python=3.12-3.14 deps=stdlib -->
 ```html
 <form method="POST">
     {{ form.hidden_tag() }}
@@ -298,6 +304,7 @@ def register():
 
 ### 1. CSRF保护
 
+<!-- snippet: id=flask-10-custom-form-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from flask_wtf.csrf import CSRFProtect
 
@@ -307,6 +314,7 @@ csrf.init_app(app)
 
 ### 2. 文件上传表单
 
+<!-- snippet: id=flask-10-custom-form-08 mode=compile python=3.12-3.14 deps=WTForms==3.2.2 -->
 ```python
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
@@ -319,6 +327,7 @@ class UploadForm(FlaskForm):
 
 ### 3. 表单数据回填
 
+<!-- snippet: id=flask-10-custom-form-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 当验证失败时，表单数据会自动回填
 # 也可以手动设置

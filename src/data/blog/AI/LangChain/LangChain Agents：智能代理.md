@@ -2,30 +2,38 @@
 title: LangChain Agents：智能代理
 author: Joekma
 pubDatetime: 2026-05-11T00:00:00.000+08:00
-modDatetime: 2026-05-11T00:00:00.000+08:00
+modDatetime: 2026-07-12T00:00:00.000+08:00
 slug: langchain-agents
-description: '深入讲解LangChain v1.0的Agent模块，包括create_agent新API、工具定义和实战应用。'
+description: "深入讲解 LangChain v1.x 的 create_agent、工具循环、middleware、状态持久化、护栏与结构化输出。"
 tags:
   - LangChain
   - Agent
   - LLM
 draft: false
 series: LangChain
-seriesOrder: 4
+seriesOrder: 6
 language: zh-CN
 ---
 
+## 阅读指南
+
+**前置知识：** 理解 Chat Model、Tool Schema、Runnable 和 `thread_id` 的基本作用。
+
+**学完本文你应该能：** 解释 Agent 循环；使用 `create_agent` 定义工具和结构化响应；选择 middleware、state 与 context 的扩展点；为迭代、权限和工具失败设置边界。
+
 ## 概述
 
-Agent（智能代理）是 LangChain v1.0 的核心功能，它赋予 LLM 自主决策和执行任务的能力。v1.0 统一使用 `create_agent` API，基于 LangGraph 构建，提供更好的状态管理和持久化支持。
+Agent（智能代理）是 LangChain v1.x 的核心功能，它赋予 LLM 自主决策和执行任务的能力。v1 使用 `create_agent` 作为标准入口，基于 LangGraph 构建，并提供状态管理和持久化扩展点。
 
 可以把 Agent 理解成“模型 + 执行外壳”：模型负责判断下一步，执行外壳负责把工具、提示词、状态和中间过程组织起来。学习 Agent 时，最重要的不是一次记住所有参数，而是看清楚模型什么时候自己回答、什么时候请求工具、工具结果又如何回到模型。
 
 ### Agent 工作原理
 
-![LangChain create_agent 从用户消息、thread_id 会话状态、模型决策、工具调用、Schema 校验到结构化响应的执行流程](./images/langchain-agents-create-agent-flow-figure-01.png)
+![Agent 决策循环：用户 User、模型 Model、决策 Decision、工具 Tool](./images/langchain-06-agent-loop-v2.png)
 
 ## create_agent 基础用法
+
+![create_agent 组成：Model、Tools、System Prompt、Middleware](./images/langchain-06-create-agent-anatomy-v2.png)
 
 ### 最小示例
 
@@ -78,19 +86,21 @@ print(result["messages"][-1].content)
 
 ### 完整参数说明
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| **model** | LanguageModelLike | 语言模型实例 |
-| **tools** | Sequence[BaseTool] | 可用工具列表 |
-| **system_prompt** | str | 系统提示词 |
-| **checkpointer** | Checkpointer | 按 thread 保存短期记忆 |
-| **middleware** | Sequence[AgentMiddleware] | 在模型、工具调用前后扩展执行逻辑 |
-| **response_format** | type 或 ResponseFormat | 结构化输出格式 |
-| **store** | BaseStore | 跨会话长期存储 |
+| 参数                | 类型                      | 说明                             |
+| ------------------- | ------------------------- | -------------------------------- |
+| **model**           | LanguageModelLike         | 语言模型实例                     |
+| **tools**           | Sequence[BaseTool]        | 可用工具列表                     |
+| **system_prompt**   | str                       | 系统提示词                       |
+| **checkpointer**    | Checkpointer              | 按 thread 保存短期记忆           |
+| **middleware**      | Sequence[AgentMiddleware] | 在模型、工具调用前后扩展执行逻辑 |
+| **response_format** | type 或 ResponseFormat    | 结构化输出格式                   |
+| **store**           | BaseStore                 | 跨会话长期存储                   |
 
 短期记忆在 v1 中通常通过 `checkpointer` 和调用时的 `thread_id` 维护，而不是把旧版 memory 对象直接塞进 Agent。这样同一个 Agent 可以服务多个会话，每个会话用不同的 thread 隔离状态。
 
 ## 工具定义
+
+![工具调用生命周期：Tool Schema、参数校验 Validate、权限检查 Authorize、执行 Execute](./images/langchain-06-tool-lifecycle-v2.png)
 
 ### 使用 @tool 装饰器
 
@@ -305,6 +315,8 @@ def model_node(state: CustomAgentState):
 
 ## 状态持久化
 
+![State、Thread 与 Checkpoint：thread_id、Agent State、Checkpointer、恢复 Resume](./images/langchain-06-state-checkpoint-v2.png)
+
 ### 使用 Checkpointer
 
 ```python
@@ -363,13 +375,13 @@ result = app.invoke(
 
 ## 最佳实践
 
-| 实践 | 说明 |
-|------|------|
-| **清晰的工具描述** | 工具描述要准确、简洁，包含参数说明 |
-| **错误处理** | 为工具添加异常处理，避免程序崩溃 |
-| **限制迭代次数** | 使用 recursion_limit 防止无限循环 |
-| **使用短期记忆** | 对话场景使用 checkpointer + thread_id |
-| **状态持久化** | 生产环境使用 checkpointer |
+| 实践               | 说明                                  |
+| ------------------ | ------------------------------------- |
+| **清晰的工具描述** | 工具描述要准确、简洁，包含参数说明    |
+| **错误处理**       | 为工具添加异常处理，避免程序崩溃      |
+| **限制迭代次数**   | 使用 recursion_limit 防止无限循环     |
+| **使用短期记忆**   | 对话场景使用 checkpointer + thread_id |
+| **状态持久化**     | 生产环境使用 checkpointer             |
 
 ### 推荐代码结构
 
@@ -381,13 +393,13 @@ from langchain_core.tools import tool
 def create_assistant_agent():
     """创建助手 Agent 的工厂函数"""
     llm = ChatOpenAI(model="gpt-4o", temperature=0)
-    
+
     tools = [
         get_weather,
         search_database,
         calculator,
     ]
-    
+
     agent = create_agent(
         model=llm,
         tools=tools,
@@ -395,22 +407,99 @@ def create_assistant_agent():
         当需要信息时，使用工具获取。
         回答要简洁准确。"""
     )
-    
+
     return agent
 
 agent = create_assistant_agent()
 result = agent.invoke({"messages": [{"role": "user", "content": "用户问题"}]})
 ```
 
+## Middleware、State 与 Context
+
+![Middleware 钩子：before_agent、before_model、wrap_model_call、wrap_tool_call](./images/langchain-06-middleware-hooks-v2.png)
+
+这三个概念最容易混淆：
+
+| 概念       | 生命周期                            | 典型内容                                |
+| ---------- | ----------------------------------- | --------------------------------------- |
+| Middleware | 围绕模型、工具或完整 Agent 调用执行 | 动态 Prompt、重试、审批、日志、PII 处理 |
+| State      | 随图执行并可由 checkpointer 持久化  | messages、当前计划、中间结果            |
+| Context    | 调用时注入、通常不写入会话历史      | 用户权限、租户、数据库连接、请求级配置  |
+
+需要改变模型输入或工具执行过程时使用 middleware；需要跨步骤保存的数据放 state；只在当前请求中使用的依赖和权限放 context。不要把数据库连接或密钥写入可持久化 state，也不要把用户可控文本直接当作权限 context。
+
+## 生产 Agent 的停止条件
+
+![护栏与终止路径：迭代上限 Iteration Limit、超时 Timeout、审批 Approval、成本预算 Budget](./images/langchain-06-guardrails-termination-v2.png)
+
+Agent 不应只依赖“模型最终会停下来”。至少设置：最大递归或迭代次数、单次模型和工具超时、工具参数 Schema、允许工具列表、敏感工具审批、总 token 或成本预算，以及重复调用检测。
+
+工具函数应返回领域结果或可处理错误，不应把所有异常都伪装成普通字符串。可恢复的外部超时可以重试；参数校验错误应反馈给模型修正；权限拒绝、安全策略和不可逆副作用失败必须停止并记录。
+
+## 结构化结果与副作用
+
+`response_format` 约束的是 Agent 的最终结果，不等于约束每个工具返回值。工具仍应有独立的输入 Schema 和明确返回类型。对于发邮件、付款、删除数据等副作用工具，应把“准备动作”和“执行动作”拆开，在执行前加入 Human-in-the-loop 审批和幂等键。
+
+手写 LangGraph ReAct 有助于理解底层循环，但普通工具型 Agent 应优先使用 `create_agent`。只有需要自定义节点、并行分支、跨阶段恢复或非标准循环时，才下潜到 LangGraph。
+
+## 跟踪一轮完整工具调用
+
+假设用户问“北京今天是否适合跑步”。一轮可靠执行不是模型直接给结论，而是下面这组有类型的状态变化：
+
+1. Human Message 写入 state，包含用户问题。
+2. Middleware 根据权限决定是否暴露天气工具，并附加安全规则。
+3. Model 返回带名称和参数的 Tool Call，而不是普通自然语言。
+4. Tool 层先验证城市和日期，再执行外部请求。
+5. 工具成功后返回 Tool Message；超时则返回可分类的工具错误。
+6. Model 读取原问题与 Tool Message，生成带条件说明的最终回答。
+7. Checkpointer 保存新消息，tracing 记录每个子运行的耗时和状态。
+
+调试时沿这七步逐层检查：如果模型从未请求工具，问题通常在 Prompt、工具描述或模型能力；如果工具没有运行，检查 Schema 和权限；如果有结果却回答错误，检查 Tool Message 内容和最终 Prompt。不要把所有问题都归因于“模型不稳定”。
+
+## Agent 与确定性工作流的选择
+
+Agent 的优势是模型可以根据上下文选择下一步，代价是路径、延迟和成本不再完全确定。固定的审批流程、数据迁移、账务计算或必须执行的校验更适合 Runnable 或显式 LangGraph；信息检索、多工具研究和开放式助理更适合 Agent。
+
+常见的生产架构是混合模式：外层图负责确定性阶段和审批，某个节点内部调用 Agent 处理开放任务。这样既保留模型决策能力，也能让高风险步骤拥有明确边界。
+
+## 测试 Agent 而不是测试运气
+
+单元测试使用 fake model 发出预设 Tool Call，验证工具参数、权限和 Tool Message；状态测试用两个 `thread_id` 证明历史不串线；循环测试让 fake model 重复调用工具，验证迭代上限；集成测试再使用少量真实模型检查工具选择质量。
+
+断言应关注结构化行为，如“调用了允许的工具”“参数通过 Schema”“最终结果符合类型”，而不是逐字比较自然语言回答。
+
 ## 总结
 
-Agent 是 LangChain v1.0 最强大的功能：
+Agent 是 LangChain v1.x 连接模型、工具与状态的标准执行入口：
 
-| 组件 | 作用 |
-|------|------|
+| 组件             | 作用                  |
+| ---------------- | --------------------- |
 | **create_agent** | 统一的 Agent 构建入口 |
-| **@tool** | 定义可扩展的工具函数 |
-| **Memory** | 维护对话历史 |
-| **Checkpointer** | 状态持久化 |
+| **@tool**        | 定义可扩展的工具函数  |
+| **Memory**       | 维护对话历史          |
+| **Checkpointer** | 状态持久化            |
 
 掌握 Agent 开发，可以构建真正智能的 LLM 应用。
+
+## 本篇自检
+
+1. State 与 runtime context 的区别是什么？
+2. 为什么副作用工具需要审批和幂等设计？
+3. 哪些场景值得从 `create_agent` 下潜到 LangGraph？
+
+<details>
+<summary>查看答案</summary>
+
+1. State 随执行图流转并可持久化；context 是请求级依赖或权限，通常不进入会话历史。
+2. 模型可能重复或错误调用工具，审批控制授权，幂等键防止同一动作被重复执行。
+3. 需要自定义节点、复杂分支、并行、恢复、人机中断或非标准 Agent 循环时。
+
+</details>
+
+## 官方资料
+
+- [Agents](https://docs.langchain.com/oss/python/langchain/agents)
+- [Middleware](https://docs.langchain.com/oss/python/langchain/middleware/overview)
+- [Runtime](https://docs.langchain.com/oss/python/langchain/runtime)
+
+**上一篇：** [LangChain LCEL 与 Runnable](/posts/langchain-chains/) · **下一篇：** [LangChain Memory](/posts/langchain-memory/)

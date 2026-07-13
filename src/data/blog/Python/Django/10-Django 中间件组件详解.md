@@ -2,12 +2,12 @@
 title: Django 中间件组件详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: django-component-3-middleware
 featured: false
 draft: false
 series: django
-seriesOrder: 11
+seriesOrder: 10
 tags:
   - Python
   - Django
@@ -21,7 +21,8 @@ description: "深入讲解Django中间件组件的原理、自定义方法和执
 
 Django中间件的定义：
 
-```
+<!-- snippet: id=django-component-3-middleware-01 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 Middleware is a framework of hooks into Django's request/response processing.
 It's a light, low-level "plugin" system for globally altering Django's input or output.
 ```
@@ -80,8 +81,9 @@ It's a light, low-level "plugin" system for globally altering Django's input or 
 
 ## Django默认的中间件
 
-在django项目的settings模块中，有一个MIDDLEWARE_CLASSES变量，其中每一个元素就是一个中间件：
+在django项目的settings模块中，有一个MIDDLEWARE变量，其中每一个元素就是一个中间件：
 
+<!-- snippet: id=django-component-3-middleware-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -100,6 +102,7 @@ MIDDLEWARE = [
 
 中间件中主要有几个方法：
 
+<!-- snippet: id=django-component-3-middleware-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 process_request(self, request)
 process_view(self, request, callback, callback_args, callback_kwargs)
@@ -114,12 +117,14 @@ process_response(self, request, response)
 
 ### 第一步：导入
 
+<!-- snippet: id=django-component-3-middleware-04 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.utils.deprecation import MiddlewareMixin
 ```
 
 ### 第二步：自定义中间件
 
+<!-- snippet: id=django-component-3-middleware-05 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.utils.deprecation import MiddlewareMixin
 from django.shortcuts import HttpResponse
@@ -146,6 +151,7 @@ class Md2(MiddlewareMixin):
 
 ### 第三步：在view中定义一个视图函数（index）
 
+<!-- snippet: id=django-component-3-middleware-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def index(request):
     print("view函数...")
@@ -154,6 +160,7 @@ def index(request):
 
 ### 第四步：在settings.py的MIDDLEWARE里注册自己定义的中间件
 
+<!-- snippet: id=django-component-3-middleware-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -165,7 +172,8 @@ MIDDLEWARE = [
 
 **结果：**
 
-```
+<!-- snippet: id=django-component-3-middleware-08 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 Md1请求
 Md2请求
 view函数...
@@ -177,7 +185,8 @@ Md1返回
 
 返回Md2中断的页面，后台打印如下：
 
-```
+<!-- snippet: id=django-component-3-middleware-09 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 Md1请求
 Md2请求
 Md2返回
@@ -206,6 +215,7 @@ Django会在调用视图函数之前调用process_view方法。
 
 它应该返回None或一个HttpResponse对象。如果返回None，Django将继续处理这个请求，执行任何其他中间件的process_view方法，然后在执行相应的视图。如果它返回一个HttpResponse对象，Django不会调用适当的视图函数。它将执行中间件的process_response方法并将应用到该HttpResponse并返回结果。
 
+<!-- snippet: id=django-component-3-middleware-10 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 process_view(self, request, callback, callback_args, callback_kwargs)
 
@@ -217,6 +227,7 @@ from django.shortcuts import HttpResponse
 
 当视图函数发生异常时，会调用process_exception方法。
 
+<!-- snippet: id=django-component-3-middleware-11 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.utils.deprecation import MiddlewareMixin
 from django.shortcuts import HttpResponse
@@ -232,6 +243,7 @@ class ExceptionMiddleware(MiddlewareMixin):
 
 ### middleware.py
 
+<!-- snippet: id=django-component-3-middleware-12 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.utils.deprecation import MiddlewareMixin
 from django.shortcuts import HttpResponse, redirect
@@ -264,6 +276,7 @@ class LoggingMiddleware(MiddlewareMixin):
 
 ### settings.py
 
+<!-- snippet: id=django-component-3-middleware-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

@@ -2,7 +2,7 @@
 title: Django Settings 懒加载机制
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: django-settings-lazy-loading
 featured: false
 draft: false
@@ -26,6 +26,7 @@ description: "深入讲解Django settings懒加载机制的实现原理。"
 
 **示例：** 创建 `lib/aa.py`，然后在同级模块中动态导入：
 
+<!-- snippet: id=django-settings-lazy-loading-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # lib/aa.py
 class C(object):
@@ -33,6 +34,7 @@ class C(object):
         return 'C language'
 ```
 
+<!-- snippet: id=django-settings-lazy-loading-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 动态导入模块
 lib = __import__('lib.aa')  # 等价于 import lib
@@ -42,6 +44,7 @@ print(c)
 
 ### 动态导入模块方法2：import importlib
 
+<!-- snippet: id=django-settings-lazy-loading-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import importlib
 aa = importlib.import_module('lib.aa')
@@ -57,6 +60,7 @@ Django 根据不同的 `subcommand` 加载不同的模块。`settings.py` 中的
 
 > 采用懒加载机制，避免循环引用，只在需要时才加载配置
 
+<!-- snippet: id=django-settings-lazy-loading-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # django.conf.settings
 settings = LazySettings()
@@ -82,12 +86,14 @@ class LazySettings(LazyObject):
 
 > 环境变量 `DJANGO_SETTINGS_MODULE` 在 `manage.py` 中定义
 
+<!-- snippet: id=django-settings-lazy-loading-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "webui.settings")
 ```
 
 `Settings` 类加载配置文件：
 
+<!-- snippet: id=django-settings-lazy-loading-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Settings(BaseSettings):
     def __init__(self, settings_module):

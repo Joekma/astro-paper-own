@@ -2,7 +2,7 @@
 title: Python 面向对象之继承：单继承、多继承、组合、MRO
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
-modDatetime: 2026-04-29T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-oop-inheritance
 featured: false
 draft: false
@@ -40,6 +40,7 @@ language: zh-CN
 
 ### 单继承和多继承
 
+<!-- snippet: id=python-oop-inheritance-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class ParentClass1:  # 定义父类
     pass
@@ -56,7 +57,8 @@ class SubClass2(ParentClass1, ParentClass2):  # python支持多继承，用逗�
 
 ### 查看基类，父类
 
-```python
+<!-- snippet: id=python-oop-inheritance-02 mode=display python=3.12-3.14 deps=stdlib -->
+```pycon
 SubClass1.__bases__  # __base__只查看从左到右继承的第一个父类，__bases__则是查看所有继承的父类
 (<class '__main__.ParentClass1'>,)
 SubClass2.__bases__
@@ -96,6 +98,7 @@ SubClass2.__bases__
 
 当然子类也可以添加自己新的属性或者在自己这里重新定义这些属性（不会影响到父类），需要注意的是，一旦重新定义了自己的属性且与父类重名，那么调用新增的属性时，就以自己为准了。
 
+<!-- snippet: id=python-oop-inheritance-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Riven(Hero):
     camp = 'Noxus'
@@ -109,6 +112,7 @@ class Riven(Hero):
 
 **在子类中，新建的重名的函数属性，在编辑函数内功能的时候，有可能需要重用父类中重名的那个函数功能，应该是用调用普通函数的方式，即：类名.func()，此时就与调用普通函数无异了。因此即便是self参数也要为其传值（要理解，不再自动传值了）。**
 
+<!-- snippet: id=python-oop-inheritance-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Hero:
     def __init__(self, nickname, aggressivity, life_value):  # 绰号、攻击力
@@ -162,6 +166,7 @@ print('所用皮肤为%s' % (r1.skin))
 
 组合指的是，在一个类中以另外一个类的对象作为数据属性，称为类的组合，或者说，将另外一个类产生的对象作为自己的属性成员（自己的一个属性来自于另外一个对象），这就是组合。
 
+<!-- snippet: id=python-oop-inheritance-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Equip:  # 武器装备类
     def Black_cutter(self):
@@ -189,6 +194,7 @@ r1.equip.Black_cutter()  # 可以使用组合的类产生的对象所持有的�
 
 用组合的方式建立了类与另外一个类的实例之间的关系，它是一种"有"的关系，比如教授有生日，教授教python和linux课程，教授有学生s1、s2、s3。
 
+<!-- snippet: id=python-oop-inheritance-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class People:
     def __init__(self, name, age, sex):
@@ -240,6 +246,7 @@ for obj in xuxubaobao.course:
 
 再看一个例子：
 
+<!-- snippet: id=python-oop-inheritance-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 先定义两个类，一个老师类，老师类有名字，年龄，出生的年、月和日，所教的课程等特征以及走路，教书的技能
 class Teacher:
@@ -378,6 +385,7 @@ s1.birth.birth_info()
 
 ### java中的接口
 
+<!-- snippet: id=python-oop-inheritance-08 mode=display python=3.12-3.14 deps=stdlib -->
 ```java
 // 第一部分：Java 语言中的接口很好的展现了接口的含义
 // IAnimal.java
@@ -399,6 +407,7 @@ public interface IAnimal {
 }
 ```
 
+<!-- snippet: id=python-oop-inheritance-09 mode=display python=3.12-3.14 deps=stdlib -->
 ```java
 // 第二部分：Pig.java：猪"的类设计，实现了IAnimal接口
 package com.oo.demo;
@@ -438,6 +447,7 @@ public class Pig implements IAnimal {  // 如下每个函数都需要详细实�
 
 在python中根本就没有一个叫做interface的关键字，如果非要去模仿接口的概念，可以借助第三方模块：zope.interface。
 
+<!-- snippet: id=python-oop-inheritance-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Interface:  # 定义接口Interface类来模仿接口的概念，python中压根就没有interface关键字来定义一个接口
     def read(self):  # 定接口函数read
@@ -488,6 +498,7 @@ class Process(Interface):
 
 ### 在python中实现抽象类
 
+<!-- snippet: id=python-oop-inheritance-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 一切皆文件思想
 import abc  # 利用abc模块实现抽象类

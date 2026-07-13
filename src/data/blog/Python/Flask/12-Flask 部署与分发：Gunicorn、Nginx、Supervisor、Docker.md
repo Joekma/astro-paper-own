@@ -2,7 +2,7 @@
 title: Flask 部署与分发：Gunicorn、Nginx、Supervisor、Docker
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: flask-deployment
 description: '深入讲解Flask应用部署方案，包括Gunicorn、Nginx、Supervisor、Docker等多种部署方案，以及生产环境配置和安全优化建议。'
 tags:
@@ -27,6 +27,7 @@ language: zh-CN
 
 ### 配置差异
 
+<!-- snippet: id=flask-deployment-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # config.py
 import os
@@ -57,6 +58,7 @@ config = {
 
 ### 应用工厂模式
 
+<!-- snippet: id=flask-deployment-02 mode=compile python=3.12-3.14 deps=Flask-SQLAlchemy==3.1.1,Flask==3.1.3 -->
 ```python
 # app/__init__.py
 from flask import Flask
@@ -89,12 +91,14 @@ Gunicorn是最常用的Python WSGI服务器。
 
 ### 安装Gunicorn
 
+<!-- snippet: id=flask-deployment-03 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
-pip install gunicorn
+python -m pip install gunicorn
 ```
 
 ### 基本使用
 
+<!-- snippet: id=flask-deployment-04 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 启动命令
 gunicorn -w 4 -b 0.0.0.0:8000 app:app
@@ -105,6 +109,7 @@ gunicorn -c gunicorn_config.py app:app
 
 ### Gunicorn配置文件
 
+<!-- snippet: id=flask-deployment-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # gunicorn_config.py
 import multiprocessing
@@ -144,8 +149,9 @@ max_requests_jitter = 50
 
 ### 使用Gevent优化
 
+<!-- snippet: id=flask-deployment-06 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
-pip install gevent greenlet
+python -m pip install gevent greenlet
 
 # 配置
 worker_class = 'gevent'
@@ -158,6 +164,7 @@ Nginx作为反向代理服务器，处理静态文件和负载均衡。
 
 ### Nginx安装
 
+<!-- snippet: id=flask-deployment-07 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # Ubuntu/Debian
 sudo apt update
@@ -169,6 +176,7 @@ sudo yum install nginx
 
 ### Nginx配置
 
+<!-- snippet: id=flask-deployment-08 mode=display python=3.12-3.14 deps=stdlib -->
 ```nginx
 # /etc/nginx/sites-available/myapp
 upstream myapp {
@@ -215,6 +223,7 @@ Supervisor用于管理Gunicorn进程。
 
 ### 安装Supervisor
 
+<!-- snippet: id=flask-deployment-09 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # Ubuntu/Debian
 sudo apt install supervisor
@@ -225,6 +234,7 @@ sudo yum install supervisor
 
 ### Supervisor配置
 
+<!-- snippet: id=flask-deployment-10 mode=display python=3.12-3.14 deps=stdlib -->
 ```ini
 # /etc/supervisor/conf.d/myapp.conf
 [program:myapp]
@@ -239,6 +249,7 @@ stderr_logfile = /var/log/supervisor/myapp_error.log
 
 ### 常用命令
 
+<!-- snippet: id=flask-deployment-11 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 重新加载配置
 sudo supervisorctl reread
@@ -257,6 +268,7 @@ sudo supervisorctl status
 
 ### Dockerfile
 
+<!-- snippet: id=flask-deployment-12 mode=display python=3.12-3.14 deps=stdlib -->
 ```dockerfile
 # 使用官方Python镜像
 FROM python:3.12-slim
@@ -268,7 +280,7 @@ WORKDIR /app
 COPY requirements.txt .
 
 # 安装依赖
-RUN pip install --no-cache-dir -r requirements.txt
+RUN python -m pip install --no-cache-dir -r requirements.txt
 
 # 复制应用代码
 COPY . .
@@ -282,7 +294,8 @@ CMD ["gunicorn", "-c", "gunicorn_config.py", "run:app"]
 
 ### requirements.txt
 
-```
+<!-- snippet: id=flask-deployment-13 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 Flask>=2.0.0
 gunicorn>=20.0.0
 flask-sqlalchemy>=3.0.0
@@ -291,6 +304,7 @@ psycopg2-binary>=2.9.0
 
 ### docker-compose.yml
 
+<!-- snippet: id=flask-deployment-14 mode=display python=3.12-3.14 deps=stdlib -->
 ```yaml
 version: '3.8'
 
@@ -321,6 +335,7 @@ volumes:
 
 ### 构建和运行
 
+<!-- snippet: id=flask-deployment-15 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 构建镜像
 docker build -t myapp:latest .
@@ -336,6 +351,7 @@ docker-compose up -d
 
 ### 1. 环境变量管理
 
+<!-- snippet: id=flask-deployment-16 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 不要在代码中硬编码密钥
 # 使用环境变量
@@ -345,6 +361,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 
 ### 2. HTTPS配置
 
+<!-- snippet: id=flask-deployment-17 mode=display python=3.12-3.14 deps=stdlib -->
 ```nginx
 # 强制HTTPS
 server {
@@ -368,6 +385,7 @@ server {
 
 ### 3. 防火墙设置
 
+<!-- snippet: id=flask-deployment-18 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 只开放必要的端口
 sudo ufw allow 22    # SSH

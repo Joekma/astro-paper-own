@@ -3,7 +3,7 @@ title: Python SAP Fiori XML解析
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: python-sap-fiori-xml
-modDatetime: 2026-04-22T00:00:00Z
+modDatetime: 2026-07-11T00:00:00.000+08:00
 featured: false
 draft: false
 tags:
@@ -44,6 +44,7 @@ language: zh-CN
 
 举个例子，当SAX解析器读到一个节点时：
 
+<!-- snippet: id=python-sap-fiori-xml-01 mode=display python=3.12-3.14 deps=stdlib -->
 ```html
 <a href="/">python</a>
 ```
@@ -56,6 +57,7 @@ language: zh-CN
 
 ### SAX 解析示例
 
+<!-- snippet: id=python-sap-fiori-xml-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from xml.parsers.expat import ParserCreate
 
@@ -92,6 +94,7 @@ parser.Parse(xml)
 
 99%的情况下需要生成的XML结构都是非常简单的，因此，最简单也是最有效的生成XML的方法是**拼接字符串**：
 
+<!-- snippet: id=python-sap-fiori-xml-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 L = []
 L.append(r'<?xml version="1.0"?>')
@@ -124,6 +127,7 @@ ET使用 **Element** 表示xml中的节点、文本、注释等。其主要属�
 | **tail** | string | 表示element闭合之后的尾迹 |
 | **若干子元素** | child elements | 包含的子节点 |
 
+<!-- snippet: id=python-sap-fiori-xml-04 mode=display python=3.12-3.14 deps=stdlib -->
 ```xml
 <tag attrib1=1>text</tag>tail
 ```
@@ -132,6 +136,7 @@ ET使用 **Element** 表示xml中的节点、文本、注释等。其主要属�
 
 ### 一、导入 ET 模块
 
+<!-- snippet: id=python-sap-fiori-xml-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 try:
     import xml.etree.cElementTree as ET
@@ -143,6 +148,7 @@ except ImportError:
 
 ### 二、解析 XML
 
+<!-- snippet: id=python-sap-fiori-xml-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 从文件中解析xml文件
 tree = ET.ElementTree(file='doc.xml')
@@ -154,6 +160,7 @@ root = ET.fromstring(country_data_as_string)
 
 ### 三、访问数据
 
+<!-- snippet: id=python-sap-fiori-xml-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 遍历所有子节点
 for child in root:
@@ -168,6 +175,7 @@ root.findall("./country/neighbor")
 
 ### 四、流式处理 XML
 
+<!-- snippet: id=python-sap-fiori-xml-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 for event, elem in ET.iterparse(sys.argv[1]):
     if event == 'end':
@@ -200,6 +208,7 @@ for event, elem in ET.iterparse(sys.argv[1]):
 
 ### 六、ElementTree 对象方法
 
+<!-- snippet: id=python-sap-fiori-xml-09 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
 class xml.etree.ElementTree.ElementTree(element=None, file=None)
 ```
@@ -240,6 +249,7 @@ class xml.etree.ElementTree.ElementTree(element=None, file=None)
 
 在实际项目中，SAP Fiori系统经常需要处理复杂的XML格式数据。以下是一个典型的员工费用明细XML解析示例：
 
+<!-- snippet: id=python-sap-fiori-xml-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import xml.etree.ElementTree as ET
 

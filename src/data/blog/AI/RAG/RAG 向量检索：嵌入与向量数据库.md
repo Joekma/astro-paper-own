@@ -2,9 +2,9 @@
 title: RAG 向量检索：嵌入与向量数据库
 author: Joekma
 pubDatetime: 2026-05-11T00:00:00.000+08:00
-modDatetime: 2026-05-11T00:00:00.000+08:00
+modDatetime: 2026-07-12T00:00:00.000+08:00
 slug: rag-vector-retrieval
-description: '深入讲解RAG系统中的向量检索技术，包括文本嵌入模型、向量数据库选择和相似度检索原理。'
+description: "理解 Embedding、相似度、Top-k 与 ANN 索引的数学和工程权衡，并建立可复现的向量检索评测基线。"
 tags:
   - RAG
   - 向量检索
@@ -12,614 +12,316 @@ tags:
   - VectorDB
 draft: false
 series: RAG
-seriesOrder: 7
+seriesOrder: 3
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
 
-向量检索是 RAG 系统的核心环节。通过将文本转换为向量表示，我们可以利用向量数据库高效的相似度搜索能力，快速找到与用户查询最相关的文档。本篇将详细介绍嵌入模型、向量数据库和相似度检索的原理与实践。
+你需要了解向量、点积和平方根。读完后，你应该能够：
 
-![RAG 查询经过嵌入模型进入语义空间，并通过向量数据库返回 Top-K 文档片段](./images/rag-vector-retrieval-semantic-search-figure-01.png)
+- 解释文档和查询如何进入同一个向量空间。
+- 手算余弦相似度、点积和欧氏距离，并判断排序方向。
+- 说明为什么不同模型或不同距离函数的分数不能直接比较。
+- 区分精确检索与 ANN，解释 HNSW、IVF 的召回—延迟—内存权衡。
+- 用稳定 Chunk ID 评估向量索引，而不是凭几个主观查询判断效果。
 
-### 向量检索流程
+## 从文本到候选 Chunk
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                       向量检索流程                                 │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐        │
-│  │  文本   │ →  │  嵌入   │ →  │  存储   │ →  │  检索   │        │
-│  │  输入   │    │  模型   │    │  向量库  │    │  相似  │        │
-│  └─────────┘    └─────────┘    └─────────┘    └─────────┘        │
-│                                                                      │
-│  Query: "如何学习Python?"                                           │
-│         ↓                                                           │
-│  Embedding: [0.123, -0.456, 0.789, ...]                            │
-│         ↓                                                           │
-│  Top-K 相似文档检索                                                  │
-│                                                                      │
-└─────────────────────────────────────────────────────────────────────┘
+![理解 Query 和 Chunk 如何进入共享空间](./images/r03-f01-dual-encoder-flow.png)
+
+```text
+离线：Chunk text ──Embedding model──> document vector ──> index
+在线：Query      ──Embedding model──> query vector    ──> Top-k IDs
 ```
 
-## 文本嵌入模型
+Embedding 模型把文本映射为固定维度向量。相近向量表示模型认为文本在训练目标下具有较强相关性；它不保证事实相同、逻辑蕴含或答案正确。
 
-### 什么是文本嵌入？
+## Embedding 数据契约
 
-文本嵌入（Text Embedding）是将文本转换为密集向量的技术，使语义相似的文本在向量空间中彼此接近。
+![防止混用不兼容向量](./images/r03-f02-embedding-record-contract.png)
 
-| 嵌入类型 | 示例 | 维度 |
-|---------|------|------|
-| **词嵌入** | Word2Vec, GloVe | 100-300 |
-| **句嵌入** | Sentence-BERT | 384-1536 |
-| **文档嵌入** | Doc2Vec | 100-500 |
-
-### OpenAI 嵌入模型
+向量索引至少需要记录：
 
 ```python
-from langchain_openai import OpenAIEmbeddings
+from dataclasses import dataclass
 
-embeddings = OpenAIEmbeddings(
-    model="text-embedding-3-small",
-    api_key="your-api-key"
-)
-
-text = "这是一个测试文本"
-vector = embeddings.embed_query(text)
-
-print(f"向量维度: {len(vector)}")
-print(f"向量示例: {vector[:5]}")
+@dataclass(frozen=True)
+class VectorRecord:
+    chunk_id: str
+    vector: tuple[float, ...]
+    embedding_model: str
+    dimensions: int
+    normalized: bool
+    index_version: str
 ```
 
-### 批量嵌入
+模型、维度或归一化方式变化时，旧向量通常不能与新向量混在同一个索引里。迁移时应创建新索引版本、重新嵌入并运行回归评测。
+
+## 使用 OpenAI Embeddings API
+
+模型名由环境变量配置，避免教程把某个时点的默认模型写死：
 
 ```python
-texts = [
-    "Python 是一种高级编程语言",
-    "机器学习是人工智能的分支",
-    "深度学习是机器学习的子领域"
+import os
+from openai import OpenAI
+
+client = OpenAI()
+embedding_model = os.environ["OPENAI_EMBEDDING_MODEL"]
+
+def embed_texts(texts: list[str]) -> list[list[float]]:
+    if not texts or any(not text.strip() for text in texts):
+        raise ValueError("Embedding 输入不能为空")
+
+    response = client.embeddings.create(
+        model=embedding_model,
+        input=texts,
+        encoding_format="float",
+    )
+    ordered = sorted(response.data, key=lambda item: item.index)
+    vectors = [item.embedding for item in ordered]
+
+    dimensions = {len(vector) for vector in vectors}
+    if len(dimensions) != 1:
+        raise ValueError(f"向量维度不一致: {dimensions}")
+    return vectors
+```
+
+批量请求可减少网络开销，但必须同时满足当前模型和 API 的单输入、批量及总 Token 限制。限制可能变化，生产代码应从官方文档和实际错误响应验证，而不是复制教程常数。
+
+## 三种距离如何影响排序
+
+![建立二维语义空间直觉](./images/r03-f03-vector-space-intuition.png)
+
+![对比余弦、点积与欧氏距离](./images/r03-f04-similarity-formulas.png)
+
+![理解归一化向量的等价排序](./images/r03-f05-normalized-equivalence.png)
+
+设查询向量 \(q\)，文档向量 \(d\)。
+
+### 余弦相似度
+
+\[
+\operatorname{cos}(q,d)=\frac{q\cdot d}{\lVert q\rVert_2\lVert d\rVert_2}
+\]
+
+值越大通常越相似。它关注方向，忽略向量长度。
+
+### 点积
+
+\[
+\operatorname{dot}(q,d)=q\cdot d=\sum_i q_i d_i
+\]
+
+值越大通常越相似，同时受方向和长度影响。
+
+### 欧氏距离
+
+\[
+L_2(q,d)=\sqrt{\sum_i(q_i-d_i)^2}
+\]
+
+距离越小越相似。注意它与前两者的排序方向相反。
+
+当所有向量都做 L2 归一化时：
+
+\[
+\lVert q-d\rVert_2^2=2-2(q\cdot d)
+\]
+
+因此归一化向量上的点积、余弦相似度和欧氏距离会产生等价排序；未归一化时不能直接套用这个结论。
+
+## 一个可手算的 Top-k 例子
+
+![手算三个二维向量的 Top-2](./images/r03-f06-top-k-hand-calculation.png)
+
+查询与三个文档已经归一化：
+
+```text
+q  = [1.0, 0.0]
+dA = [0.8, 0.6]  “超标住宿需要部门负责人审批”
+dB = [0.0, 1.0]  “交通票据粘贴规范”
+dC = [0.6, 0.8]  “住宿发票与附件要求”
+```
+
+点积为：
+
+- \(q\cdot d_A=0.8\)
+- \(q\cdot d_B=0.0\)
+- \(q\cdot d_C=0.6\)
+
+所以 Top-2 为 A、C。这个例子只解释排序，不证明 A 必然蕴含真实答案；后续仍需重排和生成校验。
+
+## 最小精确检索实现
+
+```python
+import math
+
+def cosine_similarity(a: list[float], b: list[float]) -> float:
+    if len(a) != len(b) or not a:
+        raise ValueError("向量必须非空且维度相同")
+    dot = sum(x * y for x, y in zip(a, b, strict=True))
+    norm_a = math.sqrt(sum(x * x for x in a))
+    norm_b = math.sqrt(sum(y * y for y in b))
+    if norm_a == 0 or norm_b == 0:
+        raise ValueError("零向量没有定义余弦相似度")
+    return dot / (norm_a * norm_b)
+
+def exact_top_k(query, records, k: int):
+    if k <= 0:
+        return []
+    scored = [
+        (record["chunk_id"], cosine_similarity(query, record["vector"]))
+        for record in records
+    ]
+    return sorted(scored, key=lambda item: item[1], reverse=True)[:k]
+```
+
+精确检索遍历全部向量，是验证小数据集和 ANN 召回率的重要基准。
+
+## 为什么需要 ANN
+
+![区分精确 Top-k 与近似 Top-k](./images/r03-f07-flat-vs-ann.png)
+
+![比较 Flat、IVF、HNSW、PQ](./images/r03-f08-index-types-tradeoff.png)
+
+当向量数量增大，逐个计算距离的成本会上升。Approximate Nearest Neighbor 用可控的召回损失换取更低延迟或更少计算。
+
+| 索引 | 基本思想               | 优点                     | 代价                           |
+| ---- | ---------------------- | ------------------------ | ------------------------------ |
+| Flat | 与所有向量精确比较     | 结果精确、基准可靠       | 查询成本随数据量线性增长       |
+| IVF  | 先查最近的若干聚类桶   | 可控制扫描范围           | 需要训练；桶和探测数影响召回   |
+| HNSW | 在多层近邻图上导航     | 常见场景下低延迟、高召回 | 图结构占内存；构建和更新有成本 |
+| PQ   | 压缩向量并近似计算距离 | 显著节省存储与带宽       | 量化误差影响排序               |
+
+不存在只按“文档数量”就能决定数据库或索引的可靠规则。选择还取决于：
+
+- 向量维度和数据分布。
+- 目标 Recall@k 与 p95 延迟。
+- 内存、磁盘和构建时间。
+- 过滤选择性与多租户隔离。
+- 更新、删除和备份要求。
+- 团队运维能力与成本。
+
+## HNSW 与 IVF 的关键参数
+
+![区分 ANN Recall 与业务 Recall](./images/r03-f09-ann-vs-business-recall.png)
+
+不同实现的参数名可能不同，但概念一致。
+
+### HNSW
+
+- 构图连接度：更大通常提高召回，也增加内存和构建成本。
+- 构建搜索宽度：更大通常改善图质量，但构建更慢。
+- 查询搜索宽度：更大通常提高召回，但查询更慢。
+
+### IVF
+
+- 聚类桶数量：影响桶粒度和训练成本。
+- 查询探测桶数量：探测越多，通常召回越高、延迟越大。
+
+参数调优必须与精确 Top-k 对照：
+
+\[
+\operatorname{ANNRecall@k}=\frac{|\operatorname{ANNTopK}\cap\operatorname{ExactTopK}|}{k}
+\]
+
+这里评估的是索引近似误差，不是业务相关性。业务 Recall@k 则要与人工标注的相关 Chunk 比较，两者不能混为一谈。
+
+## 过滤与向量检索的顺序
+
+![理解权限过滤必须早于候选暴露](./images/r03-f10-acl-prefilter.png)
+
+元数据过滤有两种常见策略：
+
+- Pre-filter：先按 tenant、ACL、日期等缩小候选，再做向量检索。
+- Post-filter：先做向量检索，再过滤结果。
+
+Post-filter 可能导致最终结果不足 k 条，甚至把未经授权的候选暴露给缓存和日志。权限约束优先采用实现能够保证的安全 Pre-filter 或租户隔离索引，并通过越权测试验证。
+
+## 分数的解释边界
+
+以下做法都不可靠：
+
+- 把余弦相似度与 BM25 分数直接相加。
+- 把数据库返回的 distance 当作统一的 0–1 置信度。
+- 用固定阈值跨语言、跨模型、跨索引版本部署。
+- 看到 Top-1 分数高就认为答案正确。
+
+阈值应在代表性数据集上校准，并记录距离函数、模型、归一化方式和索引版本。
+
+## 评测设计
+
+每个测试用例至少包含：
+
+```python
+test_cases = [
+    {
+        "query": "住宿超标需要谁审批？",
+        "relevant_chunk_ids": {"travel-policy:v3:section-4.2:0"},
+    },
+    {
+        "query": "制度里有没有海外差旅宠物托运规定？",
+        "relevant_chunk_ids": set(),
+    },
 ]
-
-vectors = embeddings.embed_documents(texts)
-
-for i, vec in enumerate(vectors):
-    print(f"文本 {i+1} 向量: {vec[:5]}...")
 ```
 
-### HuggingFace 嵌入模型
+同时记录：
 
-```python
-from langchain_community.embeddings import HuggingFaceEmbeddings
+- Recall@k、MRR 或 nDCG。
+- 平均、p50、p95 查询延迟。
+- 每个查询实际候选数。
+- 索引大小、构建时间和内存。
+- 无答案查询的分数分布。
 
-model_name = "sentence-transformers/all-MiniLM-L6-v2"
+不要只展示三个“看起来不错”的查询。
 
-embeddings = HuggingFaceEmbeddings(
-    model_name=model_name,
-    model_kwargs={"device": "cpu"},
-    encode_kwargs={"normalize_embeddings": True}
-)
+## 常见误区
 
-text = "这是一个测试文本"
-vector = embeddings.embed_query(text)
+- 把 Embedding 相似理解成事实蕴含。
+- 混用不同维度或不同模型的向量。
+- 忽略 distance 与 similarity 的排序方向。
+- 只调 ANN 参数，不与 Flat 精确结果比较。
+- 用 ANN Recall 代替业务相关性 Recall。
+- 按数据规模一项指标选择向量数据库。
+- 在权限过滤后置的情况下声称实现了租户隔离。
 
-print(f"向量维度: {len(vector)}")
-```
+## 自检题
 
-### Embedding 模型对比
+<details>
+<summary>1. 已归一化向量使用点积与余弦相似度时，排序为什么一致？</summary>
 
-| 模型 | 维度 | 特点 | 适用场景 |
-|------|------|------|---------|
-| **text-embedding-3-small** | 1536 | 高效、便宜 | 通用场景 |
-| **text-embedding-3-large** | 3072 | 最高质量 | 精确匹配 |
-| **text-embedding-ada-002** | 1536 | 经典稳定 | 兼容性好 |
-| **all-MiniLM-L6-v2** | 384 | 本地运行 | 本地部署 |
-| **all-mpnet-base-v2** | 768 | 高质量 | 本地高质量 |
+归一化后两个向量范数都为 1，余弦公式的分母为 1，因此余弦值等于点积。
 
-### 嵌入质量评估
+</details>
 
-```python
-def evaluate_embeddings(query, relevant_docs, irrelevant_docs, embeddings_model):
-    query_vec = embeddings_model.embed_query(query)
+<details>
+<summary>2. ANN Recall@10 达到 0.99，是否代表业务 Recall@10 也达到 0.99？</summary>
 
-    relevant_scores = [
-        cosine_similarity(query_vec, embeddings_model.embed_query(doc))
-        for doc in relevant_docs
-    ]
+不代表。前者只说明 ANN 近似结果接近精确向量 Top-10；如果 Embedding 本身没有把业务相关文档排进精确 Top-10，业务召回仍然可能很差。
 
-    irrelevant_scores = [
-        cosine_similarity(query_vec, embeddings_model.embed_query(doc))
-        for doc in irrelevant_docs
-    ]
+</details>
 
-    avg_relevant = sum(relevant_scores) / len(relevant_scores)
-    avg_irrelevant = sum(irrelevant_scores) / len(irrelevant_scores)
+<details>
+<summary>3. 为什么不能把数据库返回的 0.18 直接称为“82% 相关”？</summary>
 
-    print(f"相关文档平均相似度: {avg_relevant:.4f}")
-    print(f"不相关文档平均相似度: {avg_irrelevant:.4f}")
-    print(f"分离度: {avg_relevant - avg_irrelevant:.4f}")
+返回值可能是距离、相似度或经过实现转换的分数，其范围与含义取决于距离函数和数据库。除非经过明确定义与校准，否则不能解释为概率。
 
-    return avg_relevant - avg_irrelevant
+</details>
 
-def cosine_similarity(vec1, vec2):
-    import numpy as np
-    vec1 = np.array(vec1)
-    vec2 = np.array(vec2)
-    return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
-```
+## 总结与下一篇
 
-## 向量数据库
+向量检索的核心不是选择一个数据库名称，而是建立清晰的数据契约、距离定义、精确基线和召回—延迟权衡。只有这样，后续混合检索和重排的改进才可测量。
 
-### 向量数据库选择
+下一篇将把 Dense Retrieval 与 BM25、过滤、RRF 和 Cross-Encoder 连接成完整检索漏斗。
 
-| 数据库 | 类型 | 特点 | 适用场景 |
-|--------|------|------|---------|
-| **Chroma** | 本地 | 轻量、易用 | 开发测试 |
-| **FAISS** | 本地 | 高性能 | 大规模本地 |
-| **Pinecone** | 云端 | 托管、易扩展 | 生产环境 |
-| **Weaviate** | 云端/本地 | 混合搜索 | 多模态 |
-| **Milvus** | 云端/本地 | 高并发 | 企业级 |
-| **Qdrant** | 云端/本地 | 高性能 | 生产环境 |
+## 对应资料来源
 
-### Chroma 向量数据库
+- [Dense Passage Retrieval for Open-Domain Question Answering](https://arxiv.org/abs/2004.04906)
+- [Efficient and Robust Approximate Nearest Neighbor Search Using HNSW](https://arxiv.org/abs/1603.09320)
+- [Faiss: A Library for Efficient Similarity Search](https://faiss.ai/)
+- [OpenAI Embeddings API Reference](https://platform.openai.com/docs/api-reference/embeddings)
+- [OpenAI text-embedding-3-large Model](https://developers.openai.com/api/docs/models/text-embedding-3-large)
 
-#### 创建向量数据库
-
-```python
-from langchain_community.vectorstores import Chroma
-from langchain_openai import OpenAIEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import TextLoader
-
-loader = TextLoader("document.txt")
-documents = loader.load()
-
-splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-chunks = splitter.split_documents(documents)
-
-embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
-
-vectorstore = Chroma.from_documents(
-    documents=chunks,
-    embedding=embeddings,
-    persist_directory="./chroma_db"
-)
-
-vectorstore.persist()
-```
-
-#### 相似度检索
-
-```python
-query = "用户查询内容"
-
-results = vectorstore.similarity_search(query, k=5)
-
-for i, doc in enumerate(results):
-    print(f"结果 {i+1}: {doc.page_content[:100]}...")
-```
-
-#### 带相似度分数的检索
-
-```python
-results_with_scores = vectorstore.similarity_search_with_score(query, k=5)
-
-for doc, score in results_with_scores:
-    print(f"分数: {score:.4f} | 内容: {doc.page_content[:100]}...")
-
-    # score 是距离（distance），越小越相似
-    # 对于 cosine 距离（范围 [0, 2]）：similarity = 1 - distance
-    # 对于 L2 距离（范围 [0, +∞)）：仅展示距离，不直接转换为相似度
-    distance = score
-    if distance <= 2.0:
-        similarity = 1 - distance
-        print(f"相似度（cosine）: {similarity:.2%}")
-    else:
-        print(f"距离（L2）: {distance:.4f}")
-```
-
-#### 元数据过滤检索
-
-```python
-results = vectorstore.similarity_search(
-    query,
-    k=5,
-    filter={"category": "技术文档", "source": "python.md"}
-)
-
-print(f"过滤后找到 {len(results)} 个结果")
-```
-
-### FAISS 向量数据库
-
-Facebook 的高效相似度搜索库：
-
-```python
-from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings
-
-# 假设 chunks 已经通过其他方式创建好
-# chunks = [...]
-embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
-
-vectorstore = FAISS.from_documents(
-    documents=chunks,
-    embedding=embeddings
-)
-
-vectorstore.save_local("faiss_index")
-
-# 加载时需要设置 allow_dangerous_deserialization=True（仅信任自己创建的文件）
-new_vectorstore = FAISS.load_local(
-    "faiss_index",
-    embeddings,
-    allow_dangerous_deserialization=True
-)
-```
-
-#### 增量添加
-
-```python
-new_doc = Document(page_content="新文档内容", metadata={"source": "new.txt"})
-
-vectorstore.add_documents([new_doc])
-
-vectorstore.save_local("faiss_index_updated")
-```
-
-### Pinecone 云端向量数据库
-
-```python
-from langchain_pinecone import PineconeVectorStore
-from langchain_openai import OpenAIEmbeddings
-from pinecone import Pinecone
-
-pc = Pinecone(api_key="your-api-key")
-index = pc.Index("rag-index")
-
-embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
-
-# 假设 chunks 已经通过其他方式创建好
-# chunks = [...]
-vectorstore = PineconeVectorStore(
-    index=index,
-    embedding=embeddings,
-    text_key="text"
-)
-
-vectorstore.add_documents(chunks)
-
-results = vectorstore.similarity_search(query="查询内容", k=5)
-```
-
-### Weaviate 向量数据库
-
-```python
-import weaviate
-from langchain_weaviate import WeaviateVectorStore
-
-# weaviate v4 客户端
-client = weaviate.connect_to_local(
-    host="localhost",
-    port=8080,
-    grpc_port=50051
-)
-
-# embeddings 需先定义
-# embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
-vectorstore = WeaviateVectorStore(
-    client=client,
-    index_name="Document",
-    text_key="text",
-    embedding=embeddings
-)
-
-# 假设 chunks 已经通过其他方式创建好
-# chunks = [...]
-vectorstore.add_documents(chunks)
-
-results = vectorstore.similarity_search(query="查询", k=5)
-```
-
-## 相似度计算
-
-### 1. 余弦相似度
-
-最常用的相似度度量：
-
-```python
-import numpy as np
-
-def cosine_similarity(vec1, vec2):
-    vec1 = np.array(vec1)
-    vec2 = np.array(vec2)
-
-    dot_product = np.dot(vec1, vec2)
-    norm_product = np.linalg.norm(vec1) * np.linalg.norm(vec2)
-
-    if norm_product == 0:
-        return 0
-
-    return dot_product / norm_product
-
-similarity = cosine_similarity(vector_a, vector_b)
-print(f"余弦相似度: {similarity:.4f}")
-```
-
-### 2. 点积（内积）
-
-快速计算，适合归一化向量：
-
-```python
-import numpy as np
-
-def dot_product_similarity(vec1, vec2):
-    vec1 = np.array(vec1)
-    vec2 = np.array(vec2)
-
-    return np.dot(vec1, vec2)
-
-similarity = dot_product_similarity(vector_a, vector_b)
-```
-
-### 3. 欧氏距离
-
-计算向量间的直线距离：
-
-```python
-import numpy as np
-
-def euclidean_distance(vec1, vec2):
-    vec1 = np.array(vec1)
-    vec2 = np.array(vec2)
-
-    distance = np.linalg.norm(vec1 - vec2)
-    similarity = 1 / (1 + distance)
-
-    return distance, similarity
-
-distance, similarity = euclidean_distance(vector_a, vector_b)
-print(f"欧氏距离: {distance:.4f}, 相似度: {similarity:.4f}")
-```
-
-### 相似度计算对比
-
-| 方法 | 公式 | 范围 | 适用场景 |
-|------|------|------|---------|
-| **余弦相似度** | cos(θ) | [-1, 1] | 方向重要性 |
-| **点积** | A·B | [-∞, ∞] | 归一化向量 |
-| **欧氏距离** | \|\|A-B\|\| | [0, ∞] | 绝对距离 |
-
-## 索引类型
-
-### 1. 扁平索引（Flat）
-
-最简单，逐个比较：
-
-```python
-vectorstore = Chroma(
-    collection_name="flat_index",
-    embedding_function=embeddings
-)
-```
-
-### 2. IVF 索引（Inverted File）
-
-聚类加速搜索：
-
-```python
-# 注意：FAISS 不通过 index_params 传递这些参数
-# 应该在创建 index 时使用 faiss 自身的 API
-import faiss
-
-# embeddings 需先定义
-# embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
-vectorstore = FAISS.from_documents(
-    documents=chunks,
-    embedding=embeddings
-)
-```
-
-### 3. HNSW 索引（层次可导航小世界图）
-
-高效的近似最近邻：
-
-```python
-# Pinecone 的索引参数在创建 ServerlessSpec 或 PodSpec 时设置
-# 假设 index 已经通过 Pinecone 控制台或代码创建好
-from pinecone import ServerlessSpec
-
-# embeddings 需先定义
-# embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
-vectorstore = PineconeVectorStore(
-    index=index,
-    embedding=embeddings,
-    text_key="text"
-)
-```
-
-### 索引参数对比
-
-| 参数 | 说明 | 建议值 |
-|------|------|--------|
-| **ef_construction** | HNSW 构建参数 | 100-200 |
-| **m** | HNSW 连接数 | 16-64 |
-| **nlist** | IVF 聚类数 | 4×√n |
-| **ef_search** | 搜索范围 | 50-200 |
-
-## 高级检索模式
-
-### 1. 最大边际相关检索 (MMR)
-
-平衡相关性和多样性：
-
-```python
-retriever = vectorstore.as_retriever(
-    search_type="mmr",
-    search_kwargs={
-        "k": 10,
-        "fetch_k": 20,
-        "lambda_mult": 0.5
-    }
-)
-
-results = retriever.invoke("查询内容")
-
-print(f"检索到 {len(results)} 个结果")
-```
-
-### 2. 带分数阈值的检索
-
-过滤低质量结果：
-
-```python
-def threshold_search(query, vectorstore, threshold=0.7):
-    results = vectorstore.similarity_search_with_score(query, k=20)
-
-    filtered = [
-        (doc, score) for doc, score in results
-        if score < threshold
-    ]
-
-    return filtered
-
-results = threshold_search("查询", vectorstore, threshold=0.7)
-```
-
-### 3. 混合检索
-
-结合关键词和向量检索：
-
-```python
-from langchain.retrievers import EnsembleRetriever
-
-vector_retriever = vectorstore.as_retriever(
-    search_kwargs={"k": 5}
-)
-
-keyword_retriever = vectorstore.as_retriever(
-    search_type="mmr",
-    search_kwargs={"k": 5}
-)
-
-ensemble_retriever = EnsembleRetriever(
-    retrievers=[vector_retriever, keyword_retriever],
-    weights=[0.7, 0.3]
-)
-
-results = ensemble_retriever.invoke("查询内容")
-```
-
-## 持久化与加载
-
-### 向量数据库持久化
-
-```python
-vectorstore = Chroma.from_documents(
-    documents=chunks,
-    embedding=embeddings,
-    persist_directory="./vector_db"
-)
-
-vectorstore.persist()
-
-print("向量数据库已保存")
-```
-
-### 加载已有向量数据库
-
-```python
-vectorstore = Chroma(
-    persist_directory="./vector_db",
-    embedding_function=embeddings
-)
-
-results = vectorstore.similarity_search("查询", k=5)
-
-print(f"从已存储的数据库检索到 {len(results)} 个结果")
-```
-
-### 跨环境迁移
-
-```python
-import json
-
-def export_vectorstore_metadata(vectorstore, metadata_path="metadata.json"):
-    # Chroma 的 _collection 内部接口，仅供示例演示
-    data = vectorstore._collection.get(include=["metadatas", "documents"])
-
-    metadatas = data.get("metadatas", [])
-    documents = data.get("documents", [])
-    ids = data.get("ids", [])
-
-    with open(metadata_path, "w", encoding="utf-8") as f:
-        json.dump({
-            "ids": ids,
-            "documents": documents,
-            "metadatas": metadatas
-        }, f, ensure_ascii=False, indent=2)
-
-    return len(ids)
-
-count = export_vectorstore_metadata(vectorstore)
-print(f"导出了 {count} 个文档的元数据")
-```
-
-## 最佳实践
-
-### 1. 向量维度选择
-
-| 模型 | 维度 | 质量 | 速度 |
-|------|------|------|------|
-| **text-embedding-3-small** | 1536 | 中 | 快 |
-| **text-embedding-3-large** | 3072 | 高 | 中 |
-| **all-MiniLM-L6-v2** | 384 | 中 | 快 |
-| **all-mpnet-base-v2** | 768 | 高 | 中 |
-
-### 2. 批量处理优化
-
-```python
-batch_size = 100
-
-for i in range(0, len(documents), batch_size):
-    batch = documents[i:i+batch_size]
-
-    vectorstore.add_documents(batch)
-
-    print(f"处理进度: {min(i+batch_size, len(documents))}/{len(documents)}")
-```
-
-### 3. 向量数据库选择指南
-
-```
-数据量
-  │
-  ├─ < 10,000
-  │   └─ Chroma / FAISS (本地足够)
-  │
-  ├─ 10,000 - 1,000,000
-  │   ├─ FAISS (高性能本地)
-  │   └─ Pinecone / Qdrant (云端)
-  │
-  └─ > 1,000,000
-      └─ Pinecone / Milvus (企业级云端)
-```
-
-## 总结
-
-| 组件 | 功能 | 关键技术 |
-|------|------|---------|
-| **Embedding** | 文本转向量 | OpenAI, HuggingFace |
-| **VectorDB** | 向量存储检索 | Chroma, FAISS, Pinecone |
-| **Similarity** | 相似度计算 | Cosine, Dot Product |
-| **Retrieval** | 智能检索 | MMR, Filtering |
-
-向量检索是 RAG 系统的核心，选择合适的嵌入模型和向量数据库对系统性能至关重要。
-
-## 后续内容
-
-本系列后续将深入讲解：
-- 高级检索策略
-- RAG 实战应用
-- 性能优化技巧
-- 多模态 RAG
+> 验证说明：OpenAI 示例使用官方 Python SDK 接口；模型名从 `OPENAI_EMBEDDING_MODEL` 读取。部署前应按项目锁定 SDK 和模型快照或别名策略。

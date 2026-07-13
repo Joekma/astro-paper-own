@@ -2,7 +2,7 @@
 title: Django 分页器组件详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: django-component-1-paginator
 featured: false
 draft: false
@@ -21,12 +21,14 @@ description: "深入讲解Django分页器组件的使用方法和实践技巧。
 
 ![Django 分页器通过 Paginator、Page 对象、object_list、count、num_pages、page_range 和模板分页控件组织列表数据的分页展示](./images/django-paginator-page-controls-figure-01.png)
 
+<!-- snippet: id=django-component-1-paginator-01 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.core.paginator import Paginator
 ```
 
 ### Paginator对象
 
+<!-- snippet: id=django-component-1-paginator-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 paginator = Paginator(user_list, 10)
 
@@ -39,6 +41,7 @@ paginator = Paginator(user_list, 10)
 
 ### page对象
 
+<!-- snippet: id=django-component-1-paginator-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 page = paginator.page(1)
 
@@ -53,6 +56,7 @@ page = paginator.page(1)
 
 ## 应用View层
 
+<!-- snippet: id=django-component-1-paginator-04 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.shortcuts import render, HttpResponse
 from app01.models import *
@@ -112,6 +116,7 @@ def index(request):
 
 ## 模版层 index.html
 
+<!-- snippet: id=django-component-1-paginator-05 mode=display python=3.12-3.14 deps=stdlib -->
 ```html
 <!DOCTYPE html>
 <html lang="en">
@@ -169,6 +174,7 @@ def index(request):
 
 显示左5右5，总共11个页码的情况：
 
+<!-- snippet: id=django-component-1-paginator-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 '''
 显示左5，右5，总共11个页，
@@ -203,6 +209,7 @@ def index(request):
 
 ## 使用Bootstrap样式显示分页
 
+<!-- snippet: id=django-component-1-paginator-07 mode=display python=3.12-3.14 deps=stdlib -->
 ```html
 <nav aria-label="Page navigation">
     <ul class="pagination">

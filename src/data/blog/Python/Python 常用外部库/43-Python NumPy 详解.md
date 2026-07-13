@@ -1,9 +1,9 @@
 ---
-title: Pytghon NumPy 详解
+title: Python NumPy 详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: numpy
-modDatetime: 2026-04-22T00:00:00Z
+modDatetime: 2026-07-11T00:00:00.000+08:00
 featured: false
 draft: false
 tags:
@@ -46,32 +46,35 @@ NumPy（Numerical Python）是高性能科学计算和数据分析的基础包�
 
 ### 安装 NumPy
 
+<!-- snippet: id=numpy-01 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 使用 pip 安装
-pip install numpy
+python -m pip install numpy
 
 # 使用 conda 安装
 conda install numpy
 
 # 安装特定版本
-pip install numpy==1.24.3
+python -m pip install numpy==1.24.3
 
 # 安装最新开发版
-pip install numpy --pre
+python -m pip install numpy --pre
 ```
 
 ### 依赖包安装
 
+<!-- snippet: id=numpy-02 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 安装常用依赖包
-pip install numpy scipy matplotlib pandas
+python -m pip install numpy scipy matplotlib pandas
 
 # 完整科学计算环境
-pip install numpy scipy matplotlib pandas jupyter
+python -m pip install numpy scipy matplotlib pandas jupyter
 ```
 
 ### 导入与配置
 
+<!-- snippet: id=numpy-03 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -94,6 +97,7 @@ np.set_printoptions(**printoptions)
 
 ### 最佳实践
 
+<!-- snippet: id=numpy-04 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 # 标准引用方式（推荐）
 import numpy as np
@@ -113,6 +117,7 @@ ndarray（N-dimensional array）是 NumPy 的核心数据结构，它是一个�
 
 #### 基本创建方法
 
+<!-- snippet: id=numpy-05 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -156,6 +161,7 @@ print(f"数据类型: {arr3.dtype}")
 
 #### 属性使用示例
 
+<!-- snippet: id=numpy-06 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -212,6 +218,7 @@ print(arr.T)
 
 ### 花式索引高级用法
 
+<!-- snippet: id=numpy-07 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -260,6 +267,7 @@ NumPy 支持比 Python 更丰富的数据类型，这些数据类型都是为了
 
 ### 数据类型使用示例
 
+<!-- snippet: id=numpy-08 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -300,6 +308,7 @@ NumPy 提供了多种创建数组的函数，可以根据不同的需求选择�
 
 ### 创建函数使用示例
 
+<!-- snippet: id=numpy-09 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -342,6 +351,7 @@ arr10 = np.full((2, 3), 7)      # 2行3列，全为7
 
 NumPy 支持数组与标量之间的运算，这称为广播。标量会自动与数组的每个元素进行运算。
 
+<!-- snippet: id=numpy-10 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -357,6 +367,7 @@ a ** 0.5    # 每个元素开平方根：[1., 1.414, 1.732, 2., 2.236]
 
 相同形状的数组之间进行元素级运算。
 
+<!-- snippet: id=numpy-11 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -372,6 +383,7 @@ a ** b      # 元素级幂运算：[1, 1048576, ...]
 
 #### 一维数组索引
 
+<!-- snippet: id=numpy-12 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -385,6 +397,7 @@ a[-2]       # 获取倒数第二个元素：40
 
 #### 多维数组索引
 
+<!-- snippet: id=numpy-13 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -407,6 +420,7 @@ a[1]        # [4, 5, 6]
 
 #### 一维数组切片
 
+<!-- snippet: id=numpy-14 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -424,6 +438,7 @@ a[2:5] = 100  # 将索引2到4的元素设置为100
 
 #### 多维数组切片
 
+<!-- snippet: id=numpy-15 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -444,6 +459,7 @@ a[:2, :]      # 第0行到第1行，所有列：[[1, 2, 3, 4], [5, 6, 7, 8]]
 
 与 Python 列表不同，NumPy 数组切片时**不会自动复制数据**。切片返回的是原数组的**视图（view）**，对切片的修改会影响原数组。
 
+<!-- snippet: id=numpy-16 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -458,6 +474,7 @@ print(a)          # a 也被修改：[0, 1, 2, 3, 4, 100, 6, 7, 8, 9]
 
 如果需要独立修改切片而不影响原数组，使用 `copy()` 方法创建副本。
 
+<!-- snippet: id=numpy-17 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -487,6 +504,7 @@ print(b)          # b 被修改：[100, 6, 7]
 2. 返回一个与原数组形状相同的布尔数组
 3. 将这个布尔数组作为索引，会返回所有 `True` 对应位置的元素
 
+<!-- snippet: id=numpy-18 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -513,6 +531,7 @@ print(result)
 
 **答案**：
 
+<!-- snippet: id=numpy-19 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 a[(a > 5) & (a % 2 == 0)]  # 大于5的偶数（与运算）
 a[(a > 5) | (a % 2 == 0)]  # 大于5或偶数（或运算）
@@ -532,18 +551,21 @@ a[(a > 5) | (a % 2 == 0)]  # 大于5或偶数（或运算）
 
 **错误写法**：
 
+<!-- snippet: id=numpy-20 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 a[a > 5 & (a % 2 == 0)]  # 错误！运算符优先级问题
 ```
 
 **正确写法**：
 
+<!-- snippet: id=numpy-21 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 a[(a > 5) & (a % 2 == 0)]  # 使用括号明确优先级
 ```
 
 #### 完整示例
 
+<!-- snippet: id=numpy-22 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -563,6 +585,7 @@ print(a[~(a > 5)])                  # 不大于5的数：[1, 2, 3, 4, 5]
 
 布尔索引在数据清洗和分析中非常有用：
 
+<!-- snippet: id=numpy-23 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -594,6 +617,7 @@ print(f"低销售额: {low_sales}")  # [50, 80]
 
 **示例**：
 
+<!-- snippet: id=numpy-24 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -617,6 +641,7 @@ print(a)  # 原数组不受影响
 
 **示例**：
 
+<!-- snippet: id=numpy-25 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -644,6 +669,7 @@ print(result)
 
 #### 使用 np.ix_ 进行矩形区域选择
 
+<!-- snippet: id=numpy-26 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -672,6 +698,7 @@ result = a[[0, 2]][:, [1, 3]]
 | **修改影响** | 不影响原数组 | 影响原数组 |
 | **灵活性** | 可以选择任意位置 | 只能选择连续区域 |
 
+<!-- snippet: id=numpy-27 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -725,6 +752,7 @@ print(a)  # 原数组被修改
 
 #### 一元函数使用示例
 
+<!-- snippet: id=numpy-28 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -765,6 +793,7 @@ print(np.rint(arr4))      # [ 3.  3. -2.]
 
 #### 二元函数使用示例
 
+<!-- snippet: id=numpy-29 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -801,6 +830,7 @@ NumPy 提供了丰富的统计函数，用于分析数组数据。
 
 #### 基本统计函数使用示例
 
+<!-- snippet: id=numpy-30 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -833,6 +863,7 @@ print(np.sum(arr2d, axis=1))     # [6, 15] - 按行求和
 
 #### 累计统计函数使用示例
 
+<!-- snippet: id=numpy-31 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -857,6 +888,7 @@ NumPy 提供了多种排序功能。
 
 #### 排序函数使用示例
 
+<!-- snippet: id=numpy-32 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -899,6 +931,7 @@ NumPy 提供了完整的线性代数功能。
 
 #### 线性代数使用示例
 
+<!-- snippet: id=numpy-33 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -949,6 +982,7 @@ NumPy 的 random 模块提供了强大的随机数生成功能。
 
 #### 随机数使用示例
 
+<!-- snippet: id=numpy-34 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -987,6 +1021,7 @@ print(arr_new) # [4, 1, 3, 5, 2]
 
 NumPy 支持多种概率分布的随机数生成：
 
+<!-- snippet: id=numpy-35 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -1015,6 +1050,7 @@ NumPy 提供了方便的文件IO功能。
 
 ### 保存和加载数组
 
+<!-- snippet: id=numpy-36 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 
@@ -1050,6 +1086,7 @@ arr_loaded = np.loadtxt('arr.csv', delimiter=',')
 
 ### 节省内存的方法
 
+<!-- snippet: id=numpy-37 mode=compile python=3.12-3.14 deps=numpy==2.5.1 -->
 ```python
 import numpy as np
 

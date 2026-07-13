@@ -2,7 +2,7 @@
 title: Flask 知识整合 SQLAlchemy Utils、Flask Migrate 与应用工厂模式
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: flask-11-integration
 description: '整合 Flask 核心知识点，包括 SQLAlchemy-Utils 的 ChoiceType 使用、scoped_session 线程安全会话管理、Flask-SQLAlchemy 和 Flask-Migrate 数据库操作，以及 Flask 应用工厂模式的完整示例'
 tags:
@@ -24,6 +24,7 @@ language: zh-CN
 
 ![Flask 应用工厂、扩展初始化、scoped session、ChoiceType 模型与 Flask Migrate 数据库迁移关系图](./images/flask-sqlalchemy-migrate-factory-figure-01.png)
 
+<!-- snippet: id=flask-11-integration-01 mode=compile python=3.12-3.14 deps=SQLAlchemy==2.0.51 -->
 ```python
 import datetime
 from sqlalchemy import create_engine
@@ -68,6 +69,7 @@ for item in result_list:
 
 ## scoped_session
 
+<!-- snippet: id=flask-11-integration-02 mode=compile python=3.12-3.14 deps=SQLAlchemy==2.0.51 -->
 ```python
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
@@ -124,9 +126,10 @@ session.remove()
 
 **新方式**：Flask-Migrate
 
-1. 安装组件：`pip install Flask-Migrate`
+1. 安装组件：`python -m pip install Flask-Migrate`
 2. 导入：
 
+<!-- snippet: id=flask-11-integration-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from flask_migrate import Migrate
 from app import db, app
@@ -136,6 +139,7 @@ from app import db, app
 4. 使用 Flask-Migrate 自动注册的 `flask db` 命令
 5. 执行命令：
 
+<!-- snippet: id=flask-11-integration-04 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 flask --app app db init  # 只执行第一次
 flask --app app db migrate
@@ -148,6 +152,7 @@ flask --app app db upgrade
 
 ### 方式一
 
+<!-- snippet: id=flask-11-integration-05 mode=compile python=3.12-3.14 deps=Flask-SQLAlchemy==3.1.1,Flask==3.1.3 -->
 ```python
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask
@@ -160,6 +165,7 @@ db = SQLAlchemy(app)
 
 ### 方式二
 
+<!-- snippet: id=flask-11-integration-06 mode=compile python=3.12-3.14 deps=Flask-SQLAlchemy==3.1.1 -->
 ```python
 from flask_sqlalchemy import SQLAlchemy
 
@@ -177,6 +183,7 @@ def create_app():
 
 ### 方式一
 
+<!-- snippet: id=flask-11-integration-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 db.session  # 会自动创建一个session
 db.session.add()
@@ -187,6 +194,7 @@ db.session.remove()
 
 ### 方式二
 
+<!-- snippet: id=flask-11-integration-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from app import models
 models.User.query
@@ -208,6 +216,7 @@ models.User.query
 
 **方式二**：
 
+<!-- snippet: id=flask-11-integration-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 实例化一下
 db = SQLAlchemy()
@@ -251,12 +260,14 @@ Form组件。
 
 ### 用到的组件和版本
 
+<!-- snippet: id=flask-11-integration-10 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 pip3 freeze  # 获取环境中所有安装的模块
 ```
 
 ## 完整示例：Flask应用工厂模式
 
+<!-- snippet: id=flask-11-integration-11 mode=compile python=3.12-3.14 deps=Flask-SQLAlchemy==3.1.1,Flask-Session==0.8.0,Flask==3.1.3 -->
 ```python
 # app/__init__.py
 from flask import Flask
@@ -296,6 +307,7 @@ if __name__ == '__main__':
 
 ## 命令行操作
 
+<!-- snippet: id=flask-11-integration-12 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 初始化数据库迁移
 flask --app manage:app db init
@@ -314,6 +326,7 @@ flask --app manage:app db downgrade
 
 ### 1. 数据库连接超时
 
+<!-- snippet: id=flask-11-integration-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 SQLALCHEMY_POOL_TIMEOUT = 30
 SQLALCHEMY_POOL_RECYCLE = -1  # 设为-1则不回收连接
@@ -321,6 +334,7 @@ SQLALCHEMY_POOL_RECYCLE = -1  # 设为-1则不回收连接
 
 ### 2. 连接池大小
 
+<!-- snippet: id=flask-11-integration-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 SQLALCHEMY_POOL_SIZE = 5
 SQLALCHEMY_MAX_OVERFLOW = 10  # 超过池大小的最大连接数
@@ -328,6 +342,7 @@ SQLALCHEMY_MAX_OVERFLOW = 10  # 超过池大小的最大连接数
 
 ### 3. 调试模式
 
+<!-- snippet: id=flask-11-integration-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 SQLALCHEMY_ECHO = True  # 打印SQL语句
 ```

@@ -1,10 +1,10 @@
 ---
-title: LangChain Memory：记忆组件
+title: LangChain Memory：短期状态与长期记忆
 author: Joekma
 pubDatetime: 2026-05-11T00:00:00.000+08:00
-modDatetime: 2026-05-11T00:00:00.000+08:00
+modDatetime: 2026-07-12T00:00:00.000+08:00
 slug: langchain-memory
-description: '深入讲解LangChain v1.0的Memory模块，包括短期会话状态、摘要记忆和检索式记忆。'
+description: "讲清 LangChain v1.x 的短期 graph state、checkpointer、摘要、长期 store 与检索式记忆。"
 tags:
   - LangChain
   - Memory
@@ -15,6 +15,12 @@ seriesOrder: 7
 language: zh-CN
 ---
 
+## 阅读指南
+
+**前置知识：** 理解 Agent 每次调用都接收 messages，并可通过 `thread_id` 恢复状态。
+
+**学完本文你应该能：** 区分短期状态与长期记忆；设计 thread 隔离；选择裁剪、摘要或检索；处理 TTL、隐私删除和并发写入。
+
 ## 概述
 
 Memory（记忆组件）是 LangChain 中用于在对话或处理过程中保持状态的能力。它解决的问题很直接：模型本身不会自动记住上一次请求，如果应用不把历史消息或关键状态传回去，下一轮对话就会像重新开始一样。
@@ -23,26 +29,28 @@ Memory（记忆组件）是 LangChain 中用于在对话或处理过程中保持
 
 ### 为什么需要 Memory？
 
-| 场景 | 没有 Memory | 有 Memory |
-|------|------------|----------|
-| 多轮对话 | 每轮都是新对话 | 记住之前的上下文 |
-| 长对话 | 丢失早期信息 | 保持完整对话历史 |
+| 场景       | 没有 Memory      | 有 Memory        |
+| ---------- | ---------------- | ---------------- |
+| 多轮对话   | 每轮都是新对话   | 记住之前的上下文 |
+| 长对话     | 丢失早期信息     | 保持完整对话历史 |
 | 上下文理解 | 无法关联之前内容 | 理解完整的上下文 |
 
 ### Memory 工作原理
 
-![LangChain Memory 在 v1 中通过 thread_id 隔离会话状态、Checkpointer 保存 Graph State，并组合近期消息、摘要、用户画像和检索记忆形成上下文](./images/langchain-memory-state-context-figure-01.png)
-
 ## Memory 类型概览
 
-| 类型 | 说明 | 适用场景 |
-|------|------|---------|
-| **短期会话记忆** | 按 thread 保存消息状态 | 标准聊天 |
-| **摘要记忆** | 将长历史压缩成摘要 | 长对话 |
-| **组合上下文** | 同时使用历史、摘要、用户资料 | 多维度上下文 |
-| **检索式记忆** | 用向量检索找回相关片段 | 大量历史信息 |
+![Memory 类型分层：短期状态 Short-term State、Checkpoint、摘要 Summary、长期 Store](./images/langchain-07-memory-layers-v2.png)
+
+| 类型             | 说明                         | 适用场景     |
+| ---------------- | ---------------------------- | ------------ |
+| **短期会话记忆** | 按 thread 保存消息状态       | 标准聊天     |
+| **摘要记忆**     | 将长历史压缩成摘要           | 长对话       |
+| **组合上下文**   | 同时使用历史、摘要、用户资料 | 多维度上下文 |
+| **检索式记忆**   | 用向量检索找回相关片段       | 大量历史信息 |
 
 ## 短期会话记忆
+
+![Thread 状态隔离：用户 A User A、用户 B User B、thread_id A、thread_id B](./images/langchain-07-thread-isolation-v2.png)
 
 ### 基础用法
 
@@ -258,13 +266,13 @@ with open("memory.json", "r", encoding="utf-8") as f:
 
 ## 最佳实践
 
-| 实践 | 说明 |
-|------|------|
-| **按 thread 隔离** | 不同用户或会话使用不同 `thread_id` |
-| **设置 token 限制** | 避免超出模型上下文限制 |
-| **定期摘要** | 长对话用摘要压缩旧消息 |
-| **检索重要事实** | 大量历史信息用向量检索找回 |
-| **持久化存储** | 生产环境使用数据库型 checkpointer |
+| 实践                | 说明                               |
+| ------------------- | ---------------------------------- |
+| **按 thread 隔离**  | 不同用户或会话使用不同 `thread_id` |
+| **设置 token 限制** | 避免超出模型上下文限制             |
+| **定期摘要**        | 长对话用摘要压缩旧消息             |
+| **检索重要事实**    | 大量历史信息用向量检索找回         |
+| **持久化存储**      | 生产环境使用数据库型 checkpointer  |
 
 ### 记忆类型选择指南
 
@@ -293,13 +301,61 @@ def keep_recent_messages(messages, max_items=10):
 
 真正限制上下文时，建议按 token 数估算，而不是只按消息条数截断；上面的函数只展示最朴素的裁剪思路。
 
+## 短期状态不等于模型上下文
+
+![上下文裁剪与摘要：完整状态 Full State、近期消息 Recent、摘要 Summary、Token Budget](./images/langchain-07-context-compression-v2.png)
+
+Checkpointer 可以保存完整 graph state，但模型上下文窗口仍然有限。每次调用模型前，应从状态中选择真正相关的信息：近期消息保留原文，较早消息压缩成摘要，稳定用户事实从长期 store 检索，工具产生的大对象只保留引用或摘要。
+
+如果把“持久化了什么”和“发送给模型什么”混为一谈，长会话最终仍会超出上下文窗口，也会增加延迟、成本和隐私暴露面。
+
+## 长期记忆的写入策略
+
+![长期记忆读写：候选事实 Candidate Fact、授权 Consent、写入 Store、语义检索 Retrieve](./images/langchain-07-long-term-memory-v2.png)
+
+长期记忆至少分为三类：语义记忆保存用户事实，情景记忆保存过去事件，程序性记忆保存系统规则或技能。不要把每句话都自动写入长期记忆；写入前应判断稳定性、来源、用户授权和有效期，并允许用户查看、更正和删除。
+
+检索长期记忆时，应同时使用用户或租户过滤、相关性阈值和数量上限。仅按向量相似度检索可能把另一位用户的数据带入当前上下文，这是数据隔离错误，不是普通的“回答质量问题”。
+
+## 并发、TTL 与删除
+
+![记忆治理生命周期：写入 Write、版本 Version、TTL、更正 Correct](./images/langchain-07-memory-governance-v2.png)
+
+- 同一 `thread_id` 的并发请求可能产生竞态，应串行化、使用版本检查或让存储层支持冲突检测。
+- 临时会话和敏感工具结果应设置 TTL，不能无限期保留。
+- 删除请求必须覆盖 checkpoint、长期 store、向量索引和派生摘要，而不只是清空 UI。
+- 生产环境使用持久化 checkpointer；`InMemorySaver` 只适合本地演示和测试。
+
 ## 总结
 
-| Memory 方式 | 特点 | 适用场景 |
-|------------|------|---------|
-| **messages** | 结构直观 | 短对话 |
+| Memory 方式      | 特点               | 适用场景   |
+| ---------------- | ------------------ | ---------- |
+| **messages**     | 结构直观           | 短对话     |
 | **checkpointer** | 按 thread 恢复状态 | 多轮 Agent |
-| **摘要** | 压缩上下文 | 长对话 |
-| **检索** | 找回相关事实 | 大量历史 |
+| **摘要**         | 压缩上下文         | 长对话     |
+| **检索**         | 找回相关事实       | 大量历史   |
 
 Memory 让 LLM 应用具有真正的对话能力。把短期状态、摘要和检索式事实分清楚，应用会更稳，也更容易解释为什么模型“记得”某些信息。
+
+## 本篇自检
+
+1. 为什么 checkpoint 中保存完整历史，不代表每次都应把完整历史发给模型？
+2. 长期记忆写入前至少需要检查哪些条件？
+3. 删除一位用户的记忆为什么不能只清空 messages？
+
+<details>
+<summary>查看答案</summary>
+
+1. 模型上下文有限，完整发送会增加成本、延迟和隐私风险；应裁剪、摘要或检索选择。
+2. 信息稳定性、来源、用户授权、租户归属和有效期。
+3. 数据还可能存在 checkpoint、长期 store、向量索引与派生摘要中。
+
+</details>
+
+## 官方资料
+
+- [Short-term memory](https://docs.langchain.com/oss/python/langchain/short-term-memory)
+- [Long-term memory](https://docs.langchain.com/oss/python/concepts/memory)
+- [LangGraph persistence](https://docs.langchain.com/oss/python/langgraph/persistence)
+
+**上一篇：** [LangChain Agents](/posts/langchain-agents/) · **下一篇：** [LangChain Retrieval/RAG](/posts/langchain-retrieval-rag/)

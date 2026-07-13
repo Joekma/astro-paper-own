@@ -2,7 +2,7 @@
 title: 开源微调工具链：Transformers、TRL、PEFT、Axolotl与LLaMA-Factory
 author: Joekma
 pubDatetime: 2026-06-26T00:00:00.000+08:00
-modDatetime: 2026-06-26T00:00:00.000+08:00
+modDatetime: 2026-07-12T00:00:00.000+08:00
 description: "梳理开源大模型微调工具链，比较 Transformers、TRL、PEFT、Axolotl、LLaMA-Factory 的定位、组合方式和选型建议。"
 tags:
   - AI
@@ -20,7 +20,23 @@ language: zh-CN
 
 开源微调生态很丰富，但很多初学者会被工具名淹没。一个清晰的理解方式是：底层运行时负责训练能力，中层库负责模型和算法，上层工具负责配置化工程流程。
 
-![开源微调工具链从运行时、模型接口、训练算法到参数高效和一体化工具的分层架构](./images/fine-tuning-toolchain-layers-figure-01.png)
+![建立运行时到一体化工具的层级](./images/fine-tuning-06-toolchain-layers-figure-01.png)
+
+![区分每层职责与非职责](./images/fine-tuning-06-responsibility-boundaries-figure-02.png)
+
+![按学习、研究、标准化与生产选工具](./images/fine-tuning-06-selection-matrix-figure-03.png)
+
+![映射同一 SFT 语义到不同工具](./images/fine-tuning-06-equivalent-sft-config-figure-04.png)
+
+![从一体化工具逐层回退定位](./images/fine-tuning-06-debug-backtrack-figure-05.png)
+
+![展示依赖锁与兼容矩阵](./images/fine-tuning-06-version-compatibility-figure-06.png)
+
+![总结跨工具不变的实验身份](./images/fine-tuning-06-experiment-manifest-figure-07.png)
+
+### 前置知识与学习目标
+
+本篇不再把工具当作互斥选项。目标是理解每一层负责什么、同一实验如何跨工具保持数据与评估等价，以及出现错误时应回退到哪一层诊断。
 
 ## 核心概念
 
@@ -83,6 +99,9 @@ args = SFTConfig(
     max_length=2048,
     per_device_train_batch_size=1,
     gradient_accumulation_steps=8,
+    assistant_only_loss=True,
+    seed=42,
+    report_to="none",
 )
 
 trainer = SFTTrainer(
@@ -152,6 +171,21 @@ llamafactory-cli train examples/train_lora/llama3_lora_sft.yaml
 
 ## 选型建议
 
+### 用约束选择，而不是按热度选择
+
+| 约束                      | 首选入口                  | 原因                           |
+| ------------------------- | ------------------------- | ------------------------------ |
+| 学习底层与定位 mask/Shape | Transformers + TRL + PEFT | 行为透明、容易插入断言         |
+| 统一多模型训练配置        | Axolotl 或 LLaMA-Factory  | 配置化、减少重复脚本           |
+| 研究新对齐算法            | TRL/算法原仓库            | 能直接访问 loss 与 trainer     |
+| 企业生产平台              | 封装上述稳定层            | 加入版本、权限、评估和注册治理 |
+
+一体化工具不应成为数据格式、评估指标和产物命名的唯一真相。建立一个独立的实验 manifest，至少包含：基座 revision、tokenizer/template 哈希、数据哈希、算法、关键超参数、依赖锁、硬件、seed、输出目录和评估报告 ID。
+
+### 版本与实验性状态
+
+TRL、Transformers 与 PEFT 的构造参数变化较快，示例必须绑定经验证的版本。遇到文档中的 experimental trainer 或 main 分支功能时，应明确标注“实验性”，不能把它作为长期兼容接口。一体化工具的字段还要核对它最终映射到的底层参数，尤其是 `max_length`、packing、assistant loss、gradient checkpointing 和保存策略。
+
 ### 学习路线
 
 ```text
@@ -197,6 +231,26 @@ Notebook 小样本实验
 - 是否记录所有训练配置？
 - 是否能从一体化工具回退到底层脚本排查问题？
 - 是否建立模型产物、数据版本和评估报告的对应关系？
+
+## 自检题
+
+<details><summary>1. TRL 和 PEFT 是互相替代的吗？</summary>
+
+不是。TRL 提供 SFT/DPO 等训练器，PEFT 提供 LoRA 等参数高效方法，两者经常组合使用。
+
+</details>
+
+<details><summary>2. 为什么两个工具使用同一数据也可能结果不同？</summary>
+
+chat template、packing、loss mask、默认优化器、精度、seed 和保存/评估策略都可能不同。
+
+</details>
+
+<details><summary>3. 一体化工具报 loss 异常时先检查什么？</summary>
+
+先检查渲染后的 token、labels mask、截断和有效 token 数，再逐层检查 trainer 与分布式配置。
+
+</details>
 
 ## 参考资料
 

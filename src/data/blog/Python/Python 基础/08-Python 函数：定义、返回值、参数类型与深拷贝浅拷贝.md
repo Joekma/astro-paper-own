@@ -2,7 +2,7 @@
 title: Python 函数：定义、返回值、参数类型与深拷贝浅拷贝
 author: Joekma
 pubDatetime: 2018-08-16T00:00:00.000+08:00
-modDatetime: 2026-05-03T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-functions-definition-return-values-parameters
 description: '深入理解Python函数定义、返回值、各种参数类型（位置参数、默认参数、可变参数）以及深拷贝与浅拷贝的概念和应用。'
 tags:
@@ -37,6 +37,7 @@ language: zh-CN
 
 **函数的基本结构**：
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def 函数名():
     '''
@@ -50,6 +51,7 @@ def 函数名():
 
 函数名 + 括号即可调用函数
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def strlen():
     '''
@@ -67,6 +69,7 @@ print(leng)  # 输出: 11
 
 ## 函数调用的三种形式
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 1. 语句形式
 register()
@@ -104,6 +107,7 @@ print(res)  # 输出: 30
 
 ### 返回单个值和多个值
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 返回一个值
 def func1():
@@ -142,6 +146,7 @@ print(a, b, c)  # 1 2 3
 3. 默认形参的值在函数定义阶段就已经固定死了，定义阶段之后的改动不会影响该值
 4. 默认形参的值通常应该是不可变类型
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def stu_info(name, sex='male'):
     print('name: %s, sex: %s' % (name, sex))
@@ -152,6 +157,7 @@ stu_info('joek', 'male')   # 如果传值了，覆盖默认值
 
 **默认参数形成流程**：
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 s = 'male'
 
@@ -164,6 +170,7 @@ print(stu_info("张三"))  # 打印出来的就是 male
 
 > **重要**：不要设置可变数据类型为默认参数！
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 b = []
 
@@ -181,6 +188,7 @@ func()  # [1, 1]  ← 问题所在！
 
 **特点**：但凡按照位置定义的形参，必须被传值，多一个不行少一个也不行。
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def func(x, y, z):
     print(x, y, z)
@@ -198,6 +206,7 @@ func(1, 2, 3, 4)  # 报错：参数过多
 
 **特点**：与形参一一对应。
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def my_max(a, b):
     '''返回两个值之间的最大值'''
@@ -217,6 +226,7 @@ print(my_max(30, 20))
 
 **特点**：可以完全打乱顺序，但仍然能为指定的形参传值（指名道姓地为指定的形参传值）。
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def func(x, y, z):
     print(x, y, z)
@@ -244,6 +254,7 @@ func(z=3, y=2, x=1)
 
 **在形参前加 `*`**：会将溢出的位置实参存成元组的形式，然后赋值给 `*` 后的形参名
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def sum2(*x):
     # x = (1, 2, 3, 4, 5)
@@ -263,6 +274,7 @@ func(1, 2, 3, 4, 5)
 
 **在实参前加 `*`**：但凡碰到实参中带 `*` 的，先将实参打散成位置实参再与形参做对应
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def func(x, y, z):
     print(x, y, z)
@@ -281,6 +293,7 @@ func(1111, 2222, *[1, 2, 3, 4, 5])  # func(1111, 2222, 1, 2, 3, 4, 5)
 
 **在形参前加 `**`**：会将溢出的关键字实参存成字典的形式，然后赋值给 `**` 后的形参名
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def func(x, y, **z):
     # z = {'c': 3, 'b': 2, 'a': 1}
@@ -291,6 +304,7 @@ func(1, y=2, a=1, b=2, c=3)
 
 **在实参前加 `**`**：但凡碰到实参中带 `**` 的，先将实参打散成关键字实参再与形参做对应
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def func(x, y, z):
     print(x, y, z)
@@ -308,6 +322,7 @@ func(**{'y': 1, 'x': 2, 'a': 1111, 'b': 2222})  # func(y=1, x=2, a=1111, b=2222)
 
 `*args` 和 `**kwargs` 是 Python 中最常用的可变长参数写法：
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def func(x, *args):
     print(x)
@@ -320,6 +335,7 @@ def func(x, **kwargs):
 
 ### * 与 ** 的应用
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def index(name, age, sex):
     print('index=====>', name, age, sex)
@@ -337,6 +353,7 @@ wrapper('egon', sex='male', age=18)
 
 ### 传参时传递的是引用
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # format 方法的解包
 msg = "{0},{1}"
@@ -393,6 +410,7 @@ print(name)  # [1, 2, 3, 4, 5]
 
 **方案二**：使用 `None` 作为默认值，在函数体内判断并创建新的可变对象
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-18 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def generate_new_list_with(my_list=None, element=None):
     if my_list is None:
@@ -403,6 +421,7 @@ def generate_new_list_with(my_list=None, element=None):
 
 ### 默认值的作用域
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-19 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def foo(xyz=[]):
     xyz.append(10)
@@ -416,6 +435,7 @@ foo()  # [10, 10]  ← 问题所在！
 
 因为函数也是对象，Python 把函数的默认值放在了 `__defaults__` 属性中，这个属性就伴随着这个函数对象的整个生命周期。
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-20 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def foo(xyz=[], u='abc', z=123):
     xyz.append(1)
@@ -431,6 +451,7 @@ print(foo.__defaults__)     # ([1, 1], 'abc', 123)
 
 **方式一**：影子拷贝（浅拷贝）
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-21 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def foo(lst=[], u='abc', z=123):
     lst = lst[:]  # 影子拷贝，没有改变形参默认值
@@ -445,6 +466,7 @@ foo([10, 5])
 
 **方式二**：默认值为 `None`，对 `None` 进行判断
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-22 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def foo(lst=None, u='abc', z=123):
     if lst is None:
@@ -481,13 +503,15 @@ foo([10, 5])
 3. 基本上只要不是我们自已手动调用的 deepcopy 方法都是浅拷贝，切片拷贝、字典拷贝都是浅拷贝。
 
 4. 有些内置函数可以生成拷贝，属于深拷贝，例如：
+<!-- snippet: id=python-functions-definition-return-values-parameters-23 mode=compile python=3.12-3.14 deps=stdlib -->
    ```python
-   a = list(range(10))
-   b = list(a)  # 深拷贝
+a = list(range(10))
+b = list(a)  # 浅拷贝；列表中的元素引用仍会被复用
    ```
 
 ### 实际应用示例
 
+<!-- snippet: id=python-functions-definition-return-values-parameters-24 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import copy
 

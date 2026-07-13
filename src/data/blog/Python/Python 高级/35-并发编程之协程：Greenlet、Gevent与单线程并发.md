@@ -6,7 +6,7 @@ language: zh-CN
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: python-coroutine-greenlet-gevent
-modDatetime: 2026-04-22T00:00:00Z
+modDatetime: 2026-07-11T00:00:00.000+08:00
 featured: false
 draft: false
 tags:
@@ -24,14 +24,13 @@ description: '深入讲解Greenlet、Gevent等协程模块，实现单线程下�
 
 cpu正在运行一个任务，会在两种情况下切走去执行其他的任务（切换由操作系统强制控制），一种情况是该任务发生了阻塞，另外一种情况是该任务计算的时间过长或有一个优先级更高的程序替代了当前任务。
 
-![image](https://images2017.cnblogs.com/blog/1036857/201802/1036857-20180202102945937-1050863538.png)
-
 ps：在介绍进程理论时，提及进程的三种执行状态，而线程才是执行单位，所以也可以将上图理解为线程的三种状态。
 
 **一**：其中第二种情况并不能提升效率，只是为了让cpu能够雨露均沾，实现看起来所有任务都被"同时"执行的效果，如果多个任务都是纯计算的，这种切换反而会降低效率。为此我们可以基于yield来验证。yield本身就是一种在单线程下可以保存任务运行状态的方法，我们来简单复习一下：
 
 yield可以保存状态，yield的状态保存与操作系统的保存线程状态很像，但是yield是代码级别控制的，更轻量级。send可以把一个函数的结果传给另外一个函数，以此实现单线程内程序之间的切换。
 
+<!-- snippet: id=python-coroutine-greenlet-gevent-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # yield功能（可以把函数暂停住，保存原来的状态）
 def f1():
@@ -51,6 +50,7 @@ print(next(g))  # 当遇见了yield的时候就返回一个值
 
 **yield保存状态举例**
 
+<!-- snippet: id=python-coroutine-greenlet-gevent-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # yield表达式形式（对于表达式的yield）
 import time
@@ -80,6 +80,7 @@ producer(consumer())
 
 **send传递函数结果**
 
+<!-- snippet: id=python-coroutine-greenlet-gevent-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 '''
 1、协程：
@@ -140,6 +141,7 @@ print(stop - start)
 
 **二**：第一种情况的切换。在任务一遇到io情况下，切到任务二去执行，这样就可以利用任务一阻塞的时间完成任务二的计算，效率的提升就在于此。
 
+<!-- snippet: id=python-coroutine-greenlet-gevent-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import time
 
@@ -175,7 +177,8 @@ print(stop - start)
 
 需要强调的是：
 
-```
+<!-- snippet: id=python-coroutine-greenlet-gevent-05 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 python的线程属于内核级别的，即由操作系统控制调度（如单线程遇到io或执行时间过长就会被迫交出cpu执行权限，切换其他线程运行）
 单线程内开启协程，一旦遇到io，就会从应用程序级别（而非操作系统）控制切换，以此来提升效率（！！！非io操作的切换与效率无关）
 ```
@@ -202,11 +205,13 @@ python的线程属于内核级别的，即由操作系统控制调度（如单�
 
 如果我们在单个线程内20个任务，要想实现在多个任务之间切换，使用yield生成器的方式过于麻烦（需要先得到初始化一次的生成器，然后再调用send...非常麻烦），而使用greenlet模块可以非常简单地实现20个任务直接的切换。
 
+<!-- snippet: id=python-coroutine-greenlet-gevent-06 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 安装
-pip3 install greenlet
+python -m pip install greenlet
 ```
 
+<!-- snippet: id=python-coroutine-greenlet-gevent-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from greenlet import greenlet
 
@@ -229,6 +234,7 @@ g1.switch('egon')  # 可以在第一次switch时传入参数，以后都不需�
 
 单纯的切换（在没有io的情况下或者没有重复开辟内存空间的操作），反而会降低程序的执行速度。
 
+<!-- snippet: id=python-coroutine-greenlet-gevent-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 顺序执行
 import time
@@ -279,13 +285,15 @@ greenlet只是提供了一种比generator更加便捷的切换方式，当切到
 
 ### Gevent介绍
 
+<!-- snippet: id=python-coroutine-greenlet-gevent-09 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 安装
-pip3 install gevent
+python -m pip install gevent
 ```
 
 Gevent 是一个第三方库，可以轻松通过gevent实现并发同步或异步编程，在gevent中用到的主要模式是**Greenlet**，它是以C扩展模块形式接入Python的轻量级协程。Greenlet全部运行在主程序操作系统进程的内部，但它们被协作式地调度。
 
+<!-- snippet: id=python-coroutine-greenlet-gevent-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 用法
 g1 = gevent.spawn(func, 1, 2, 3, x=4, y=5)  # 创建一个协程对象g1，spawn括号内第一个参数是函数名，如eat，后面可以有多个参数，可以是位置实参或关键字实参，都是传给函数eat
@@ -302,6 +310,7 @@ g1.value  # 拿到func1的返回值
 
 **遇到IO阻塞时会自动切换任务**
 
+<!-- snippet: id=python-coroutine-greenlet-gevent-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import gevent
 
@@ -331,6 +340,7 @@ print('主线程结束')
 
 **或者我们干脆记忆成：要用gevent，需要将 from gevent import monkey; monkey.patch_all() 放到文件的开头**
 
+<!-- snippet: id=python-coroutine-greenlet-gevent-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from gevent import monkey
 monkey.patch_all()
@@ -358,6 +368,7 @@ print('主线程结束')
 
 ### Gevent之同步与异步
 
+<!-- snippet: id=python-coroutine-greenlet-gevent-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from gevent import spawn, joinall, monkey
 monkey.patch_all()
@@ -394,6 +405,7 @@ if __name__ == '__main__':
 
 ### Gevent之应用举例一
 
+<!-- snippet: id=python-coroutine-greenlet-gevent-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from gevent import monkey
 monkey.patch_all()
@@ -417,6 +429,7 @@ stop_time = time.time()
 print('run time is %s' % (stop_time - start_time))
 ```
 
+<!-- snippet: id=python-coroutine-greenlet-gevent-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from gevent import joinall, spawn, monkey
 monkey.patch_all()
@@ -454,6 +467,7 @@ if __name__ == '__main__':
 
 **服务端利用协程**
 
+<!-- snippet: id=python-coroutine-greenlet-gevent-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 #!usr/bin/env python
 # -*- coding:utf-8 -*-
@@ -490,6 +504,7 @@ if __name__ == '__main__':
 
 **客户端多开**
 
+<!-- snippet: id=python-coroutine-greenlet-gevent-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 #!usr/bin/env python
 # -*- coding:utf-8 -*-

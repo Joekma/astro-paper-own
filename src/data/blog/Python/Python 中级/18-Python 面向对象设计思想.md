@@ -2,7 +2,7 @@
 title: Python 面向对象设计思想
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
-modDatetime: 2026-04-29T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-oop-design-thinking
 featured: false
 draft: false
@@ -38,6 +38,7 @@ language: zh-CN
 
 ## 什么是类
 
+<!-- snippet: id=python-oop-design-thinking-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class ClassMate:
     """类的定义示例"""
@@ -54,6 +55,7 @@ del OldboyStudent.x  # 等于 OldboyStudent.__dict__.pop('x')
 ## 什么是类对象
 
 注意类名后面有个冒号，在block块里面就可以定义属性和方法了。当一个类定义完之后，就产生了一个类对象。类对象支持两种操作：引用和实例化。引用操作是通过类对象去调用类中的属性或者方法，而实例化是产生出一个类对象的实例，称作实例对象。比如定义了一个goods类
+<!-- snippet: id=python-oop-design-thinking-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Goods:
     """定义一个商品类"""
@@ -75,6 +77,7 @@ goods类定义完成之后就产生了一个全局的类对象，可以通过类
 
 ### Python 为类内置的特殊属性
 
+<!-- snippet: id=python-oop-design-thinking-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 类名.__name__   # 类的名字(字符串)
 类名.__doc__    # 类的文档字符串
@@ -85,6 +88,7 @@ goods类定义完成之后就产生了一个全局的类对象，可以通过类
 类名.__class__  # 实例对应的类(仅新式类中)
 ```
 ### 更好的理解类对象
+<!-- snippet: id=python-oop-design-thinking-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class goods:
     name = 'apple'  # 定义了一个属性
@@ -106,6 +110,7 @@ print(sdsd.__dict__)
 
 ```
 ## 属性
+<!-- snippet: id=python-oop-design-thinking-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class people:
     name = 'jack'
@@ -122,7 +127,8 @@ p = people()
 print(p.__name,p.__age)
 ```
 程序运行会报错
-```python
+<!-- snippet: id=python-oop-design-thinking-06 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 Traceback (most recent call last):
   File "C:/PycharmProjects/FirstProject/oop.py", line 6, in <module>
     print p.__name,p.__age
@@ -133,7 +139,8 @@ AttributeError: people instance has no attribute '__name
 ### 类即类型
 
 python中一切皆为对象，且python3中类与类型是一个概念，类型就是类
-```python
+<!-- snippet: id=python-oop-design-thinking-07 mode=display python=3.12-3.14 deps=stdlib -->
+```pycon
 # 类型dict就是类dict
 list
 <class 'list'>
@@ -173,6 +180,7 @@ l3
 
 2、Python里什么没有__dict__属性
 虽然说一切皆对象，但对象也有不同，就好比不是每个人的女朋友都是一个人一样，一些内置的数据类型是没有__dict__属性的，如下
+<!-- snippet: id=python-oop-design-thinking-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 num = 3
 ll = []
@@ -196,6 +204,7 @@ print(dd.__dict__)
 
 在类中可以根据需要定义一些方法，定义方法采用def关键字，在类中定义的方法至少会有一个参数，一般以名为'self'的变量作为该参数（用其他名称也可以），而且需要作为第一个参数。下面看个例子：
 
+<!-- snippet: id=python-oop-design-thinking-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class people:
     __name = 'jack'
@@ -216,6 +225,7 @@ print(p.getName(), p.getAge())
 
 类的数据属性是所有对象**共享**的，指向同一块内存地址。
 
+<!-- snippet: id=python-oop-design-thinking-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Student:
     school = 'Oldboy'  # 类数据属性
@@ -241,6 +251,7 @@ print(id(s3.school))       # 4377347328
 
 类中定义的函数主要是给对象使用的，而且是**绑定到对象**的。虽然所有对象指向的都是相同的功能，但是绑定到不同的对象时是**不同的方法对象**。
 
+<!-- snippet: id=python-oop-design-thinking-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 类的函数属性是绑定给对象使用的，内存地址都不一样
 print(Student.learn)  # <function Student.learn at 0x1021329d8>
@@ -255,6 +266,7 @@ print(s3.learn)        # <bound method Student.learn of <Student object at ...>>
 
 绑定方法是一种特殊的函数，它**自动绑定到调用它的对象**，并在调用时自动将该对象作为第一个参数传入。
 
+<!-- snippet: id=python-oop-design-thinking-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 调用绑定方法
 s1.learn()  # 等同于 Student.learn(s1)
@@ -274,6 +286,7 @@ s3.learn()  # 等同于 Student.learn(s3)
 
 在类的内部来说，`__init__` 是类的函数属性；但是对于对象来说，它就是绑定方法。
 
+<!-- snippet: id=python-oop-design-thinking-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class People:
     def __init__(self, name, age):
@@ -298,6 +311,7 @@ p2 = People('Bob', 30)
 3. **父类的命名空间**（按继承顺序查找）
 4. **如果都找不到，抛出 AttributeError**
 
+<!-- snippet: id=python-oop-design-thinking-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Animal:
     species = '动物'  # 类属性
@@ -321,6 +335,7 @@ print(dog.breed)   # '狗' - 在类 Dog 的 __dict__ 中找到
 print(dog.species)  # '动物' - 在父类 Animal 的 __dict__ 中找到
 ```
 
+<!-- snippet: id=python-oop-design-thinking-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # Filename: class_init.py
 class Person:

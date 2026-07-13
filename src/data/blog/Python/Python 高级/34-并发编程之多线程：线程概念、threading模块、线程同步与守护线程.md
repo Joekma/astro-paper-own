@@ -6,7 +6,7 @@ language: zh-CN
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: python-multi-threading-threading-module
-modDatetime: 2026-04-22T00:00:00Z
+modDatetime: 2026-07-11T00:00:00.000+08:00
 featured: false
 draft: false
 tags:
@@ -66,8 +66,6 @@ description: '深入讲解并发编程之多线程，涵盖线程概念、thread
 
 ### 多线程的应用举例
 
-![image](https://images2015.cnblogs.com/blog/1036857/201705/1036857-20170506223224273-345545969.png)
-
 开启一个字处理软件进程，该进程肯定需要办不止一件事情，比如监听键盘输入，处理文字，定时自动将文字保存到硬盘，这三个任务操作的都是同一块数据，因而不能用多进程。只能在一个进程里并发地开启三个线程。如果是单线程，那就只能是，键盘输入时，不能处理文字和自动保存，自动保存时又不能输入和处理文字。
 
 ## threading模块介绍
@@ -78,6 +76,7 @@ multiprocessing模块的完全模仿了threading模块的接口，二者在使�
 
 **方式一**
 
+<!-- snippet: id=python-multi-threading-threading-module-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from threading import Thread
 import time
@@ -94,6 +93,7 @@ if __name__ == '__main__':
 
 **方式二**
 
+<!-- snippet: id=python-multi-threading-threading-module-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from threading import Thread
 import time
@@ -115,6 +115,7 @@ if __name__ == '__main__':
 
 ## 在一个进程下开启多个线程与在一个进程下开启多个子进程的区别
 
+<!-- snippet: id=python-multi-threading-threading-module-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from threading import Thread
 from multiprocessing import Process
@@ -137,6 +138,7 @@ if __name__ == '__main__':
 
 **开启速度测试**
 
+<!-- snippet: id=python-multi-threading-threading-module-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from threading import Thread
 from multiprocessing import Process
@@ -163,6 +165,7 @@ if __name__ == '__main__':
 
 **pid检测**
 
+<!-- snippet: id=python-multi-threading-threading-module-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from threading import Thread
 from multiprocessing import Process
@@ -190,6 +193,7 @@ if __name__ == '__main__':
 
 ### 练习一：多线程并发的socket服务端
 
+<!-- snippet: id=python-multi-threading-threading-module-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import threading
 import socket
@@ -211,6 +215,7 @@ if __name__ == '__main__':
         p.start()
 ```
 
+<!-- snippet: id=python-multi-threading-threading-module-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import socket
 
@@ -228,6 +233,7 @@ while True:
 
 ### 练习二：三个任务，一个接收用户输入，一个将用户输入的内容格式化成大写，一个将格式化后的结果存入文件
 
+<!-- snippet: id=python-multi-threading-threading-module-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from threading import Thread
 
@@ -265,6 +271,7 @@ if __name__ == '__main__':
 
 ## 线程相关的其他方法
 
+<!-- snippet: id=python-multi-threading-threading-module-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # Thread实例对象的方法
 # isAlive(): 返回线程是否活动的
@@ -277,6 +284,7 @@ if __name__ == '__main__':
 # threading.activeCount(): 返回正在运行的线程数量，与len(threading.enumerate())有相同的结果
 ```
 
+<!-- snippet: id=python-multi-threading-threading-module-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from threading import Thread
 import threading
@@ -302,6 +310,7 @@ if __name__ == '__main__':
 
 **主线程等待子线程结束**
 
+<!-- snippet: id=python-multi-threading-threading-module-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from threading import Thread
 import time
@@ -336,6 +345,7 @@ if __name__ == '__main__':
 
 2. 主线程在其他非守护线程运行完毕后才算运行完毕（守护线程在此时就被回收）。因为主线程的结束意味着进程的结束，进程整体的资源都将被回收，而进程必须保证非守护线程都运行完毕后才能结束。
 
+<!-- snippet: id=python-multi-threading-threading-module-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from threading import Thread
 import time
@@ -355,6 +365,7 @@ if __name__ == '__main__':
     # True
 ```
 
+<!-- snippet: id=python-multi-threading-threading-module-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from threading import Thread
 import time
@@ -384,6 +395,7 @@ print("main-------")
 
 Event对象包含一个可由线程设置的信号标志，它允许线程等待某些事件的发生。在初始情况下，Event对象中的信号标志被设置为假。如果有线程等待一个Event对象，而这个Event对象的标志为假，那么这个线程将会被一直阻塞直至该标志为真。一个线程如果将一个Event对象的信号标志设置为真，它将唤醒所有等待这个Event对象的线程。如果一个线程等待一个已经被设置为真的Event对象，那么它将忽略这个事件，继续执行。
 
+<!-- snippet: id=python-multi-threading-threading-module-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 Event.isSet()  # 返回event的状态值
 Event.wait()  # 如果 event.isSet() == False 将阻塞线程
@@ -393,6 +405,7 @@ Event.clear()  # 恢复
 
 **有多个工作线程尝试链接MySQL，我们想要在链接前确保MySQL服务正常才让那些工作线程去连接MySQL服务器，如果连接不成功，都会去尝试重新连接。那么我们就可以采用threading.Event机制来协调各个工作线程的连接操作。**
 
+<!-- snippet: id=python-multi-threading-threading-module-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from threading import Thread, Event
 import time
@@ -431,6 +444,7 @@ if __name__ == '__main__':
 
 在num=0时，t1取得num=0。此时系统把t1调度为"sleeping"状态，把t2转换为"running"状态，t2也获得num=0。然后t2对得到的值进行加1并赋给num，使得num=1。然后系统又把t2调度为"sleeping"，把t1转为"running"。线程t1又把它之前得到的0加1后赋值给num。这样，明明t1和t2都完成了1次加1工作，但结果仍然是num=1。
 
+<!-- snippet: id=python-multi-threading-threading-module-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from threading import Thread
 import time
@@ -459,7 +473,8 @@ print("---g_num=%d---" % g_num)
 
 运行结果（可能不一样，但是结果往往不是2000000）：
 
-```
+<!-- snippet: id=python-multi-threading-threading-module-17 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 ---g_num=284672---
 ---test1---g_num=1166544
 ---test2---g_num=1406832
@@ -467,7 +482,8 @@ print("---g_num=%d---" % g_num)
 
 取消屏蔽之后，再次运行结果如下：
 
-```
+<!-- snippet: id=python-multi-threading-threading-module-18 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 ---test1---g_num=1000000
 ---g_num=1041802---
 ---test2---g_num=2000000
@@ -485,6 +501,7 @@ print("---g_num=%d---" % g_num)
 
 对于本小节提出的那个计算错误的问题，可以通过线程同步来进行解决。
 
+<!-- snippet: id=python-multi-threading-threading-module-19 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from threading import Thread, Lock
 
@@ -518,10 +535,11 @@ print("---g_num=%d---" % g_num)
 
 Python代码的执行由Python虚拟机（解释器）控制。Python在设计时是这样考虑的：在主循环中只能有一个线程执行解释器代码。
 
-GIL的全称是Global Interpreter Lock（全局解释器锁），这个锁的意思是任何时刻只允许一个线程使用解释器。所以Python的多线程实际上并不是真正的多线程，而是通过不断切换线程来模拟的。
+GIL 的全称是 Global Interpreter Lock。对默认启用 GIL 的 CPython 构建，同一解释器在某一时刻通常只有一个线程执行 Python 字节码；线程本身仍是操作系统线程，并非“模拟线程”。阻塞 I/O 和许多 C 扩展会释放 GIL。Python 3.13 起还提供实验性的 free-threaded CPython 构建，因此这里属于 CPython 构建方式的实现约束，不是 Python 语言保证。
 
 **注意**：GIL只会影响到那些严重依赖CPU的程序（如数值计算），对于I/O操作（文件读写、网络请求等）影响不大。
 
+<!-- snippet: id=python-multi-threading-threading-module-20 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 在I/O密集型任务中，多线程很有用
 import threading

@@ -3,7 +3,7 @@ title: Python Pandas 详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: pandas
-modDatetime: 2026-04-22T00:00:00Z
+modDatetime: 2026-07-11T00:00:00.000+08:00
 featured: false
 draft: false
 tags:
@@ -45,32 +45,35 @@ Pandas 是一个强大的 Python 数据分析工具包，基于 NumPy 构建，�
 
 ### 安装 Pandas
 
+<!-- snippet: id=pandas-01 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 使用 pip 安装
-pip install pandas
+python -m pip install pandas
 
 # 使用 conda 安装
 conda install pandas
 
 # 安装特定版本
-pip install pandas==1.5.3
+python -m pip install pandas==1.5.3
 
 # 安装最新开发版
-pip install pandas --pre
+python -m pip install pandas --pre
 ```
 
 ### 依赖包安装
 
+<!-- snippet: id=pandas-02 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 安装常用依赖包
-pip install pandas numpy matplotlib seaborn openpyxl xlrd
+python -m pip install pandas numpy matplotlib seaborn openpyxl xlrd
 
 # 完整数据分析环境
-pip install pandas numpy scipy matplotlib seaborn jupyter
+python -m pip install pandas numpy scipy matplotlib seaborn jupyter
 ```
 
 ### 导入与配置
 
+<!-- snippet: id=pandas-03 mode=compile python=3.12-3.14 deps=numpy==2.5.1,pandas==3.0.3 -->
 ```python
 import pandas as pd
 import numpy as np
@@ -92,6 +95,7 @@ Series 是一种类似于一维数组的对象，由一组数据和一组与之�
 
 ### 创建 Series
 
+<!-- snippet: id=pandas-04 mode=compile python=3.12-3.14 deps=numpy==2.5.1,pandas==3.0.3 -->
 ```python
 import pandas as pd
 import numpy as np
@@ -130,6 +134,7 @@ print(s6)
 
 ### Series 属性
 
+<!-- snippet: id=pandas-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例Series
 s = pd.Series([10, 20, 30, 40], index=['a', 'b', 'c', 'd'], name='values')
@@ -147,6 +152,7 @@ print(f"大小: {s.size}")
 
 Series 继承了 NumPy 数组的特性，支持向量化操作：
 
+<!-- snippet: id=pandas-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例Series
 s = pd.Series([1, 2, 3, 4], index=['a', 'b', 'c', 'd'])
@@ -186,6 +192,7 @@ print(f"s[(s > 1) & (s < 4)]: {s[(s > 1) & (s < 4)]}")
 
 Series 也支持类似字典的操作：
 
+<!-- snippet: id=pandas-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例Series
 s = pd.Series({'a': 100, 'b': 200, 'c': 300, 'd': 400})
@@ -214,6 +221,7 @@ for index, value in s.items():
 
 ### 统计函数
 
+<!-- snippet: id=pandas-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例Series
 s = pd.Series([1, 2, 3, 4, 5, np.nan, 7, 8, 9, 10])
@@ -242,6 +250,7 @@ print(f"75%分位数: {s.quantile(0.75)}")
 
 ### 描述性统计
 
+<!-- snippet: id=pandas-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例Series
 s = pd.Series(np.random.randn(1000))
@@ -263,6 +272,7 @@ print(f"最频繁值: {s.mode().iloc[0] if not s.mode().empty else 'None'}")
 
 ### 问题示例
 
+<!-- snippet: id=pandas-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建整数索引的Series
 sr = pd.Series(np.arange(4.), index=[0, 1, 2, 3])
@@ -278,6 +288,7 @@ except KeyError as e:
 
 ### 解决方案：loc 和 iloc
 
+<!-- snippet: id=pandas-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例Series
 sr = pd.Series([10, 20, 30, 40], index=[0, 1, 2, 3])
@@ -296,6 +307,7 @@ print(f"sr.iloc[1:3]: {sr.iloc[1:3]}")  # 位置1到3（不包含3）
 
 ### 最佳实践
 
+<!-- snippet: id=pandas-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建混合索引的Series
 sr_mixed = pd.Series([100, 200, 300, 400], index=['a', 0, 'b', 1])
@@ -329,6 +341,7 @@ Pandas 在运算时会按索引进行自动对齐，这是 Pandas 的核心特�
 
 ### 自动数据对齐示例
 
+<!-- snippet: id=pandas-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建两个不同索引的Series
 sr1 = pd.Series([12, 23, 34], index=['c', 'a', 'd'])
@@ -356,6 +369,7 @@ print(result2)
 
 ### 灵活的算术方法
 
+<!-- snippet: id=pandas-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例Series
 sr1 = pd.Series([10, 20, 30], index=['a', 'b', 'c'])
@@ -393,6 +407,7 @@ print(sr1.div(sr2, fill_value=1))
 
 ### 实际应用示例
 
+<!-- snippet: id=pandas-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 销售数据示例
 sales_q1 = pd.Series([1000, 1500, 800], index=['A', 'B', 'C'])
@@ -425,6 +440,7 @@ print(average_sales)
 
 ### 缺失数据表示
 
+<!-- snippet: id=pandas-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建包含缺失数据的Series
 sr_with_nan = pd.Series([1, 2, np.nan, 4, None, 6, np.inf, -np.inf])
@@ -447,6 +463,7 @@ print(f"np.nan is np.nan: {np.nan is np.nan}")
 
 ### 缺失值检测
 
+<!-- snippet: id=pandas-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例Series
 sr = pd.Series([1, 2, np.nan, 4, None, 6])
@@ -471,6 +488,7 @@ print(f"缺失值比例: {sr.isnull().sum() / len(sr):.2%}")
 
 ### 缺失值删除
 
+<!-- snippet: id=pandas-18 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例Series
 sr = pd.Series([1, 2, np.nan, 4, None, 6, np.nan, 8])
@@ -493,6 +511,7 @@ print(sr.drop(labels=[0, 2]))  # 删除索引为0和2的值
 
 ### 缺失值填充
 
+<!-- snippet: id=pandas-19 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例Series
 sr = pd.Series([1, 2, np.nan, 4, None, 6, np.nan, 8])
@@ -534,6 +553,7 @@ print(sr.fillna(method='ffill', limit=1))
 
 ### 高级缺失值处理
 
+<!-- snippet: id=pandas-20 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例Series
 sr = pd.Series([1, 2, np.nan, 4, np.nan, np.nan, 7, 8])
@@ -561,6 +581,7 @@ DataFrame 是一个表格型的数据结构，含有一组有序的列。DataFra
 
 ### 创建 DataFrame
 
+<!-- snippet: id=pandas-21 mode=compile python=3.12-3.14 deps=numpy==2.5.1,pandas==3.0.3 -->
 ```python
 import pandas as pd
 import numpy as np
@@ -606,6 +627,7 @@ print(df5)
 
 ### DataFrame 属性
 
+<!-- snippet: id=pandas-22 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例DataFrame
 df = pd.DataFrame({
@@ -633,6 +655,7 @@ print(df.T)
 
 ### 基本文件操作
 
+<!-- snippet: id=pandas-23 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例DataFrame
 df = pd.DataFrame({
@@ -668,6 +691,7 @@ print(df_excel)
 
 ### DataFrame 数据查看
 
+<!-- snippet: id=pandas-24 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例DataFrame
 df = pd.DataFrame({
@@ -714,6 +738,7 @@ print(df.describe(include='all'))
 
 ### 列名操作
 
+<!-- snippet: id=pandas-25 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例DataFrame
 df = pd.DataFrame({
@@ -760,6 +785,7 @@ print(df_suffixed)
 
 ### 数据选择与访问
 
+<!-- snippet: id=pandas-26 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例DataFrame
 df = pd.DataFrame({
@@ -817,6 +843,7 @@ DataFrame 有行索引和列索引，可以通过标签和位置两种方法进�
 
 ### 创建示例数据
 
+<!-- snippet: id=pandas-27 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例DataFrame
 dates = pd.date_range('20230101', periods=6)
@@ -834,6 +861,7 @@ print(df)
 
 ### loc - 基于标签的索引
 
+<!-- snippet: id=pandas-28 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 选择行
 print("\n选择单行（loc）:")
@@ -857,6 +885,7 @@ print(df.loc['2023-01-01':'2023-01-03', ['open', 'close']])  # 多行多列
 
 ### iloc - 基于位置的索引
 
+<!-- snippet: id=pandas-29 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 选择行
 print("\n选择单行（iloc）:")
@@ -880,6 +909,7 @@ print(df.iloc[0:3, [0, 3]])  # 多行多列
 
 ### at 和 iat - 快速单值访问
 
+<!-- snippet: id=pandas-30 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # at - 基于标签的单值访问（最快）
 print("\nat - 单值访问:")
@@ -894,6 +924,7 @@ print(df.iloc[0, 0])
 
 ### 添加和删除列
 
+<!-- snippet: id=pandas-31 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例DataFrame
 df = pd.DataFrame({
@@ -928,6 +959,7 @@ print(df_copy)
 
 ### 修改单元格值
 
+<!-- snippet: id=pandas-32 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例DataFrame
 df = pd.DataFrame({
@@ -956,6 +988,7 @@ print(df)
 
 ### 排序
 
+<!-- snippet: id=pandas-33 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例DataFrame
 df = pd.DataFrame({
@@ -990,6 +1023,7 @@ print(df_sorted)
 
 ### 排名
 
+<!-- snippet: id=pandas-34 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例DataFrame
 df = pd.DataFrame({
@@ -1020,6 +1054,7 @@ print(df['rank_dense'])
 
 ### 处理重复数据
 
+<!-- snippet: id=pandas-35 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建包含重复数据的DataFrame
 df = pd.DataFrame({
@@ -1049,6 +1084,7 @@ print(df.drop_duplicates(keep='last'))
 
 ### 处理缺失数据
 
+<!-- snippet: id=pandas-36 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建包含缺失数据的DataFrame
 df = pd.DataFrame({
@@ -1092,6 +1128,7 @@ print(df.fillna(method='bfill'))
 
 ### 替换值
 
+<!-- snippet: id=pandas-37 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例DataFrame
 df = pd.DataFrame({
@@ -1117,6 +1154,7 @@ print(df.replace({'age': {25: 26, 30: 31}}))
 
 ### 数据类型转换
 
+<!-- snippet: id=pandas-38 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例DataFrame
 df = pd.DataFrame({
@@ -1147,6 +1185,7 @@ print(df_with_na)
 
 ### 基本统计
 
+<!-- snippet: id=pandas-39 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例DataFrame
 df = pd.DataFrame({
@@ -1173,6 +1212,7 @@ print(df[['age', 'salary']].corr())
 
 ### 分组统计
 
+<!-- snippet: id=pandas-40 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例DataFrame
 df = pd.DataFrame({
@@ -1202,6 +1242,7 @@ print(df.groupby('department').agg({
 
 ### 透视表
 
+<!-- snippet: id=pandas-41 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例DataFrame
 df = pd.DataFrame({
@@ -1229,6 +1270,7 @@ print(pivot_multi)
 
 ### concat 合并
 
+<!-- snippet: id=pandas-42 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例DataFrame
 df1 = pd.DataFrame({
@@ -1259,6 +1301,7 @@ print(pd.concat([df1, df3], axis=1))
 
 ### merge 合并
 
+<!-- snippet: id=pandas-43 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例DataFrame
 df1 = pd.DataFrame({
@@ -1286,6 +1329,7 @@ print(pd.merge(df1, df2, on='department_id', how='left'))
 
 ### join 合并
 
+<!-- snippet: id=pandas-44 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例DataFrame
 df1 = pd.DataFrame({
@@ -1310,6 +1354,7 @@ print(df1.join(df2))
 
 ### 创建时间序列
 
+<!-- snippet: id=pandas-45 mode=compile python=3.12-3.14 deps=numpy==2.5.1,pandas==3.0.3 -->
 ```python
 import pandas as pd
 import numpy as np
@@ -1327,6 +1372,7 @@ print(ts)
 
 ### 时间索引操作
 
+<!-- snippet: id=pandas-46 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建时间序列DataFrame
 df = pd.DataFrame({
@@ -1351,6 +1397,7 @@ print(df['2023-01-02':'2023-01-04'])
 
 ### 重采样
 
+<!-- snippet: id=pandas-47 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 创建示例时间序列
 dates = pd.date_range('2023-01-01', periods=10, freq='D')

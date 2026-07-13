@@ -2,7 +2,7 @@
 title: Python 字符编码与文件处理：UTF 8、Unicode、文件操作
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-03T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-character-encoding-file-handling
 description: '深入讲解Python的字符编码原理（ASCII、GBK、Unicode、UTF-8）和文件操作（r、w、a、b模式），详解编码与解码的三个阶段和文件指针操作。'
 tags:
@@ -31,54 +31,19 @@ language: zh-CN
 2. 再将 Python 文件当作普通的文本文件读入内存
 3. 解释执行读入内存的代码，开始识别语法
 
-### 重点理论
+### Python 3 的文本模型
 
-#### 1. 编码与解码
+`str` 保存 Unicode 文本，`bytes` 保存原始字节。编码是 `str.encode(encoding)`，解码是 `bytes.decode(encoding)`；两端必须约定同一编码，文件与网络边界通常使用 UTF-8。
 
-```
-字符 ---编码--> Unicode 的二进制 ---编码--> GBK 的二进制
-GBK 的二进制 ---解码--> Unicode 的二进制 ---解码--> 字符
-```
-
-#### 2. 解决乱码问题的核心法则
-
-> **字符用什么编码格式编码的，就应该用什么编码格式进行解码**
-
-#### 3. Python 解释器默认的字符编码
-
-- **Python 2**：ASCII
-- **Python 3**：UTF-8
-
-可以通过文件头修改 Python 解释器默认使用的字符编码：
-
+<!-- snippet: id=python-unicode-roundtrip mode=run python=3.12-3.14 deps=stdlib -->
 ```python
-# -*- coding: 文件当初存的时候用的字符编码 -*-
+text = "中文与 Python"
+payload = text.encode("utf-8")
+assert isinstance(payload, bytes)
+assert payload.decode("utf-8") == text
 ```
 
-针对 Python 2 解释器中定义字符串应该加 `u` 前缀：
-
-```python
-# Python 2
-x = u"上"  # 对于 Python 3 即便是 x = "上" 不加 u 前缀也是存成 unicode
-```
-
-在 Python 3 中：
-
-```python
-x = '上'  # '上' 存成了 unicode
-
-# unicode 转 gbk
-res = x.encode('gbk')  # res 是 gbk 格式的二进制，称之为 bytes 类型
-
-# gbk 转 unicode
-y = res.decode('gbk')  # y 就是 unicode
-```
-
-#### 4. 关于字符编码的操作
-
-1. 编写 Python 文件，首行应该加文件头：`# coding: 文件存时用的编码`
-2. 用 Python 2 写程序，定义字符串应该加前缀 `u`，如 `x = u'上'`
-3. Python 3 中的字符串都是 unicode 编码的，Python 3 的字符串 encode 之后可以得到 bytes 类型
+源码默认 UTF-8。打开文本文件仍应显式写 `encoding="utf-8"`，并根据数据协议选择严格报错或明确的错误处理策略。
 
 ### 字符编码的发展历程
 
@@ -86,8 +51,8 @@ y = res.decode('gbk')  # y 就是 unicode
 
 ASCII（American Standard Code for Information Interchange，美国标准信息交换代码）是基于拉丁字母的一套电脑编码系统，主要用于显示现代英语和其他西欧语言。
 
-- ASCII 码最多只能用 8 位来表示（一个字节）
-- 即：2^8 = 256，所以 ASCII 码最多只能表示 255 个符号
+- 标准 ASCII 使用 7 位，共 128 个码位（0–127），通常存放在一个字节中
+- 128–255 属于各种扩展单字节编码，不是统一的标准 ASCII
 
 #### GB 系列编码
 
@@ -163,6 +128,7 @@ UTF-8 是对 Unicode 编码的压缩和优化：
 
 文件处理的三个步骤：
 
+<!-- snippet: id=python-character-encoding-file-handling-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 打开文件
 f = open(r'c.txt', mode='r', encoding='utf-8')
@@ -203,6 +169,7 @@ f.close()
 - 文件不存在时报错
 - 文件存在时文件指针跳到文件的开头
 
+<!-- snippet: id=python-character-encoding-file-handling-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 文本模式读取
 with open(r'c.txt', mode='rt', encoding='utf-8') as f:
@@ -223,6 +190,7 @@ with open(r'c.txt', mode='rb') as f:
 1. 文件不存在时，新建一个空文档
 2. 文件存在时，清空文件内容，文件指针跑到文件的开头
 
+<!-- snippet: id=python-character-encoding-file-handling-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 with open('c.txt', mode='wt', encoding='utf-8') as f:
     print(f.readable())  # False
@@ -249,6 +217,7 @@ with open('c.txt', mode='wb') as f:
 1. 文件不存在时，新建一个空文档，文件指针跑到文件的末尾
 2. 文件存在时，文件指针跑到文件的末尾
 
+<!-- snippet: id=python-character-encoding-file-handling-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 with open('c.txt', mode='at', encoding='utf-8') as f:
     print(f.readable())  # False
@@ -260,6 +229,7 @@ with open('c.txt', mode='at', encoding='utf-8') as f:
 
 #### 上下文管理
 
+<!-- snippet: id=python-character-encoding-file-handling-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 with open(r'c.txt', mode='r', encoding='utf-8') as f, \
      open(r'b.txt', mode='r', encoding='utf-8') as f1:
@@ -268,6 +238,7 @@ with open(r'c.txt', mode='r', encoding='utf-8') as f, \
 
 #### 循环读文件内容
 
+<!-- snippet: id=python-character-encoding-file-handling-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 with open(r'c.txt', mode='rt', encoding='utf-8') as f:
     for line in f:
@@ -286,6 +257,7 @@ with open(r'c.txt', mode='rt', encoding='utf-8') as f:
 - 有 `b`：按字节
 - 无 `b`：按字符
 
+<!-- snippet: id=python-character-encoding-file-handling-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 with open('a.txt', mode='rt', encoding='utf-8') as f:
     data = f.read(3)  # 读取3个字符
@@ -314,6 +286,7 @@ with open('a.txt', mode='rb') as f:
 
 #### 0 模式详解
 
+<!-- snippet: id=python-character-encoding-file-handling-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 with open('a.txt', mode='rt', encoding='utf-8') as f:
     f.seek(4, 0)  # 从文件开头跳到第4个字节
@@ -333,6 +306,7 @@ with open('a.txt', mode='rt', encoding='utf-8') as f:
 
 #### 1 模式详解
 
+<!-- snippet: id=python-character-encoding-file-handling-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 with open('a.txt', mode='rb') as f:
     f.seek(3, 1)  # 相对于当前位置跳3个字节
@@ -344,6 +318,7 @@ with open('a.txt', mode='rb') as f:
 
 #### 2 模式详解
 
+<!-- snippet: id=python-character-encoding-file-handling-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 with open('a.txt', mode='rb') as f:
     f.seek(-9, 2)  # 相对于文件末尾跳9个字节
@@ -382,6 +357,7 @@ with open('access.log', mode='rb') as f:
 **优点**：在文件修改过程中同一份数据只有一份
 **缺点**：会过多地占用内存
 
+<!-- snippet: id=python-character-encoding-file-handling-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 with open('db.txt', mode='rt', encoding='utf-8') as f:
     data = f.read()
@@ -397,6 +373,7 @@ with open('db.txt', mode='wt', encoding='utf-8') as f:
 **优点**：不会占用过多的内存
 **缺点**：在文件修改过程中同一份数据存了两份
 
+<!-- snippet: id=python-character-encoding-file-handling-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import os
 

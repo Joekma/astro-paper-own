@@ -2,7 +2,7 @@
 title: Python 元类与单例模式：type创建类、自定义元类
 author: Joekma
 pubDatetime: 2018-11-19T00:00:00.000+08:00
-modDatetime: 2026-05-03T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-metaclass-singleton
 description: '深入讲解Python元类与单例模式，详解type创建类、自定义元类控制类的创建和调用、__call__方法、exec用法和ORM框架中的应用。'
 tags:
@@ -25,6 +25,7 @@ language: zh-CN
 
 ![Python 元类会参与 class 创建、类对象生成和实例调用过程，自定义 __new__、__init__、__call__ 后还能实现单例缓存等模式](./images/python-metaclass-singleton-pipeline-figure-01.png)
 
+<!-- snippet: id=python-metaclass-singleton-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Teather(object):
     school='xindongfang'
@@ -36,6 +37,7 @@ class Teather(object):
         print('%s says welcome to the xindongfang to learn cook'%self.name)
 ```
 所有的对象都是实例化或者说调用类而得到的（调用类的过程称为类的实例化），比如对象te1是调用类Teacher得到的
+<!-- snippet: id=python-metaclass-singleton-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 te1=Teather('shahuhu',35)
 print(type(te1))  # <class '__main__.Teather'>
@@ -43,6 +45,7 @@ print(type(te1))  # <class '__main__.Teather'>
 如果一切皆为对象，那么类Teacher本质也是一个对象，既然所有的对象都是调用类得到的，那么Teacher必然也是调用了一个类得到的，这个类称为元类
 
 **于是我们可以推导出=== >产生Teacher的过程一定发生了：Teacher=元类(...)**
+<!-- snippet: id=python-metaclass-singleton-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print(type(Teacher)) # 结果为<class 'type'>，证明是调用了type这个元类而产生的Teacher，即默认的元类为type
 ```
@@ -59,36 +62,29 @@ class关键字在帮我们创建类时，必然帮我们调用了元类Teacher=t
 调用type时会依次传入以上三个参数
 
 综上，class关键字帮我们创建一个类应该细分为以下四个过程
-```
+<!-- snippet: id=python-metaclass-singleton-04 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 1拿到类名    2拿到类的基类们   3执行类体代码   4调用元类得到类
 ```
-理解第三部要补充exec的用法
+类体会在新的命名空间中执行，然后该命名空间交给元类。业务代码不需要用 `exec()` 模拟这一过程；`exec()` 不能处理不可信输入，也不是安全沙箱。下面用等价的 `type()` 调用观察类名、基类和命名空间：
+<!-- snippet: id=python-metaclass-singleton-05 mode=run python=3.12-3.14 deps=stdlib -->
 ```python
-# exec：三个参数
-# 参数一：包含一系列python代码的字符串  依然要保持原有python的代码规范，不然会出错
-# 参数二：全局作用域（字典形式），如果不指定，默认为globals()
-# 参数三：局部作用域（字典形式），如果不指定，默认为locals()
-# 可以把exec命令的执行当成是一个函数的执行，会将执行期间产生的名字存放于局部名称空间中
-g={
-    'x':1,
-    'y':2
-}
-l={}
+def describe(self):
+    return self.name
 
-exec('''
-global x,z
-x=100
-z=200
+namespace = {"kind": "teacher", "describe": describe}
+Teacher = type("Teacher", (object,), namespace)
+instance = Teacher()
+instance.name = "Ada"
 
-m=300
-''',g,l)
-
-print(g) #{'x': 100, 'y': 2,'z':200,......}
-print(l) #{'m': 300}
+assert Teacher.__name__ == "Teacher"
+assert Teacher.kind == "teacher"
+assert instance.describe() == "Ada"
 ```
 ## 自定义元类控制类Teacher的创建
 
 一个类没有声明自己的元类，默认他的元类就是type，除了使用内置元类type，我们也可以通过继承type来自定义元类，然后使用metaclass关键字参数为一个类指定元类
+<!-- snippet: id=python-metaclass-singleton-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Mymeta(type):
     pass
@@ -104,6 +100,7 @@ class Teacther(object,metaclass=Mymeta):
         print('%s says welcome to the xindongfang to learn cook'%self.name)
 ```
 自定义元类可以控制类的产生过程，类的产生过程其实就是元类的调用过程,即Teacher=Mymeta('Teacher',(object),{...})，调用Mymeta会先产生一个空对象Teacher，然后连同调用Mymeta括号内的参数一同传给Mymeta下的__init__方法，完成初始化，于是我们可以
+<!-- snippet: id=python-metaclass-singleton-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Mymeta(type):
     def __init__(self,class_name,class_bases,class_dic):
@@ -135,6 +132,7 @@ class Teacher(object,metaclass=Mymeta):
 
 ### __call__
 
+<!-- snippet: id=python-metaclass-singleton-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Foo:
     def __call__(self, *args, **kwargs):
@@ -150,6 +148,7 @@ print(res)
 ```
 
 由上例得知，调用一个对象，就是触发对象所在类中的__call__方法的执行，如果把Teacher也当做一个对象，那么在Teacher这个对象的类中也必然存在一个__call__方法
+<!-- snippet: id=python-metaclass-singleton-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Mymeta(type): #只有继承了type类才能称之为一个元类，否则就是一个普通的自定义类
     def __call__(self, *args, **kwargs):
@@ -180,6 +179,7 @@ print(te1) #123
 3、返回初始化好的obj
 
 对应着，Teacher类中的__call__方法也应该做这三件事
+<!-- snippet: id=python-metaclass-singleton-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Mymeta(type): #只有继承了type类才能称之为一个元类，否则就是一个普通的自定义类
     def __call__(self, *args, **kwargs): # [self]=<class '__main__.OldboyTeacher'>
@@ -219,6 +219,7 @@ print(t1.__dict__) #{'name': 'shahuhu', 'age': 35}
 
 在学习完元类后，其实我们用class自定义的类也全都是对象（包括object类本身也是元类type的 一个实例，可以用type(object)查看），我们学习过继承的实现原理，如果把类当成对象去看，将下述继承应该说成是：对象OldboyTeacher继承对象Foo，对象Foo继承对象Bar，对象Bar继承对象object
 
+<!-- snippet: id=python-metaclass-singleton-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Mymeta(type): #只有继承了type类才能称之为一个元类，否则就是一个普通的自定义类
     n=444
@@ -251,13 +252,15 @@ print(OldboyTeacher.n) #111
 
 于是属性查找应该分成两层，一层是对象层（基于c3算法的MRO）的查找，另外一个层则是类层（即元类层）的查找
 
-```
+<!-- snippet: id=python-metaclass-singleton-12 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 查找顺序：
 1、先对象层：OldoyTeacher->Foo->Bar->object
 2、然后元类层：Mymeta->type
 ```
 依据上述总结，我们来分析下元类Mymeta中__call__里的self.__new__的查找
 
+<!-- snippet: id=python-metaclass-singleton-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Mymeta(type): #只有继承了type类才能称之为一个元类，否则就是一个普通的自定义类
     n=444
@@ -300,6 +303,7 @@ OldboyTeacher('egon', 18)  # 触发 OldboyTeacher 类中的 __call__ 方法，�
 
 最后说明一点
 
+<!-- snippet: id=python-metaclass-singleton-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Mymeta(type): #只有继承了type类才能称之为一个元类，否则就是一个普通的自定义类
     n=444
@@ -337,6 +341,7 @@ print(type(Mymeta)) #<class 'type'>
 ```
 
 ## **基于元类实现单例模式**
+<!-- snippet: id=python-metaclass-singleton-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 单例：即单个实例，指的是同一个类实例化多次的结果指向同一个对象，用于节省内存空间
 # 如果我们从配置文件中读取配置来进行实例化，在配置相同的情况下，就没必要重复产生对象浪费内存了
@@ -512,7 +517,8 @@ singleton=singleton()
 
 ```
 ### 应用场景
-```python
+<!-- snippet: id=python-metaclass-singleton-16 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 需要频繁实例化然后销毁的对象。
 
 创建对象时耗时过多或者耗资源过多，但又经常用到的对象。
@@ -526,7 +532,8 @@ singleton=singleton()
 网站计数器
 ```
 ### 单例优缺点
-```python
+<!-- snippet: id=python-metaclass-singleton-17 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 优点：
 在内存中只有一个对象，节省内存空间。
 避免频繁的创建销毁对象，可以提高性能。
@@ -550,6 +557,7 @@ singleton=singleton()
 
 ### **在元类中控制把自定义类的数据属性都变成大写**
 
+<!-- snippet: id=python-metaclass-singleton-18 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Mymetaclass(type):
     def __new__(cls,name,bases,attrs):
@@ -587,6 +595,7 @@ print(Chinese.__dict__)
 
 3.key作为用户自定义类产生对象的属性，且所有属性变成大写
 
+<!-- snippet: id=python-metaclass-singleton-19 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Mymetaclass(type):
     # def __new__(cls,name,bases,attrs):
@@ -619,6 +628,7 @@ print(p.__dict__)
 
 ### **在元类中控制自定义的类产生的对象相关的属性全部为隐藏属性**
 
+<!-- snippet: id=python-metaclass-singleton-20 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Mymeta(type):
     def __init__(self,class_name,class_bases,class_dic):

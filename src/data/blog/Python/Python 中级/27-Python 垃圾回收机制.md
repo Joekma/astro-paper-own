@@ -2,7 +2,7 @@
 title: Python 垃圾回收机制
 author: Joekma
 pubDatetime: 2024-08-11T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-garbage-collection
 description: '深入理解 Python 垃圾回收机制：引用计数、分代回收、循环垃圾回收'
 tags:
@@ -37,6 +37,7 @@ language: zh-CN
 
 Python 使用**引用计数**作为主要的内存管理机制。
 
+<!-- snippet: id=python-garbage-collection-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import sys
 
@@ -75,6 +76,7 @@ del a  # 引用计数 = 0，对象被销毁
 
 ### 什么是循环引用？
 
+<!-- snippet: id=python-garbage-collection-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 循环引用示例
 a = []  # 对象 A
@@ -91,6 +93,7 @@ del b
 
 ### 循环引用导致内存泄漏
 
+<!-- snippet: id=python-garbage-collection-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import tracemalloc
 import gc
@@ -126,6 +129,7 @@ for stat in top_stats[:10]:
 
 Python 将对象按存活时间分为三代：
 
+<!-- snippet: id=python-garbage-collection-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import gc
 
@@ -142,6 +146,7 @@ print("GC 分代:", gc.get世代())
 
 ### 触发条件
 
+<!-- snippet: id=python-garbage-collection-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import gc
 
@@ -155,6 +160,7 @@ import gc
 
 ### 手动控制垃圾回收
 
+<!-- snippet: id=python-garbage-collection-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import gc
 
@@ -178,6 +184,7 @@ gc.set_threshold(100, 10, 10)
 
 ### 标记-清除算法
 
+<!-- snippet: id=python-garbage-collection-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 标记-清除算法分为两个阶段：
 # 1. 标记阶段：遍历所有对象，标记可达对象
@@ -208,6 +215,7 @@ node2.add_edge(node1)
 
 ### 标记-压缩算法
 
+<!-- snippet: id=python-garbage-collection-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 标记-压缩算法在标记-清除的基础上，增加压缩步骤
 # 将存活对象移动到一端，减少内存碎片
@@ -226,6 +234,7 @@ after = ["A", "B", "C"] + [None] * 7
 
 ### gc 模块追踪
 
+<!-- snippet: id=python-garbage-collection-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import gc
 import sys
@@ -259,6 +268,7 @@ for ref in gc.get_referrers(obj1):
 
 ### 引用关系
 
+<!-- snippet: id=python-garbage-collection-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 查看对象的引用者
 import gc
@@ -281,6 +291,7 @@ for ref in gc.get_referents(a):
 
 ### 常见内存泄漏
 
+<!-- snippet: id=python-garbage-collection-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 1. 全局变量持有引用
 global_list = []
@@ -312,6 +323,7 @@ class EventEmitter:
 
 ### 使用 weakref 避免内存泄漏
 
+<!-- snippet: id=python-garbage-collection-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import weakref
 
@@ -355,6 +367,7 @@ del child1
 
 ### 缓存实现
 
+<!-- snippet: id=python-garbage-collection-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import weakref
 import functools
@@ -394,6 +407,7 @@ def expensive_computation(x, y):
 
 ### 减少垃圾回收频率
 
+<!-- snippet: id=python-garbage-collection-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import gc
 
@@ -414,6 +428,7 @@ finally:
 
 ### 及时清理大对象
 
+<!-- snippet: id=python-garbage-collection-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 对于大对象，及时清理
 def process_large_data():
@@ -430,6 +445,7 @@ def process_large_data():
 
 ### 使用 __slots__ 减少内存占用
 
+<!-- snippet: id=python-garbage-collection-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 普通类
 class Point:
@@ -455,6 +471,7 @@ class PointWithSlots:
 
 ### tracemalloc 模块
 
+<!-- snippet: id=python-garbage-collection-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import tracemalloc
 
@@ -491,8 +508,9 @@ for stat in top_stats[:5]:
 
 ### objgraph 模块
 
+<!-- snippet: id=python-garbage-collection-18 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
-# 安装: pip install objgraph
+# 安装: python -m pip install objgraph
 
 import objgraph
 
@@ -509,8 +527,9 @@ print(f"MyClass 实例数量: {count}")
 
 ### memory_profiler
 
+<!-- snippet: id=python-garbage-collection-19 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
-# 安装: pip install memory_profiler
+# 安装: python -m pip install memory_profiler
 
 from memory_profiler import profile
 

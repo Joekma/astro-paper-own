@@ -2,7 +2,7 @@
 title: Python StringIO与BytesIO
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-stringio-bytesio
 description: '深入理解 Python StringIO与BytesIO：内存读写、缓冲区操作'
 tags:
@@ -28,6 +28,7 @@ StringIO顾名思义就是在内存中读写str。
 ![StringIO 与 BytesIO 分别提供内存中的文本流和字节流，可像文件一样 read、write、seek、tell 并用于测试、压缩和二进制处理](./images/python-stringio-bytesio-memory-streams-figure-01.png)
 
 要把str写入StringIO，我们需要先创建一个StringIO，然后，像文件一样写入即可：
+<!-- snippet: id=python-stringio-bytesio-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from io import StringIO
 f = StringIO()
@@ -39,6 +40,7 @@ print(f.getvalue()) # hello world!
 `getvalue()`方法用于获得写入后的str。
 
 要读取StringIO，可以用一个str初始化StringIO，然后，像读文件一样读取：
+<!-- snippet: id=python-stringio-bytesio-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from io import StringIO
 f = StringIO('Hello!\nHi!\nGoodbye!')
@@ -53,6 +55,7 @@ while True:
 StringIO操作的只能是str，如果要操作二进制数据，就需要使用BytesIO。
 
 BytesIO实现了在内存中读写bytes，我们创建一个BytesIO，然后写入一些bytes：
+<!-- snippet: id=python-stringio-bytesio-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from io import BytesIO
 f = BytesIO()
@@ -63,6 +66,7 @@ print(f.getvalue()) # b'\xe4\xb8\xad\xe6\x96\x87'
 请注意，写入的不是str，而是经过UTF-8编码的bytes。
 
 和StringIO类似，可以用一个bytes初始化BytesIO，然后，像读文件一样读取：
+<!-- snippet: id=python-stringio-bytesio-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from io import BytesIO
 f = BytesIO(b'\xe4\xb8\xad\xe6\x96\x87')
@@ -76,6 +80,7 @@ StringIO和BytesIO是在内存中操作str和bytes的方法，使得和读写文
 
 在单元测试中，我们经常需要模拟文件操作，而不需要创建真实的临时文件：
 
+<!-- snippet: id=python-stringio-bytesio-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from io import StringIO
 import unittest
@@ -101,6 +106,7 @@ class TestProcessLines(unittest.TestCase):
 
 有时候我们需要捕获函数的打印输出进行测试或验证：
 
+<!-- snippet: id=python-stringio-bytesio-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from io import StringIO
 import sys
@@ -126,6 +132,7 @@ class TestGreet:
 
 StringIO 非常适合用于流式数据处理：
 
+<!-- snippet: id=python-stringio-bytesio-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from io import StringIO
 
@@ -151,6 +158,7 @@ print(result)  # "This  simple text with  simple words"
 
 BytesIO 可以与 gzip 等压缩模块配合使用，实现内存中的数据压缩：
 
+<!-- snippet: id=python-stringio-bytesio-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from io import BytesIO
 import gzip
@@ -178,6 +186,7 @@ print(f"解压后: {decompressed_data.decode()}")
 
 BytesIO 可以用于图片处理库（如 Pillow）：
 
+<!-- snippet: id=python-stringio-bytesio-09 mode=compile python=3.12-3.14 deps=Pillow==12.3.0 -->
 ```python
 from io import BytesIO
 from PIL import Image
@@ -202,6 +211,7 @@ print(f"图片尺寸: {loaded_img.size}")
 
 ### seek() 和 tell() - 控制读写位置
 
+<!-- snippet: id=python-stringio-bytesio-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from io import StringIO
 
@@ -226,6 +236,7 @@ print(f"剩余内容: {f.read()}")  # "World!"
 
 ### truncate() - 截断内容
 
+<!-- snippet: id=python-stringio-bytesio-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from io import StringIO
 
@@ -237,6 +248,7 @@ print(f.getvalue())  # "Hello"
 
 ### 写入模式的覆盖和追加
 
+<!-- snippet: id=python-stringio-bytesio-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from io import StringIO
 
@@ -259,6 +271,7 @@ print(f.getvalue())  # "Hello, World"
 
 ⚠️ **注意**：`StringIO` 和 `BytesIO` 不支持 `with` 语句（上下文管理器）。
 
+<!-- snippet: id=python-stringio-bytesio-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 错误方式 ❌
 from io import StringIO
@@ -279,6 +292,7 @@ finally:
 
 ### 2. 指定编码（推荐）
 
+<!-- snippet: id=python-stringio-bytesio-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from io import StringIO
 
@@ -292,6 +306,7 @@ f = StringIO(initial_value="中文内容", newline='\n')
 
 ### 3. 性能考虑
 
+<!-- snippet: id=python-stringio-bytesio-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from io import BytesIO
 import time
@@ -318,6 +333,7 @@ buffer = BytesIO(1024 * 1024)  # 预分配 1MB 缓冲区
 
 ### 配合 csv 模块处理 CSV 数据
 
+<!-- snippet: id=python-stringio-bytesio-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from io import StringIO
 import csv
@@ -337,6 +353,7 @@ for row in reader:
 
 ### 配合 json 模块
 
+<!-- snippet: id=python-stringio-bytesio-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from io import StringIO
 import json

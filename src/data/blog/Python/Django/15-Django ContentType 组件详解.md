@@ -2,7 +2,7 @@
 title: Django ContentType 组件详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: django-component-5-contenttype
 featured: false
 draft: false
@@ -35,6 +35,7 @@ ContentType组件是Django提供的一个快速连表操作的组件，可以追
 
 **使用，在models.py中：**
 
+<!-- snippet: id=django-component-5-contenttype-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Course(models.Model):
     name = models.CharField(max_length=32)
@@ -56,12 +57,14 @@ class PricePolicy(models.Model):
 
 1. 为django入门课，添加三个价格策略
 
+<!-- snippet: id=django-component-5-contenttype-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 ret = models.PricePolicy.objects.create(period=60, price='99.9', obj=course)
 ```
 
 2. 查询所有价格策略，并且显示对应的课程名称
 
+<!-- snippet: id=django-component-5-contenttype-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 ret = models.PricePolicy.objects.all()
 for i in ret:
@@ -71,6 +74,7 @@ for i in ret:
 
 3. 通过课程id，获取课程信息和价格策略
 
+<!-- snippet: id=django-component-5-contenttype-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 course = models.Course.objects.get(pk=1)
 price_polices = course.price_police.all()
@@ -85,6 +89,7 @@ for i in price_polices:
 
 即先通过ContentType表的id可以得到某个model，再通过model的id得到具体的对象：
 
+<!-- snippet: id=django-component-5-contenttype-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class ContentType(models.Model):
     app_label = models.CharField(max_length=100)
@@ -107,6 +112,7 @@ class ContentType(models.Model):
 
 **使用示例：**
 
+<!-- snippet: id=django-component-5-contenttype-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def demo(request):
     obj = models.ContentType.objects.get(id=10)
@@ -147,6 +153,7 @@ Django的signal结合contenttypes可以实现好友最新动态、新鲜事、�
 
 **Model示例：**
 
+<!-- snippet: id=django-component-5-contenttype-07 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.db import models
 from django.contrib.auth.models import User
@@ -206,6 +213,7 @@ signals.post_save.connect(post_post_save, sender=Post)
 
 利用`connect`这个函数来注册监听器：
 
+<!-- snippet: id=django-component-5-contenttype-08 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
 def connect(self, receiver, sender=None, weak=True, dispatch_uid=None):
 ```
@@ -218,6 +226,7 @@ def connect(self, receiver, sender=None, weak=True, dispatch_uid=None):
 
 Post的Model定义里现在多了一个字段：
 
+<!-- snippet: id=django-component-5-contenttype-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 content_object = GenericRelation('Event')
 ```
@@ -236,6 +245,7 @@ content_object = GenericRelation('Event')
 
 **常规设计表如下：**
 
+<!-- snippet: id=django-component-5-contenttype-10 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation

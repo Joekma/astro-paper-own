@@ -2,7 +2,7 @@
 title: 强大的Django后台管理
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: django-admin-powerful
 featured: false
 draft: false
@@ -26,12 +26,14 @@ Django的后台我们只要加少些代码，就可以实现强大的功能。�
 
 ### 新建一个名称为zqxt_admin的项目
 
+<!-- snippet: id=django-admin-powerful-01 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 django-admin.py startproject zqxt_admin
 ```
 
 ### 新建一个叫做blog的app
 
+<!-- snippet: id=django-admin-powerful-02 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 进入 zqxt_admin 文件夹
 cd zqxt_admin
@@ -44,6 +46,7 @@ python manage.py startapp blog
 
 ### 修改blog文件夹中的models.py
 
+<!-- snippet: id=django-admin-powerful-03 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 # coding:utf-8
 from django.db import models
@@ -58,6 +61,7 @@ class Article(models.Model):
 
 ### 把blog加入到settings.py中的INSTALLED_APPS中
 
+<!-- snippet: id=django-admin-powerful-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 INSTALLED_APPS = (
     'django.contrib.admin',
@@ -75,6 +79,7 @@ INSTALLED_APPS = (
 
 ### 同步所有的数据表
 
+<!-- snippet: id=django-admin-powerful-05 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 进入包含有 manage.py 的文件夹
 python manage.py makemigrations
@@ -85,7 +90,8 @@ python manage.py migrate
 
 可以看到：
 
-```
+<!-- snippet: id=django-admin-powerful-06 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 Creating tables ...
 
 Creating table django_admin_log
@@ -122,6 +128,7 @@ Installed 0 object(s) from 0 fixture(s)
 
 **如果是Django不主动提示创建管理员（Django 1.9不提示）用下面的命令创建一个帐号：**
 
+<!-- snippet: id=django-admin-powerful-07 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 python manage.py createsuperuser
 ```
@@ -130,6 +137,7 @@ python manage.py createsuperuser
 
 进入blog文件夹，修改admin.py文件（如果没有新建一个），内容如下：
 
+<!-- snippet: id=django-admin-powerful-08 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.contrib import admin
 from .models import Article
@@ -143,6 +151,7 @@ admin.site.register(Article)
 
 ### 打开开发服务器
 
+<!-- snippet: id=django-admin-powerful-09 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 python manage.py runserver
 # 如果提示 8000 端口已经被占用，可以用 python manage.py runserver 8001 以此类推
@@ -158,6 +167,7 @@ python manage.py runserver
 
 我们修改一下blog中的models.py：
 
+<!-- snippet: id=django-admin-powerful-10 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 # coding:utf-8
 from django.db import models
@@ -181,6 +191,7 @@ class Article(models.Model):
 
 示例如下：
 
+<!-- snippet: id=django-admin-powerful-11 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.db import models
 
@@ -199,6 +210,7 @@ class Article(models.Model):
 
 ### 列表页显示更多字段
 
+<!-- snippet: id=django-admin-powerful-12 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.contrib import admin
 from .models import Article
@@ -211,6 +223,7 @@ admin.site.register(Article, ArticleAdmin)
 
 ### 搜索功能
 
+<!-- snippet: id=django-admin-powerful-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class ArticleAdmin(admin.ModelAdmin):
     list_display = ('title', 'pub_date', 'update_time')
@@ -219,6 +232,7 @@ class ArticleAdmin(admin.ModelAdmin):
 
 ### 过滤功能
 
+<!-- snippet: id=django-admin-powerful-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class ArticleAdmin(admin.ModelAdmin):
     list_display = ('title', 'pub_date', 'update_time')
@@ -227,6 +241,7 @@ class ArticleAdmin(admin.ModelAdmin):
 
 ### 分页功能
 
+<!-- snippet: id=django-admin-powerful-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class ArticleAdmin(admin.ModelAdmin):
     list_per_page = 25  # 每页显示25条记录
@@ -234,6 +249,7 @@ class ArticleAdmin(admin.ModelAdmin):
 
 ### 编辑功能
 
+<!-- snippet: id=django-admin-powerful-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class ArticleAdmin(admin.ModelAdmin):
     # 列表页直接编辑的字段
@@ -246,6 +262,7 @@ class ArticleAdmin(admin.ModelAdmin):
 
 ### 时间选择器
 
+<!-- snippet: id=django-admin-powerful-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class ArticleAdmin(admin.ModelAdmin):
     date_hierarchy = 'pub_date'  # 按日期分层导航
@@ -253,6 +270,7 @@ class ArticleAdmin(admin.ModelAdmin):
 
 ## 完整Admin配置示例
 
+<!-- snippet: id=django-admin-powerful-18 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.contrib import admin
 from .models import Article, Category, Tag
@@ -310,6 +328,7 @@ admin.site.register(Tag)
 
 ### 添加自定义操作
 
+<!-- snippet: id=django-admin-powerful-19 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class ArticleAdmin(admin.ModelAdmin):
     actions = ['make_published', 'make_draft']
@@ -325,6 +344,7 @@ class ArticleAdmin(admin.ModelAdmin):
 
 ### 内联管理
 
+<!-- snippet: id=django-admin-powerful-20 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class ArticleInline(admin.TabularInline):
     model = Tag
@@ -336,6 +356,7 @@ class ArticleAdmin(admin.ModelAdmin):
 
 ### 自定义表单验证
 
+<!-- snippet: id=django-admin-powerful-21 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django import forms
 

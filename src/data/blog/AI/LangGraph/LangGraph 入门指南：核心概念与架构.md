@@ -2,7 +2,7 @@
 title: LangGraph 入门指南：核心概念与架构
 author: Joekma
 pubDatetime: 2026-05-11T00:00:00.000+08:00
-modDatetime: 2026-07-10T00:00:00.000+08:00
+modDatetime: 2026-07-12T00:00:00.000+08:00
 slug: langgraph-getting-started
 description: "LangGraph入门指南，详细介绍核心概念、架构组件和使用场景。"
 tags:
@@ -24,6 +24,32 @@ LangGraph 是用于构建长时间运行、有状态 Agent 和工作流的低层
 LangChain 与 LangGraph 不是简单的“链与图”替代关系。LangChain 提供模型、工具、Agent 和中间件等高层接口，其中标准 Agent 的 `create_agent` 本身构建在 LangGraph 上；当应用需要完全控制状态、节点、分支或持久化时，再直接使用 LangGraph Graph API。LangGraph 1.x 已弃用 `langgraph.prebuilt.create_react_agent`，标准 Agent 应使用 `langchain.agents.create_agent`。
 
 ![LangGraph 通过 StateGraph、Node、Edge、Conditional Edge、共享 State 和 compile 运行时构建可循环、可分支、可持久化的状态图应用](./images/langgraph-core-stategraph-architecture-figure-01.png)
+
+## 阅读前准备与学习目标
+
+本文面向已经会写基础 Python 函数、理解类型标注，并知道“模型可以调用工具”的读者。你不需要先掌握 LangChain，但应能读懂 `TypedDict`、字典更新和简单条件分支。
+
+读完后，你应当能够：
+
+1. 用状态、节点和边解释一个 LangGraph 应用；
+2. 判断何时使用 `create_agent`，何时直接维护 `StateGraph`；
+3. 跟踪一次调用从输入、状态更新到最终输出的路径；
+4. 说明循环、持久化和人工中断为什么需要运行时支持。
+
+建议先顺序阅读核心概念和最小图，再把循环、RAG、持久化与人机交互视为同一运行时的能力预览。第一次阅读不必记住全部 API；重点是能回答“当前状态是什么、哪个节点会更新它、下一条边由谁决定”。
+
+### 先选抽象层：create_agent 还是 Graph API
+
+| 需求                           | 优先选择                   | 原因                                         |
+| ------------------------------ | -------------------------- | -------------------------------------------- |
+| 标准“模型调用工具再回答”循环   | `create_agent`             | 预置工具循环、中间件和常用生产能力           |
+| 自定义状态字段、分支和节点顺序 | Graph API                  | 可以显式控制 schema、node 和 edge            |
+| 需要暂停、恢复、时间旅行       | Graph API 或编译后的 Agent | 底层都依赖 LangGraph runtime 和 checkpointer |
+| 只想快速接入一个聊天模型       | LangChain 模型接口         | 尚不需要维护执行图                           |
+
+![根据标准工具循环、自定义状态、确定性路由、持久化和人工审核需求选择 create_agent 或 LangGraph Graph API](./images/langgraph-agent-vs-graph-api-decision-figure-02.png)
+
+选择标准 Agent 不代表放弃 LangGraph：`create_agent` 返回的仍是基于 LangGraph 的图运行时。区别在于你维护的是高层配置，还是底层执行拓扑。官方的 [LangGraph 概览](https://docs.langchain.com/oss/python/langgraph/overview) 和 [LangChain Agents](https://docs.langchain.com/oss/python/langchain/agents) 对这两层职责有明确区分。
 
 ## 核心概念
 
@@ -90,6 +116,8 @@ result = graph.invoke({"value": "开始", "step_count": 0})
 print(result)
 ```
 
+这个示例的输入是 `{"value": "开始", "step_count": 0}`。`step_1` 先把计数更新为 1，因此路由进入 `step_2`；预期最终结果为 `{"value": "开始 -> 步骤1 -> 步骤2", "step_count": 2}`。最常见的错误是路由函数返回了一个尚未添加的节点名，或者误以为节点必须返回完整状态；实际上节点通常只返回本次更新的字段。
+
 ## 循环与条件分支
 
 循环也是条件边。业务退出条件负责正常结束，`recursion_limit` 只作为防止错误路由无限执行的兜底。
@@ -116,6 +144,8 @@ graph = builder.compile()
 result = graph.invoke({"counter": 0}, config={"recursion_limit": 10})
 assert result["counter"] == 5
 ```
+
+业务条件 `counter < 5` 决定正常退出，`recursion_limit` 只负责在路由失误时阻止无限执行。不要把运行时上限当作业务完成条件，否则调用方无法区分“任务完成”和“被保护机制终止”。
 
 ## 自定义工具调用 Agent
 
@@ -167,6 +197,8 @@ print(result["messages"][-1].content)
 
 `tools_condition` 检查最后一条模型消息：有工具调用时进入默认名为 `tools` 的节点，否则进入 `END`。工具结果必须回到模型节点，模型才能基于结果生成最终回复。
 
+输入“计算 2 和 15 相加”时，预期路径是 `model → tools → model → END`。如果模型直接回答而未产生工具调用，路径会是 `model → END`；这不是图失效，而是模型决策不同。需要强制使用工具时，应通过系统提示、工具策略或确定性路由表达，而不是假设模型一定调用。
+
 ## RAG 工作流
 
 这个最小示例用固定字符串代替真实检索器，重点是展示检索结果如何通过状态交给生成节点。
@@ -215,6 +247,8 @@ result = graph.invoke(
 )
 print(result["answer"])
 ```
+
+这里的重点不是检索质量，而是数据依赖：`generate` 读取的 `context` 必须由前序节点写入并出现在 schema 中。真实 RAG 还需要处理空结果、引用来源、文档切分和检索评估，这些不属于本篇的入门范围。
 
 ## 状态持久化
 
@@ -289,6 +323,33 @@ export OPENAI_MODEL="your-available-model"
 ```
 
 Windows PowerShell 使用 `$env:OPENAI_API_KEY` 和 `$env:OPENAI_MODEL`。只运行基础图、循环、持久化和人机交互示例时，不需要模型依赖或 API Key。
+
+## 常见误区
+
+- **把状态当作可随意修改的全局字典**：节点应返回局部更新，由 runtime 按 reducer 合并。
+- **把业务标签和节点名混为一谈**：返回 `"approve"` 等业务标签时，应提供 `path_map` 映射到真实节点。
+- **把短期记忆等同于数据库聊天记录**：checkpointer 保存的是图执行快照；跨用户长期知识通常还需要 Store 或业务数据库。
+- **所有判断都交给模型**：确定性规则优先使用普通 Python 节点，成本更低，也更容易测试。
+- **看到图就直接使用底层 API**：标准工具 Agent 应先评估 `create_agent` 是否已经满足需求。
+
+## 本篇自检
+
+1. 节点为什么通常返回局部更新，而不是完整状态？
+2. `recursion_limit` 与业务退出条件分别解决什么问题？
+3. 一个标准工具调用 Agent 在什么条件下进入 ToolNode，又在什么条件下结束？
+
+<details>
+<summary>查看答案</summary>
+
+1. 局部更新让不同节点只负责自己拥有的字段，并由 reducer 统一决定覆盖或累积语义，减少意外丢失其他字段。
+2. 业务退出条件表示任务已经完成；`recursion_limit` 是错误路由或异常循环的运行时保护，达到它不等于业务成功。
+3. 最后一条模型消息包含工具调用时进入 ToolNode；没有工具调用时进入 `END`。工具执行完成后通常回到模型节点生成最终回复。
+
+</details>
+
+## 下一篇连接
+
+本文把 State 当作图中共享的数据面，但还没有解释同一个字段收到多个更新时如何合并。下一篇《LangGraph 状态管理与工作流》将展开覆盖 reducer、累积 reducer、`MessagesState`、运行时验证和检查点线程。
 
 ## 总结
 

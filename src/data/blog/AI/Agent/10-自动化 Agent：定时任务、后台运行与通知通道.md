@@ -1,10 +1,10 @@
 ---
-title: '自动化 Agent：定时任务、后台运行与通知通道'
+title: "自动化 Agent：定时任务、后台运行与通知通道"
 author: Joekma
 pubDatetime: 2026-05-16T00:00:00.000+08:00
-modDatetime: 2026-05-16T00:00:00.000+08:00
+modDatetime: 2026-07-12T00:00:00.000+08:00
 slug: automated-agent-cron-background
-description: '介绍自动化 Agent 的定时任务、后台服务、Webhook、Heartbeat、结果投递和防失控机制，并结合 OpenClaw 与 Hermes Agent 的设计。'
+description: "介绍自动化 Agent 的定时任务、后台服务、Webhook、Heartbeat、结果投递和防失控机制，并结合 OpenClaw 与 Hermes Agent 的设计。"
 tags:
   - AI
   - Agent
@@ -17,6 +17,22 @@ seriesOrder: 10
 language: zh-CN
 ---
 
+## 学习导航
+
+**前置知识**：基础 Python、JSON、HTTP 与异步编程概念。
+
+**适用读者**：首次系统学习生产级 Agent，并希望能独立实现、调试和评估的开发者。
+
+**学习目标**：
+
+- 区分 Cron、Webhook、Heartbeat 和人工触发
+- 设计幂等、锁、租约、重试和超时
+- 将执行结果可靠地投递并保留运行记录
+
+**贯穿场景**：每天 09:00 生成项目摘要；即使调度器重复触发，同一业务日也只发送一次通知。
+
+> 本文中的产品特有事实以文末官方资料为准；通用架构建议会明确标为设计推导。
+
 ## 概述
 
 自动化 Agent 是从“用户问一句，Agent 答一句”走向“Agent 在合适时间主动执行任务”的关键形态。它可以定时检查、汇总、提醒、监控和执行工作流。
@@ -24,6 +40,8 @@ language: zh-CN
 但自动化也意味着更高风险：任务可能重复运行、错误发送、消耗成本、循环创建任务，甚至在无人值守时执行高风险动作。
 
 ## 自动化入口
+
+![Cron、Webhook、Heartbeat 和人工触发的语义如何不同](./images/agent-10-01-trigger-types.png)
 
 常见触发方式包括：
 
@@ -58,6 +76,8 @@ Hermes Agent 的 Cron 文档说明，Cron 可以调度一次性或周期性任�
 
 ## 自动化执行流程
 
+![一次后台运行从触发到投递如何流转](./images/agent-10-02-scheduled-run.png)
+
 ```text
 调度器 tick
   ↓
@@ -80,9 +100,9 @@ Hermes Agent 的 Cron 文档说明，Cron 可以调度一次性或周期性任�
 
 Hermes Agent 的 Gateway scheduler 每 60 秒 tick 一次，并用锁文件防止重复 tick 导致同一批任务重复运行。
 
-![自动化 Agent 从 Cron、Webhook、消息和 Heartbeat 触发，经调度器、任务队列、后台会话、执行和通知投递，并由锁、超时、去重、审批和审计控制失控风险](./images/automated-agent-background-execution-figure-01.png)
-
 ## 结果投递
+
+![执行成功但通知失败时如何避免重跑 Agent](./images/agent-10-06-execution-vs-delivery.png)
 
 自动化任务的价值不只是“跑完”，而是把结果送到正确位置。
 
@@ -141,6 +161,10 @@ Webhooks 适合外部系统触发，例如：
 OpenClaw 的 hooks 文档展示了 session-memory、boot-md、command-logger 等内置 Hook，用于记忆保存、启动流程和审计。
 
 ## 防失控机制
+
+![调度器重复触发时如何保证一个业务窗口只执行一次](./images/agent-10-05-idempotent-schedule.png)
+
+![后台 Agent 需要哪些终止和审批门](./images/agent-10-07-automation-guardrails.png)
 
 自动化 Agent 必须防止失控。
 
@@ -203,15 +227,66 @@ source + event_id + date
 
 ## 自动化评估指标
 
-| 指标 | 说明 |
-| --- | --- |
-| 准时率 | 是否按计划运行 |
-| 成功率 | 是否完成任务 |
-| 重复率 | 是否重复执行或重复发送 |
-| 成本 | token、搜索、API 调用成本 |
-| 人工介入 | 是否频繁需要修正 |
-| 噪音比 | 通知是否有价值 |
-| 回滚次数 | 是否造成错误副作用 |
+| 指标     | 说明                      |
+| -------- | ------------------------- |
+| 准时率   | 是否按计划运行            |
+| 成功率   | 是否完成任务              |
+| 重复率   | 是否重复执行或重复发送    |
+| 成本     | token、搜索、API 调用成本 |
+| 人工介入 | 是否频繁需要修正          |
+| 噪音比   | 通知是否有价值            |
+| 回滚次数 | 是否造成错误副作用        |
+
+## 工程补全：调度语义、幂等与后台运行手册
+
+### 接口与数据契约
+
+![一个可靠调度任务必须声明哪些字段](./images/agent-10-03-job-contract.png)
+
+- 任务定义包含 schedule、timezone、idempotency_window、max_runtime、retry_policy 和 delivery
+- 执行实例使用 job_id、scheduled_for、attempt 和 lease_expires_at
+- 通知投递有独立 delivery_id 和去重策略
+
+### 失败路径、终止与恢复
+
+![带过期时间的租约如何防止永久锁](./images/agent-10-04-lease-lock.png)
+
+- 锁使用带过期的租约，防止执行器崩溃后永久占用
+- 重试不超过下一调度窗口，并防止递归创建新任务
+- 投递失败与 Agent 执行失败分开记录和重试
+
+### 可观测性与验收
+
+![后台任务告警后运行手册应如何定位](./images/agent-10-08-automation-runbook.png)
+
+不要只保留最终回答。每次运行应该能通过 **run_id** 关联输入、决策、工具请求、工具结果、状态变更和终止原因。本篇至少跟踪：
+
+- `schedule_delay`
+- `duplicate_suppressed`
+- `lease_expired`
+- `run_timeout`
+- `delivery_success`
+
+## 常见误区
+
+- Cron 表达式本身不解决时区问题
+- 定时任务超时后可能仍有副作用
+- Heartbeat 不应无条件触发昂贵任务
+
+## 自检题
+
+1. 为什么后台锁需要租约过期时间？
+2. 执行成功但通知失败时应怎样重试？
+3. 幂等键应由哪些业务字段组成？
+
+<details>
+<summary>查看答案</summary>
+
+1. 防止 Worker 崩溃后永久持锁，并允许其他 Worker 在安全窗口后接管。
+2. 只重试投递步骤，复用已持久化的结果，不重跑 Agent。
+3. 任务类型、租户/项目、计划时间窗口和与业务结果相关的稳定标识。
+
+</details>
 
 ## 实操：实现一个最小 Cron Agent
 
@@ -300,11 +375,15 @@ cron_tasks.json
 
 自动化 Agent 的重点不是“让 Agent 自己一直跑”，而是把触发、上下文、工具、投递和安全边界设计清楚。OpenClaw 的 Gateway、Hooks 和 Heartbeat 适合长期在线的个人助手；Hermes Agent 的 Cron、skills 和 delivery 机制适合把可复用流程调度起来。自动化越强，越需要防失控设计。
 
-## 参考资料
+## 下一篇
+
+11-OpenClaw 架构：观察一个本地优先系统如何组织 Gateway、Workspace 与多通道。
+
+## 资料来源与版本基线
 
 - [Hermes Agent Scheduled Tasks](https://hermes-agent.nousresearch.com/docs/user-guide/features/cron/)
 - [Hermes Agent Cron Tool Source](https://github.com/NousResearch/hermes-agent/blob/main/tools/cronjob_tools.py)
 - [Hermes Agent Tools & Toolsets](https://hermes-agent.nousresearch.com/docs/user-guide/features/tools/)
-- [OpenClaw Hooks](https://openclawlab.com/en/docs/cli/hooks/)
-- [OpenClaw Agent workspace](https://documentation.openclaw.ai/concepts/agent-workspace)
-- [OpenClaw Gateway Runbook](https://openclawlab.com/en/docs/gateway/)
+- [OpenClaw Hooks](https://docs.openclaw.ai/automation/hooks)
+- [OpenClaw Agent workspace](https://docs.openclaw.ai/concepts/agent-workspace)
+- [OpenClaw Gateway Runbook](https://docs.openclaw.ai/gateway)

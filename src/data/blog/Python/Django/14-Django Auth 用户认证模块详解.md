@@ -2,7 +2,7 @@
 title: Django Auth 用户认证模块详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: django-component-4-auth
 featured: false
 draft: false
@@ -34,6 +34,7 @@ Django作为一个完美主义者的终极框架，当然也会想到用户的�
 
 ### 常用功能
 
+<!-- snippet: id=django-component-4-auth-01 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -80,6 +81,7 @@ LOGIN_URL = '/login/'
 
 ## auth模块常用方法
 
+<!-- snippet: id=django-component-4-auth-02 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.contrib import auth
 ```
@@ -94,6 +96,7 @@ authenticate()会在该User对象上设置一个属性来标识后端已经认�
 
 **用法：**
 
+<!-- snippet: id=django-component-4-auth-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 user = authenticate(username='username', password='password')
 ```
@@ -106,6 +109,7 @@ user = authenticate(username='username', password='password')
 
 **用法：**
 
+<!-- snippet: id=django-component-4-auth-04 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.contrib.auth import authenticate, login
 
@@ -130,6 +134,7 @@ def my_view(request):
 
 **用法：**
 
+<!-- snippet: id=django-component-4-auth-05 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.contrib.auth import logout
 
@@ -144,6 +149,7 @@ def logout_view(request):
 
 **用法：**
 
+<!-- snippet: id=django-component-4-auth-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def my_view(request):
     if not request.user.is_authenticated:
@@ -156,6 +162,7 @@ auth给我们提供的一个装饰器工具，用来快捷的给某个视图添�
 
 **用法：**
 
+<!-- snippet: id=django-component-4-auth-07 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.contrib.auth.decorators import login_required
 
@@ -168,6 +175,7 @@ def my_view(request):
 
 如果需要自定义登录的URL，则需要在settings.py文件中通过LOGIN_URL进行修改：
 
+<!-- snippet: id=django-component-4-auth-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 LOGIN_URL = '/login/'  # 这里配置成你项目登录页面的路由
 ```
@@ -178,6 +186,7 @@ auth提供的一个创建新用户的方法，需要提供必要参数（usernam
 
 **用法：**
 
+<!-- snippet: id=django-component-4-auth-09 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.contrib.auth.models import User
 
@@ -190,6 +199,7 @@ auth提供的一个创建新的超级用户的方法，需要提供必要参数�
 
 **用法：**
 
+<!-- snippet: id=django-component-4-auth-10 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.contrib.auth.models import User
 
@@ -204,6 +214,7 @@ auth提供的一个检查密码是否正确的方法，需要提供当前请求�
 
 **用法：**
 
+<!-- snippet: id=django-component-4-auth-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 ok = user.check_password('密码')
 ```
@@ -216,6 +227,7 @@ auth提供的一个修改密码的方法，接收要设置的新密码作为参�
 
 **用法：**
 
+<!-- snippet: id=django-component-4-auth-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 user.set_password(password='')
 user.save()
@@ -243,6 +255,7 @@ def set_password(request):
 
 如果需要扩展auth_user表，可以继承AbstractUser模型：
 
+<!-- snippet: id=django-component-4-auth-13 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.contrib.auth.models import AbstractUser
 
@@ -256,6 +269,7 @@ class User(AbstractUser):
 
 然后在settings.py中配置：
 
+<!-- snippet: id=django-component-4-auth-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 AUTH_USER_MODEL = 'app名.User'
 ```
@@ -264,6 +278,7 @@ AUTH_USER_MODEL = 'app名.User'
 
 ### views.py
 
+<!-- snippet: id=django-component-4-auth-15 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
@@ -314,6 +329,7 @@ def register_view(request):
 
 ### urls.py
 
+<!-- snippet: id=django-component-4-auth-16 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.urls import path
 from . import views
@@ -328,6 +344,7 @@ urlpatterns = [
 
 ### login.html
 
+<!-- snippet: id=django-component-4-auth-17 mode=display python=3.12-3.14 deps=stdlib -->
 ```html
 <!DOCTYPE html>
 <html lang="en">

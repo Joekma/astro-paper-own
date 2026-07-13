@@ -2,7 +2,7 @@
 title: Python 面向对象之绑定方法、反射与类型检查
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
-modDatetime: 2026-04-29T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-oop-methods-reflection
 featured: false
 draft: false
@@ -40,6 +40,7 @@ language: zh-CN
 
 检查对象是否是某个类的实例。
 
+<!-- snippet: id=python-oop-methods-reflection-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Animal:
     pass
@@ -62,6 +63,7 @@ print(type(dog) == Animal)      # False
 
 检查类是否是另一个类的子类。
 
+<!-- snippet: id=python-oop-methods-reflection-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print(issubclass(Dog, Animal))  # True
 print(issubclass(Animal, Dog))  # False
@@ -93,6 +95,7 @@ print(issubclass(Dog, Dog))     # True（类是自己子类）
 
 实例方法是类中最常见的方法类型，绑定到具体对象，需要通过实例调用。
 
+<!-- snippet: id=python-oop-methods-reflection-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class People:
     def __init__(self, name, age):
@@ -110,6 +113,7 @@ p.talk()  # 必须通过实例调用
 
 类方法使用 `@classmethod` 装饰，第一个参数自动接收类本身。
 
+<!-- snippet: id=python-oop-methods-reflection-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class People:
     def __init__(self, name, age):
@@ -135,9 +139,9 @@ p2 = People.create_from_dict({'name': 'Bob', 'age': 30})
 
 静态方法使用 `@staticmethod` 装饰，不与类或对象绑定，就是普通函数。
 
+<!-- snippet: id=python-oop-methods-reflection-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
-import hashlib
-import time
+import secrets
 
 class User:
     def __init__(self, username):
@@ -146,7 +150,7 @@ class User:
     @staticmethod
     def generate_id():
         """静态方法：生成随机ID"""
-        return hashlib.md5(str(time.time()).encode()).hexdigest()
+        return secrets.token_hex(16)
 
 # 类和实例都可以调用静态方法
 user_id = User.generate_id()
@@ -166,6 +170,7 @@ user_id = User.generate_id()
 
 类方法常用于从配置文件创建实例，实现类的多样化构造。
 
+<!-- snippet: id=python-oop-methods-reflection-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import settings
 
@@ -193,9 +198,9 @@ conn.from_conf()  # 仍传递类而不是对象
 
 静态方法适合放置与类相关但不依赖类/实例状态的工具函数。
 
+<!-- snippet: id=python-oop-methods-reflection-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
-import hashlib
-import time
+import secrets
 
 class MySQL:
     def __init__(self, host, port):
@@ -205,7 +210,7 @@ class MySQL:
     @staticmethod
     def create_id():
         """静态方法：生成唯一ID"""
-        return hashlib.md5(str(time.time()).encode('utf-8')).hexdigest()
+        return secrets.token_hex(16)
 
 # 静态方法调用
 print(MySQL.create_id())  # 0c6a2ae9cf81c16fb8e80b0e5f6d1c4
@@ -218,6 +223,7 @@ print(conn.create_id())  # 同样可以调用
 
 使用静态方法创建实例时，可能导致继承问题：
 
+<!-- snippet: id=python-oop-methods-reflection-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import time
 
@@ -245,6 +251,7 @@ print(e)  # 显示 Date 的格式，不是 EuroDate
 
 **解决方案：使用类方法代替静态方法**
 
+<!-- snippet: id=python-oop-methods-reflection-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import time
 
@@ -273,7 +280,10 @@ print(e)  # 2017年3月3日
 > 💡 **经验教训**：如果需要创建实例的工厂方法，优先使用类方法而非静态方法，以便支持继承。
 
 ## 反射机制
+<!-- snippet: id=python-oop-methods-reflection-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
+import secrets
+
 @classmethod
 def from_conf(cls):
     obj = cls(
@@ -284,8 +294,7 @@ def from_conf(cls):
     return obj
 @staticmethod
 def create_id():
-    m = hashlib.md5(str(time.time()).encode('utf-8'))
-    return m.hexdigest()
+    return secrets.token_hex(16)
 p = People('tom',18,'male')
 # 绑定到对象，就应该由对象来调用，自动将对象本身当作第一个参数传入
 # p.tell_info()  [[tell_info]](p)
@@ -305,6 +314,7 @@ print(p3.id)
 
 ```
 ## classmethod 与 staticmethod的区别
+<!-- snippet: id=python-oop-methods-reflection-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import settings
 class MySQL:
@@ -338,6 +348,7 @@ mariadb是mysql
 Python 是双面向的,既可以面向函数编程,也可以面向对象编程,所谓面向函数就是单独一个. py 文件,里面没有类,全是一些函数,调用的时候导入模块,通过模块名.函数名()即可调用,完全不需要类,那么你可能会问,那要类还有什么毛用? 类就是用来面向对象编程啦,类可以有自己的属性,类可以创建很多实例,每个实例可以有不同的属性,这也就保存了很多私有的数据,总之都有存在的必要.
 
 面向对象程序设计中，类方法和静态方法是经常用到的术语，逻辑上将：类方法只能由类名调用，静态方法可以由类名或者对象名调用。在python 语法中，类有三种方法，分别是实例方法，静态方法，类方法
+<!-- snippet: id=python-oop-methods-reflection-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Foo(object):
     '''类三种方法语法形式'''
@@ -395,6 +406,7 @@ Foo.class_method()
 1：类方法用在模拟java定义多个构造函数的情况
 
 由于python类中只能有一个初始化方法，不能按照不同的情况初始化类，举例如下：
+<!-- snippet: id=python-oop-methods-reflection-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class book(object):
 
@@ -416,6 +428,7 @@ print(book2.title)
 2：类中静态方法方法调用静态方法的情况
 
 下面的代码，静态方法调用另一个静态方法，如果改用类方法调用静态方法，可以让cls代替类，（让代码看起来精简一些，也防止类名修改了，不用在类定义中修改原来的类名）
+<!-- snippet: id=python-oop-methods-reflection-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class foo(object):
     x =1
@@ -445,6 +458,7 @@ print(a.class_method())
 
 > **核心问题**：通常我们用 `obj.attr` 或 `Class.attr` 访问属性，但如果属性名是字符串怎么办？
 
+<!-- snippet: id=python-oop-methods-reflection-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class People:
     def __init__(self, name, age):
@@ -482,6 +496,7 @@ Python 提供四个内置函数来实现反射：
 
 ### hasattr - 检查属性是否存在
 
+<!-- snippet: id=python-oop-methods-reflection-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class People:
     def __init__(self, name, age):
@@ -500,6 +515,7 @@ print(hasattr(obj, 'gender'))  # False
 
 ### getattr - 获取属性值
 
+<!-- snippet: id=python-oop-methods-reflection-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 获取普通属性
 name = getattr(obj, 'name')
@@ -516,6 +532,7 @@ print(gender)  # Unknown
 
 ### setattr - 设置属性值
 
+<!-- snippet: id=python-oop-methods-reflection-18 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 设置新属性
 setattr(obj, 'gender', 'Female')
@@ -528,6 +545,7 @@ obj.greet()  # Hello!
 
 ### delattr - 删除属性
 
+<!-- snippet: id=python-oop-methods-reflection-19 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 删除属性
 delattr(obj, 'age')
@@ -537,7 +555,8 @@ print(hasattr(obj, 'age'))  # False
 # delattr(obj, 'nonexistent')  # AttributeError
 ```
 
-```python
+<!-- snippet: id=python-oop-methods-reflection-20 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 print(hasattr(obj,'name'))
 print(hasattr(obj,'talk'))
 print(hasattr(obj,'age'))
@@ -548,6 +567,7 @@ True
 ```
 **getattr(object, name, default=None) 获取object中有没有对应的方法和属性**
 
+<!-- snippet: id=python-oop-methods-reflection-21 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def getattr(object, name, default=None): # known special case of getattr
     '''
@@ -576,6 +596,7 @@ print(getattr(obj,'ads',None))
 ```
 
 **setattr(x, y, v) 设置对象及其属性**
+<!-- snippet: id=python-oop-methods-reflection-22 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def setattr(x, y, v): # real signature unknown; restored from __doc__
     """
@@ -601,6 +622,7 @@ print(obj.sex)
 
 ```
 **delattr(x, y) 删除类或对象的属性**
+<!-- snippet: id=python-oop-methods-reflection-23 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def delattr(x, y): # real signature unknown; restored from __doc__
     """
@@ -624,6 +646,7 @@ print(obj.__dict__)
 # {'name': 'huard'}
 ```
 **四个方法的使用演示**
+<!-- snippet: id=python-oop-methods-reflection-24 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class BlackMedium:
     feature='Ugly'
@@ -674,6 +697,7 @@ print(b1.__dict__) #{'name': '万成置地', 'sb': True}
 
 ```
 **类也是对象**
+<!-- snippet: id=python-oop-methods-reflection-25 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Foo(object):
     staticField = "old boy"
@@ -697,6 +721,7 @@ print(getattr(Foo, 'bar'))
 
 ```
 **反射当前模块成员**
+<!-- snippet: id=python-oop-methods-reflection-26 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import sys
 
@@ -715,6 +740,7 @@ print(getattr(this_module, 's2'))
 
 ```
 **导入其他模块，利用反射查找该模块是否存在某个方法**
+<!-- snippet: id=python-oop-methods-reflection-27 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 
 import module_test as obj
@@ -729,6 +755,7 @@ getattr(obj,'test')()
 
 ```
 **module_test.py**
+<!-- snippet: id=python-oop-methods-reflection-28 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 
 # _*_ coding: utf-8 _*_
@@ -745,6 +772,7 @@ def test():
 总之反射的好处就是，可以事先定义好接口，接口只有在被完成后才会真正执行，这实现了即插即用，这其实是一种‘后期绑定’，什么意思？即你可以事先把主要的逻辑写好（只定义接口），然后后期再去实现接口的功能
 
 **dunart还没有实现全部功能**
+<!-- snippet: id=python-oop-methods-reflection-29 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class FtpClient:
     'ftp客户端,但是还么有实现具体的功能'
@@ -753,6 +781,7 @@ class FtpClient:
         self.addr=addr
 ```
 **不影响james的代码编写**
+<!-- snippet: id=python-oop-methods-reflection-30 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from module import FtpClient
 f1=FtpClient('192.168.1.1')
@@ -768,6 +797,7 @@ else:
 ## __setattr__,__delattr__,__getattr__
 
 ### **三者的用法演示**
+<!-- snippet: id=python-oop-methods-reflection-31 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Foo:
     x=1

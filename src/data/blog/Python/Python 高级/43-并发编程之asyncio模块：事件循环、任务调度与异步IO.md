@@ -1,12 +1,12 @@
 ---
 title: 并发编程之asyncio模块：事件循环、任务调度与异步IO
 series: python
-seriesOrder: 43
+seriesOrder: 55
 language: zh-CN
 author: Joekma
 pubDatetime: 2026-07-01T00:00:00.000+08:00
 slug: python-asyncio-module-guide
-modDatetime: 2026-07-01T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 featured: false
 draft: false
 tags:
@@ -45,6 +45,7 @@ description: "系统讲解Python asyncio模块，涵盖事件循环、协程、T
 
 同步代码里，一个请求没返回，当前线程就停在原地：
 
+<!-- snippet: id=python-asyncio-module-guide-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import time
 
@@ -64,6 +65,7 @@ main()
 
 `asyncio` 的思路是：当任务遇到可以等待的地方，用 `await` 主动把控制权交还给事件循环。
 
+<!-- snippet: id=python-asyncio-module-guide-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 
@@ -84,115 +86,13 @@ asyncio.run(main())
 
 这段代码总耗时约 2 秒，因为三个协程被并发调度了。注意这里的并发不是三条 Python 字节码同时运行，而是在单个线程中遇到 `await` 时协作切换。
 
-## 核心模型
-
-### 协程函数与协程对象
-
-用 `async def` 定义的是协程函数，调用它得到的是协程对象。
-
-```python
-async def hello():
-    return "hello asyncio"
-
-coro = hello()
-print(coro)  # <coroutine object hello at ...>
-```
-
-只调用协程函数不会执行它。协程对象必须被 `await`、放进 `Task`，或者交给 `asyncio.run()` 才会真正运行。
-
-```python
-import asyncio
-
-async def hello():
-    return "hello asyncio"
-
-async def main():
-    result = await hello()
-    print(result)
-
-asyncio.run(main())
-```
-
-### 事件循环
-
-事件循环可以理解为 asyncio 程序的调度中心。它负责：
-
-- 运行已经就绪的协程任务。
-- 监听 socket、管道、子进程等 IO 事件。
-- 管理定时器，例如 `asyncio.sleep()`。
-- 在任务等待 Future 完成时切换到其他任务。
-
-应用层代码通常不需要手动创建和关闭事件循环。现代写法是把入口函数写成 `async main()`，再用 `asyncio.run(main())` 启动。
-
-```python
-import asyncio
-
-async def main():
-    loop = asyncio.get_running_loop()
-    print(loop)
-
-asyncio.run(main())
-```
-
-`asyncio.run()` 会创建事件循环、运行传入的 awaitable、清理异步生成器和默认 executor，并在结束后关闭事件循环。它应该作为 asyncio 程序的顶层入口使用，通常一个程序只调用一次。
-
-### Task
-
-协程对象本身只是“可以运行的异步计算”。如果想让它被事件循环并发调度，需要包装成 `Task`。
-
-```python
-import asyncio
-
-async def worker(name: str, delay: float):
-    await asyncio.sleep(delay)
-    print(f"{name} finished")
-    return name
-
-async def main():
-    task = asyncio.create_task(worker("task-1", 1))
-    print("task created")
-
-    result = await task
-    print("result:", result)
-
-asyncio.run(main())
-```
-
-`asyncio.create_task()` 会把协程加入当前正在运行的事件循环，并返回一个 `Task` 对象。这个对象可以被等待、取消、命名，也可以查询结果或异常。
-
-后台任务要保存引用。事件循环只保存任务的弱引用，如果创建任务后完全不保存，任务可能在执行中被垃圾回收。可靠的 fire-and-forget 写法通常会把任务放到集合里，并在完成后自动移除。
-
-```python
-import asyncio
-
-background_tasks: set[asyncio.Task] = set()
-
-async def send_metric(i: int):
-    await asyncio.sleep(0.1)
-    print(f"metric {i} sent")
-
-def start_background_task(i: int):
-    task = asyncio.create_task(send_metric(i))
-    background_tasks.add(task)
-    task.add_done_callback(background_tasks.discard)
-```
-
-### Future
-
-`Future` 表示“未来会完成的结果”。在业务代码中很少需要自己创建 Future，但很多底层 API、协议层代码和 `run_in_executor()` 会返回 Future。
-
-可以简单理解：
-
-- 协程是可暂停的函数。
-- Task 是被事件循环调度的协程。
-- Future 是异步结果的占位符。
-
 ## 基础语法
 
 ### async 和 await
 
 `async def` 定义协程函数，`await` 等待一个 awaitable 对象完成。
 
+<!-- snippet: id=python-asyncio-module-guide-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 
@@ -215,6 +115,7 @@ asyncio.run(main())
 
 串行写法：
 
+<!-- snippet: id=python-asyncio-module-guide-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 import time
@@ -240,6 +141,7 @@ asyncio.run(main())
 
 并发写法：
 
+<!-- snippet: id=python-asyncio-module-guide-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 import time
@@ -271,6 +173,7 @@ asyncio.run(main())
 
 当你希望一个协程立刻开始运行，并在后面某个时刻等待结果，可以使用 `create_task()`。
 
+<!-- snippet: id=python-asyncio-module-guide-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 import time
@@ -299,6 +202,7 @@ asyncio.run(main())
 
 `asyncio.gather()` 最适合“同时发起一批任务，并按输入顺序拿到结果”的场景。
 
+<!-- snippet: id=python-asyncio-module-guide-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 
@@ -321,6 +225,7 @@ asyncio.run(main())
 
 如果其中一个任务抛出异常，默认会把异常传播给等待 `gather()` 的地方。`return_exceptions=True` 会把异常对象也放进结果列表，这适合“批量任务尽量都跑完，再统一统计成功失败”的场景。
 
+<!-- snippet: id=python-asyncio-module-guide-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 
@@ -353,6 +258,7 @@ asyncio.run(main())
 
 如果希望任务完成一个就处理一个，而不是等待全部完成再拿列表，可以使用 `asyncio.as_completed()`。
 
+<!-- snippet: id=python-asyncio-module-guide-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 import random
@@ -382,6 +288,7 @@ asyncio.run(main())
 
 Python 3.11 引入了 `asyncio.TaskGroup`。它把一组相关任务放进同一个作用域里，退出 `async with` 时会等待所有任务完成。如果其中一个任务失败，同组任务会被取消，异常会以异常组的形式向外传播。
 
+<!-- snippet: id=python-asyncio-module-guide-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 
@@ -413,6 +320,7 @@ asyncio.run(main())
 
 `asyncio.wait_for()` 会等待一个 awaitable 完成，如果超过指定时间，会取消该 awaitable 并抛出 `TimeoutError`。
 
+<!-- snippet: id=python-asyncio-module-guide-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 
@@ -434,6 +342,7 @@ asyncio.run(main())
 
 Python 3.11 起可以使用 `asyncio.timeout()`。它是异步上下文管理器，更适合包住一段结构化代码。
 
+<!-- snippet: id=python-asyncio-module-guide-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 
@@ -463,6 +372,7 @@ asyncio.run(main())
 
 取消是 asyncio 中非常重要的控制流。调用 `task.cancel()` 后，任务会在下一次有机会运行时抛出 `asyncio.CancelledError`。
 
+<!-- snippet: id=python-asyncio-module-guide-18 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 
@@ -499,6 +409,7 @@ asyncio.run(main())
 
 比如有 1000 个 URL，但最多同时请求 20 个。
 
+<!-- snippet: id=python-asyncio-module-guide-19 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 import random
@@ -526,6 +437,7 @@ asyncio.run(main())
 
 asyncio 是单线程协作式调度，但只要在读写共享状态之间存在 `await`，就可能产生竞态。
 
+<!-- snippet: id=python-asyncio-module-guide-20 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 
@@ -554,6 +466,7 @@ asyncio.run(main())
 
 `asyncio.Event` 适合一个任务发布信号，多个任务等待信号。
 
+<!-- snippet: id=python-asyncio-module-guide-21 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 
@@ -582,6 +495,7 @@ asyncio.run(main())
 
 `asyncio.Queue` 是异步任务之间传递数据的常用工具。它天然适合爬虫、日志处理、消息消费、批量任务流水线。
 
+<!-- snippet: id=python-asyncio-module-guide-22 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 import random
@@ -632,6 +546,7 @@ asyncio.run(main())
 
 下面这段代码看似是 asyncio，但 `time.sleep()` 会阻塞整个事件循环：
 
+<!-- snippet: id=python-asyncio-module-guide-23 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 import time
@@ -657,6 +572,7 @@ asyncio.run(main())
 
 如果必须调用同步阻塞函数，可以用 `asyncio.to_thread()` 放到线程里执行。
 
+<!-- snippet: id=python-asyncio-module-guide-24 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 import time
@@ -686,6 +602,7 @@ asyncio.run(main())
 
 如果需要复用线程池或进程池，可以使用事件循环的 `run_in_executor()`。
 
+<!-- snippet: id=python-asyncio-module-guide-25 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 import concurrent.futures
@@ -714,6 +631,7 @@ asyncio.run(main())
 
 asyncio 标准库内置了 streams API，可以快速编写 TCP 服务。
 
+<!-- snippet: id=python-asyncio-module-guide-26 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 
@@ -749,6 +667,7 @@ asyncio.run(main())
 
 ### TCP Client
 
+<!-- snippet: id=python-asyncio-module-guide-27 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 
@@ -773,6 +692,7 @@ asyncio.run(main())
 
 标准库没有高级异步 HTTP 客户端。实际项目中常见选择是 `aiohttp`、`httpx` 等第三方库。这里为了突出 asyncio 调度模型，用 `asyncio.sleep()` 模拟网络耗时，用任务池控制并发。
 
+<!-- snippet: id=python-asyncio-module-guide-28 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 import random
@@ -839,6 +759,7 @@ asyncio.run(main())
 
 ### 误区一：忘记 await
 
+<!-- snippet: id=python-asyncio-module-guide-29 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 async def get_data():
     return {"ok": True}
@@ -850,6 +771,7 @@ async def main():
 
 正确写法：
 
+<!-- snippet: id=python-asyncio-module-guide-30 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 async def main():
     data = await get_data()
@@ -860,6 +782,7 @@ async def main():
 
 ### 误区二：在协程里调用 time.sleep
 
+<!-- snippet: id=python-asyncio-module-guide-31 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 async def bad():
     time.sleep(1)  # 阻塞整个事件循环
@@ -867,6 +790,7 @@ async def bad():
 
 正确写法：
 
+<!-- snippet: id=python-asyncio-module-guide-32 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 async def good():
     await asyncio.sleep(1)
@@ -876,6 +800,7 @@ async def good():
 
 ### 误区三：无边界创建任务
 
+<!-- snippet: id=python-asyncio-module-guide-33 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 tasks = [asyncio.create_task(fetch(url)) for url in million_urls]
 await asyncio.gather(*tasks)
@@ -887,6 +812,7 @@ await asyncio.gather(*tasks)
 
 `asyncio.run()` 不能在同一线程已有事件循环运行时调用。比如在某些 Web 框架、Jupyter、异步测试框架内部，通常应该直接 `await`，或者使用框架提供的生命周期入口。
 
+<!-- snippet: id=python-asyncio-module-guide-34 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 async def handler():
     # 错误：当前线程可能已经有事件循环
@@ -895,6 +821,7 @@ async def handler():
 
 正确思路：
 
+<!-- snippet: id=python-asyncio-module-guide-35 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 async def handler():
     await do_something()
@@ -902,6 +829,7 @@ async def handler():
 
 ### 误区五：吞掉取消异常
 
+<!-- snippet: id=python-asyncio-module-guide-36 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 async def bad_worker():
     try:
@@ -912,6 +840,7 @@ async def bad_worker():
 
 通常应该清理后重新抛出：
 
+<!-- snippet: id=python-asyncio-module-guide-37 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 async def good_worker():
     try:
@@ -927,6 +856,7 @@ async def good_worker():
 
 asyncio 的默认模型是单线程事件循环。它能提高 IO 并发吞吐，但不会让普通 Python CPU 计算自动跑满多核。
 
+<!-- snippet: id=python-asyncio-module-guide-38 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 async def cpu_task():
     total = 0
@@ -948,6 +878,7 @@ async def cpu_task():
 
 开发阶段可以开启 asyncio debug 模式，帮助发现慢回调、未等待协程等问题。
 
+<!-- snippet: id=python-asyncio-module-guide-39 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 
@@ -959,6 +890,7 @@ asyncio.run(main(), debug=True)
 
 也可以通过环境变量开启：
 
+<!-- snippet: id=python-asyncio-module-guide-40 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 PYTHONASYNCIODEBUG=1 python app.py
 ```
@@ -967,6 +899,7 @@ PYTHONASYNCIODEBUG=1 python app.py
 
 任务多了之后，名字很重要。
 
+<!-- snippet: id=python-asyncio-module-guide-41 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 
@@ -986,6 +919,7 @@ asyncio.run(main())
 
 ### 打印当前任务
 
+<!-- snippet: id=python-asyncio-module-guide-42 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 
@@ -1026,6 +960,7 @@ asyncio、线程、进程不是互斥关系，而是不同层次的工具：
 
 一个真实服务里常常会组合使用：
 
+<!-- snippet: id=python-asyncio-module-guide-43 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
 主进程
   ├── asyncio 事件循环处理网络连接

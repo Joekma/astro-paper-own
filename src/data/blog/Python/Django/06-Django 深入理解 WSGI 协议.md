@@ -2,12 +2,12 @@
 title: Django 深入理解 WSGI 协议
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: django-wsgi-protocol
 featured: false
 draft: false
 series: django
-seriesOrder: 7
+seriesOrder: 6
 tags:
   - Python
   - Django
@@ -17,7 +17,7 @@ description: "深入讲解WSGI协议的工作原理和在Django中的应用。"
 
 ## 起步
 
-距离上一篇这个系列的文章已经是半年前了，随着Django 2.0的发布，感觉之前分析的1.10.5版本似乎有点老了，好在和前面文章分析的内容差异不大，基本上也是可以就着前面的分析内容来品尝最新的django代码。
+本文以 Django 6.0.7 的公开 WSGI 入口为基线；源码内部结构可能在补丁版本间变化，引用内部调用链时会明确标注而不把它当作稳定 API。
 
 那接下来阅读的版本就从当前能获取的2.0.6来分析。不过，本章要将的内容，可能和django代码本身没太多关系。本章来理解一下WSGI协议，django就是遵守这个协议的web开发框架，本章重点是协议方面的说明，顶多会讲讲django里相应的wsgi的代码，而不对django代码做分析。
 
@@ -45,6 +45,7 @@ WSGI协议要面对两个端：一个是服务器或者说是网关端，另一�
 
 这个可调用对象的构成也很简单，它接收**两个参数**，该对象必须允许能够调用多次，如下面的示例：
 
+<!-- snippet: id=django-wsgi-protocol-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def simple_app(environ, start_response):
     """最简单的应用程序对象"""
@@ -56,6 +57,7 @@ def simple_app(environ, start_response):
 
 这样就是一个满足WSGI协议的web程序应用了，是不是很简单。对应的django里，可以从`wsgi.py`中看到`application = get_wsgi_application()`这个函数展开基本和我们实例的最简单应用程序对象结构一样了：
 
+<!-- snippet: id=django-wsgi-protocol-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class WSGIHandler(base.BaseHandler):
     request_class = WSGIRequest
@@ -77,6 +79,7 @@ class WSGIHandler(base.BaseHandler):
 
 `environ`是一个字典，以一个简单的CGI网关为例，它的值可以这么设置：
 
+<!-- snippet: id=django-wsgi-protocol-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import os
 
@@ -96,6 +99,7 @@ else:
 
 `start_response`则是一个函数，原型是`start_response(status, response_headers, exc_info=None)`并且这个函数要返回一个可调用的`write(body_data)`对象。例如：
 
+<!-- snippet: id=django-wsgi-protocol-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def unicode_to_wsgi(u):
     return u.encode(enc, esc).decode('iso-8859-1')
@@ -141,6 +145,7 @@ def start_response(status, response_headers, exc_info=None):
 
 整合一下：
 
+<!-- snippet: id=django-wsgi-protocol-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import sys
 import os

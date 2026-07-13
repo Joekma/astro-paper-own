@@ -2,7 +2,7 @@
 title: Flask 框架介绍与基础使用
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: flask-1-introduction
 description: '介绍Flask框架的基本概念、与Django的对比、Werkzeug原理以及Flask的基础使用方法。'
 tags:
@@ -70,12 +70,14 @@ Flask 的"微"体现在：
 
 ### 安装 Flask
 
+<!-- snippet: id=flask-1-introduction-01 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
-pip3 install flask
+python -m pip install flask
 ```
 
 ### 第一个 Flask 应用
 
+<!-- snippet: id=flask-1-introduction-02 mode=compile python=3.12-3.14 deps=Flask==3.1.3 -->
 ```python
 from flask import Flask
 
@@ -99,6 +101,7 @@ Flask 依赖 Werkzeug 实现 WSGI 协议。要理解 Flask 的底层运行机制
 
 按照 PEP 3333 标准，一个最简单的 WSGI 应用必须是这样的：
 
+<!-- snippet: id=flask-1-introduction-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def raw_wsgi_app(environ, start_response):
     """
@@ -117,6 +120,7 @@ def raw_wsgi_app(environ, start_response):
 
 Werkzeug 的出现就是为了消灭上面的痛点：
 
+<!-- snippet: id=flask-1-introduction-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from werkzeug.wrappers import Request, Response
 
@@ -137,6 +141,7 @@ if __name__ == '__main__':
 
 当 HTTP 请求到达时，Werkzeug 会拦截那个丑陋的 `environ` 字典，解析、清洗后实例化成一个优雅的 `request` 对象：
 
+<!-- snippet: id=flask-1-introduction-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 之前：直接操作字典
 username = environ['HTTP_USERNAME']  # 容易出错
@@ -149,6 +154,7 @@ username = request.form.get('username')
 
 装饰器在底层做了一个"套娃"操作：
 
+<!-- snippet: id=flask-1-introduction-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 装饰器底层的伪代码逻辑
 def inner_wsgi_app(environ, start_response):
@@ -163,6 +169,7 @@ def inner_wsgi_app(environ, start_response):
 
 你只需要写：
 
+<!-- snippet: id=flask-1-introduction-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 return Response('Hello World!')
 ```
@@ -191,6 +198,7 @@ return Response('Hello World!')
 
 Flask 本质上就是对 Werkzeug 代码的扩展，加上路由分发功能：
 
+<!-- snippet: id=flask-1-introduction-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from werkzeug.wrappers import Request, Response
 
@@ -222,6 +230,7 @@ class Flask:
 
 ### 添加路由的两种方式
 
+<!-- snippet: id=flask-1-introduction-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 方式一：使用装饰器（推荐）
 @app.route('/hello')
@@ -239,6 +248,7 @@ app.add_url_rule('/index', 'index', index)
 
 Flask 支持多种路由参数类型：
 
+<!-- snippet: id=flask-1-introduction-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 @app.route('/user/<username>')              # 字符串（默认）
 @app.route('/post/<int:post_id>')            # 整数
@@ -251,6 +261,7 @@ def route_example(**kwargs):
 
 ### 请求与响应
 
+<!-- snippet: id=flask-1-introduction-11 mode=compile python=3.12-3.14 deps=Flask==3.1.3 -->
 ```python
 from flask import Flask, request, render_template, redirect, session, make_response
 
@@ -294,7 +305,8 @@ Session 的意义在于：让服务器能够"认出"你，记住你之前做过�
 
 Session 的实现通常依赖于 Cookie：
 
-```
+<!-- snippet: id=flask-1-introduction-12 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 首次见面发"通行证"
     ↓
 服务器生成 session_id（如 abc123）
@@ -320,6 +332,7 @@ Session 的实现通常依赖于 Cookie：
 
 Flask 的 session 数据存储在客户端（浏览器）中，通过签名 cookie 实现安全保护：
 
+<!-- snippet: id=flask-1-introduction-13 mode=compile python=3.12-3.14 deps=Flask==3.1.3 -->
 ```python
 from flask import Flask, session
 
@@ -362,6 +375,7 @@ Session 弥补了 HTTP 无状态的先天不足，是现代 Web 应用实现用�
 
 **错误提示**：Method Not Allowed
 
+<!-- snippet: id=flask-1-introduction-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 错误：只支持 GET，但表单提交需要 POST
 @app.route('/login')
@@ -378,6 +392,7 @@ def login():
 
 **错误提示**：The session is unavailable because no secret key was set
 
+<!-- snippet: id=flask-1-introduction-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 错误：没有设置 secret_key
 app = Flask(__name__)

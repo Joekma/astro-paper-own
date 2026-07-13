@@ -2,12 +2,12 @@
 title: Django模板系统
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-04T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: django-template-system
 featured: false
 draft: false
 series: django
-seriesOrder: 3
+seriesOrder: 2
 tags:
   - Python
   - Django
@@ -25,6 +25,7 @@ description: 'Django模板系统详解，包括模板语法、变量传递、过
 
 语法：`{{ 变量名 }}`，使用点号`.`访问复杂数据结构的属性和方法。
 
+<!-- snippet: id=django-template-system-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def index(request):
     name = "hello"
@@ -43,6 +44,7 @@ def index(request):
     return render(request, "index.html", {"name": name, "person": person})
 ```
 
+<!-- snippet: id=django-template-system-02 mode=display python=3.12-3.14 deps=stdlib -->
 ```html
 <p>{{ name }}</p>
 <p>{{ l.0 }}</p>
@@ -69,6 +71,7 @@ def index(request):
 
 ### for循环
 
+<!-- snippet: id=django-template-system-03 mode=display python=3.12-3.14 deps=stdlib -->
 ```html
 {% for item in list %}
     <li>{{ forloop.counter }} - {{ item }}</li>
@@ -85,6 +88,7 @@ def index(request):
 
 ### if条件
 
+<!-- snippet: id=django-template-system-04 mode=display python=3.12-3.14 deps=stdlib -->
 ```html
 {% if user.is_authenticated %}
     <p>欢迎 {{ user.username }}</p>
@@ -97,6 +101,7 @@ def index(request):
 
 ### with别名
 
+<!-- snippet: id=django-template-system-05 mode=display python=3.12-3.14 deps=stdlib -->
 ```html
 {% with people.name as name %}
     <p>{{ name }}</p>
@@ -107,6 +112,7 @@ def index(request):
 
 ### 基础模板
 
+<!-- snippet: id=django-template-system-06 mode=display python=3.12-3.14 deps=stdlib -->
 ```html
 <!-- base.html -->
 <!DOCTYPE html>
@@ -126,6 +132,7 @@ def index(request):
 
 ### 子模板
 
+<!-- snippet: id=django-template-system-07 mode=display python=3.12-3.14 deps=stdlib -->
 ```html
 {% extends "base.html" %}
 
@@ -141,6 +148,7 @@ def index(request):
 
 使用 `{% include %}` 引入其他模板：
 
+<!-- snippet: id=django-template-system-08 mode=display python=3.12-3.14 deps=stdlib -->
 ```html
 <!-- 引入导航栏 -->
 {% include "navbar.html" %}

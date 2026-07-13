@@ -2,7 +2,7 @@
 title: Python 数据类型与内置方法：字符串、列表、元组、字典、集合
 author: Joekma
 pubDatetime: 2018-09-18T00:00:00.000+08:00
-modDatetime: 2026-05-03T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-data-types-built-in-methods
 description: '深入理解Python的数据类型和字符串、列表、元组、字典、集合的内置方法，详解可变类型与不可变类型、哈希类型等核心概念。'
 tags:
@@ -31,6 +31,7 @@ language: zh-CN
 
 **定义方式**：
 
+<!-- snippet: id=python-data-types-built-in-methods-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 age = 18
 age = int(18)
@@ -43,6 +44,7 @@ x = int('123')  # 只能将纯数字的字符串转换成整型
 
 **定义方式**：
 
+<!-- snippet: id=python-data-types-built-in-methods-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 salary = 1.3
 salary = float(1.3)
@@ -63,6 +65,7 @@ x = float('3.1')
 
 ### 进制转换
 
+<!-- snippet: id=python-data-types-built-in-methods-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 十进制 => 其他进制
 print(bin(13))  # 二进制: 0b1101
@@ -76,6 +79,7 @@ print(hex(13))  # 十六进制: 0xd
 
 **定义方式**：在单引号、双引号、三引号内包含的一串字符
 
+<!-- snippet: id=python-data-types-built-in-methods-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 msg = 'aaa"bbb"'
 msg = str('hello')
@@ -83,6 +87,7 @@ msg = str('hello')
 
 ### 常用字符串方法
 
+<!-- snippet: id=python-data-types-built-in-methods-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # strip: 移除字符串头尾指定的字符（默认为空格）
 name = "*joker**"
@@ -158,6 +163,7 @@ print(num4.isdigit())   # False
 
 ### 判断系列方法
 
+<!-- snippet: id=python-data-types-built-in-methods-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 name = 'joker123'
 
@@ -177,6 +183,7 @@ print(name.istitle())   # 每个单词首字母是否大写
 
 **定义方式**：在 `[]` 内用逗号分隔开多个任意类型的值
 
+<!-- snippet: id=python-data-types-built-in-methods-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 li = [1, 2, 3]
 li = list([1, 2, 3])
@@ -186,6 +193,7 @@ x = list({'a': 1, 'b': 2, 'c': 3})
 
 ### 列表常用方法
 
+<!-- snippet: id=python-data-types-built-in-methods-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 li = ['a', 'b', 'c', 'd', 'e']
 
@@ -226,6 +234,7 @@ li[:] = [0, 1]          # 清空并替换
 
 ### 列表练习
 
+<!-- snippet: id=python-data-types-built-in-methods-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 队列: 先进先出
 q = []
@@ -250,6 +259,7 @@ print(q.pop())  # second
 
 **定义方式**：在 `()` 内用逗号分隔开多个任意类型的值
 
+<!-- snippet: id=python-data-types-built-in-methods-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 t = (1, 3.1, 'aaa', (1, 2, 3), ['a', 'b'])
 t = tuple('hello')
@@ -258,6 +268,7 @@ t = tuple({'x': 1, 'y': 2})
 
 ### 元组与逗号
 
+<!-- snippet: id=python-data-types-built-in-methods-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 用逗号建立一个元组
 res = 'dsb',      # 实际上是一个元组
@@ -267,6 +278,7 @@ print(type(res))  # <class 'tuple'>
 
 ### 元组常用操作
 
+<!-- snippet: id=python-data-types-built-in-methods-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 t = ('a', 'b', 1)
 
@@ -296,12 +308,14 @@ for item in t:
 
 **定义方式**：在 `{}` 内用逗号分隔开多个 key:value
 
+<!-- snippet: id=python-data-types-built-in-methods-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 info = {'stu1102': 'LongZe Luola', 'stu1104': '苍井空'}
 ```
 
 ### 字典常用方法
 
+<!-- snippet: id=python-data-types-built-in-methods-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 info = {'stu1102': 'LongZe Luola', 'stu1103': 'XiaoZe Maliya'}
 
@@ -339,6 +353,7 @@ info_copy = info.copy()
 
 ### 多级字典嵌套
 
+<!-- snippet: id=python-data-types-built-in-methods-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 tv_catalog = {
     "欧美": {
@@ -367,6 +382,7 @@ av_catalog["大陆"]["1024"].append("可以用爬虫爬下来")
 
 **定义方式**：在 `{}` 内用逗号分隔开多个值
 
+<!-- snippet: id=python-data-types-built-in-methods-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 s = {1, 2, 3, 4, 5}
 s = set([1, 2, 3])
@@ -374,6 +390,7 @@ s = set([1, 2, 3])
 
 ### 集合常用方法
 
+<!-- snippet: id=python-data-types-built-in-methods-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 s1 = {1, 2, 3}
 s2 = {3, 4, 5}

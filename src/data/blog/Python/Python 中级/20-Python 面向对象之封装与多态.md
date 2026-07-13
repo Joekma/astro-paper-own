@@ -2,7 +2,7 @@
 title: Python 面向对象之封装与多态
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-29T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-oop-encapsulation-polymorphism
 description: '深入讲解Python面向对象中的封装与多态，掌握属性隐藏、property装饰器、接口设计、鸭子类型等核心概念。'
 tags:
@@ -43,6 +43,7 @@ language: zh-CN
 
 ### 在python中用双下划线开头的方式将属性隐藏起来（设置成私有的）
 
+<!-- snippet: id=python-oop-encapsulation-polymorphism-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 其实这仅仅这是一种变形操作
 # 类中所有双下划线开头的名称如__x都会自动变形成：_类名__x的形式
@@ -82,6 +83,7 @@ class A:
 
 **封装数据：将数据隐藏起来这不是目的。隐藏起来然后对外提供操作该数据的接口，然后我们可以在接口附加上对该数据操作的限制，以此完成对数据属性操作的严格控制。**
 
+<!-- snippet: id=python-oop-encapsulation-polymorphism-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Teacher:
     def __init__(self, name, age):
@@ -111,6 +113,7 @@ t.tell_info()
 
 > 提示：在编程语言里，对外提供的接口（接口可理解为了一个入口），可以是函数，称为接口函数，这与接口的概念还不一样，接口代表一组接口函数的集合体。
 
+<!-- snippet: id=python-oop-encapsulation-polymorphism-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class ATM:
     def __card(self):
@@ -173,6 +176,7 @@ property是一种特殊的属性，访问它时会执行一段功能（函数）
 体质指数（BMI）= 体重（kg）÷身高^2（m）
 例如：60kg÷(1.75×1.75) = 22.86
 
+<!-- snippet: id=python-oop-encapsulation-polymorphism-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class People:
     def __init__(self, name, weight, height):
@@ -192,6 +196,7 @@ print(p1.bmi)
 
 **例二：圆的周长和面积**
 
+<!-- snippet: id=python-oop-encapsulation-polymorphism-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import math
 
@@ -230,6 +235,7 @@ c.area = 3  # 为特性area赋值
 
 python并没有在语法上把它们三个内建到自己的class机制中，在C++里一般会将所有的所有的数据都设置为私有的，然后提供set和get方法（接口）去设置和获取，在python中通过property方法可以实现。
 
+<!-- snippet: id=python-oop-encapsulation-polymorphism-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class People:
     def __init__(self, name):
@@ -265,6 +271,7 @@ print(obj.__dict__)  # 被@name.deleter装饰后的name可以正常删除，不�
 
 **被@property装饰后如何正常改值和删除**
 
+<!-- snippet: id=python-oop-encapsulation-polymorphism-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Foo:
     def __init__(self, val):
@@ -290,6 +297,7 @@ class Foo:
 
 封装在于明确区分内外，使得类实现者可以修改封装内的东西而不影响外部调用者的代码；而外部使用用者只知道一个接口（函数），只要接口（函数）名、参数不变，使用者的代码永远无需改变。这就提供一个良好的合作基础——或者说，只要接口这个基础约定不变，则代码改变不足为虑。
 
+<!-- snippet: id=python-oop-encapsulation-polymorphism-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 类的设计者
 class Room:
@@ -331,6 +339,7 @@ print(r1.tell_area())
 
 在Python中很多地方都可以体现多态的特性，比如内置函数 `len(object)`，`len` 函数不仅可以计算字符串的长度，还可以计算列表、元组等对象中的数据个数，这里在运行时通过参数类型确定其具体的计算过程，正是多态的一种体现。这有点类似于函数重载（一个编译单元中有多个同名函数，但参数不同），相当于为每种类型都定义了一个 len 函数。这是典型的多态表现，有些人提出Python不支持多态，我是完全不赞同。
 
+<!-- snippet: id=python-oop-encapsulation-polymorphism-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import abc
 
@@ -354,6 +363,7 @@ class Pig(Animal):  # 动物的形态之三:猪
 
 比如说文件有多种类型，文本文件，可执行文件等：
 
+<!-- snippet: id=python-oop-encapsulation-polymorphism-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import abc
 
@@ -395,6 +405,7 @@ class ExeFile(File):  # 文件的形态之二:可执行文件
 
 2. **增加了程序可扩展性**：通过继承animal类创建了一个新的类，使用者无需更改自己的代码，还是用 `func(animal)` 去调用
 
+<!-- snippet: id=python-oop-encapsulation-polymorphism-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 peo = People()
 dog = Dog()
@@ -411,6 +422,7 @@ def func(obj):
     obj.talk()
 ```
 
+<!-- snippet: id=python-oop-encapsulation-polymorphism-12 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
 >>> class Cat(Animal):  # 属于动物的另外一种形态：猫
 ...     def talk(self):
@@ -428,6 +440,7 @@ say miao
 
 ### 方法多态
 
+<!-- snippet: id=python-oop-encapsulation-polymorphism-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # -*- coding: UTF-8 -*-
 
@@ -454,6 +467,7 @@ print(obj.count('a'))  # 方法多态：字符串和列表还有这个自定义�
 
 在鸭子类型中，关注的不是对象的类型本身，而是它是如何使用的。例如，在不使用鸭子类型的语言中，我们可以编写一个函数，它接受一个类型为鸭的对象，并调用它的走和叫方法。在使用鸭子类型的语言中，这样的一个函数可以接受一个任意类型的对象，并调用它的走和叫方法。如果这些需要被调用的方法不存在，那么将引发一个运行时错误。任何拥有这样的正确的走和叫方法的对象都可被函数接受的这种行为引出了以上表述，这种决定类型的方式因此得名。
 
+<!-- snippet: id=python-oop-encapsulation-polymorphism-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 peo = People()
 dog = Dog()
@@ -476,6 +490,7 @@ def func2(dog):
 
 ### 运算符多态
 
+<!-- snippet: id=python-oop-encapsulation-polymorphism-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def add(x, y):
     return x + y
@@ -491,6 +506,7 @@ print(add(1, "abc"))  # 抛出异常：TypeError: unsupported operand type(s) fo
 
 Python同样支持运算符重载，实例如下，详细的见面向对象进阶：
 
+<!-- snippet: id=python-oop-encapsulation-polymorphism-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Vector:
     def __init__(self, a, b):
@@ -514,6 +530,7 @@ print(v1 + v2)
 
 **例子一：利用标准库中定义的各种'与文件类似'的对象，尽管这些对象的工作方式像文件，但他们没有继承内置文件对象的方法。**
 
+<!-- snippet: id=python-oop-encapsulation-polymorphism-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 二者都像鸭子，二者看起来都像文件，因而就可以当文件一样去使用
 class TxtFile:

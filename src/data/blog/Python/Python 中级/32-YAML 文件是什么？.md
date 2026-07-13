@@ -2,7 +2,7 @@
 title: YAML 文件是什么？
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: yaml-tutorial-basics
 description: 'YAML语法入门教程，介绍YAML的基本语法、数据结构和实际应用'
 tags:
@@ -45,6 +45,7 @@ YAML 支持三种数据结构：
 
 ### 基本写法
 
+<!-- snippet: id=yaml-tutorial-basics-01 mode=display python=3.12-3.14 deps=stdlib -->
 ```yaml
 name: 张三
 age: 25
@@ -52,6 +53,7 @@ age: 25
 
 **转换为 JSON**：
 
+<!-- snippet: id=yaml-tutorial-basics-02 mode=display python=3.12-3.14 deps=stdlib -->
 ```json
 {
   "name": "张三",
@@ -61,6 +63,7 @@ age: 25
 
 ### 行内写法
 
+<!-- snippet: id=yaml-tutorial-basics-03 mode=display python=3.12-3.14 deps=stdlib -->
 ```yaml
 person: {name: 张三, age: 25}
 ```
@@ -69,6 +72,7 @@ person: {name: 张三, age: 25}
 
 ### 基本写法
 
+<!-- snippet: id=yaml-tutorial-basics-04 mode=display python=3.12-3.14 deps=stdlib -->
 ```yaml
 fruits:
   - 苹果
@@ -78,6 +82,7 @@ fruits:
 
 **转换为 JSON**：
 
+<!-- snippet: id=yaml-tutorial-basics-05 mode=display python=3.12-3.14 deps=stdlib -->
 ```json
 {
   "fruits": ["苹果", "香蕉", "橙子"]
@@ -86,12 +91,14 @@ fruits:
 
 ### 行内写法
 
+<!-- snippet: id=yaml-tutorial-basics-06 mode=display python=3.12-3.14 deps=stdlib -->
 ```yaml
 fruits: [苹果, 香蕉, 橙子]
 ```
 
 ### 嵌套数组
 
+<!-- snippet: id=yaml-tutorial-basics-07 mode=display python=3.12-3.14 deps=stdlib -->
 ```yaml
 -
   - 苹果
@@ -105,6 +112,7 @@ fruits: [苹果, 香蕉, 橙子]
 
 对象和数组可以嵌套使用：
 
+<!-- snippet: id=yaml-tutorial-basics-08 mode=display python=3.12-3.14 deps=stdlib -->
 ```yaml
 languages:
   - Ruby
@@ -119,6 +127,7 @@ websites:
 
 **转换为 JSON**：
 
+<!-- snippet: id=yaml-tutorial-basics-09 mode=display python=3.12-3.14 deps=stdlib -->
 ```json
 {
   "languages": ["Ruby", "Python", "JavaScript"],
@@ -134,6 +143,7 @@ websites:
 
 ### 字符串
 
+<!-- snippet: id=yaml-tutorial-basics-10 mode=display python=3.12-3.14 deps=stdlib -->
 ```yaml
 name: 张三
 message: "你好\n世界"  # 双引号支持转义
@@ -144,6 +154,7 @@ content: |
 
 ### 布尔值
 
+<!-- snippet: id=yaml-tutorial-basics-11 mode=display python=3.12-3.14 deps=stdlib -->
 ```yaml
 is_active: true
 is_deleted: false
@@ -151,6 +162,7 @@ is_deleted: false
 
 ### 数值
 
+<!-- snippet: id=yaml-tutorial-basics-12 mode=display python=3.12-3.14 deps=stdlib -->
 ```yaml
 count: 25
 price: 19.99
@@ -160,6 +172,7 @@ scientific: 1.5e10
 
 ### 空值
 
+<!-- snippet: id=yaml-tutorial-basics-13 mode=display python=3.12-3.14 deps=stdlib -->
 ```yaml
 empty: null
 also_empty: ~
@@ -167,6 +180,7 @@ also_empty: ~
 
 ### 日期时间
 
+<!-- snippet: id=yaml-tutorial-basics-14 mode=display python=3.12-3.14 deps=stdlib -->
 ```yaml
 created_at: 2024-01-01
 created_time: 2024-01-01T10:30:00
@@ -178,6 +192,7 @@ created_time: 2024-01-01T10:30:00
 
 复用相同的值：
 
+<!-- snippet: id=yaml-tutorial-basics-15 mode=display python=3.12-3.14 deps=stdlib -->
 ```yaml
 defaults:
   host: &default_host "localhost"
@@ -192,6 +207,7 @@ development:
 
 使用 `---` 分隔多个文档：
 
+<!-- snippet: id=yaml-tutorial-basics-16 mode=display python=3.12-3.14 deps=stdlib -->
 ```yaml
 ---
 title: 文档1
@@ -205,6 +221,7 @@ content: 内容2
 
 ### Docker Compose 配置
 
+<!-- snippet: id=yaml-tutorial-basics-17 mode=display python=3.12-3.14 deps=stdlib -->
 ```yaml
 version: '3.8'
 
@@ -231,6 +248,7 @@ volumes:
 
 ### GitHub Actions
 
+<!-- snippet: id=yaml-tutorial-basics-18 mode=display python=3.12-3.14 deps=stdlib -->
 ```yaml
 name: CI
 
@@ -249,12 +267,13 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      - run: pip install -r requirements.txt
+      - run: python -m pip install -r requirements.txt
       - run: pytest
 ```
 
 ### Kubernetes 配置
 
+<!-- snippet: id=yaml-tutorial-basics-19 mode=display python=3.12-3.14 deps=stdlib -->
 ```yaml
 apiVersion: v1
 kind: Pod

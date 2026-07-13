@@ -2,7 +2,7 @@
 title: Python 文本处理：字符串切割、re.sub、strip
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
-modDatetime: 2026-05-19T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 featured: false
 draft: false
 tags:
@@ -39,6 +39,7 @@ language: zh-CN
 
 `split()` 方法将字符串按照分隔符拆分成列表。
 
+<!-- snippet: id=python-article-14a89b9fa1-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 基本语法：字符串.split(分隔符, 最大分割次数)
 text = "苹果,香蕉,橙子,葡萄"
@@ -57,6 +58,7 @@ print(result2)  # ['one', 'two', 'three|four|five']
 
 使用方括号 `[start:end]` 可以按位置截取字符串的某部分。
 
+<!-- snippet: id=python-article-14a89b9fa1-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 text = "Hello World"
 
@@ -76,6 +78,7 @@ print(text[::-1])   # "dlroW olleH"
 
 **切片语法详解：**
 
+<!-- snippet: id=python-article-14a89b9fa1-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 字符串[start:end:step]
 # start: 起始索引（包含）
@@ -91,6 +94,7 @@ print(text[0:10:2])  # "ACEGI"
 
 假设有一批数据，每行都以序号开头（格式：`001: 内容`），我们需要去掉序号。
 
+<!-- snippet: id=python-article-14a89b9fa1-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 lines = ["001: 第一条数据", "002: 第二条数据", "003: 第三条数据"]
 
@@ -115,6 +119,7 @@ print(cleaned_lines)
 
 `replace()` 用于简单的字符串替换，不需要正则表达式。
 
+<!-- snippet: id=python-article-14a89b9fa1-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 语法：字符串.replace(要替换的字符, 新字符, 替换次数)
 text = "Hello World"
@@ -138,6 +143,7 @@ print(result3)  # "XXX bbb aaa ccc"
 
 `re.sub()` 是正则表达式替换，功能更强大。
 
+<!-- snippet: id=python-article-14a89b9fa1-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 
@@ -159,6 +165,7 @@ import re
 
 **基础示例：**
 
+<!-- snippet: id=python-article-14a89b9fa1-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 
@@ -176,6 +183,7 @@ print(result2)  # "We20%Are20%Happy"
 
 **多种模式的替换：**
 
+<!-- snippet: id=python-article-14a89b9fa1-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 
@@ -197,6 +205,7 @@ print(result3)  # "Hello World !"
 
 **使用捕获组：**
 
+<!-- snippet: id=python-article-14a89b9fa1-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 
@@ -219,6 +228,7 @@ print(result3)  # "日期: 15/01/2024"
 
 **使用函数作为替换规则：**
 
+<!-- snippet: id=python-article-14a89b9fa1-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 
@@ -257,6 +267,7 @@ print(result3)  # "user_name, user_age, user_email"（需进一步处理）
 
 ### 基本用法
 
+<!-- snippet: id=python-article-14a89b9fa1-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 text = "  Hello World  "
 
@@ -272,6 +283,7 @@ print(text.rstrip())  # "  Hello World"
 
 ### 去除指定字符
 
+<!-- snippet: id=python-article-14a89b9fa1-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # strip() 可以去除自定义的字符集（按顺序逐个去除）
 text = "...Hello World..."
@@ -303,6 +315,7 @@ for line in lines:
 
 从文件读取的文本通常包含换行符 `\n`，需要去除。
 
+<!-- snippet: id=python-article-14a89b9fa1-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 读取文件并清理每一行
 with open('data.txt', 'r', encoding='utf-8') as f:
@@ -318,6 +331,7 @@ with open('data.txt', 'r', encoding='utf-8') as f:
 
 ### 实战1：清洗用户数据
 
+<!-- snippet: id=python-article-14a89b9fa1-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 
@@ -346,6 +360,7 @@ print(result)
 
 ### 实战2：提取文本中的关键信息
 
+<!-- snippet: id=python-article-14a89b9fa1-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 
@@ -372,6 +387,7 @@ print("用户ID:", user_ids)
 
 ### 实战3：格式化代码
 
+<!-- snippet: id=python-article-14a89b9fa1-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 

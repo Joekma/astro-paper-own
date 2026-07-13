@@ -2,7 +2,7 @@
 title: Flask 信号机制：Blinker 内部信号与自定义信号
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: flask-6-signals
 description: '深入讲解Flask信号机制，基于Blinker实现信号订阅与发布。介绍Flask内置的10个信号、自定义信号的创建与使用，以及信号与装饰器的区别对比。'
 tags:
@@ -20,6 +20,7 @@ language: zh-CN
 
 instance_path和instance_relative_config是配合来用的，这两个参数是用来找配置文件的，当用`app.config.from_pyfile('settings.py')`这种方式导入配置文件的时候会用到：
 
+<!-- snippet: id=flask-6-signals-01 mode=compile python=3.12-3.14 deps=Flask==3.1.3 -->
 ```python
 from flask import Flask, request
 
@@ -43,15 +44,11 @@ if __name__ == '__main__':
 
 如果设置了`instance_relative_config = True`，就找不着settings.py文件了，解决办法：就手动创建一个instance的文件夹。
 
-![image](https://images2017.cnblogs.com/blog/1184802/201801/1184802-20180109145310301-542201739.png)
-
 ## 信号（blinker）
 
 ### Flask的内置信号
 
 Flask框架中的信号基于blinker，其主要就是让开发者可以在flask请求过程中定制一些用户行为。信号通过发送通知来帮助你解耦应用。简言之，信号允许某个发送者通知接收者有事情发生了。
-
-![image](https://images2017.cnblogs.com/blog/1184802/201801/1184802-20180109151241957-1838949184.png)
 
 **10个信号：**
 
@@ -93,6 +90,7 @@ Flask框架中的信号基于blinker，其主要就是让开发者可以在flask
 
 具体实现：
 
+<!-- snippet: id=flask-6-signals-02 mode=compile python=3.12-3.14 deps=Flask==3.1.3 -->
 ```python
 from flask import Flask, flash
 from flask.signals import _signals
@@ -130,6 +128,7 @@ if __name__ == '__main__':
 
 ## chain模块简单的测试
 
+<!-- snippet: id=flask-6-signals-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 v1 = [11, 22, 33, 44]
 v2 = [1, 4, 7, 5]

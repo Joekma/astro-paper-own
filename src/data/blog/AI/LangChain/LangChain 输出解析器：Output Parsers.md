@@ -2,18 +2,24 @@
 title: LangChain 输出解析器：Output Parsers
 author: Joekma
 pubDatetime: 2026-05-11T00:00:00.000+08:00
-modDatetime: 2026-05-11T00:00:00.000+08:00
+modDatetime: 2026-07-12T00:00:00.000+08:00
 slug: langchain-output-parsers
-description: '深入讲解LangChain v1.0的Output Parser模块，包括结构化输出、JSON解析和Pydantic验证。'
+description: "讲清 LangChain v1.x 原生结构化输出、Output Parser、Pydantic 校验及错误恢复的选择边界。"
 tags:
   - LangChain
   - Output Parser
   - LLM
 draft: false
 series: LangChain
-seriesOrder: 3
+seriesOrder: 4
 language: zh-CN
 ---
+
+## 阅读指南
+
+**前置知识：** 理解模型原始输出不可信，应用在写数据库或调用下游接口前必须验证数据。
+
+**学完本文你应该能：** 在原生结构化输出与 Parser 之间做选择；设计 Pydantic Schema；区分可重试、可降级和必须失败的解析错误。
 
 ## 概述
 
@@ -23,23 +29,23 @@ Output Parsers（输出解析器）是 LangChain 中用于将 LLM 的原始文�
 
 ### 为什么需要 Output Parser？
 
-| 问题 | Parser 解决方案 |
-|------|---------------|
-| 输出格式不稳定 | 强制特定格式 |
-| 难以程序化处理 | 转换为结构化对象 |
-| 缺乏类型安全 | Pydantic 验证 |
-| 需要提取特定信息 | 自定义解析逻辑 |
+| 问题             | Parser 解决方案  |
+| ---------------- | ---------------- |
+| 输出格式不稳定   | 强制特定格式     |
+| 难以程序化处理   | 转换为结构化对象 |
+| 缺乏类型安全     | Pydantic 验证    |
+| 需要提取特定信息 | 自定义解析逻辑   |
 
 ## Parser 类型概览
 
-| Parser | 说明 | 输出类型 |
-|--------|------|---------|
-| **StrOutputParser** | 字符串输出 | str |
-| **JsonOutputParser** | JSON 解析 | dict |
-| **PydanticOutputParser** | Pydantic 验证 | Pydantic 模型 |
-| **CommaSeparatedListOutputParser** | 列表解析 | List[str] |
+![Parser 类型与结果：原始文本 Raw Text、字符串 String、字典 Dict、Pydantic Model](./images/langchain-04-parser-types-v2.png)
 
-![LangChain Output Parsers 通过 format_instructions、模型原始输出、解析校验和错误恢复，将文本变成可用的结构化数据](./images/langchain-output-parsers-validation-figure-01.png)
+| Parser                             | 说明          | 输出类型      |
+| ---------------------------------- | ------------- | ------------- |
+| **StrOutputParser**                | 字符串输出    | str           |
+| **JsonOutputParser**               | JSON 解析     | dict          |
+| **PydanticOutputParser**           | Pydantic 验证 | Pydantic 模型 |
+| **CommaSeparatedListOutputParser** | 列表解析      | List[str]     |
 
 ## StrOutputParser
 
@@ -96,6 +102,8 @@ print(result["name"])
 `format_instructions` 是这里的关键，它把解析器需要的格式要求写进提示词。没有这段指令时，模型可能会额外输出解释文字，导致 JSON 解析失败。
 
 ## PydanticOutputParser
+
+![解析与 Schema 校验：格式指令 Format Instructions、模型输出 Model Output、解析 Parse、类型校验 Validate](./images/langchain-04-validation-pipeline-v2.png)
 
 ### 基本使用
 
@@ -337,23 +345,73 @@ result = chain.invoke({
 
 ## 最佳实践
 
-| 实践 | 说明 |
-|------|------|
-| **使用 Pydantic** | 类型安全，自动验证 |
-| **提供格式指令** | 帮助 LLM 生成正确格式 |
-| **错误处理** | 解析可能失败，准备降级方案 |
-| **清晰 Schema** | 详细的字段描述 |
+| 实践                   | 说明                                                                      |
+| ---------------------- | ------------------------------------------------------------------------- |
+| **使用 Pydantic**      | 类型安全，自动验证                                                        |
+| **提供格式指令**       | 帮助 LLM 生成正确格式                                                     |
+| **错误处理**           | 解析可能失败，准备降级方案                                                |
+| **清晰 Schema**        | 详细的字段描述                                                            |
 | **优先原生结构化输出** | Agent 或支持该能力的模型优先使用 response_format / with_structured_output |
 
 解析器不是“保证模型永不出错”的魔法，它只是把错误尽早暴露出来。简单 LCEL 链可以继续使用 `PydanticOutputParser`；Agent 或支持原生结构化输出的模型，优先使用 `response_format` 或 `with_structured_output`，让模型端和框架端一起约束输出。
 
+## 结构化输出的选择顺序
+
+![结构化输出决策树：Agent response_format、with_structured_output、PydanticOutputParser、JsonOutputParser](./images/langchain-04-structured-output-decision-v2.png)
+
+在 v1 项目中，不应看到 JSON 需求就直接使用 `JsonOutputParser`：
+
+1. Agent 最终响应有明确 Schema：优先使用 `create_agent(..., response_format=Schema)`。
+2. 单次模型调用支持原生结构化输出：优先 `model.with_structured_output(Schema)`。
+3. 供应商不支持 Schema，或需要解析已有文本：使用 `PydanticOutputParser`。
+4. 只需要普通文本或简单列表：使用 `StrOutputParser` 或列表 Parser。
+
+原生结构化输出通常能更早约束模型行为；Parser 则是应用侧转换与验证层。二者都不能替代业务校验，例如 `start_date` 早于 `end_date`、订单金额不得为负数等跨字段规则。
+
+## 失败处理策略
+
+![错误恢复状态机：解析成功 Success、可重试 Retryable、信息不足 Missing Data、版本冲突 Version Conflict](./images/langchain-04-error-recovery-v2.png)
+
+| 失败                    | 是否重试     | 推荐处理                       |
+| ----------------------- | ------------ | ------------------------------ |
+| 临时截断、缺少结束括号  | 可以         | 缩短输入或要求模型修复一次     |
+| 字段类型偶发错误        | 可以         | 把 Pydantic 错误摘要反馈给模型 |
+| 必需事实在输入中不存在  | 不应盲目重试 | 返回“信息不足”并要求补充输入   |
+| Schema 与业务版本不兼容 | 不应重试     | 记录版本并进入兼容或迁移流程   |
+| 安全字段越权出现        | 不应降级     | 拒绝结果并记录安全事件         |
+
+重试必须有次数上限，并保留原始输出、Schema 版本和错误类型。无限“让模型再试一次”既增加成本，也可能掩盖设计错误。
+
 ## 总结
 
-| Parser | 用途 | 特点 |
-|--------|------|------|
-| **StrOutputParser** | 简单字符串 | 零转换 |
-| **JsonOutputParser** | JSON 解析 | 基础结构 |
-| **PydanticOutputParser** | 类型验证 | 简单链适用 |
-| **CommaSeparatedListOutputParser** | 列表解析 | 简单列表 |
+| Parser                             | 用途       | 特点       |
+| ---------------------------------- | ---------- | ---------- |
+| **StrOutputParser**                | 简单字符串 | 零转换     |
+| **JsonOutputParser**               | JSON 解析  | 基础结构   |
+| **PydanticOutputParser**           | 类型验证   | 简单链适用 |
+| **CommaSeparatedListOutputParser** | 列表解析   | 简单列表   |
 
 Output Parser 让 LLM 输出变得可控、可验证，是构建可靠 LLM 应用的关键。
+
+## 本篇自检
+
+1. `with_structured_output` 与 `PydanticOutputParser` 的主要边界是什么？
+2. 为什么通过 Pydantic 类型校验仍不代表业务数据正确？
+3. 哪类解析错误不应该通过重复调用模型解决？
+
+<details>
+<summary>查看答案</summary>
+
+1. 前者利用模型或供应商的结构化能力约束生成，后者在应用侧解析和验证文本。
+2. 类型正确不代表跨字段约束、权限、事实来源和业务规则正确。
+3. 信息缺失、Schema 版本冲突和安全越权等确定性错误不应盲目重试。
+
+</details>
+
+## 官方资料
+
+- [Structured output](https://docs.langchain.com/oss/python/langchain/structured-output)
+- [Agents response format](https://docs.langchain.com/oss/python/langchain/agents)
+- [Output parsers API](https://python.langchain.com/api_reference/core/output_parsers.html)
+
+**上一篇：** [LangChain Prompt Templates](/posts/langchain-prompt-templates/) · **下一篇：** [LangChain LCEL 与 Runnable](/posts/langchain-chains/)

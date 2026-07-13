@@ -2,7 +2,7 @@
 title: Python 常用模块：time、datetime、random、os、sys
 author: Joekma
 pubDatetime: 2018-08-16T00:00:00.000+08:00
-modDatetime: 2026-05-03T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-common-modules-time-random-os-sys
 description: '深入讲解Python常用模块：时间处理（time、datetime）、随机数（random）、文件操作（os）和系统操作（sys）的使用方法。'
 tags:
@@ -32,6 +32,7 @@ language: zh-CN
 
 ### 三种时间格式的转换
 
+<!-- snippet: id=python-common-modules-time-random-os-sys-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import time
 
@@ -67,6 +68,7 @@ print(time.gmtime())  # time.struct_time(tm_year=2017, tm_mon=2, ...)
 
 ### 结构化时间转换
 
+<!-- snippet: id=python-common-modules-time-random-os-sys-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import time
 
@@ -90,6 +92,7 @@ print(time.strptime('2011-05-05 16:37:06', '%Y-%m-%d %X'))
 
 ### 其他时间函数
 
+<!-- snippet: id=python-common-modules-time-random-os-sys-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import time
 
@@ -103,6 +106,7 @@ print(time.ctime(time.time()))  # 效果相同
 
 ### datetime 模块
 
+<!-- snippet: id=python-common-modules-time-random-os-sys-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import datetime
 
@@ -125,6 +129,7 @@ print(c_time.replace(minute=3, hour=2))  # 替换指定字段
 
 ## random 模块
 
+<!-- snippet: id=python-common-modules-time-random-os-sys-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import random
 
@@ -158,6 +163,7 @@ print(item)
 
 ### 目录操作
 
+<!-- snippet: id=python-common-modules-time-random-os-sys-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import os
 
@@ -196,6 +202,7 @@ print(os.stat('path/filename'))
 
 ### 路径操作
 
+<!-- snippet: id=python-common-modules-time-random-os-sys-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import os
 
@@ -228,6 +235,7 @@ print(os.path.getsize('file.txt'))  # 文件大小
 
 ### 系统相关
 
+<!-- snippet: id=python-common-modules-time-random-os-sys-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import os
 
@@ -256,6 +264,7 @@ print(os.path.normpath('c://windows\\System32\\../Temp\\'))
 
 ### 路径处理（推荐方式）
 
+<!-- snippet: id=python-common-modules-time-random-os-sys-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import os
 import sys
@@ -276,6 +285,7 @@ sys.path.insert(0, possible_topdir)
 
 ### 常用函数
 
+<!-- snippet: id=python-common-modules-time-random-os-sys-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import sys
 
@@ -306,12 +316,13 @@ sys.stdin   # 标准输入
 sys.stderr  # 错误输出
 
 # 最大值
-print(sys.maxint)  # 最大 int 值（Python 2）
+print(sys.maxsize)  # 平台指针大小对应的实用上限；Python int 本身可任意精度
 print(sys.maxunicode)  # 最大 unicode 值
 ```
 
 ### sys.modules
 
+<!-- snippet: id=python-common-modules-time-random-os-sys-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import sys
 
@@ -324,6 +335,7 @@ print(len(sys.modules.keys()))
 
 ### 打印进度条
 
+<!-- snippet: id=python-common-modules-time-random-os-sys-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import sys
 import time
@@ -346,6 +358,7 @@ while recv_size < data_size:
 
 ## print 函数参数详解
 
+<!-- snippet: id=python-common-modules-time-random-os-sys-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # print 函数完整签名
 print(value, ..., sep=' ', end='\n', file=sys.stdout, flush=False)
@@ -359,6 +372,7 @@ print(value, ..., sep=' ', end='\n', file=sys.stdout, flush=False)
 
 ### 实际示例
 
+<!-- snippet: id=python-common-modules-time-random-os-sys-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 默认
 print("hello", "world")  # hello world
@@ -384,6 +398,7 @@ print("loading...", end="", flush=True)
 
 ### partial 函数（偏函数）
 
+<!-- snippet: id=python-common-modules-time-random-os-sys-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import functools
 

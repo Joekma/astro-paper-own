@@ -2,7 +2,7 @@
 title: Python 常用模块：hashlib、subprocess、logging、re、collections
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-common-modules-hashlib-subprocess-logging-re
 description: '深入讲解Python常用模块：哈希算法、子进程、日志、正则表达式和特殊容器。'
 tags:
@@ -38,6 +38,7 @@ language: zh-CN
 
 ### 基本使用
 
+<!-- snippet: id=python-common-modules-hashlib-subprocess-logging-re-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import hashlib
 
@@ -56,6 +57,7 @@ print(sha256.hexdigest())
 
 如果数据量很大，可以分块多次调用 `update()`：
 
+<!-- snippet: id=python-common-modules-hashlib-subprocess-logging-re-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import hashlib
 
@@ -68,6 +70,7 @@ print(md5.hexdigest())
 
 ### 中文加密
 
+<!-- snippet: id=python-common-modules-hashlib-subprocess-logging-re-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import hashlib
 
@@ -81,6 +84,7 @@ print(m1.hexdigest())
 
 为了增强安全性，可以对加密算法添加自定义 key：
 
+<!-- snippet: id=python-common-modules-hashlib-subprocess-logging-re-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import hashlib
 
@@ -108,6 +112,7 @@ break_code(cryptograph, make_passwd_dic(passwds))
 
 `hmac` 模块内部对 key 和内容进行进一步处理：
 
+<!-- snippet: id=python-common-modules-hashlib-subprocess-logging-re-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import hmac
 
@@ -130,95 +135,38 @@ print(h.hexdigest())
 
 ## subprocess 模块
 
-`subprocess` 是官方推荐的模块，用于执行系统命令和脚本。
+`subprocess.run()` 是执行一次外部程序的默认入口。参数使用列表传递，避免经过 shell；同时设置超时、捕获文本输出并用 `check=True` 把非零退出码变成异常。
 
-### 三种执行命令的方法
-
-| 方法 | 说明 |
-|------|------|
-| `subprocess.run()` | 官方推荐，返回 CompletedProcess |
-| `subprocess.call()` | 返回命令执行状态 |
-| `subprocess.Popen()` | 底层封装，更灵活 |
-
-### run() 方法
-
+<!-- snippet: id=python-subprocess-safe-run mode=run python=3.12-3.14 deps=stdlib -->
 ```python
 import subprocess
+import sys
 
-# 基本用法
-subprocess.run(['df', '-h'], stderr=subprocess.PIPE, stdout=subprocess.PIPE, check=True)
-
-# 涉及管道 | 的命令
-subprocess.run('df -h|grep disk1', shell=True)
+completed = subprocess.run(
+    [sys.executable, "-I", "-c", "print('child-ok')"],
+    check=True,
+    capture_output=True,
+    text=True,
+    timeout=5,
+)
+assert completed.stdout.strip() == "child-ok"
 ```
 
-### call() 方法
+当命令失败时，`CalledProcessError` 保存退出码和捕获到的输出；超时则抛 `TimeoutExpired`。只有确实需要持续交互时才使用 `Popen`，并通过 `communicate(timeout=...)` 同时读写，超时后先终止、再回收，避免死锁或僵尸进程。
 
+<!-- snippet: id=python-subprocess-expected-failure mode=expected-error python=3.12-3.14 deps=stdlib error=CalledProcessError -->
 ```python
 import subprocess
+import sys
 
-# 返回命令执行状态
-retcode = subprocess.call(["ls", "-l"])
-
-# 检查命令执行状态
-subprocess.check_call(["ls", "-l"])
-
-# 获取执行结果
-status = subprocess.getstatusoutput('ls /bin/ls')
-output = subprocess.getoutput('ls /bin/ls')
+subprocess.run(
+    [sys.executable, "-I", "-c", "raise SystemExit(3)"],
+    check=True,
+    timeout=5,
+)
 ```
 
-### Popen() 方法
-
-```python
-import subprocess
-
-# 启动子进程
-a = subprocess.Popen('sleep 10', shell=True, stdout=subprocess.PIPE)
-
-# 等待进程结束
-a.wait()
-
-# 终止进程
-a.terminate()
-a.kill()
-
-# 与进程交互
-a.communicate(b'22')
-```
-
-**常用参数**：
-
-| 参数 | 说明 |
-|------|------|
-| `args` | shell 命令，可以是字符串或序列 |
-| `stdin/stdout/stderr` | 标准输入/输出/错误 |
-| `shell` | 是否使用 shell 执行 |
-| `cwd` | 子进程的当前目录 |
-| `env` | 子进程的环境变量 |
-
-### 常用方法
-
-```python
-# 检查子进程是否终止
-poll()
-
-# 等待子进程终止
-wait()
-
-# 终止进程
-terminate()
-kill()
-
-# 与启动的进程交互
-communicate()
-
-# 发送系统信号
-send_signal(signal.xxx)
-
-# 获取进程号
-pid
-```
+如果要实现“前一个程序的输出交给后一个程序”，创建两个 `Popen` 并直接连接管道，或在 Python 中处理捕获到的数据；不要把含用户输入的字符串交给 `shell=True`。
 
 ## logging 模块
 
@@ -237,6 +185,7 @@ pid
 
 ### 基本使用
 
+<!-- snippet: id=python-common-modules-hashlib-subprocess-logging-re-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import logging
 
@@ -251,6 +200,7 @@ logging.critical('严重critical')
 
 ### 配置日志输出
 
+<!-- snippet: id=python-common-modules-hashlib-subprocess-logging-re-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import logging
 
@@ -289,6 +239,7 @@ logging.info('消息info')
 
 ### 正则表达式基础
 
+<!-- snippet: id=python-common-modules-hashlib-subprocess-logging-re-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 
@@ -309,6 +260,7 @@ pattern.findall('a1b2c3')  # ['1', '2', '3']
 
 ### 常用函数
 
+<!-- snippet: id=python-common-modules-hashlib-subprocess-logging-re-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 
@@ -348,6 +300,7 @@ print(re.split(r'[0-9]+', 'a1b2c3'))  # ['a', 'b', 'c', '']
 
 ### 贪婪匹配
 
+<!-- snippet: id=python-common-modules-hashlib-subprocess-logging-re-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 
@@ -364,6 +317,7 @@ print(re.findall(r'\d+?', 'a123b456'))  # ['1', '2', '3', '4', '5', '6']
 
 ### namedtuple
 
+<!-- snippet: id=python-common-modules-hashlib-subprocess-logging-re-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from collections import namedtuple
 
@@ -375,6 +329,7 @@ print(p.x, p.y)  # 1 2
 
 ### deque
 
+<!-- snippet: id=python-common-modules-hashlib-subprocess-logging-re-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from collections import deque
 
@@ -395,6 +350,7 @@ dq.append(4)  # 自动移除最老的元素
 
 ### Counter
 
+<!-- snippet: id=python-common-modules-hashlib-subprocess-logging-re-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from collections import Counter
 
@@ -408,6 +364,7 @@ print(Counter(['a', 'b', 'c', 'a', 'b', 'a']))
 
 ### OrderedDict
 
+<!-- snippet: id=python-common-modules-hashlib-subprocess-logging-re-18 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from collections import OrderedDict
 
@@ -420,6 +377,7 @@ od['c'] = 3
 
 ### defaultdict
 
+<!-- snippet: id=python-common-modules-hashlib-subprocess-logging-re-19 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from collections import defaultdict
 

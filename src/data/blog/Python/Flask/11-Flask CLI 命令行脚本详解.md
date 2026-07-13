@@ -2,7 +2,7 @@
 title: Flask CLI 命令行脚本详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: flask-9-script
 description: '详细讲解 Flask 内置 CLI 的使用，包括 app.cli.command、Click 参数、Shell 命令、Server 命令、数据库迁移命令以及用户管理命令的实现'
 tags:
@@ -25,14 +25,16 @@ Flask 现在内置了基于 Click 的命令行系统，可以通过 `app.cli.com
 
 ### 安装依赖
 
+<!-- snippet: id=flask-9-script-01 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
-pip install flask click flask-migrate
+python -m pip install flask click flask-migrate
 ```
 
 ## 基本用法
 
 ### 1. 注册 CLI 命令
 
+<!-- snippet: id=flask-9-script-02 mode=compile python=3.12-3.14 deps=Flask==3.1.3 -->
 ```python
 from flask import Flask
 
@@ -45,6 +47,7 @@ def hello():
 
 ### 2. 运行命令
 
+<!-- snippet: id=flask-9-script-03 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 flask --app app hello
 # 输出: Hello, World!
@@ -56,6 +59,7 @@ flask --app app hello
 
 最简单的命令定义方式：
 
+<!-- snippet: id=flask-9-script-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 @app.cli.command("init-db")
 def init_db():
@@ -68,6 +72,7 @@ def init_db():
 
 带参数的命令：
 
+<!-- snippet: id=flask-9-script-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import click
 
@@ -84,6 +89,7 @@ def greet(name, uppercase):
 
 运行：
 
+<!-- snippet: id=flask-9-script-06 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 flask --app app greet -n John
 # 输出: Hello, John!
@@ -96,6 +102,7 @@ flask --app app greet -n John -u
 
 使用 Click 定义位置参数：
 
+<!-- snippet: id=flask-9-script-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import click
 
@@ -110,6 +117,7 @@ def setup(config):
 
 ### Shell命令
 
+<!-- snippet: id=flask-9-script-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 @app.shell_context_processor
 def make_shell_context():
@@ -122,6 +130,7 @@ def make_shell_context():
 
 运行交互式Shell：
 
+<!-- snippet: id=flask-9-script-09 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 flask --app app shell
 # 进入交互式Python环境，可直接访问db, User等对象
@@ -129,12 +138,14 @@ flask --app app shell
 
 ### Server命令
 
+<!-- snippet: id=flask-9-script-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # Flask 已内置开发服务器命令，无需额外包装
 ```
 
 运行：
 
+<!-- snippet: id=flask-9-script-11 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 flask --app app run
 flask --app app run --port 8080
@@ -143,6 +154,7 @@ flask --app app run --host 0.0.0.0 --port 8000
 
 ## 数据库迁移命令
 
+<!-- snippet: id=flask-9-script-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from flask_migrate import Migrate
 
@@ -170,6 +182,7 @@ def recreate_all():
 
 迁移命令：
 
+<!-- snippet: id=flask-9-script-13 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 flask --app app db init          # 初始化迁移
 flask --app app db migrate       # 创建迁移脚本
@@ -179,6 +192,7 @@ flask --app app db downgrade     # 回滚迁移
 
 ## 用户管理命令
 
+<!-- snippet: id=flask-9-script-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 @app.cli.command("create-admin")
 def create_admin():

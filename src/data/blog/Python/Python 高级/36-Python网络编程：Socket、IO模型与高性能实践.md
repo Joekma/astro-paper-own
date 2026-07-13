@@ -2,7 +2,7 @@
 title: Python网络编程：Socket、IO模型与高性能实践
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-03T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-network-programming
 featured: false
 draft: false
@@ -47,6 +47,7 @@ Socket起源于1970年的BSD Unix，"一切皆文件"的Unix哲学使得Socket�
 
 ### TCP服务器端
 
+<!-- snippet: id=python-network-programming-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import socket
 
@@ -86,6 +87,7 @@ server.close()
 
 ### TCP客户端
 
+<!-- snippet: id=python-network-programming-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import socket
 
@@ -112,6 +114,7 @@ client.close()
 
 ### UDP服务器与客户端
 
+<!-- snippet: id=python-network-programming-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # UDP服务器
 server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -157,7 +160,8 @@ data, _ = client.recvfrom(1024)
 
 默认情况下，所有Socket操作都是阻塞的：
 
-```
+<!-- snippet: id=python-network-programming-04 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 用户进程 ←← 内核 ←← 网络
    ↓
 recvfrom（阻塞等待）
@@ -174,6 +178,7 @@ recvfrom（阻塞等待）
 - 实现简单，但资源利用率低
 - 每个连接一个线程
 
+<!-- snippet: id=python-network-programming-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 阻塞IO示例
 while True:
@@ -187,6 +192,7 @@ while True:
 
 设置Socket为非阻塞后，操作立即返回：
 
+<!-- snippet: id=python-network-programming-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 server.setblocking(False)
 
@@ -216,6 +222,7 @@ while True:
 
 #### select
 
+<!-- snippet: id=python-network-programming-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import select
 
@@ -249,6 +256,7 @@ while inputs:
 
 #### poll
 
+<!-- snippet: id=python-network-programming-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import select
 
@@ -276,6 +284,7 @@ while True:
 
 #### epoll（Linux）
 
+<!-- snippet: id=python-network-programming-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import select
 
@@ -310,6 +319,7 @@ while True:
 
 asyncio是Python标准库提供的异步编程框架：
 
+<!-- snippet: id=python-network-programming-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 
@@ -342,6 +352,7 @@ asyncio.run(main())
 
 对于阻塞IO，使用线程池可以提高并发能力：
 
+<!-- snippet: id=python-network-programming-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from concurrent.futures import ThreadPoolExecutor
 
@@ -361,6 +372,7 @@ while True:
 
 ### 生成器与协程
 
+<!-- snippet: id=python-network-programming-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def simple_coroutine():
     while True:
@@ -375,6 +387,7 @@ coro.send(2)
 
 ### async/await
 
+<!-- snippet: id=python-network-programming-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 
@@ -392,6 +405,7 @@ asyncio.run(main())
 
 ### aiohttp异步HTTP
 
+<!-- snippet: id=python-network-programming-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from aiohttp import web
 
@@ -409,6 +423,7 @@ web.run_app(app, host='0.0.0.0', port=8080)
 
 ### 连接池
 
+<!-- snippet: id=python-network-programming-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import queue
 
@@ -428,6 +443,7 @@ class ConnectionPool:
 
 ### Nagle算法优化
 
+<!-- snippet: id=python-network-programming-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 禁用Nagle（小数据高实时场景）
 sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
@@ -438,6 +454,7 @@ sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 0)
 
 ### 缓冲区优化
 
+<!-- snippet: id=python-network-programming-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 设置缓冲区大小
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 1024 * 1024)
@@ -446,6 +463,7 @@ sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1024 * 1024)
 
 ### 生产者-消费者模式
 
+<!-- snippet: id=python-network-programming-18 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import threading
 import queue

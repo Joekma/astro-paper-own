@@ -2,12 +2,12 @@
 title: Django 请求生命周期：从入口到响应
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: django-request-response
 featured: false
 draft: false
 series: django
-seriesOrder: 6
+seriesOrder: 5
 tags:
   - Python
   - Django
@@ -26,6 +26,7 @@ description: "深入讲解Django从入口到请求到响应的完整生命周期
 ## 入口文件
 
 `manage.py` 文件里只有简单的几行代码：
+<!-- snippet: id=django-request-response-01 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 
 #!/usr/bin/env python
@@ -41,7 +42,8 @@ if __name__ == "__main__":
 
 ```
 在设置环境变量之后，命令参数的列表传到了 `execute_from_command_line` 中：
-```
+<!-- snippet: id=django-request-response-02 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 
 def execute_from_command_line(argv=None):
     """
@@ -54,7 +56,8 @@ def execute_from_command_line(argv=None):
 ## 命令管理工具
 
 命令参数又传到了 `ManagementUtility` 类中：
-```
+<!-- snippet: id=django-request-response-03 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 
 class ManagementUtility(object):
     def __init__(self, argv=None):
@@ -62,12 +65,14 @@ class ManagementUtility(object):
         self.prog_name = os.path.basename(self.argv[0])
         self.settings_exception = None
 
-```python
+```
+
 `prog_name` 就是 `manage.py`。实例化后调用了 `execute()` 方法，在这个方法中，会对命令参数进行处理。当解析的的命令是 `runserver` 时，会有两条路，第一个是会自动重装的路线，通过 `autoreload.check_errors(django.setup)()` 代理完成。另一个路线是参数中有 `--noreload` 时，就用 `django.setup()` 来启动服务。
 
 如果不是 `runserver` 而是其他命令，那么会对命令参数 `self.argv[1]` 进行判断，包括错误处理，是否是 `help` ，是否是 `version` ，根据不同的情况展示不同的信息。
 
 最重要的是最后一句，即前面的情况都不是，就进入 `self.fetch_command(subcommand).run_from_argv(self.argv)` ，这边分两步，一步是获取执行命令所需要的类，其次是将命令参数作为参数传递给执行函数执行：
+<!-- snippet: id=django-request-response-fetch-command mode=display python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 
 def fetch_command(self, subcommand):
@@ -86,6 +91,7 @@ def fetch_command(self, subcommand):
 
 ```
 `get_commands()` 是返回是一个命令与模块映射作用的字典:
+<!-- snippet: id=django-request-response-04 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 
 {
@@ -103,6 +109,7 @@ def fetch_command(self, subcommand):
 ## 动态加载模块
 
 模块是通过 `load_command_class` 来动态加载的：
+<!-- snippet: id=django-request-response-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 
 def load_command_class(app_name, name):
@@ -111,6 +118,7 @@ def load_command_class(app_name, name):
 
 ```
 如执行 `runserver` 命令的模块就是 `django.contrib.staticfiles.management.commands.runserver` 返回该模块中定义的 `Command` 类的实例。获得实例后调用了 `run_from_argv(self.argv)` :
+<!-- snippet: id=django-request-response-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 
 def run_from_argv(self, argv):
@@ -133,6 +141,7 @@ def run_from_argv(self, argv):
 ## 设置请求句柄
 
 在 `execute` 中会做一些设置参数的错误检查，然后设置句柄:
+<!-- snippet: id=django-request-response-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 
 def handle(self, *args, **options):
@@ -168,6 +177,7 @@ def handle(self, *args, **options):
 
 ```
 `run` 方法主要时调用了 `inner_run(*args, **options)` 这个方法:
+<!-- snippet: id=django-request-response-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 
 def inner_run(self, *args, **options):
@@ -211,6 +221,7 @@ def inner_run(self, *args, **options):
 
 ```
 这部分除了有熟悉的信息输出外，重要的是这个句柄：
+<!-- snippet: id=django-request-response-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 
 def get_handler(self, *args, **options):
@@ -221,6 +232,7 @@ def get_handler(self, *args, **options):
 
 ```
 `get_handler` 函数最终会返回一个 `WSGIHandler` 的实例。WSGIHandler 类只实现了 `def __call__(self, environ, start_response)` , 使它本身能够成为 `WSGI` 中的应用程序, 并且实现 `__call__` 能让类的行为跟函数一样。
+<!-- snippet: id=django-request-response-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 
 def run(addr, port, wsgi_handler, ipv6=False, threading=False):
@@ -239,6 +251,7 @@ def run(addr, port, wsgi_handler, ipv6=False, threading=False):
 这是一个标准的 `wsgi` 实现。`httpd_cls` 是 `WSGIServer` 类，最终的实例化方法在父类 `SocketServer` 中的 `TCPServer` 和 `BaseServer` 中。包括初始化线程，初始化网络句柄，像下面的 `__is_shut_down` 和 `__shutdown_request` 都是在其中初始化的。
 
 ## 处理请求
+<!-- snippet: id=django-request-response-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 
 def serve_forever(self, poll_interval=0.5):
@@ -265,6 +278,7 @@ def serve_forever(self, poll_interval=0.5):
 
 ```
 当发现有请求后，就调用 `_handle_request_noblock` 进行处理:
+<!-- snippet: id=django-request-response-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 
 def _handle_request_noblock(self):
@@ -288,6 +302,7 @@ def _handle_request_noblock(self):
 
 ```
 在 `finish_request` 函数返回 `django.core.servers.basehttp.WSGIRequestHandler` 的实例，其父类 `BaseHTTPRequestHandler` 类中有对 http 包解包的过程，从其父类的初始化:
+<!-- snippet: id=django-request-response-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 
 class BaseRequestHandler:
@@ -305,6 +320,7 @@ class BaseRequestHandler:
 ## 响应请求
 
 可以看出，会回调 `handle()` 函数，也就是子类 `WSGIRequestHandler` 覆盖的方法:
+<!-- snippet: id=django-request-response-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 
 def handle(self):
@@ -324,6 +340,7 @@ def handle(self):
 
 ```
 `handler.run(self.server.get_app())` 中就是调用之前设置句柄的 `WSGIHandler` 类:
+<!-- snippet: id=django-request-response-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 
 class WSGIHandler(base.BaseHandler):

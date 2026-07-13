@@ -2,7 +2,7 @@
 title: WTForms 表单验证在 Flask 中的使用
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: flask-7-wtforms
 description: '详细讲解 WTForms 在 Flask 中的使用，包括表单字段类型（StringField、PasswordField、RadioField、SelectField 等）、内置验证器、自定义验证规则以及模板中的表单渲染'
 tags:
@@ -23,14 +23,16 @@ language: zh-CN
 
 **安装：**
 
+<!-- snippet: id=flask-7-wtforms-01 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
-pip3 install wtforms
+python -m pip install wtforms
 ```
 
 ## 简单使用wtforms组件
 
 ### 用户登录
 
+<!-- snippet: id=flask-7-wtforms-02 mode=compile python=3.12-3.14 deps=Flask==3.1.3,WTForms==3.2.2 -->
 ```python
 from flask import Flask, render_template, request, redirect
 from wtforms.fields import core
@@ -97,6 +99,7 @@ if __name__ == '__main__':
 
 login.html：
 
+<!-- snippet: id=flask-7-wtforms-03 mode=display python=3.12-3.14 deps=stdlib -->
 ```html
 <body>
     <form action="" method="post" novalidate>
@@ -109,8 +112,7 @@ login.html：
 
 ### 用户注册
 
-![image](https://images2017.cnblogs.com/blog/1184802/201801/1184802-20180109234826566-1425045098.png)
-
+<!-- snippet: id=flask-7-wtforms-04 mode=compile python=3.12-3.14 deps=Flask==3.1.3,WTForms==3.2.2 -->
 ```python
 from flask import Flask, render_template, redirect, request
 from wtforms import Form

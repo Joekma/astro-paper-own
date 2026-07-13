@@ -2,7 +2,7 @@
 title: Django入门指南
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-04T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: django-getting-started
 featured: false
 draft: false
@@ -39,8 +39,9 @@ description: 'Django入门指南，涵盖虚拟环境配置、项目创建、MTV
 
 ### 安装与使用
 
+<!-- snippet: id=django-getting-started-01 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
-pip3 install virtualenv
+python -m pip install virtualenv
 virtualenv myenv
 cd myenv\Scripts
 activate
@@ -57,6 +58,7 @@ deactivate
 
 ### 终端创建
 
+<!-- snippet: id=django-getting-started-02 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 django-admin startproject 项目名
 cd 项目名
@@ -65,7 +67,8 @@ python3 manage.py runserver 127.0.0.1:8000
 
 ### 项目目录结构
 
-```
+<!-- snippet: id=django-getting-started-03 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 项目名/
 ├── __init__.py
 ├── settings.py      # 配置总文件
@@ -76,6 +79,7 @@ python3 manage.py runserver 127.0.0.1:8000
 
 ### settings.py 核心配置
 
+<!-- snippet: id=django-getting-started-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import os
 
@@ -115,6 +119,7 @@ DATABASES = {
 
 ### URLconf
 
+<!-- snippet: id=django-getting-started-05 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.urls import path, re_path
 
@@ -126,6 +131,7 @@ urlpatterns = [
 
 ### 无名分组
 
+<!-- snippet: id=django-getting-started-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # url: /articles/2024/05
 re_path(r'^articles/(\d{4})/(\d{2})$', views.year_month)
@@ -136,6 +142,7 @@ def year_month(request, year, month):
 
 ### 有名分组
 
+<!-- snippet: id=django-getting-started-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 re_path(r'^articles/(?P<year>\d{4})/(?P<month>\d{2})$', views.year_month)
 # 视图函数
@@ -145,6 +152,7 @@ def year_month(request, year, month):
 
 ### 路由分发
 
+<!-- snippet: id=django-getting-started-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 主urls.py
 path('blog/', include('blog.urls'))
@@ -159,6 +167,7 @@ urlpatterns = [
 
 ### 基本结构
 
+<!-- snippet: id=django-getting-started-09 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.shortcuts import render, HttpResponse, redirect
 
@@ -178,6 +187,7 @@ def index(request):
 
 ### 响应方式
 
+<!-- snippet: id=django-getting-started-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 直接返回
 return HttpResponse("内容")

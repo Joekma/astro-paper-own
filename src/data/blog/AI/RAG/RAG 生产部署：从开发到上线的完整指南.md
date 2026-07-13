@@ -2,1616 +2,454 @@
 title: RAG 生产部署：从开发到上线的完整指南
 author: Joekma
 pubDatetime: 2026-05-11T00:00:00.000+08:00
-modDatetime: 2026-05-11T00:00:00.000+08:00
+modDatetime: 2026-07-12T00:00:00.000+08:00
 slug: rag-production-deployment
-description: '全面讲解RAG系统从开发到生产环境部署的最佳实践，包括架构设计、容器化、监控告警和持续优化。'
+description: "围绕 Serving、Indexing 与 Control Plane，建立具备版本、权限、可观测性、回滚和恢复能力的生产级 RAG 系统。"
 tags:
   - RAG
   - 生产部署
   - DevOps
   - 监控
-  - 最佳实践
+  - 安全
 draft: false
 series: RAG
-seriesOrder: 4
+seriesOrder: 8
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
 
-将 RAG 系统从开发环境迁移到生产环境需要考虑可靠性、性能、安全性和可维护性等多个方面。本篇将详细介绍生产级 RAG 系统的完整部署流程和最佳实践。
+本文假设你已经完成可测试的 RAG 基线。读完后，你应该能够：
 
-### 生产部署架构
+- 将在线 Serving、异步 Indexing 和发布 Control Plane 分离。
+- 设计幂等索引任务、版本切换、缓存失效和快速回滚。
+- 把租户与 ACL 放在检索安全边界，而不是答案后处理。
+- 为质量、延迟、成本、安全和新鲜度建立可观测指标。
+- 通过故障演练验证备份、恢复和降级，而不是只写配置文件。
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                     生产级 RAG 架构                                  │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  ┌─────────────────────────────────────────────────────────────┐    │
-│  │                      用户请求                               │    │
-│  └─────────────────────────┬───────────────────────────────┘    │
-│                            │                                      │
-│                            ▼                                      │
-│  ┌─────────────────────────────────────────────────────────────┐  │
-│  │                    负载均衡 (Nginx)                         │  │
-│  │                    限流、SSL termination                    │  │
-│  └─────────────────────────┬───────────────────────────────┘    │
-│                            │                                      │
-│           ┌────────────────┼────────────────┐                     │
-│           ▼                ▼                ▼                     │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │
-│  │  API Server │  │  API Server │  │  API Server │              │
-│  │  (实例1)     │  │  (实例2)     │  │  (实例3)     │              │
-│  └─────────────┘  └─────────────┘  └─────────────┘              │
-│           │                │                │                     │
-│           └────────────────┼────────────────┘                     │
-│                            │                                      │
-│                            ▼                                      │
-│  ┌─────────────────────────────────────────────────────────────┐  │
-│  │                   缓存层 (Redis)                            │  │
-│  │                   查询缓存、会话缓存                          │  │
-│  └─────────────────────────┬───────────────────────────────┘    │
-│                            │                                      │
-│                            ▼                                      │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │
-│  │  向量数据库  │  │  关系数据库  │  │  对象存储    │            │
-│  │  (Pinecone) │  │  (PostgreSQL)│  │  (S3/MinIO)  │            │
-│  └─────────────┘  └─────────────┘  └─────────────┘            │
-│                                                                      │
-└─────────────────────────────────────────────────────────────────────┘
+## 生产架构的三个平面
+
+![区分 Serving、Indexing 与 Control Plane](./images/r08-f01-three-plane-architecture.png)
+
+### Serving Plane
+
+```text
+Gateway / Identity
+  → Query API
+  → ACL-aware Retrieval
+  → Reranker
+  → Context Builder
+  → Generation
+  → Citation Validator
+  → Response
 ```
 
-![生产级 RAG 架构包含在线请求链、RAG 服务与数据层、异步索引流水线、可观测运维和发布控制面](./images/rag-production-deployment-architecture-figure-01.png)
+职责是低延迟回答，不应同步解析大文件或重建索引。
 
-## 项目结构
+### Indexing Plane
 
-```
-rag-production/
-├── src/
-│   ├── __init__.py
-│   ├── config.py           # 配置管理
-│   ├── api/
-│   │   ├── __init__.py
-│   │   ├── main.py         # FastAPI 主入口
-│   │   ├── routes/
-│   │   │   ├── query.py    # 查询接口
-│   │   │   └── upload.py   # 文档上传接口
-│   │   └── middleware/
-│   │       ├── auth.py      # 认证中间件
-│   │       └── logging.py   # 日志中间件
-│   ├── core/
-│   │   ├── loader.py        # 文档加载
-│   │   ├── chunker.py       # 文本分割
-│   │   ├── vectorstore.py   # 向量存储
-│   │   ├── retriever.py    # 检索器
-│   │   └── generator.py    # 生成器
-│   ├── agents/
-│   │   └── rag_agent.py    # RAG Agent
-│   └── utils/
-│       ├── cache.py         # 缓存工具
-│       └── metrics.py       # 指标收集
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   └── load/
-├── docker/
-│   ├── Dockerfile
-│   ├── docker-compose.yml
-│   └── nginx.conf
-├── k8s/
-│   ├── deployment.yaml
-│   ├── service.yaml
-│   └── ingress.yaml
-├── .env.example
-├── requirements.txt
-├── pyproject.toml
-└── README.md
+```text
+Source Connector
+  → Durable Queue
+  → Parse / OCR / ASR
+  → Chunk / Metadata / ACL
+  → Embedding / Sparse Index
+  → Quality Gate
+  → Candidate Index Version
 ```
 
-## 配置管理
+职责是异步、幂等、可重试地生成候选索引版本。
 
-### 环境配置
+### Control Plane
+
+负责配置、版本注册、黄金评测、发布审批、流量切换、回滚、密钥、审计和策略。把这些能力散落在在线进程的环境变量和手工命令中，会让发布不可重复。
+
+## 版本是一等公民
+
+![记录可重放请求所需版本向量](./images/r08-f02-runtime-version-vector.png)
+
+每个请求至少关联：
 
 ```python
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Optional
-from functools import lru_cache
+from dataclasses import dataclass
 
-class Settings(BaseSettings):
-    # 应用配置
-    app_name: str = "RAG System"
-    app_version: str = "1.0.0"
-    debug: bool = False
-
-    # API 配置
-    api_host: str = "0.0.0.0"
-    api_port: int = 8000
-    workers: int = 4
-
-    # OpenAI 配置
-    openai_api_key: str
-    openai_model: str = "gpt-4"
-    openai_embeddings_model: str = "text-embedding-3-small"
-
-    # 向量数据库配置
-    vectorstore_type: str = "chroma"
-    chroma_persist_directory: str = "./data/chroma"
-    pinecone_api_key: Optional[str] = None
-    pinecone_environment: Optional[str] = None
-
-    # Redis 配置
-    redis_host: str = "localhost"
-    redis_port: int = 6379
-    redis_db: int = 0
-
-    # 数据库配置
-    postgres_host: str = "localhost"
-    postgres_port: int = 5432
-    postgres_db: str = "rag_db"
-    postgres_user: str = "rag_user"
-    postgres_password: str
-
-    # 存储配置
-    s3_endpoint: Optional[str] = None
-    s3_access_key: Optional[str] = None
-    s3_secret_key: Optional[str] = None
-    s3_bucket: str = "rag-documents"
-
-    # 性能配置
-    max_concurrent_requests: int = 100
-    request_timeout: int = 60
-    embedding_batch_size: int = 100
-
-    # RAG 配置
-    chunk_size: int = 1000
-    chunk_overlap: int = 200
-    retrieval_k: int = 5
-
-    # pydantic v2 配置
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore"
-    )
-
-@lru_cache()
-def get_settings() -> Settings:
-    return Settings()
-
-settings = get_settings()
+@dataclass(frozen=True)
+class RuntimeVersion:
+    application: str
+    corpus: str
+    index: str
+    embedding_model: str
+    reranker: str
+    prompt: str
+    generation_model: str
 ```
 
-### 配置验证
+如果只记录应用 Git SHA，而没有索引、语料和模型版本，就无法重放“昨天同一个问题为什么答案不同”。
+
+## 幂等索引任务
+
+![理解幂等键、原子提交和 DLQ](./images/r08-f03-idempotent-index-job.png)
+
+索引消息需要稳定幂等键：
 
 ```python
-from pydantic import field_validator
+import hashlib
 
-class Settings(BaseSettings):
-    openai_api_key: str
-
-    @field_validator("openai_api_key")
-    @classmethod
-    def validate_api_key(cls, v):
-        if not v or v == "your-api-key":
-            raise ValueError("请设置有效的 OpenAI API Key")
-        if not v.startswith("sk-"):
-            raise ValueError("API Key 格式不正确")
-        return v
-
-    chunk_size: int = 1000
-
-    @field_validator("chunk_size")
-    @classmethod
-    def validate_chunk_size(cls, v):
-        if v < 100:
-            raise ValueError("chunk_size 必须 >= 100")
-        if v > 8000:
-            raise ValueError("chunk_size 必须 <= 8000")
-        return v
-
-    max_concurrent_requests: int = 100
-
-    @field_validator("max_concurrent_requests")
-    @classmethod
-    def validate_concurrency(cls, v):
-        if v < 1:
-            raise ValueError("max_concurrent_requests 必须 >= 1")
-        if v > 1000:
-            raise ValueError("max_concurrent_requests 不宜超过 1000")
-        return v
+def indexing_job_id(
+    document_id: str,
+    content_hash: str,
+    pipeline_version: str,
+) -> str:
+    raw = f"{document_id}|{content_hash}|{pipeline_version}".encode()
+    return hashlib.sha256(raw).hexdigest()
 ```
 
-## API 开发
+Worker 的基本语义：
 
-### FastAPI 主入口
+1. 检查 Job ID 是否已经成功提交。
+2. 读取不可变输入版本。
+3. 生成临时产物。
+4. 校验 Chunk、向量维度、权限与数量。
+5. 原子提交或标记失败。
+6. 只有可重试错误才进入退避重试。
+7. 超过预算进入 Dead Letter Queue，不能无限重试。
 
-```python
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
-import logging
-import time
+文档删除也是索引事件，必须传播到向量索引、关键词索引、对象存储派生物、缓存和评测引用。
 
-from src.config import settings
-from src.api.routes import query_router, upload_router
-from src.utils.metrics import MetricsCollector
+## 蓝绿索引发布
 
-metrics = MetricsCollector()
+![安全切换活动索引并回滚](./images/r08-f04-blue-green-index-release.png)
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    logging.info("RAG 系统启动中...")
-
-    await initialize_vectorstore()
-    await initialize_cache()
-
-    logging.info("RAG 系统启动完成")
-
-    yield
-
-    logging.info("RAG 系统关闭中...")
-    await cleanup_resources()
-
-app = FastAPI(
-    title=settings.app_name,
-    version=settings.app_version,
-    lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc"
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-@app.middleware("http")
-async def metrics_middleware(request: Request, call_next):
-    start_time = time.time()
-
-    try:
-        response = await call_next(request)
-
-        duration = time.time() - start_time
-        metrics.record_request(
-            endpoint=request.url.path,
-            method=request.method,
-            duration=duration,
-            status=response.status_code
-        )
-
-        return response
-
-    except Exception as e:
-        duration = time.time() - start_time
-        metrics.record_error(
-            endpoint=request.url.path,
-            error_type=type(e).__name__
-        )
-        raise
-
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException):
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"error": exc.detail}
-    )
-
-@app.exception_handler(Exception)
-async def general_exception_handler(request: Request, exc: Exception):
-    logging.error(f"未处理异常: {exc}", exc_info=True)
-
-    return JSONResponse(
-        status_code=500,
-        content={"error": "内部服务器错误"}
-    )
-
-app.include_router(query_router, prefix="/api/v1", tags=["query"])
-app.include_router(upload_router, prefix="/api/v1", tags=["upload"])
-
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "version": settings.app_version,
-        "vectorstore": await check_vectorstore(),
-        "cache": await check_cache()
-    }
-
-@app.get("/metrics")
-async def get_metrics():
-    return metrics.get_all_metrics()
+```text
+active: index-v41
+build : index-v42
+  → 完整性检查
+  → 黄金集回归
+  → 影子流量
+  → 小比例 Canary
+  → 原子切换 active=index-v42
+  → 观察窗口
+  → 保留 v41 以便回滚
 ```
 
-### 查询接口
+不要在活动索引上进行大规模破坏性重建。索引切换与缓存命名空间切换应一起设计，否则新请求可能命中新旧混合结果。
+
+## 配置和秘密
+
+配置分三类：
+
+- 非秘密运行配置：候选数、超时、Prompt 版本。
+- 秘密：API Key、数据库凭据、签名密钥。
+- 策略：ACL、保留期、允许模型和发布门。
 
 ```python
-import time
-import logging
-import uuid
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict
-
-from src.core.rag_chain import RAGChain
-from src.api.middleware.auth import verify_api_key
-
-router = APIRouter()
-
-# 全局 RAG 链（应在 lifespan 中初始化）
-_rag_chain: Optional[RAGChain] = None
-
-def get_rag_chain() -> RAGChain:
-    if _rag_chain is None:
-        raise HTTPException(status_code=503, detail="RAG 链未初始化")
-    return _rag_chain
-
-async def log_query(session_id: str, query: str, answer: str, latency: float):
-    """后台记录查询日志。"""
-    logging.info(f"session={session_id} latency={latency:.3f}s query={query[:50]}")
-
-async def save_feedback(query: str, answer: str, rating: int, comment: Optional[str]):
-    """保存用户反馈。实际项目中应写入数据库。"""
-    logging.info(f"feedback rating={rating} query={query[:50]} comment={comment}")
-
-async def get_session_history(session_id: str, limit: int = 20) -> List[Dict]:
-    """获取会话历史。实际项目中应从数据库或缓存读取。"""
-    return []
-
-class QueryRequest(BaseModel):
-    query: str = Field(..., min_length=1, max_length=2000)
-    session_id: Optional[str] = None
-    use_rag: bool = True
-    retrieval_k: int = Field(default=5, ge=1, le=20)
-    temperature: float = Field(default=0.7, ge=0, le=2)
-
-class QueryResponse(BaseModel):
-    answer: str
-    sources: List[Dict]
-    session_id: str
-    latency: float
-    tokens_used: Optional[int] = None
-
-class FeedbackRequest(BaseModel):
-    query: str
-    answer: str
-    rating: int = Field(..., ge=1, le=5)
-    comment: Optional[str] = None
-
-@router.post("/query", response_model=QueryResponse)
-async def query(
-    request: QueryRequest,
-    background_tasks: BackgroundTasks,
-    api_key: str = Depends(verify_api_key)
-):
-    start_time = time.time()
-    session_id = request.session_id or str(uuid.uuid4())
-
-    try:
-        rag_chain = get_rag_chain()
-
-        result = await rag_chain.query(
-            query=request.query,
-            session_id=session_id,
-            use_rag=request.use_rag,
-            k=request.retrieval_k,
-            temperature=request.temperature
-        )
-
-        latency = time.time() - start_time
-
-        background_tasks.add_task(
-            log_query,
-            session_id=session_id,
-            query=request.query,
-            answer=result["answer"],
-            latency=latency
-        )
-
-        return QueryResponse(
-            answer=result["answer"],
-            sources=result.get("sources", []),
-            session_id=session_id,
-            latency=latency,
-            tokens_used=result.get("tokens_used")
-        )
-
-    except Exception as e:
-        logging.error(f"查询处理失败: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/feedback")
-async def submit_feedback(
-    request: FeedbackRequest,
-    api_key: str = Depends(verify_api_key)
-):
-    await save_feedback(
-        query=request.query,
-        answer=request.answer,
-        rating=request.rating,
-        comment=request.comment
-    )
-
-    return {"status": "success", "message": "反馈已提交"}
-
-@router.get("/history/{session_id}")
-async def get_history(
-    session_id: str,
-    limit: int = 20,
-    api_key: str = Depends(verify_api_key)
-):
-    history = await get_session_history(session_id, limit)
-
-    return {"session_id": session_id, "history": history}
-```
-
-### 文档上传接口
-
-```python
-import time
 import os
-import hashlib
-import logging
-from datetime import datetime
-from typing import List, Optional, Dict
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
-from pydantic import BaseModel
-import aiofiles
 
-from src.api.middleware.auth import verify_api_key
+def required_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise RuntimeError(f"missing required environment variable: {name}")
+    return value
 
-router = APIRouter()
-
-class UploadResponse(BaseModel):
-    file_id: str
-    filename: str
-    status: str
-    chunks_created: int
-    processing_time: float
-
-ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md", ".docx", ".doc"}
-MAX_FILE_SIZE = 50 * 1024 * 1024
-
-# 模拟索引器和元数据存储
-_INDEX_STORE: Dict[str, List[str]] = {}
-_METADATA_STORE: Dict[str, Dict] = {}
-
-async def process_and_index_document(
-    file_path: str,
-    file_id: str,
-    category: Optional[str],
-    original_filename: str
-) -> List[str]:
-    """处理文档并加入向量库索引。
-
-    实际实现应包括：文档加载、文本分割、嵌入生成、向量库写入。
-    """
-    logging.info(f"处理文档: {original_filename}")
-    # 简化处理：仅记录文件 ID 作为占位
-    chunk_ids = [f"{file_id}_chunk_{i}" for i in range(5)]
-    _INDEX_STORE[file_id] = chunk_ids
-    return chunk_ids
-
-async def record_upload_metadata(
-    file_id: str,
-    filename: str,
-    category: Optional[str],
-    chunks_created: int,
-    file_size: int
-):
-    """记录上传文件的元数据。"""
-    _METADATA_STORE[file_id] = {
-        "filename": filename,
-        "category": category,
-        "chunks_created": chunks_created,
-        "file_size": file_size,
-        "uploaded_at": datetime.utcnow().isoformat()
-    }
-
-@router.post("/upload", response_model=UploadResponse)
-async def upload_documents(
-    files: List[UploadFile] = File(...),
-    category: Optional[str] = None,
-    api_key: str = Depends(verify_api_key)
-):
-    if len(files) > 10:
-        raise HTTPException(status_code=400, detail="每次最多上传10个文件")
-
-    results = []
-
-    for file in files:
-        result = await process_single_file(file, category)
-        results.append(result)
-
-    return UploadResponse(
-        file_id=results[0]["file_id"],
-        filename=", ".join([r["filename"] for r in results]),
-        status="completed",
-        chunks_created=sum(r["chunks_created"] for r in results),
-        processing_time=sum(r["processing_time"] for r in results)
-    )
-
-async def process_single_file(file: UploadFile, category: str = None) -> Dict:
-    start_time = time.time()
-
-    if not any(file.filename.endswith(ext) for ext in ALLOWED_EXTENSIONS):
-        raise HTTPException(
-            status_code=400,
-            detail=f"不支持的文件格式: {file.filename}"
-        )
-
-    content = await file.read()
-
-    if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"文件过大: {file.filename} (最大50MB)"
-        )
-
-    file_hash = hashlib.md5(content).hexdigest()
-    file_id = f"{file_hash}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-
-    upload_dir = f"./uploads/{datetime.now().strftime('%Y%m%d')}"
-    os.makedirs(upload_dir, exist_ok=True)
-
-    file_path = os.path.join(upload_dir, f"{file_id}_{file.filename}")
-
-    async with aiofiles.open(file_path, "wb") as f:
-        await f.write(content)
-
-    chunks = await process_and_index_document(
-        file_path=file_path,
-        file_id=file_id,
-        category=category,
-        original_filename=file.filename
-    )
-
-    processing_time = time.time() - start_time
-
-    await record_upload_metadata(
-        file_id=file_id,
-        filename=file.filename,
-        category=category,
-        chunks_created=len(chunks),
-        file_size=len(content)
-    )
-
-    return {
-        "file_id": file_id,
-        "filename": file.filename,
-        "chunks_created": len(chunks),
-        "processing_time": processing_time
-    }
+OPENAI_API_KEY = required_env("OPENAI_API_KEY")
 ```
 
-## Docker 部署
+不要用前缀规则猜测 Key 是否有效，也不要在异常、日志或健康检查中输出秘密。生产环境应使用秘密管理系统和短期身份，配置变更需审计。
 
-### Dockerfile
+## API 生命周期
 
-```dockerfile
-FROM python:3.11-slim
+### 启动
 
-WORKDIR /app
+- 验证必要配置和版本兼容性。
+- 建立连接池。
+- 加载活动索引指针。
+- 预热有限资源。
+- 启动后才报告 Ready。
 
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    libffi-dev \
-    && rm -rf /var/lib/apt/lists/*
+### 请求
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+- 生成或接收 `trace_id`。
+- 验证身份、租户、配额和输入大小。
+- 传播超时与取消。
+- 记录阶段耗时和版本。
+- 对输出做结构与引用校验。
 
-COPY . .
+### 关闭
 
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
+- 停止接收新请求。
+- 在预算内完成或取消进行中的任务。
+- 刷新日志和指标。
+- 关闭连接池。
 
-EXPOSE 8000
+健康检查应分开：
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+- Liveness：进程是否活着。
+- Readiness：是否能安全接流量。
+- Dependency Health：下游异常状态，用于告警，不一定直接让所有实例退出服务。
 
-CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+## 超时、重试和背压
+
+![分配端到端请求预算](./images/r08-f05-request-timeout-budget.png)
+
+![理解有界并发与队列](./images/r08-f06-backpressure-control.png)
+
+总超时必须分配到阶段：
+
+```text
+request budget 8s
+  retrieval 0.5s
+  rerank 1.0s
+  generation 5.5s
+  validation/serialization 0.5s
+  reserve 0.5s
 ```
 
-### docker-compose.yml
+这些数值只是示意。关键原则：
 
-```yaml
-version: '3.8'
+- 只重试幂等操作或带幂等键的写入。
+- 重试受次数和总时间预算限制。
+- 使用指数退避和随机抖动。
+- 并发有上限，队列也有上限。
+- 客户端取消应传播到下游昂贵调用。
+- 熔断器打开时返回明确降级，而不是无限排队。
 
-services:
-  api:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-    ports:
-      - "8000:8000"
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    depends_on:
-      - redis
-      - postgres
-    volumes:
-      - ./data:/app/data
-      - ./uploads:/app/uploads
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 4G
-        reservations:
-          cpus: '0.5'
-          memory: 1G
+## 安全边界
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    command: redis-server --maxmemory 1gb --maxmemory-policy allkeys-lru
-    restart: unless-stopped
+### 身份、租户与 ACL
 
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_DB=rag_db
-      - POSTGRES_USER=rag_user
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    ports:
-      - "5432:5432"
-    restart: unless-stopped
+![阻止跨租户候选、缓存与日志泄漏](./images/r08-f07-tenant-security-boundary.png)
 
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./docker/ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - api
-    restart: unless-stopped
+可信身份提供方验证用户后，服务端生成租户和角色上下文。检索必须只在授权集合内进行：
 
-volumes:
-  redis_data:
-  postgres_data:
+```text
+verified identity
+  → tenant boundary
+  → ACL / policy filter
+  → retrieval candidates
 ```
 
-### Nginx 配置
+不得相信客户端自报角色，也不能先跨租户召回再在答案中“尽量不提”。缓存 Key、日志和 Trace 同样必须隔离。
 
-```nginx
-upstream rag_api {
-    least_conn;
+### Prompt Injection 与知识库投毒
 
-    server api:8000 weight=10 max_fails=3 fail_timeout=30s;
-}
+![把恶意文档限制在低权限数据边界](./images/r08-f08-rag-prompt-injection-defense.png)
 
-server {
-    listen 80;
-    server_name rag.example.com;
+检索文档是不可信数据。攻击者可以在网页、PDF、图片或音频中嵌入“忽略系统指令”“泄露其他文档”等内容。
 
-    client_max_body_size 50M;
+防护采用纵深策略：
 
-    location /health {
-        proxy_pass http://rag_api;
-        proxy_connect_timeout 5s;
-        proxy_read_timeout 10s;
-    }
+- 限制知识源写权限和审核发布者。
+- 保存来源、版本、签名或内容哈希。
+- 将检索文本明确标记为数据。
+- 生成服务不直接拥有高权限工具。
+- 工具调用使用独立策略与参数校验。
+- 对输出 Schema、引用 ID 和敏感信息做校验。
+- 维护对抗语料并持续红队测试。
 
-    location /api {
-        limit_req zone=api_limit burst=20 nodelay;
+任何单一 Prompt 或正则都不能构成完整防护。
 
-        proxy_pass http://rag_api;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
+### 数据最小化
 
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
-    }
+- Query、Context 和回答日志默认可能含敏感数据。
+- 只记录诊断需要的字段，必要时哈希或脱敏。
+- 设置保留期限、访问控制和删除流程。
+- 备份、Trace、缓存与离线评测副本都必须执行删除要求。
 
-    location /docs {
-        proxy_pass http://rag_api;
-        proxy_set_header Host $host;
-    }
+## 可观测性
 
-    location /metrics {
-        proxy_pass http://rag_api;
-        allow 10.0.0.0/8;
-        deny all;
-    }
-}
+![统一系统、质量、索引和成本观测](./images/r08-f09-observability-map.png)
 
-limit_req_zone $binary_remote_addr zone=api_limit:10m rate=30r/s;
+### 请求与系统指标
+
+- QPS、并发、队列深度、错误率、超时率。
+- 各阶段 p50/p95/p99 延迟。
+- 下游限流、重试、熔断和降级次数。
+- CPU、内存、连接池、索引缓存与网络。
+
+### RAG 质量指标
+
+- 无结果率、候选数、分数分布漂移。
+- Context Token、重复率、截断率。
+- 拒答率、引用数量、Citation Validity。
+- 黄金集定时回归和按 Tag 的质量趋势。
+- 用户反馈只能作为信号，不能替代标注评测。
+
+### 索引指标
+
+- Source freshness lag。
+- 待处理、失败和 DLQ 任务。
+- 文档数、Chunk 数、向量数之间的一致性。
+- 当前活动版本与每个版本年龄。
+- 删除传播延迟。
+
+### 成本指标
+
+- Embedding、Rerank、Generation 调用量与 Token。
+- 每请求、每租户和每成功答案估算成本。
+- 缓存命中及因错误失效造成的额外成本。
+
+高基数 Query 或 Chunk ID 不应直接作为 Prometheus Label，可放入受控日志或 Trace。
+
+## SLO 与告警
+
+![从 SLI 越界连接到可执行 Runbook](./images/r08-f10-slo-alert-runbook.png)
+
+示例 SLI：
+
+```text
+Availability = 成功且在超时内完成的合格请求 / 合格请求总数
+Freshness    = 当前时间 - 最新成功发布的源版本时间
+Citation validity = 有效引用数 / 返回引用总数
 ```
 
-## Kubernetes 部署
+质量 SLO 比 HTTP 可用性更难，因为需要黄金集或抽样标注。推荐组合：
 
-### deployment.yaml
+- 在线服务 SLO：可用性与延迟。
+- 索引 SLO：新鲜度和删除传播。
+- 离线质量门：黄金集与安全回归。
+- 抽样审计：答案与引用正确性。
 
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: rag-api
-  labels:
-    app: rag-api
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: rag-api
-  template:
-    metadata:
-      labels:
-        app: rag-api
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8000"
-    spec:
-      containers:
-        - name: rag-api
-          image: rag-system:latest
-          ports:
-            - containerPort: 8000
-          env:
-            - name: OPENAI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: rag-secrets
-                  key: openai-api-key
-            - name: REDIS_HOST
-              value: "redis-service"
-            - name: REDIS_PORT
-              value: "6379"
-          resources:
-            requests:
-              cpu: 500m
-              memory: 1Gi
-            limits:
-              cpu: 2000m
-              memory: 4Gi
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 8000
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 8000
-            initialDelaySeconds: 10
-            periodSeconds: 5
-            timeoutSeconds: 3
-            failureThreshold: 2
-          volumeMounts:
-            - name: data
-              mountPath: /app/data
-      volumes:
-        - name: data
-          persistentVolumeClaim:
-            claimName: rag-data-pvc
+告警应链接 Runbook，说明影响、诊断步骤、回滚命令和责任人，而不是只发一个指标名称。
 
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: rag-api-service
-spec:
-  selector:
-    app: rag-api
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8000
-  type: ClusterIP
+## 安全降级
 
----
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: rag-api-hpa
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: rag-api
-  minReplicas: 2
-  maxReplicas: 10
-  metrics:
-    - type: Resource
-      resource:
-        name: cpu
-        target:
-          type: Utilization
-          averageUtilization: 70
-    - type: Resource
-      resource:
-        name: memory
-        target:
-          type: Utilization
-          averageUtilization: 80
+![保持证据保证的降级顺序](./images/r08-f11-safe-degradation-ladder.png)
+
+降级顺序示例：
+
+1. 关闭可选 Query Expansion。
+2. 缩小重排候选但不绕过 ACL。
+3. 返回检索结果和来源，不生成综合答案。
+4. 明确告知服务暂不可用。
+
+不推荐的降级：在检索或引用校验故障时直接让模型凭参数知识回答，因为这悄悄改变了产品保证。
+
+## 容量与负载测试
+
+负载模型要接近真实流量：
+
+- Query 长度和类型分布。
+- 缓存命中与未命中比例。
+- 不同租户和过滤选择性。
+- 生成输出长度。
+- 下游限流和故障注入。
+
+报告至少包含吞吐、p50/p95/p99、错误、超时、队列长度、Token 和成本。只报告平均响应时间会隐藏过载点。
+
+## 备份、恢复与灾难演练
+
+![用恢复演练证明 RPO/RTO](./images/r08-f12-backup-restore-drill.png)
+
+需要备份：
+
+- 原始或受控知识源引用。
+- 解析与 Chunk Manifest。
+- 索引配置、模型和 Pipeline 版本。
+- 元数据、ACL 和活动版本指针。
+- 黄金评测集与发布记录。
+
+向量往往可以重建，但重建时间决定 RTO。只有执行恢复演练，才能证明备份有效：
+
+1. 在隔离环境恢复元数据和索引。
+2. 校验文档、Chunk、向量数量。
+3. 运行黄金查询和 ACL 对抗集。
+4. 测量 RPO/RTO。
+5. 记录缺口并修复 Runbook。
+
+## CI/CD 发布门
+
+```text
+代码检查
+  → 单元与契约测试
+  → 固定语料集成测试
+  → 黄金质量回归
+  → 安全/ACL/注入测试
+  → 镜像与依赖扫描
+  → 候选环境部署
+  → Smoke + Load Test
+  → Canary
+  → 自动或人工批准
 ```
 
-### ingress.yaml
+应用、Prompt 和索引可以独立发布，但必须在 Runtime Version 中组合记录，并定义兼容矩阵。
 
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: rag-ingress
-  annotations:
-    kubernetes.io/ingress.class: nginx
-    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
-    nginx.ingress.kubernetes.io/rate-limit: "100"
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-spec:
-  tls:
-    - hosts:
-        - rag.example.com
-      secretName: rag-tls
-  rules:
-    - host: rag.example.com
-      http:
-        paths:
-          - path: /api
-            pathType: Prefix
-            backend:
-              service:
-                name: rag-api-service
-                port:
-                  number: 80
-          - path: /docs
-            pathType: Prefix
-            backend:
-              service:
-                name: rag-api-service
-                port:
-                  number: 80
-```
+## 上线检查表
 
-## 监控与告警
+### 数据与索引
 
-### Prometheus 指标
+- [ ] 文档、Chunk、向量数量一致。
+- [ ] 新旧版本可识别并能回滚。
+- [ ] 更新、删除和缓存失效已测试。
+- [ ] 黄金查询通过。
 
-```python
-from prometheus_client import Counter, Histogram, Gauge, CollectorRegistry
+### 安全
 
-registry = CollectorRegistry()
+- [ ] 身份来自可信验证链。
+- [ ] ACL 在检索前执行。
+- [ ] 缓存、日志和 Trace 按租户隔离。
+- [ ] 对抗文档与间接提示注入已测试。
+- [ ] 秘密不进入源码、镜像和日志。
 
-request_counter = Counter(
-    "rag_requests_total",
-    "Total RAG requests",
-    ["endpoint", "method", "status"],
-    registry=registry
-)
+### 可靠性
 
-request_duration = Histogram(
-    "rag_request_duration_seconds",
-    "Request duration in seconds",
-    ["endpoint"],
-    buckets=[0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
-    registry=registry
-)
+- [ ] 超时、重试、并发和队列均有上限。
+- [ ] 下游故障有明确降级语义。
+- [ ] Readiness 不会因轻微依赖抖动造成全体重启。
+- [ ] 回滚和恢复演练完成。
 
-active_requests = Gauge(
-    "rag_active_requests",
-    "Number of active requests",
-    registry=registry
-)
+### 质量与运营
 
-cache_hit_rate = Gauge(
-    "rag_cache_hit_rate",
-    "Cache hit rate",
-    registry=registry
-)
+- [ ] 版本字段可完整重放请求。
+- [ ] 质量、延迟、成本和新鲜度有仪表盘。
+- [ ] 告警有 Runbook 和责任人。
+- [ ] 用户反馈可以进入标注与回归流程。
 
-embedding_duration = Histogram(
-    "rag_embedding_duration_seconds",
-    "Embedding generation duration",
-    ["model"],
-    registry=registry
-)
+## 常见误区
 
-llm_tokens = Counter(
-    "rag_llm_tokens_total",
-    "Total LLM tokens used",
-    ["model", "type"],
-    registry=registry
-)
+- 把 Dockerfile 和 Kubernetes YAML 等同于生产就绪。
+- 在活动索引上原地重建且无法回滚。
+- 只监控 HTTP 200，不监控无结果、拒答和引用。
+- 先跨租户检索，再做答案后置过滤。
+- 使用无限重试或无限队列掩盖下游故障。
+- 降级时绕过检索和引用保证。
+- 有备份却从未恢复演练。
+- 只记录应用版本，不记录语料、索引、Prompt 和模型版本。
 
-class MetricsCollector:
-    def __init__(self):
-        self.registry = registry
+## 自检题
 
-    def record_request(self, endpoint: str, method: str, duration: float, status: int):
-        request_counter.labels(
-            endpoint=endpoint,
-            method=method,
-            status=status
-        ).inc()
+<details>
+<summary>1. 为什么索引版本切换应该与缓存命名空间关联？</summary>
 
-        request_duration.labels(endpoint=endpoint).observe(duration)
+否则新版本请求可能命中旧索引产生的缓存结果，形成难以观察的新旧混合状态。
 
-    def record_embedding(self, model: str, duration: float):
-        embedding_duration.labels(model=model).observe(duration)
+</details>
 
-    def record_tokens(self, model: str, prompt_tokens: int, completion_tokens: int):
-        llm_tokens.labels(model=model, type="prompt").inc(prompt_tokens)
-        llm_tokens.labels(model=model, type="completion").inc(completion_tokens)
+<details>
+<summary>2. 下游生成模型故障时，为什么“直接自由回答”不是安全降级？</summary>
 
-    def set_cache_hit_rate(self, rate: float):
-        cache_hit_rate.set(rate)
+它移除了证据约束和引用保证，却可能仍以相同产品界面返回确定答案。更安全的是返回来源、明确拒答或暂时不可用。
 
-metrics_collector = MetricsCollector()
-```
+</details>
 
-### Grafana 仪表盘
+<details>
+<summary>3. 备份任务每天成功，是否足以证明灾难恢复能力？</summary>
 
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: grafana-dashboard
-  labels:
-    app: grafana
-data:
-  rag-dashboard.json: |
-    {
-      "dashboard": {
-        "title": "RAG System Metrics",
-        "panels": [
-          {
-            "title": "Request Rate",
-            "type": "graph",
-            "targets": [
-              {
-                "expr": "rate(rag_requests_total[5m])",
-                "legendFormat": "{{endpoint}}"
-              }
-            ]
-          },
-          {
-            "title": "Latency Distribution",
-            "type": "heatmap",
-            "targets": [
-              {
-                "expr": "rate(rag_request_duration_seconds_bucket[5m])",
-                "legendFormat": "{{le}}"
-              }
-            ]
-          },
-          {
-            "title": "Cache Hit Rate",
-            "type": "gauge",
-            "targets": [
-              {
-                "expr": "rag_cache_hit_rate"
-              }
-            ]
-          },
-          {
-            "title": "Token Usage",
-            "type": "graph",
-            "targets": [
-              {
-                "expr": "rate(rag_llm_tokens_total[1h])",
-                "legendFormat": "{{model}} - {{type}}"
-              }
-            ]
-          }
-        ]
-      }
-    }
-```
+不足。还需在隔离环境恢复、验证数据一致性和黄金查询，并实际测量 RPO 与 RTO。
 
-### 告警规则
-
-```yaml
-apiVersion: monitoring.coreos.com/v1
-kind: PrometheusRule
-metadata:
-  name: rag-alerts
-spec:
-  groups:
-    - name: rag-alerts
-      rules:
-        - alert: HighErrorRate
-          expr: |
-            sum(rate(rag_requests_total{status=~"5.."}[5m]))
-            / sum(rate(rag_requests_total[5m])) > 0.05
-          for: 5m
-          labels:
-            severity: critical
-          annotations:
-            summary: "RAG 系统错误率过高"
-            description: "错误率超过 5%，当前值: {{ $value }}"
-
-        - alert: HighLatency
-          expr: |
-            histogram_quantile(0.95, sum(rate(rag_request_duration_seconds_bucket[5m])) by (le)) > 5
-          for: 10m
-          labels:
-            severity: warning
-          annotations:
-            summary: "RAG 系统延迟过高"
-            description: "P95 延迟超过 5 秒，当前值: {{ $value }}秒"
-
-        - alert: LowCacheHitRate
-          expr: rag_cache_hit_rate < 0.5
-          for: 15m
-          labels:
-            severity: warning
-          annotations:
-            summary: "缓存命中率低"
-            description: "缓存命中率低于 50%，当前值: {{ $value }}"
-
-        - alert: HighTokenUsage
-          expr: |
-            sum(rate(rag_llm_tokens_total[1h])) > 100000
-          for: 5m
-          labels:
-            severity: warning
-          annotations:
-            summary: "Token 使用量过高"
-            description: "小时 Token 使用量超过 10 万，当前值: {{ $value }}"
-```
-
-## 日志系统
-
-### 结构化日志
-
-```python
-import logging
-import json
-from datetime import datetime
-from typing import Dict, Any
-
-class JSONFormatter(logging.Formatter):
-    def format(self, record: logging.LogRecord) -> str:
-        log_data = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
-            "level": record.levelname,
-            "logger": record.name,
-            "message": record.getMessage(),
-            "module": record.module,
-            "function": record.funcName,
-            "line": record.lineno
-        }
-
-        if hasattr(record, "extra_data"):
-            log_data.update(record.extra_data)
-
-        if record.exc_info:
-            log_data["exception"] = self.formatException(record.exc_info)
-
-        return json.dumps(log_data, ensure_ascii=False)
-
-def setup_logging(log_level: str = "INFO"):
-    handler = logging.StreamHandler()
-    handler.setFormatter(JSONFormatter())
-
-    root_logger = logging.getLogger()
-    root_logger.addHandler(handler)
-    root_logger.setLevel(getattr(logging, log_level.upper()))
-
-    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
-
-setup_logging()
-
-class StructuredLogger:
-    def __init__(self, name: str):
-        self.logger = logging.getLogger(name)
-
-    def log(self, level: str, message: str, **kwargs):
-        extra = {"extra_data": kwargs}
-        getattr(self.logger, level.lower())(message, extra=extra)
-
-    def info(self, message: str, **kwargs):
-        self.log("INFO", message, **kwargs)
-
-    def error(self, message: str, **kwargs):
-        self.log("ERROR", message, **kwargs)
-
-    def warning(self, message: str, **kwargs):
-        self.log("WARNING", message, **kwargs)
-
-logger = StructuredLogger("rag")
-logger.info("处理查询", query_id="123", user_id="456", latency=0.5)
-```
-
-### 日志聚合配置
-
-```yaml
-# Loki 配置
-server:
-  http_listen_port: 3100
-
-limits_config:
-  reject_old_samples: true
-  max_entries_limit: 5000000
-
-auth_enabled: false
-
-ingester:
-  lifecycler:
-    address: 127.0.0.1
-  chunk_idle_period: 5m
-  chunk_retain_period: 30s
-
-schema_config:
-  configs:
-    - from: 2024-01-01
-      store: boltdb
-      object_store: filesystem
-      schema: v11
-      index:
-        prefix: index_
-        period: 168h
-
-storage_config:
-  boltdb:
-    directory: /data/loki/index
-  filesystem:
-    directory: /data/loki/chunks
-
-# Promtail 配置
-scrape_configs:
-  - job_name: rag-logs
-    static_configs:
-      - targets:
-          - localhost
-        labels:
-          job: rag-logs
-          __path__: /var/log/rag/*.log
-    pipeline_stages:
-      - json:
-          expressions:
-            timestamp: timestamp
-            level: level
-            message: message
-      - labels:
-          level:
-          service:
-```
-
-## 安全措施
-
-### API 认证
-
-```python
-from fastapi import Security, HTTPException, Depends
-from fastapi.security import APIKeyHeader
-from typing import Optional
-import hashlib
-import time
-
-api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
-
-VALID_API_KEYS = {}
-
-def create_api_key(name: str, expires_in_days: int = 30) -> str:
-    key = hashlib.sha256(f"{name}{time.time()}".encode()).hexdigest()[:32]
-
-    expires_at = time.time() + expires_in_days * 86400
-
-    VALID_API_KEYS[key] = {
-        "name": name,
-        "expires_at": expires_at,
-        "rate_limit": 100
-    }
-
-    return key
-
-async def verify_api_key(api_key: Optional[str] = Security(api_key_header)) -> str:
-    if not api_key:
-        raise HTTPException(status_code=401, detail="缺少 API Key")
-
-    if api_key not in VALID_API_KEYS:
-        raise HTTPException(status_code=401, detail="无效的 API Key")
-
-    key_info = VALID_API_KEYS[api_key]
-
-    if time.time() > key_info["expires_at"]:
-        raise HTTPException(status_code=401, detail="API Key 已过期")
-
-    return key_info["name"]
-
-def rate_limit_key(api_key: str) -> str:
-    return f"rate_limit:{api_key}"
-
-def check_rate_limit(api_key: str, max_requests: int = 100, window: int = 60) -> bool:
-    key = rate_limit_key(api_key)
-
-    current = redis.get(key)
-
-    if current is None:
-        redis.setex(key, window, 1)
-        return True
-
-    if int(current) >= max_requests:
-        return False
-
-    redis.incr(key)
-    return True
-```
-
-### 数据脱敏
-
-```python
-import re
-from typing import Dict, Any
-
-class DataSanitizer:
-    def __init__(self):
-        self.patterns = {
-            "email": r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',
-            "phone": r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b',
-            "credit_card": r'\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b',
-            "ssn": r'\b\d{3}[-\s]?\d{2}[-\s]?\d{4}\b'
-        }
-
-    def sanitize(self, text: str, patterns: list = None) -> str:
-        if patterns is None:
-            patterns = list(self.patterns.keys())
-
-        sanitized = text
-
-        for pattern_name in patterns:
-            if pattern_name in self.patterns:
-                pattern = self.patterns[pattern_name]
-                sanitized = re.sub(pattern, f'[{pattern_name}已脱敏]', sanitized)
-
-        return sanitized
-
-    def sanitize_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        sanitized = {}
-
-        for key, value in data.items():
-            if isinstance(value, str):
-                sanitized[key] = self.sanitize(value)
-            elif isinstance(value, dict):
-                sanitized[key] = self.sanitize_dict(value)
-            elif isinstance(value, list):
-                sanitized[key] = [
-                    self.sanitize(v) if isinstance(v, str) else v
-                    for v in value
-                ]
-            else:
-                sanitized[key] = value
-
-        return sanitized
-
-sanitizer = DataSanitizer()
-
-sanitized_text = sanitizer.sanitize("联系邮箱: user@example.com")
-print(sanitized_text)
-```
-
-## 持续集成与部署
-
-### GitHub Actions
-
-```yaml
-name: RAG CI/CD
-
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Run linting
-        run: |
-          ruff check src/
-          mypy src/
-
-      - name: Run tests
-        run: pytest tests/ -v --cov=src --cov-report=xml
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.xml
-
-  build:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: docker/Dockerfile
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository }}/rag:${{ github.sha }}
-            ghcr.io/${{ github.repository }}/rag:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    environment: production
-    steps:
-      - name: Deploy to Kubernetes
-        uses: azure/k8s-deploy@v1
-        with:
-          namespace: production
-          manifests: |
-            k8s/deployment.yaml
-            k8s/service.yaml
-            k8s/ingress.yaml
-          images: |
-            ghcr.io/${{ github.repository }}/rag:${{ github.sha }}
-```
-
-## 性能基准测试
-
-```python
-import asyncio
-import time
-from typing import List, Dict
-import statistics
-import aiohttp
-
-class LoadTester:
-    def __init__(self, api_url: str, api_key: str):
-        self.api_url = api_url
-        self.api_key = api_key
-
-    async def run_load_test(
-        self,
-        concurrency: int = 10,
-        total_requests: int = 1000,
-        queries: List[str] = None
-    ):
-        queries = queries or [
-            "Python 装饰器是什么？",
-            "解释机器学习",
-            "RAG 系统的工作原理"
-        ]
-
-        results = []
-        errors = 0
-
-        async with aiohttp.ClientSession() as session:
-            tasks = []
-
-            for i in range(total_requests):
-                query = queries[i % len(queries)]
-                task = self._make_request(session, query)
-                tasks.append(task)
-
-            start_time = time.time()
-
-            for i in range(0, len(tasks), concurrency):
-                batch = tasks[i:i+concurrency]
-                batch_results = await asyncio.gather(*batch, return_exceptions=True)
-
-                for result in batch_results:
-                    if isinstance(result, Exception):
-                        errors += 1
-                    else:
-                        results.append(result)
-
-            total_time = time.time() - start_time
-
-        return self._generate_report(results, errors, total_time)
-
-    async def _make_request(self, session, query: str) -> Dict:
-        start = time.time()
-
-        async with session.post(
-            f"{self.api_url}/api/v1/query",
-            json={"query": query},
-            headers={"X-API-Key": self.api_key}
-        ) as response:
-            result = await response.json()
-            latency = time.time() - start
-
-            return {
-                "latency": latency,
-                "status": response.status,
-                "tokens": result.get("tokens_used")
-            }
-
-    def _generate_report(self, results: List[Dict], errors: int, total_time: float):
-        latencies = [r["latency"] for r in results]
-
-        # statistics.quantiles 返回 n-1 个分位点（不含 0 和 1）
-        # n=20 时返回 19 个分位点，索引 18 是 95% 分位
-        # n=100 时返回 99 个分位点，索引 98 是 99% 分位
-        return {
-            "total_requests": len(results) + errors,
-            "successful_requests": len(results),
-            "failed_requests": errors,
-            "total_time": total_time,
-            "requests_per_second": len(results) / total_time,
-            "avg_latency": statistics.mean(latencies),
-            "p50_latency": statistics.median(latencies),
-            "p95_latency": statistics.quantiles(latencies, n=20)[18],
-            "p99_latency": statistics.quantiles(latencies, n=100)[98],
-            "total_tokens": sum(r.get("tokens", 0) for r in results)
-        }
-
-# 使用示例（需在异步函数中执行）
-# async def main():
-#     tester = LoadTester("https://rag.example.com", "your-api-key")
-#     report = await tester.run_load_test(concurrency=20, total_requests=1000)
-#     print(f"QPS: {report['requests_per_second']:.2f}")
-#     print(f"P95 延迟: {report['p95_latency']:.3f}s")
-#
-# asyncio.run(main())
-```
-
-## 灾难恢复
-
-### 自动故障转移
-
-```python
-import asyncio
-from typing import Optional
-
-class FailoverManager:
-    def __init__(self):
-        self.primary_endpoint = "http://primary-api:8000"
-        self.secondary_endpoint = "http://secondary-api:8000"
-        self.current_endpoint = self.primary_endpoint
-
-    async def health_check(self, endpoint: str) -> bool:
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(f"{endpoint}/health", timeout=5) as response:
-                    return response.status == 200
-        except:
-            return False
-
-    async def switch_endpoint(self):
-        if self.current_endpoint == self.primary_endpoint:
-            new_endpoint = self.secondary_endpoint
-        else:
-            new_endpoint = self.primary_endpoint
-
-        if await self.health_check(new_endpoint):
-            self.current_endpoint = new_endpoint
-            logging.info(f"故障转移至: {new_endpoint}")
-            return True
-
-        return False
-
-    async def monitor_and_failover(self):
-        while True:
-            if not await self.health_check(self.current_endpoint):
-                logging.warning(f"当前端点不可用: {self.current_endpoint}")
-
-                if await self.switch_endpoint():
-                    await self.notify_failover()
-
-            await asyncio.sleep(30)
-
-failover_manager = FailoverManager()
-asyncio.create_task(failover_manager.monitor_and_failover())
-```
-
-### 数据备份策略
-
-```python
-import asyncio
-from datetime import datetime, timedelta
-
-class BackupManager:
-    def __init__(self, vectorstore, db_connection):
-        self.vectorstore = vectorstore
-        self.db = db_connection
-
-    async def backup_vectorstore(self):
-        backup_dir = f"./backups/vectorstore_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        os.makedirs(backup_dir, exist_ok=True)
-
-        await self.vectorstore.backup(backup_dir)
-
-        await self.db.execute(
-            "INSERT INTO backups (type, path, created_at) VALUES ($1, $2, $3)",
-            ["vectorstore", backup_dir, datetime.now()]
-        )
-
-        logging.info(f"向量数据库已备份至: {backup_dir}")
-
-    async def cleanup_old_backups(self, retention_days: int = 30):
-        cutoff_date = datetime.now() - timedelta(days=retention_days)
-
-        old_backups = await self.db.fetch(
-            "SELECT * FROM backups WHERE created_at < $1",
-            [cutoff_date]
-        )
-
-        for backup in old_backups:
-            os.remove(backup["path"])
-
-            await self.db.execute(
-                "DELETE FROM backups WHERE id = $1",
-                [backup["id"]]
-            )
-
-        logging.info(f"清理了 {len(old_backups)} 个旧备份")
-
-backup_manager = BackupManager(vectorstore, db)
-```
+</details>
 
 ## 总结
 
-| 环节 | 关键要点 | 工具/技术 |
-|------|---------|-----------|
-| **配置管理** | 环境隔离、敏感信息安全 | pydantic-settings, Vault |
-| **API 开发** | 异步处理、错误处理、限流 | FastAPI, 中间件 |
-| **容器化** | 多阶段构建、资源限制 | Docker, docker-compose |
-| **编排部署** | 自动扩缩容、自愈 | Kubernetes, HPA |
-| **监控告警** | 实时指标、异常告警 | Prometheus, Grafana |
-| **日志系统** | 结构化日志、集中存储 | Loki, ELK |
-| **安全** | API 认证、数据脱敏 | API Key, 脱敏工具 |
-| **CI/CD** | 自动化测试和部署 | GitHub Actions |
-| **容灾** | 自动故障转移、数据备份 | Failover Manager |
+生产级 RAG 不是把原型装入容器，而是把在线请求、异步索引和发布控制拆成可观察、可授权、可版本化、可回滚的系统。最终质量取决于证据生命周期和安全边界是否与模型调用同等可靠。
 
-生产级 RAG 系统需要综合考虑可靠性、性能、安全性和可维护性，本篇提供的最佳实践可以帮助你构建一个稳定、高效的 RAG 服务。
+至此，本系列形成完整路径：架构 → 数据处理 → 向量检索 → 混合检索 → 最小应用 → 评估优化 → 多模态 → 生产部署。
 
----
+## 对应资料来源
 
-**RAG 系列文章完结** 🎉
+- [NIST AI RMF: Generative Artificial Intelligence Profile](https://www.nist.gov/publications/artificial-intelligence-risk-management-framework-generative-artificial-intelligence)
+- [OWASP Top 10 for LLM and GenAI Applications](https://genai.owasp.org/llm-top-10/)
+- [OWASP Prompt Injection Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html)
+- [OpenTelemetry Documentation](https://opentelemetry.io/docs/)
+- [Kubernetes: Configure Liveness, Readiness and Startup Probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
 
-本系列涵盖了 RAG 的核心概念、数据处理、向量检索、检索策略、实战应用、性能优化、多模态处理、Agent 融合以及生产部署的全方位内容。希望对你有所帮助！
+> 验证说明：本文提供生产设计契约与检查表，不伪造一套可直接复制到所有环境的 Kubernetes、监控或故障转移配置。部署参数必须由真实 SLO、容量测试和组织安全策略确定。

@@ -2,9 +2,9 @@
 title: RAG 数据处理：文档加载与分割
 author: Joekma
 pubDatetime: 2026-05-11T00:00:00.000+08:00
-modDatetime: 2026-05-11T00:00:00.000+08:00
+modDatetime: 2026-07-12T00:00:00.000+08:00
 slug: rag-data-processing
-description: '深入讲解RAG应用中的数据处理环节，包括多种格式文档加载、文本分割策略和元数据管理。'
+description: "从解析质量、结构化分块、稳定标识、元数据、增量更新和评测六个方面构建可靠的 RAG 知识单元。"
 tags:
   - RAG
   - 数据处理
@@ -12,592 +12,342 @@ tags:
   - 文本分割
 draft: false
 series: RAG
-seriesOrder: 6
+seriesOrder: 2
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
 
-数据处理是 RAG 系统的第一步，也是至关重要的一环。高质量的文档处理能够显著提升后续检索和生成的效果。本篇将详细介绍各种文档格式的加载方法、文本分割策略以及元数据管理技巧。
+本文承接上一篇的离线索引链路。读完后，你应该能够：
 
-![RAG 文档从加载、提取、清洗、分块到元数据增强的处理流水线](./images/rag-data-processing-pipeline-figure-01.png)
+- 判断 PDF 或网页是否被正确解析，而不是只检查“是否返回文本”。
+- 为文档和 Chunk 设计稳定 ID、来源定位与权限元数据。
+- 解释字符分块、Token 分块、结构分块、父子分块和语义分块的权衡。
+- 用黄金查询验证分块策略，而不是凭经验选择 `chunk_size`。
+- 正确处理增量更新、删除传播与索引版本。
 
-### 数据处理流程
+贯穿案例仍然是公司差旅制度。目标是让“住宿超标由谁审批”能稳定定位到第 4.2 节，同时保留页码、版本和访问权限。
 
+## 数据处理不是格式转换
+
+![建立带质量门的数据流水线](./images/r02-f01-ingestion-quality-gates.png)
+
+可靠的数据流水线应包含质量门：
+
+```text
+发现文档
+  → 解析
+  → 结构与页码检查
+  → 规范化
+  → 去重
+  → 分块
+  → 元数据与 ACL
+  → 稳定 ID
+  → Chunk 质量检查
+  → 发布索引版本
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                       RAG 数据处理流程                               │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐        │
-│  │  原始   │ →  │  格式   │ →  │  内容   │ →  │  向量   │        │
-│  │  文档   │    │  识别   │    │  提取   │    │  准备   │        │
-│  └─────────┘    └─────────┘    └─────────┘    └─────────┘        │
-│                                                                      │
-│  支持的格式：PDF、Word、TXT、Markdown、HTML、CSV、JSON 等           │
-│                                                                      │
-└─────────────────────────────────────────────────────────────────────┘
-```
 
-## 文档加载器
+“成功读到 20,000 个字符”不能证明解析正确。PDF 可能丢失双栏顺序，表格可能变成乱码，页眉可能在每页重复，扫描件可能没有 OCR，网页导航也可能混入正文。
 
-### LangChain 文档加载
+## 定义输入与输出契约
 
-LangChain 提供了丰富的文档加载器：
+![看清 RawDocument 到 Chunk 的字段演化](./images/r02-f02-raw-to-chunk-contract.png)
 
-#### 1. 文本文件加载
+### 原始文档
 
 ```python
-from langchain_community.document_loaders import TextLoader
+from dataclasses import dataclass, field
+from datetime import datetime
 
-loader = TextLoader("document.txt", encoding="utf-8")
-documents = loader.load()
-
-for doc in documents:
-    print(f"内容: {doc.page_content[:100]}...")
-    print(f"元数据: {doc.metadata}")
+@dataclass(frozen=True)
+class RawDocument:
+    document_id: str
+    version: str
+    source_uri: str
+    media_type: str
+    content_hash: str
+    discovered_at: datetime
+    acl: tuple[str, ...] = field(default_factory=tuple)
 ```
 
-#### 2. PDF 文档加载
+`document_id` 表示逻辑文档，`version` 表示内容版本，`content_hash` 用来判断内容是否真的变化。文件名不能单独作为稳定 ID，因为文件可能改名，也可能出现同名文件。
+
+### 解析后的结构块
 
 ```python
-from langchain_community.document_loaders import PyPDFLoader
-
-loader = PyPDFLoader("document.pdf")
-documents = loader.load()
-
-print(f"加载了 {len(documents)} 页")
-
-for i, doc in enumerate(documents):
-    print(f"第 {i+1} 页内容: {doc.page_content[:200]}...")
+@dataclass(frozen=True)
+class ParsedBlock:
+    block_type: str  # heading, paragraph, table, code, image_caption
+    text: str
+    page: int | None
+    section_path: tuple[str, ...]
+    order: int
 ```
 
-#### 3. Markdown 文件加载
+先保留结构，再决定如何分块。直接把整篇文档压成纯文本，会丢失标题层级、表格边界和代码块语义。
+
+### 最终 Chunk
 
 ```python
-from langchain_community.document_loaders import UnstructuredMarkdownLoader
-
-loader = UnstructuredMarkdownLoader("readme.md")
-documents = loader.load()
-
-print(f"标题: {documents[0].metadata.get('title', 'N/A')}")
+@dataclass(frozen=True)
+class Chunk:
+    chunk_id: str
+    document_id: str
+    version: str
+    text: str
+    source_uri: str
+    locator: str
+    section_path: tuple[str, ...]
+    token_count: int
+    acl: tuple[str, ...]
+    parent_id: str | None = None
 ```
 
-#### 4. Word 文档加载
+生成 ID 时使用规范化后的结构位置或稳定块标识，不应使用 Python 内置 `hash()`；后者跨进程不保证稳定。
 
 ```python
-from langchain_community.document_loaders import Docx2txtLoader
+import hashlib
 
-loader = Docx2txtLoader("document.docx")
-documents = loader.load()
-
-print(f"段落数: {len(documents)}")
+def stable_chunk_id(document_id: str, version: str, locator: str, index: int) -> str:
+    raw = f"{document_id}|{version}|{locator}|{index}".encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()[:24]
 ```
 
-#### 5. CSV 文件加载
+## 解析质量门
+
+![识别 PDF 读取成功但语义损坏](./images/r02-f03-pdf-parsing-failure.png)
+
+不同格式关注不同问题：
+
+| 格式       | 主要风险                         | 最低检查                         |
+| ---------- | -------------------------------- | -------------------------------- |
+| PDF        | 阅读顺序、页眉页脚、表格、扫描页 | 页数、空页率、页码映射、抽样渲染 |
+| DOCX       | 标题层级、表格、批注             | 标题树、表格数量、段落顺序       |
+| HTML       | 导航、广告、隐藏文本、动态内容   | 主体选择器、链接保留、脚本过滤   |
+| Markdown   | 标题、代码围栏、链接             | AST 结构、代码块完整性           |
+| CSV        | 编码、列类型、跨行语义           | 表头、行数、主键、空值比例       |
+| 图片扫描件 | OCR 错字、版面和表格             | OCR 置信度、区域坐标、人工抽样   |
+
+最小质量报告可以包含：
 
 ```python
-from langchain_community.document_loaders import CSVLoader
+from collections import Counter
 
-loader = CSVLoader(
-    "data.csv",
-    csv_args={
-        "delimiter": ",",
-        "quotechar": '"',
-        "encoding": "utf-8"
+def parsing_report(blocks: list[ParsedBlock], expected_pages: int | None) -> dict:
+    page_set = {b.page for b in blocks if b.page is not None}
+    text_chars = sum(len(b.text.strip()) for b in blocks)
+    return {
+        "block_count": len(blocks),
+        "text_chars": text_chars,
+        "observed_pages": len(page_set),
+        "expected_pages": expected_pages,
+        "block_types": dict(Counter(b.block_type for b in blocks)),
+        "empty_block_rate": (
+            sum(not b.text.strip() for b in blocks) / len(blocks) if blocks else 1.0
+        ),
     }
-)
-
-documents = loader.load()
-
-for doc in documents:
-    print(f"行数据: {doc.page_content}")
 ```
 
-#### 6. HTML 网页加载
+报告只负责暴露信号，不应声称一个固定阈值适用于所有语料。阈值要根据格式和历史基线建立。
+
+## 规范化与去重
+
+![区分安全规范化与语义破坏](./images/r02-f04-normalization-boundary.png)
+
+规范化应保留语义差异：
+
+- 统一换行、Unicode 和连续空白。
+- 移除确认无意义的重复页眉页脚。
+- 保留标题、列表、表格行列与代码缩进。
+- 保留金额、日期、版本号、编号和否定词。
+- 不要用宽泛正则删除所有“特殊字符”。
+
+精确重复可以用内容哈希；近重复需要谨慎使用 MinHash、SimHash 或 Embedding。两段文字相似不代表可安全删除，例如制度新旧版本往往高度相似，但差异恰恰最重要。
+
+## 六类分块策略
+
+![比较六种分块策略](./images/r02-f05-chunking-strategies.png)
+
+### 1. 固定字符分块
+
+实现简单，但字符数不等于模型 Token，也不理解标题和句子。适合快速基线，不应作为默认最优方案。
+
+### 2. Token 分块
+
+可以直接控制上下文预算。缺点是可能在段落或表格中间切开，因此通常需要与句子、标题边界结合。
+
+### 3. 递归结构分块
+
+先按章节、段落、句子拆分，只有过长时才继续切。对普通 Markdown、制度文档和说明书通常是合理基线。
 
 ```python
-from langchain_community.document_loaders import UnstructuredURLLoader
-
-urls = [
-    "https://example.com/article1",
-    "https://example.com/article2"
-]
-
-loader = UnstructuredURLLoader(urls=urls)
-documents = loader.load()
-
-print(f"加载了 {len(documents)} 个网页")
-```
-
-### LlamaIndex 文档加载
-
-```python
-from llama_index.core import SimpleDirectoryReader
-
-reader = SimpleDirectoryReader(
-    input_dir="./documents",
-    recursive=True,
-    exclude=["*.tmp", ".git/*"],
-    required_exts=[".txt", ".pdf", ".md"]
-)
-
-documents = reader.load_data()
-
-print(f"共加载 {len(documents)} 个文档")
-```
-
-### 目录批量加载
-
-```python
-from langchain_community.document_loaders import DirectoryLoader
-
-loader = DirectoryLoader(
-    path="./documents",
-    glob="**/*.pdf",
-    loader_cls=PyPDFLoader,
-    show_progress=True
-)
-
-documents = loader.load()
-
-print(f"批量加载完成，共 {len(documents)} 个文档")
-```
-
-## 文档格式对比
-
-| 格式 | 加载器 | 特点 | 适用场景 |
-|------|--------|------|---------|
-| **TXT** | TextLoader | 简单通用 | 纯文本 |
-| **PDF** | PyPDFLoader | 支持多页 | 论文、报告 |
-| **Markdown** | UnstructuredMarkdownLoader | 保留结构 | 文档、笔记 |
-| **Word** | Docx2txtLoader | 保留格式 | 正式文档 |
-| **CSV** | CSVLoader | 结构化 | 数据表格 |
-| **HTML** | UnstructuredURLLoader | 网页内容 | 在线资源 |
-| **JSON** | JSONLoader | 键值对 | API 数据 |
-
-## 文本分割策略
-
-文本分割是将长文档拆分成小块的关一步骤，直接影响检索效果。
-
-### 1. 按字符分割
-
-最简单的分割方式：
-
-```python
-from langchain.text_splitter import CharacterTextSplitter
-
-splitter = CharacterTextSplitter(
-    separator="\n\n",
-    chunk_size=1000,
-    chunk_overlap=200,
-    length_function=len
-)
-
-chunks = splitter.split_text(long_text)
-
-print(f"分割成 {len(chunks)} 个块")
-```
-
-### 2. 递归字符分割（推荐）
-
-LangChain 推荐的方式：
-
-```python
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-
-splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1000,
-    chunk_overlap=200,
-    length_function=len,
-    separators=["\n\n", "\n", ". ", " ", ""]
-)
-
-chunks = splitter.split_documents(documents)
-
-print(f"递归分割完成，共 {len(chunks)} 个块")
-```
-
-### 3. 按句子分割
-
-保持句子完整性：
-
-```python
-from langchain.text_splitter import NLTKTextSplitter
-
-splitter = NLTKTextSplitter(
-    chunk_size=500
-)
-
-chunks = splitter.split_text(text)
-
-print(f"按句子分割: {len(chunks)} 个块")
-```
-
-### 4. 按 Token 分割
-
-根据模型 token 限制分割：
-
-```python
-from langchain.text_splitter import TokenTextSplitter
-
-splitter = TokenTextSplitter(
-    chunk_size=512,
-    chunk_overlap=64
-)
-
-chunks = splitter.split_documents(documents)
-
-print(f"按 Token 分割: {len(chunks)} 个块")
-```
-
-### 5. Markdown 分割
-
-保留 Markdown 结构：
-
-```python
-from langchain.text_splitter import MarkdownTextSplitter
-
-splitter = MarkdownTextSplitter(
-    chunk_size=500,
-    chunk_overlap=100
-)
-
-chunks = splitter.split_text(markdown_text)
-
-print(f"Markdown 分割: {len(chunks)} 个块")
-```
-
-### 6. 代码分割
-
-针对代码文件的特殊分割：
-
-```python
-from langchain.text_splitter import Language, RecursiveCharacterTextSplitter
-
-splitter = RecursiveCharacterTextSplitter.from_language(
-    language=Language.PYTHON,
-    chunk_size=500,
-    chunk_overlap=50
-)
-
-code_chunks = splitter.split_text(code)
-
-print(f"代码分割: {len(code_chunks)} 个块")
-```
-
-### LlamaIndex 文本分割
-
-```python
-from llama_index.core.node_parser import SentenceSplitter
-
-# SentenceSplitter 的参数是 chunk_size、chunk_overlap、paragraph_separator
-parser = SentenceSplitter(
-    chunk_size=512,
-    chunk_overlap=64,
-    paragraph_separator="\n\n"
-)
-
-nodes = parser.get_nodes_from_documents(documents)
-
-print(f"LlamaIndex 分割: {len(nodes)} 个节点")
-```
-
-## 分割参数详解
-
-### Chunk Size（块大小）
-
-| Chunk Size | 优点 | 缺点 | 适用场景 |
-|------------|------|------|---------|
-| **200-500** | 精确、易检索 | 可能丢失上下文 | 短问答 |
-| **500-1000** | 平衡 | - | 通用场景 |
-| **1000-2000** | 保留更多上下文 | 可能包含噪声 | 长文本分析 |
-| **2000+** | 完整上下文 | 超出模型限制 | 复杂文档 |
-
-### Chunk Overlap（块重叠）
-
-重叠区域帮助保持上下文连续性：
-
-```python
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-
-splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1000,
-    chunk_overlap=200  # 保持 20% 重叠
-)
-
-chunks = splitter.split_documents(documents)
-```
-
-### Overlap 策略对比
-
-| 重叠比例 | 效果 | 适用场景 |
-|----------|------|---------|
-| **0%** | 无重叠，可能丢失边界信息 | 独立文档 |
-| **10-20%** | 轻微重叠 | 通用场景 |
-| **20-30%** | 良好连续性 | 长文档 |
-
-## 元数据管理
-
-### 添加基础元数据
-
-```python
-from langchain_core.documents import Document
-
-doc = Document(
-    page_content="文档内容...",
-    metadata={
-        "source": "manual.pdf",
-        "page": 1,
-        "author": "张三",
-        "created_at": "2024-01-01",
-        "category": "技术文档"
-    }
-)
-```
-
-### 批量添加元数据
-
-```python
-from langchain_community.document_loaders import DirectoryLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-
-loader = DirectoryLoader("./documents", glob="**/*.txt")
-documents = loader.load()
-
-for doc in documents:
-    doc.metadata["category"] = "general"
-    doc.metadata["processed_at"] = "2024-01-01"
-    doc.metadata["chunk_index"] = documents.index(doc)
-
-print(f"元数据添加完成")
-```
-
-### 按目录添加元数据
-
-```python
-from langchain_community.document_loaders import DirectoryLoader
-import os
-
-def load_with_hierarchy(base_path):
-    documents = []
-
-    for root, dirs, files in os.walk(base_path):
-        for file in files:
-            file_path = os.path.join(root, file)
-            category = os.path.relpath(root, base_path)
-
-            if file.endswith('.txt'):
-                loader = TextLoader(file_path)
-                docs = loader.load()
-
-                for doc in docs:
-                    doc.metadata["category"] = category
-                    doc.metadata["filename"] = file
-                    doc.metadata["full_path"] = file_path
-
-                documents.extend(docs)
-
-    return documents
-
-documents = load_with_hierarchy("./documents")
-print(f"加载了 {len(documents)} 个文档，带层级分类")
-```
-
-## 高级分割技术
-
-### 1. 按标题分割
-
-保持文档结构：
-
-```python
-import re
-
-def split_by_headers(text, chunk_size=1000, overlap=200):
-    header_pattern = r'^#{1,6}\s+.+$'
-    lines = text.split('\n')
-
-    chunks = []
-    current_chunk = []
-    current_size = 0
-
-    for line in lines:
-        if re.match(header_pattern, line):
-            if current_chunk:
-                chunks.append('\n'.join(current_chunk))
-
-            current_chunk = [line]
-            current_size = len(line)
-        else:
-            current_chunk.append(line)
-            current_size += len(line)
-
-            if current_size >= chunk_size:
-                chunks.append('\n'.join(current_chunk))
-                current_chunk = current_chunk[-overlap:]
-                current_size = sum(len(l) for l in current_chunk)
-
-    if current_chunk:
-        chunks.append('\n'.join(current_chunk))
-
+def pack_blocks(blocks: list[ParsedBlock], max_tokens: int, count_tokens) -> list[list[ParsedBlock]]:
+    chunks: list[list[ParsedBlock]] = []
+    current: list[ParsedBlock] = []
+    current_tokens = 0
+
+    for block in blocks:
+        size = count_tokens(block.text)
+        if current and current_tokens + size > max_tokens:
+            chunks.append(current)
+            current, current_tokens = [], 0
+        current.append(block)
+        current_tokens += size
+
+    if current:
+        chunks.append(current)
     return chunks
 ```
 
-### 2. 语义分割
+真实实现还要处理单个超长块，但核心原则是优先保留结构边界。
 
-基于语义相似性分割：
+### 4. 父子分块
+
+![理解小块检索与父块展开](./images/r02-f06-parent-child-chunking.png)
+
+使用较小子块检索，再把较大的父块送给生成模型：
+
+```text
+父块：4.2 超标准审批（完整两段）
+  ├─ 子块 A：超标条件与审批人
+  └─ 子块 B：报销说明与附件要求
+```
+
+它兼顾精确召回和完整上下文，但必须保存 `parent_id`，并在扩展父块后去重。
+
+### 5. 滑窗重叠
+
+![理解 Overlap 的收益与重复代价](./images/r02-f07-overlap-tradeoff.png)
+
+Overlap 能缓解边界截断，却会增加索引体积和重复候选。重叠越大并不一定越好；如果最终 Context 同时放入多个重叠块，反而会挤占 Token 预算。
+
+### 6. 语义分块
+
+按句间语义变化寻找边界，适合缺少显式结构的长文本。代价是额外 Embedding 成本、阈值敏感和结果难以解释。它必须与结构分块在同一评测集上比较，不能仅凭名称判断更先进。
+
+## Chunk Size 不是常数
+
+![用多指标选择 Chunk Size](./images/r02-f08-chunk-size-experiment.png)
+
+Chunk 太小：
+
+- 关键词更集中，可能更容易召回。
+- 条件、主体和例外可能分离。
+- 重复候选和引用碎片增多。
+
+Chunk 太大：
+
+- 证据更完整。
+- Embedding 被多个主题平均，检索定位变差。
+- 重排和生成成本上升。
+
+应把 Chunk Size 当作实验参数。至少比较：
+
+- Retrieval Recall@k。
+- 命中 Chunk 是否包含完整答案证据。
+- Context 重复率。
+- 平均与 p95 Token 数。
+- 端到端答案和引用质量。
+
+## 元数据与权限
+
+推荐区分三类字段：
+
+| 类型     | 示例                                               | 用途             |
+| -------- | -------------------------------------------------- | ---------------- |
+| 来源定位 | source、page、section、timestamp                   | 引用与审计       |
+| 生命周期 | document_id、version、content_hash、indexed_at     | 更新、删除和回滚 |
+| 检索约束 | tenant_id、acl、language、doc_type、effective_date | 查询前过滤       |
+
+ACL 不能只在生成答案后检查。未经授权的 Chunk 一旦进入检索日志、缓存或模型上下文，就已经发生泄漏风险。
+
+## 增量更新与删除传播
+
+![理解索引版本切换与删除传播](./images/r02-f09-blue-green-index-sync.png)
+
+索引同步应是幂等过程：
 
 ```python
-from langchain.text_splitter import SemanticChunker
-from langchain_openai import OpenAIEmbeddings
-
-embeddings = OpenAIEmbeddings()
-
-chunker = SemanticChunker(
-    embeddings=embeddings,
-    threshold=0.5
-)
-
-chunks = chunker.split_text(text)
-
-print(f"语义分割: {len(chunks)} 个块")
+def plan_sync(current: dict[str, str], discovered: dict[str, str]) -> dict:
+    """字典结构为 document_id -> content_hash。"""
+    return {
+        "add": sorted(discovered.keys() - current.keys()),
+        "update": sorted(
+            doc_id
+            for doc_id in discovered.keys() & current.keys()
+            if discovered[doc_id] != current[doc_id]
+        ),
+        "delete": sorted(current.keys() - discovered.keys()),
+    }
 ```
 
-### 3. 自适应分割
+更新时不要先删除旧索引再慢慢重建。更安全的流程是：
 
-根据内容类型自适应调整：
+1. 创建新索引版本。
+2. 完成解析、Embedding 和质量检查。
+3. 对新版本运行黄金查询。
+4. 原子切换活动版本。
+5. 保留旧版本用于快速回滚。
+6. 在保留期后清理旧版本和相关缓存。
+
+## 用黄金查询评测分块
+
+为每个关键问题标注支持证据 ID：
 
 ```python
-from langchain.text_splitter import (
-    Language,
-    MarkdownTextSplitter,
-    RecursiveCharacterTextSplitter,
-)
-
-def adaptive_splitter(text, content_type, chunk_size=1000):
-    if content_type == "code":
-        splitter = RecursiveCharacterTextSplitter.from_language(
-            Language.PYTHON,
-            chunk_size=chunk_size
-        )
-    elif content_type == "markdown":
-        splitter = MarkdownTextSplitter(chunk_size=chunk_size)
-    elif content_type == "technical":
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=chunk_size,
-            separators=["\n\n", "\n", ". ", " ", ""]
-        )
-    else:
-        splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size)
-
-    return splitter.split_text(text)
+golden_cases = [
+    {
+        "query": "住宿费超过标准由谁审批？",
+        "relevant_chunk_ids": {"travel-policy:v3:section-4.2:0"},
+    }
+]
 ```
 
-## 数据清洗
+分块实验不应比较 `page_content` 完全相等，而应比较稳定 `chunk_id` 或父级证据 ID。对于一个答案需要多个证据的情况，还要检查证据集合是否完整。
 
-### 1. 移除特殊字符
+## 常见误区
 
-```python
-import re
+- 把“加载成功”当作“解析正确”。
+- 用字符数代替真实 Token 预算。
+- 只按平均 Chunk 长度判断质量。
+- 认为 Overlap 越大召回一定越好。
+- 删除近重复内容时忽略版本差异。
+- 只添加 `source`，不保存稳定 ID、页码和版本。
+- 文档删除后只删对象存储，不删向量、关键词索引和缓存。
 
-def clean_text(text):
-    text = re.sub(r'\s+', ' ', text)
-    text = re.sub(r'[^\w\s\u4e00-\u9fff.,!?。，！？]', '', text)
-    text = text.strip()
-    return text
+## 自检题
 
-cleaned_text = clean_text(raw_text)
-```
+<details>
+<summary>1. 为什么扫描 PDF 返回空文本不应该被当作“没有内容”？</summary>
 
-### 2. 移除噪声内容
+它可能需要 OCR。数据流水线应识别扫描页并进入 OCR 或人工处理队列，而不是静默生成空 Chunk。
 
-```python
-def remove_noise(text):
-    patterns = [
-        r'广告', r'Copyright.*?\d{4}',
-        r'更新时间.*?\d{4}-\d{2}-\d{2}',
-        r'\[图片\]', r'\[视频\]', r'http[s]?://\S+'
-    ]
+</details>
 
-    for pattern in patterns:
-        text = re.sub(pattern, '', text)
+<details>
+<summary>2. 父子分块为什么需要去重？</summary>
 
-    return text
-```
+多个命中的子块可能指向同一个父块。若直接展开，会把相同父文本重复放入上下文，浪费预算并放大单一文档权重。
 
-### 3. 规范化格式
+</details>
 
-```python
-def normalize_text(text):
-    # 将各种排版引号统一为 ASCII 引号
-    text = text.replace('“', '"').replace('”', '"')
-    text = text.replace('‘', "'").replace('’', "'")
-    # 将长破折号统一为连字符
-    text = text.replace('—', '-').replace('–', '-')
-    # 统一省略号为三个点
-    text = text.replace('…', '...')
-    return text
-```
+<details>
+<summary>3. 文档改名但内容未变时，哪两个字段最有帮助？</summary>
 
-## 最佳实践
+稳定的 `document_id` 与 `content_hash`。前者表示逻辑身份，后者判断内容是否变化。
 
-### 分割策略选择指南
+</details>
 
-```
-文档类型
-  │
-  ├─ 短文本 (< 1000字符)
-  │   └─ chunk_size: 200-500
-  │
-  ├─ 标准文档
-  │   └─ chunk_size: 500-1000
-  │
-  ├─ 长文档 (> 5000字符)
-  │   ├─ chunk_size: 1000-2000
-  │   └─ overlap: 15-25%
-  │
-  └─ 代码文件
-      └─ 按函数/类分割，保持缩进结构
-```
+## 总结与下一篇
 
-### 分割质量检查
+高质量 RAG 从高质量知识单元开始。可靠的 Chunk 必须同时满足可检索、可定位、可授权、可更新和可评测，而不只是长度符合某个阈值。
 
-```python
-def validate_chunks(chunks, min_size=100, max_size=2000):
-    issues = []
+下一篇将把这些 Chunk 转换成向量，并解释相似度、归一化和 ANN 索引如何共同决定召回结果。
 
-    for i, chunk in enumerate(chunks):
-        if len(chunk) < min_size:
-            issues.append(f"块 {i} 太短: {len(chunk)} 字符")
+## 对应资料来源
 
-        if len(chunk) > max_size:
-            issues.append(f"块 {i} 太长: {len(chunk)} 字符")
+- [Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks](https://arxiv.org/abs/2005.11401)
+- [Dense Passage Retrieval for Open-Domain Question Answering](https://arxiv.org/abs/2004.04906)
+- [OpenAI Embeddings API Reference](https://platform.openai.com/docs/api-reference/embeddings)
 
-    if issues:
-        print("发现问题:")
-        for issue in issues[:5]:
-            print(f"  - {issue}")
-    else:
-        print("分割质量良好!")
-
-    return issues
-```
-
-## 总结
-
-| 技术 | 作用 | 关键参数 |
-|------|------|---------|
-| **Loaders** | 加载各种格式文档 | 编码、路径 |
-| **TextSplitter** | 分割文本块 | chunk_size, overlap |
-| **Metadata** | 添加上下文信息 | source, category |
-| **Cleaner** | 清洗噪声 | 正则表达式 |
-
-高质量的数据处理是 RAG 系统的基础，需要根据实际文档特点选择合适的策略。
-
-## 后续内容
-
-本系列后续将深入讲解：
-- 向量嵌入与向量数据库
-- 高级检索策略
-- RAG 实战应用
-- 性能优化技巧
+> 验证说明：代码使用 Python 标准库和数据类表达数据契约；Tokenizer 与解析器应由项目按目标模型和文档格式选定并固定版本。

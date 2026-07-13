@@ -2,7 +2,7 @@
 title: Django 服务器结构演变
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: django-server-structure-evolution
 featured: false
 draft: false
@@ -25,6 +25,7 @@ description: "深入讲解Django服务器结构的演变和各个Handler之间�
 
 根据django运行的服务器`django.core.servers.basehttp`的`run`函数，我们也利用`simpler_server`模块起一个很简单的服务：
 
+<!-- snippet: id=django-server-structure-evolution-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from wsgiref.simple_server import WSGIServer, WSGIRequestHandler
 
@@ -49,6 +50,7 @@ server.serve_forever()
 
 `StaticFilesHandler`是服务器结构第一个接手的对象。所有请求都是先通过这个对象接手再由其他对象处理的。这个对象处理请求也比较简单，就是判断一下请求是否是静态文件，是的话自己处理，不是的话，交个其他handler处理。我们模拟一下这个类：
 
+<!-- snippet: id=django-server-structure-evolution-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class StaticFilesHandler:
     """处理静态文件的句柄"""
@@ -62,6 +64,7 @@ class StaticFilesHandler:
 
 启动程序：
 
+<!-- snippet: id=django-server-structure-evolution-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 server = WSGIServer(('', 8000), WSGIRequestHandler)
 static_handler = StaticFilesHandler(demo_app)
@@ -75,6 +78,7 @@ server.serve_forever()
 
 在封装请求之前，要先定义一下`request`的样子，这部分代码在`django.http.request`中`HttpRequest`，作为模仿，简单的展示这个类：
 
+<!-- snippet: id=django-server-structure-evolution-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class HttpRequest(object):
     """定义request所需的属性"""
@@ -92,6 +96,7 @@ class HttpRequest(object):
 
 这个类是定义其属性，将其派生个子类，作用是将`environ`转换成对应的属性：
 
+<!-- snippet: id=django-server-structure-evolution-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class WSGIRequest(HttpRequest):
     """将环境变量转到request属性"""
@@ -115,6 +120,7 @@ class WSGIRequest(HttpRequest):
 
 `WSGIServer`利用`set_app(app)`将应用作为回调的，根据上面通过`StaticFilesHandler`代理，但最后执行的是`demo_app`，现在需要将其改造一下，用上我们的`WSGIRequest`：
 
+<!-- snippet: id=django-server-structure-evolution-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def get_response(request):
     print("path = %s" % request.path)
@@ -135,6 +141,7 @@ class WSGIHandler(object):
 
 将启动应用的代码稍作修改：
 
+<!-- snippet: id=django-server-structure-evolution-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 application = WSGIHandler()
 static_handler = StaticFilesHandler(application)
@@ -148,6 +155,7 @@ server.serve_forever()
 
 现在还差对响应进行封装了，这个封装其实也比较简单，最后返回的是一个`[bytes()]`形式的既可：
 
+<!-- snippet: id=django-server-structure-evolution-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class HttpResponse(object):
     """一个简单封装的response类"""
@@ -182,6 +190,7 @@ class HttpResponse(object):
 
 这样，我们的`get_response`就可以很自由的操作响应对象了：
 
+<!-- snippet: id=django-server-structure-evolution-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def get_response(request):
     print("path = %s" % request.path)

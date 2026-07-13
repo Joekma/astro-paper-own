@@ -1,19 +1,25 @@
 ---
-title: LangChain Callbacks：回调机制
+title: LangChain Callbacks：事件、流式与可观测性
 author: Joekma
 pubDatetime: 2026-05-11T00:00:00.000+08:00
-modDatetime: 2026-05-11T00:00:00.000+08:00
+modDatetime: 2026-07-12T00:00:00.000+08:00
 slug: langchain-callbacks
-description: '深入讲解LangChain v1.0的Callbacks机制，包括事件处理、日志记录和自定义回调。'
+description: "系统讲解 LangChain v1.x Callback 事件、异步与流式处理，以及与 middleware、tracing 的边界。"
 tags:
   - LangChain
   - Callbacks
   - LLM
 draft: false
 series: LangChain
-seriesOrder: 5
+seriesOrder: 9
 language: zh-CN
 ---
+
+## 阅读指南
+
+**前置知识：** 理解模型、Chain 和 Tool 在运行时会产生开始、结束、token 与错误事件。
+
+**学完本文你应该能：** 选择 Callback、middleware 或 tracing；传播 tags 和 metadata；避免异步与流式背压；设计日志、指标和追踪的职责边界。
 
 ## 概述
 
@@ -23,15 +29,15 @@ Callbacks（回调机制）是 LangChain 中用于监控和记录 LLM 应用执�
 
 ### 为什么需要 Callbacks？
 
-| 需求 | Callbacks 解决方案 |
-|------|------------------|
-| 调试应用 | 记录详细执行日志 |
-| 监控性能 | 跟踪处理时间 |
-| 流式输出 | 实时显示生成内容 |
-| 错误追踪 | 捕获和处理异常 |
-| 成本分析 | 统计 Token 消耗 |
+![旁路观察者模型：主执行流 Main Flow、Callback Events、观察者 Observers、不修改结果 Observe Only](./images/langchain-09-observer-model-v2.png)
 
-![LangChain Callbacks 作为旁路观察者，从主执行链发出事件并由日志、流式 UI、指标、追踪、成本和错误处理器消费](./images/langchain-callbacks-event-observability-figure-01.png)
+| 需求     | Callbacks 解决方案 |
+| -------- | ------------------ |
+| 调试应用 | 记录详细执行日志   |
+| 监控性能 | 跟踪处理时间       |
+| 流式输出 | 实时显示生成内容   |
+| 错误追踪 | 捕获和处理异常     |
+| 成本分析 | 统计 Token 消耗    |
 
 ## CallbackHandler 接口
 
@@ -62,29 +68,31 @@ class CustomHandler(BaseCallbackHandler):
 
 ## 常用事件
 
+![Callback 事件生命周期：on_start、on_new_token、on_end、on_error](./images/langchain-09-event-lifecycle-v2.png)
+
 ### Chain 事件
 
-| 事件 | 说明 | 触发时机 |
-|------|------|---------|
-| **on_chain_start** | 链开始 | Chain 执行前 |
-| **on_chain_end** | 链结束 | Chain 执行后 |
+| 事件               | 说明   | 触发时机       |
+| ------------------ | ------ | -------------- |
+| **on_chain_start** | 链开始 | Chain 执行前   |
+| **on_chain_end**   | 链结束 | Chain 执行后   |
 | **on_chain_error** | 链错误 | Chain 执行出错 |
 
 ### Chat Model 事件
 
-| 事件 | 说明 |
-|------|------|
-| **on_chat_model_start** | 模型开始推理 |
-| **on_chat_model_end** | 模型推理完成 |
-| **on_llm_new_token** | 生成新 token（流式） |
-| **on_llm_error** | 模型推理出错 |
+| 事件                    | 说明                 |
+| ----------------------- | -------------------- |
+| **on_chat_model_start** | 模型开始推理         |
+| **on_chat_model_end**   | 模型推理完成         |
+| **on_llm_new_token**    | 生成新 token（流式） |
+| **on_llm_error**        | 模型推理出错         |
 
 ### Tool 事件
 
-| 事件 | 说明 |
-|------|------|
+| 事件              | 说明         |
+| ----------------- | ------------ |
 | **on_tool_start** | 工具开始执行 |
-| **on_tool_end** | 工具执行完成 |
+| **on_tool_end**   | 工具执行完成 |
 | **on_tool_error** | 工具执行出错 |
 
 ## 基础使用
@@ -335,6 +343,8 @@ llm = ChatOpenAI(
 
 ## 上下文传递
 
+![Tags 与 Metadata 传播：run_id、parent_run_id、tags、metadata](./images/langchain-09-context-propagation-v2.png)
+
 ### 使用 metadata
 
 ```python
@@ -343,7 +353,7 @@ from langchain_core.callbacks import BaseCallbackHandler
 class ContextHandler(BaseCallbackHandler):
     def on_chat_model_start(self, serialized, messages, **kwargs):
         metadata = kwargs.get("metadata", {})
-        tags = metadata.get("tags", [])
+        tags = kwargs.get("tags", [])
         print(f"处理标签: {tags}")
 
 llm = ChatOpenAI(model="gpt-4o", callbacks=[ContextHandler()])
@@ -358,24 +368,71 @@ chain.invoke(
 
 ## 最佳实践
 
-| 实践 | 说明 |
-|------|------|
-| **分离关注点** | 不同功能使用不同 Handler |
-| **性能考虑** | 避免在回调中执行重操作 |
-| **异常处理** | 回调中的异常不应中断主流程 |
-| **资源管理** | 使用 context manager 管理资源 |
-| **日志级别** | 生产环境使用适当日志级别 |
+| 实践           | 说明                          |
+| -------------- | ----------------------------- |
+| **分离关注点** | 不同功能使用不同 Handler      |
+| **性能考虑**   | 避免在回调中执行重操作        |
+| **异常处理**   | 回调中的异常不应中断主流程    |
+| **资源管理**   | 使用 context manager 管理资源 |
+| **日志级别**   | 生产环境使用适当日志级别      |
 
 经验上，Callback 里最适合放“观察型”逻辑：记录、统计、展示进度。会改变业务结果的逻辑最好放在链、工具或中间件中，否则调试时很难判断回答变化来自哪里。
+
+## Callback、Middleware 与 Tracing
+
+| 机制       | 是否改变执行   | 适合用途                      |
+| ---------- | -------------- | ----------------------------- |
+| Callback   | 原则上只观察   | UI 流式更新、日志、轻量指标   |
+| Middleware | 可以拦截或修改 | 动态 Prompt、重试、审批、护栏 |
+| Tracing    | 记录完整运行树 | 跨模型、工具和链的调试与评估  |
+
+如果逻辑会改变模型输入、工具权限或最终结果，应放在 middleware 或业务节点中；Callback 中隐藏业务修改会让同一条链在“是否注册 Handler”时产生不同答案，难以测试。
+
+## 流式背压与异步处理
+
+![异步回调与背压：Token Events、有界队列 Bounded Queue、批量消费者 Batch Consumer、降采样 Sampling](./images/langchain-09-async-backpressure-v2.png)
+
+`on_llm_new_token` 可能被高频调用，Handler 内同步写数据库、调用 HTTP 或刷新整个页面都会拖慢主流程。正确做法是把轻量事件写入有界队列，由后台消费者批量处理；队列满时应丢弃低价值调试事件或降采样，而不是无限占用内存。
+
+异步 Handler 中使用异步 I/O，并在应用关闭时刷新缓冲区。监控 Handler 自己也可能失败：观察系统异常应被隔离和记录，不能让一次日志写入失败破坏用户请求，但安全审计等强一致事件需要单独设计可靠投递。
+
+## 可观测性最小集合
+
+![可观测性数据面：日志 Logs、指标 Metrics、追踪 Traces、成本 Cost](./images/langchain-09-observability-plane-v2.png)
+
+一次运行至少关联 `run_id`、父运行、thread/tenant、模型、工具、延迟、token 用量、状态和错误类别。Prompt 和工具参数可能包含个人数据或密钥，默认不应原样写入日志；先脱敏，再决定采样和保存期限。
 
 ## 总结
 
 Callback 是 LangChain 监控和扩展的核心机制：
 
-| 事件类型 | 常见用途 |
-|---------|---------|
-| **Chain 事件** | 执行流程追踪 |
-| **LLM 事件** | Token 消耗、性能监控 |
-| **Tool 事件** | 工具使用分析 |
+| 事件类型       | 常见用途             |
+| -------------- | -------------------- |
+| **Chain 事件** | 执行流程追踪         |
+| **LLM 事件**   | Token 消耗、性能监控 |
+| **Tool 事件**  | 工具使用分析         |
 
 掌握 Callback，可以实现详细日志和监控、性能分析、成本追踪、流式输出和错误处理。
+
+## 本篇自检
+
+1. 会修改工具权限的逻辑为什么不应放在 Callback？
+2. `on_llm_new_token` 中执行慢 I/O 会造成什么问题？
+3. Callback 异常应如何与主业务请求隔离？
+
+<details>
+<summary>查看答案</summary>
+
+1. Callback 应保持观察语义；权限修改属于 middleware 或业务控制流，否则行为难以预测和测试。
+2. 每个 token 都会等待 Handler，形成背压并显著增加流式延迟。
+3. 使用异常隔离、队列和后台消费者；普通监控失败不阻断主请求，关键审计另建可靠投递。
+
+</details>
+
+## 官方资料
+
+- [Callbacks API](https://python.langchain.com/api_reference/core/callbacks.html)
+- [Middleware](https://docs.langchain.com/oss/python/langchain/middleware/overview)
+- [Observability](https://docs.langchain.com/langsmith/observability)
+
+**上一篇：** [LangChain Retrieval/RAG](/posts/langchain-retrieval-rag/) · **下一篇：** [LangChain 聊天机器人实战](/posts/langchain-chatbot-pratice/)

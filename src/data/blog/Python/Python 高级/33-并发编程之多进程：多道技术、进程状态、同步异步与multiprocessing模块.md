@@ -6,7 +6,7 @@ language: zh-CN
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: python-multi-process-multiprocessing
-modDatetime: 2026-04-22T00:00:00Z
+modDatetime: 2026-07-11T00:00:00.000+08:00
 featured: false
 draft: false
 tags:
@@ -203,7 +203,8 @@ description: '深入讲解并发编程之多进程，涵盖多道技术、进程
 
 ## 进程的状态
 
-```
+<!-- snippet: id=python-multi-process-multiprocessing-01 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 tail -f access.log | grep '404'
 ```
 
@@ -219,13 +220,9 @@ tail -f access.log | grep '404'
 
 因而一个进程有三种状态：
 
-![进程状态图](https://images2017.cnblogs.com/blog/1036857/201712/1036857-20171229144413132-1909478252.png)
-
 ### 进程并发的实现
 
 进程并发的实现在于，硬件中断一个正在运行的进程，把此时进程运行的所有状态保存下来，为此，操作系统维护一张表格，即进程表（process table），每个进程占用一个进程表项（这些表项也称为进程控制块）。
-
-![进程表](https://images2017.cnblogs.com/blog/1036857/201712/1036857-20171229144430038-509212133.png)
 
 该表存放了进程状态的重要信息：程序计数器、堆栈指针、内存分配状况、所有打开文件的状态、帐号和调度信息，以及其他在进程由运行态转为就绪态或阻塞态时，必须保存的信息，从而保证该进程在再次启动时，就像从未被中断过一样。
 
@@ -243,7 +240,8 @@ multiprocessing模块的功能众多：支持子进程、通信和共享数据�
 
 ### 创建进程的类
 
-```Python
+<!-- snippet: id=python-multi-process-multiprocessing-02 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 Process([group [, target [, name [, args [, kwargs]]]]])，由该类实例化得到的对象，可用来开启一个子进程
 
 强调：
@@ -253,7 +251,8 @@ Process([group [, target [, name [, args [, kwargs]]]]])，由该类实例化得
 
 ### 参数介绍
 
-```Python
+<!-- snippet: id=python-multi-process-multiprocessing-03 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 group参数未使用，值始终为None
 
 target表示调用对象，即子进程要执行的任务
@@ -267,7 +266,8 @@ name为子进程的名称
 
 ### 方法介绍
 
-```Python
+<!-- snippet: id=python-multi-process-multiprocessing-04 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 p.start()：启动进程，并调用该子进程中的p.run()
 
 p.run():进程启动时运行的方法，正是它去调用target指定的函数，我们自定义类的类中一定要实现该方法
@@ -281,7 +281,8 @@ p.join([timeout]):主线程等待p终止（强调：是主线程处于等的状�
 
 ### 属性介绍
 
-```Python
+<!-- snippet: id=python-multi-process-multiprocessing-05 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 p.daemon：默认值为False，如果设为True，代表p为后台运行的守护进程，当p的父进程终止时，p也随之终止，并且设定为True后，p不能创建自己的新进程，必须在p.start()之前设置
 
 p.name:进程的名称
@@ -293,6 +294,7 @@ p.pid：进程的pid
 
 ### windows下Process（）使用的解决方法及原理分析
 
+<!-- snippet: id=python-multi-process-multiprocessing-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import multiprocessing, time
 
@@ -312,6 +314,7 @@ multiprocessing.Process(target=test, args=(2,)).start()
 
 子进程会在运行时拷贝当前主进程中的所有内容，这也就意味着当一个新的子进程被创建的时候，该子进程就会复制当前模块，当然也包括了以下两行：
 
+<!-- snippet: id=python-multi-process-multiprocessing-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 multiprocessing.Process(target=test, args=(1,)).start()
 multiprocessing.Process(target=test, args=(2,)).start()
@@ -321,6 +324,7 @@ multiprocessing.Process(target=test, args=(2,)).start()
 
 ### 创建并开启子进程的方式一
 
+<!-- snippet: id=python-multi-process-multiprocessing-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import time
 import random
@@ -352,6 +356,7 @@ if __name__ == '__main__':
 
 ### 创建并开启子进程的方式二
 
+<!-- snippet: id=python-multi-process-multiprocessing-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from multiprocessing import Process
 import time
@@ -388,6 +393,7 @@ if __name__ == '__main__':
 
 #### 队列Queue
 
+<!-- snippet: id=python-multi-process-multiprocessing-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from multiprocessing import Process, Queue
 
@@ -409,6 +415,7 @@ if __name__ == '__main__':
 
 #### 生产者消费者模型
 
+<!-- snippet: id=python-multi-process-multiprocessing-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from multiprocessing import Process, Queue
 import time
@@ -441,6 +448,7 @@ if __name__ == '__main__':
 
 #### 管道Pipe
 
+<!-- snippet: id=python-multi-process-multiprocessing-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from multiprocessing import Process, Pipe
 
@@ -459,6 +467,7 @@ if __name__ == '__main__':
 
 #### 共享数据
 
+<!-- snippet: id=python-multi-process-multiprocessing-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from multiprocessing import Process, Value, Array
 
@@ -481,6 +490,7 @@ if __name__ == '__main__':
 
 #### 进程同步（锁）
 
+<!-- snippet: id=python-multi-process-multiprocessing-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from multiprocessing import Process, Lock
 import time
@@ -524,6 +534,7 @@ if __name__ == '__main__':
 
 ### 基本使用
 
+<!-- snippet: id=python-multi-process-multiprocessing-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from multiprocessing import Pool
 import time
@@ -545,6 +556,7 @@ if __name__ == '__main__':
 
 ### 使用map
 
+<!-- snippet: id=python-multi-process-multiprocessing-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from multiprocessing import Pool
 
@@ -559,6 +571,7 @@ if __name__ == '__main__':
 
 ### 回调函数
 
+<!-- snippet: id=python-multi-process-multiprocessing-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from multiprocessing import Pool
 

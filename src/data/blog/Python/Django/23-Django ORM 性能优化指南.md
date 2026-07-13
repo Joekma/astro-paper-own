@@ -2,12 +2,12 @@
 title: Django ORM 性能优化指南
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: django-orm-optimization
 featured: false
 draft: false
 series: django
-seriesOrder: 21
+seriesOrder: 23
 tags:
   - Python
   - Django
@@ -40,6 +40,7 @@ Django的文档中有那么一节，详细的描述了[DB部分优化](https://d
 
 理解`django.db.connection`，这个对象可以用来记录当前查询花费的时间：
 
+<!-- snippet: id=django-orm-optimization-01 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
 >>> from django.db import connection
 >>> connection.queries
@@ -54,10 +55,12 @@ Django的文档中有那么一节，详细的描述了[DB部分优化](https://d
 
 在shell命令行的环境下，可以使用[django-extensions](https://github.com/django-extensions/django-extensions)的`shell_plus`命令并打开`--print-sql`选项：
 
+<!-- snippet: id=django-orm-optimization-02 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 python manage.py shell_plus --print-sql
 ```
 
+<!-- snippet: id=django-orm-optimization-03 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
 >>> Author.objects.all()
 SELECT "library_author"."id", "library_author"."name" FROM "library_author" LIMIT 21
@@ -83,6 +86,7 @@ Execution time: 0.001393s [Database: default]
 
 很经典的外键关系，Author和Book一对多的关系：
 
+<!-- snippet: id=django-orm-optimization-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Author(models.Model):
     name = models.TextField()
@@ -98,6 +102,7 @@ class Book(models.Model):
 
 当你检查一个book是否有author或者想获取这本书的author的id的时候，可能更倾向于直接使用author对象：
 
+<!-- snippet: id=django-orm-optimization-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 if book.author:
     do_stuff()
@@ -107,6 +112,7 @@ do_stuff_with_author_id(book.author.id)
 
 这里`author对象`其实并不需要（主要指第一行代码，其实只需要author_id），会导致一次多余的查询。如果后面需要author对象，再获取也不冲突。比较好的习惯是，直接使用字段名：
 
+<!-- snippet: id=django-orm-optimization-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 if book.author_id:
     do_stuff()
@@ -118,6 +124,7 @@ do_stuff_with_author_id(book.author_id)
 
 对于初学者，知道什么时候使用`count`和`exists`还是挺好难的。Django会缓存查询结果，所以如果后续的操作会用到这些查询出来的数据，可以使用Python的内置方法（指的是len，if判断queryset）。如果不用查询出的数据，使用queryset提供的方法（`count(), exists()`）：
 
+<!-- snippet: id=django-orm-optimization-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 如果要使用查询结果，不要浪费查询
 books = Book.objects.filter(...)
@@ -136,6 +143,7 @@ if Book.objects.filter(...):
 
 下面是关于`count`和`len`的例子：
 
+<!-- snippet: id=django-orm-optimization-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 如果要使用查询结果，不要浪费查询
 books = Book.objects.filter(...)
@@ -156,6 +164,7 @@ if len(Book.objects.filter(...)) > 5:
 
 默认情况下，ORM查询的时候会把数据库记录对应的所有列取出来，然后转换成Python对象，这无疑是个很大的浪费（有时候只想要一两个列的）。当你只需要某些列的时候可以使用`values`或者`values_list`，它们不是把数据转换成复杂的python对象，而是dicts、tuples等：
 
+<!-- snippet: id=django-orm-optimization-09 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
 # 检索值作为字典
 >>> Book.objects.values('title', 'author__name')
@@ -176,6 +185,7 @@ if len(Book.objects.filter(...)) > 5:
 
 当你获得一个queryset的时候，Django会缓存这些数据。如果你需要对查询结果进行好几次循环，这种缓存是有意义的，但是对于queryset只循环一次的情况，缓存就没什么意义了：
 
+<!-- snippet: id=django-orm-optimization-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 for book in Books.objects.all():
     do_stuff(book)
@@ -183,6 +193,7 @@ for book in Books.objects.all():
 
 上面的查询，django会把books所有的数据载入内存，然后进行一次循环。其实我们更想要保持这个数据库connection，每次循环的取出一条book数据，然后调用`do_stuff`。`iterator`就是我们的救星：
 
+<!-- snippet: id=django-orm-optimization-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 for book in Books.objects.all().iterator():
     do_stuff(book)
@@ -196,6 +207,7 @@ for book in Books.objects.all().iterator():
 
 Django ORM的API使得我们使用关系型数据库的时候就像使用面向对象的Python语言那样自然：
 
+<!-- snippet: id=django-orm-optimization-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 获取Book的Author的名字
 book = Book.objects.first()
@@ -206,6 +218,7 @@ book.author.name
 
 ### 使用select_related和prefetch_related
 
+<!-- snippet: id=django-orm-optimization-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # N+1查询问题
 books = Book.objects.all()
@@ -220,6 +233,7 @@ for book in books:
 
 ### 使用only和defer减少字段
 
+<!-- snippet: id=django-orm-optimization-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 只获取需要的字段
 book = Book.objects.only('title', 'author__name').first()
@@ -229,6 +243,7 @@ print(book.author.name)  # 不会执行额外查询（因为使用了select_rela
 
 ### 使用bulk_create批量插入
 
+<!-- snippet: id=django-orm-optimization-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 逐个插入
 for i in range(1000):
@@ -242,6 +257,7 @@ Book.objects.bulk_create([
 
 ### 使用update代替save
 
+<!-- snippet: id=django-orm-optimization-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 使用save
 book = Book.objects.first()

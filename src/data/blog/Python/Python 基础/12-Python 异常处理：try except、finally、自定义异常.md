@@ -2,7 +2,7 @@
 title: Python 异常处理：try except、finally、自定义异常
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-03T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-exception-handling
 description: '深入理解Python的异常处理机制，详解try-except、else、finally、自定义异常、异常捕获顺序和常见异常类型，包含大量实战示例。'
 tags:
@@ -32,6 +32,7 @@ language: zh-CN
 
 ### 常见语法错误
 
+<!-- snippet: id=python-exception-handling-01 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
 # 语法错误示例
 if  # 缺少条件
@@ -42,6 +43,7 @@ print(haha)  # 变量未定义
 
 ### 常见逻辑错误
 
+<!-- snippet: id=python-exception-handling-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # TypeError: int 类型不可迭代
 for i in 3:
@@ -101,6 +103,7 @@ Python 中不同的异常可以用不同的类型去标识，一个异常标识�
 
 如果错误发生的条件是可预知的，需要用 `if` 进行处理：
 
+<!-- snippet: id=python-exception-handling-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 AGE = 10
 while True:
@@ -116,6 +119,7 @@ while True:
 
 如果错误发生的条件是不可预知的，则需要用 `try...except`：
 
+<!-- snippet: id=python-exception-handling-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 基本语法
 try:
@@ -139,6 +143,7 @@ except StopIteration:
 
 ### 1. 基本语法
 
+<!-- snippet: id=python-exception-handling-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 s1 = 'hello'
 try:
@@ -149,6 +154,7 @@ except ValueError as e:  # 捕获 ValueError
 
 ### 2. 多分支处理
 
+<!-- snippet: id=python-exception-handling-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 s1 = 'hello'
 try:
@@ -163,6 +169,7 @@ except ValueError as e:
 
 ### 3. 万能异常 Exception
 
+<!-- snippet: id=python-exception-handling-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 s1 = 'hello'
 try:
@@ -173,6 +180,7 @@ except Exception as e:  # 捕获所有异常
 
 ### 4. 多分支 + 万能异常
 
+<!-- snippet: id=python-exception-handling-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 s1 = 'hello'
 try:
@@ -189,6 +197,7 @@ except Exception as e:  # 作为最后的安全网
 
 ### 5. else 和 finally
 
+<!-- snippet: id=python-exception-handling-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 s1 = 'hello'
 try:
@@ -207,6 +216,7 @@ finally:
 
 ### raise 语句
 
+<!-- snippet: id=python-exception-handling-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 try:
     raise TypeError('类型错误')
@@ -216,6 +226,7 @@ except Exception as e:
 
 ### 自定义异常
 
+<!-- snippet: id=python-exception-handling-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class MyException(BaseException):
     def __init__(self, msg):
@@ -232,6 +243,7 @@ except MyException as e:
 
 ### 断言 assert
 
+<!-- snippet: id=python-exception-handling-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print("上半部分。。。")
 l = [1, 2, 3, 4, 5, 6]
@@ -254,6 +266,7 @@ print("下半部分。。。")
 2. **不可预知的错误**：使用 `try...except` 处理
 3. **清理工作**：使用 `finally` 块
 
+<!-- snippet: id=python-exception-handling-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 示例：正确使用异常处理
 try:

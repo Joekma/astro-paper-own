@@ -2,12 +2,12 @@
 title: Django app的加载过程
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: django-app-loading-process
 featured: false
 draft: false
 series: django
-seriesOrder: 13
+seriesOrder: 12
 tags:
   - Python
   - Django
@@ -18,6 +18,7 @@ description: "深入理解 Django app 的加载过程"
 
 > Django 的初始化入口，位于 `django/__init__.py`
 
+<!-- snippet: id=django-app-loading-process-01 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 def setup(set_prefix=True):
     from django.apps import apps
@@ -37,12 +38,14 @@ def setup(set_prefix=True):
 
 ![Django app 加载过程从 django.setup 开始，读取 settings 和 INSTALLED_APPS，创建 AppConfig，加载应用模型并注册到全局 apps registry](./images/django-app-loading-registry-figure-01.png)
 
+<!-- snippet: id=django-app-loading-process-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 apps = Apps(installed_apps=None)
 ```
 
 其中，`populate(self, installed_apps=None)`是它的主要方法，这个方法导入每个应用模块，再导入每个模型。这个函数是线程安全的：
 
+<!-- snippet: id=django-app-loading-process-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def populate(self, installed_apps=None):
     # 防止重复初始化
@@ -113,6 +116,7 @@ def populate(self, installed_apps=None):
 
 > 模型的加载在 `populate()` 函数中实现
 
+<!-- snippet: id=django-app-loading-process-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 遍历所有应用配置，加载各应用的模型
 for app_config in self.app_configs.values():
@@ -122,6 +126,7 @@ for app_config in self.app_configs.values():
 
 `import_models` 方法在 `AppConfig` 中定义：
 
+<!-- snippet: id=django-app-loading-process-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 MODELS_MODULE_NAME = 'models'
 
@@ -136,6 +141,7 @@ def import_models(self, all_models):
 
 > 最终 `self.models` 以 `OrderedDict` 形式存储加载的模型对象
 
+<!-- snippet: id=django-app-loading-process-06 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
 OrderedDict([
     ('permission', <class 'django.contrib.auth.models.Permission'>),

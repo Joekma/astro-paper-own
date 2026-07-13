@@ -3,7 +3,7 @@ title: Python Beautiful Soup 详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: python-beautiful-soup
-modDatetime: 2026-04-22T00:00:00Z
+modDatetime: 2026-07-11T00:00:00.000+08:00
 featured: false
 draft: false
 tags:
@@ -38,9 +38,10 @@ Beautiful Soup 是一个可以从HTML或XML文件中提取数据的Python库。�
 
 ### 安装 Beautiful Soup
 
+<!-- snippet: id=python-beautiful-soup-01 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 使用 pip 安装
-pip install beautifulsoup4
+python -m pip install beautifulsoup4
 
 # 使用 conda 安装
 conda install beautifulsoup4
@@ -52,6 +53,7 @@ Beautiful Soup 支持Python标准库中的HTML解析器，还支持一些第三�
 
 #### 安装 lxml 解析器
 
+<!-- snippet: id=python-beautiful-soup-02 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # Ubuntu/Debian
 apt-get install python-lxml
@@ -60,11 +62,12 @@ apt-get install python-lxml
 easy_install lxml
 
 # 使用 pip (推荐)
-pip install lxml
+python -m pip install lxml
 ```
 
 #### 安装 html5lib 解析器
 
+<!-- snippet: id=python-beautiful-soup-03 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # Ubuntu/Debian
 apt-get install python-html5lib
@@ -73,7 +76,7 @@ apt-get install python-html5lib
 easy_install html5lib
 
 # 使用 pip
-pip install html5lib
+python -m pip install html5lib
 ```
 
 > **推荐**: 使用 `lxml` 解析器，因为它具有最佳的性能和容错能力。
@@ -108,6 +111,7 @@ pip install html5lib
 
 Beautiful Soup 的一个重要特性是**容错能力**，即在 HTML 代码不完整的情况下，能够自动识别并修复错误。
 
+<!-- snippet: id=python-beautiful-soup-04 mode=compile python=3.12-3.14 deps=beautifulsoup4==4.15.0 -->
 ```python
 from bs4 import BeautifulSoup
 
@@ -137,6 +141,7 @@ print(formatted_html)
 
 ### 从文件读取
 
+<!-- snippet: id=python-beautiful-soup-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 从HTML文件读取
 with open('example.html', 'r', encoding='utf-8') as file:
@@ -148,6 +153,7 @@ soup = BeautifulSoup(open('example.html'), 'lxml')
 
 ### 基本操作
 
+<!-- snippet: id=python-beautiful-soup-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 获取文档标题
 title = soup.title.string
@@ -169,6 +175,7 @@ for link in all_links:
 
 ### 准备示例文档
 
+<!-- snippet: id=python-beautiful-soup-07 mode=compile python=3.12-3.14 deps=beautifulsoup4==4.15.0 -->
 ```python
 from bs4 import BeautifulSoup
 
@@ -192,6 +199,7 @@ soup = BeautifulSoup(html_doc, 'lxml')
 
 ### 基本用法
 
+<!-- snippet: id=python-beautiful-soup-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 直接通过标签名访问（返回第一个匹配的标签）
 print(soup.p)  # 第一个p标签
@@ -200,6 +208,7 @@ print(soup.a)  # 第一个a标签
 
 ### 获取标签信息
 
+<!-- snippet: id=python-beautiful-soup-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 获取标签名称
 print(soup.p.name)  # 'p'
@@ -214,6 +223,7 @@ print(soup.p.get('class'))  # ['title']
 
 ### 获取标签内容
 
+<!-- snippet: id=python-beautiful-soup-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 获取标签内的文本（只有一个文本节点时）
 print(soup.title.string)  # "The Dormouse's story"
@@ -235,6 +245,7 @@ for text in soup.stripped_strings:
 
 ### 嵌套选择
 
+<!-- snippet: id=python-beautiful-soup-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 嵌套访问标签
 print(soup.head.title.string)  # "The Dormouse's story"
@@ -243,6 +254,7 @@ print(soup.body.a.string)  # "Elsie"
 
 ### 子节点操作
 
+<!-- snippet: id=python-beautiful-soup-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 获取所有直接子节点（列表）
 print(soup.p.contents)
@@ -258,6 +270,7 @@ for i, descendant in enumerate(soup.p.descendants):
 
 ### 父节点操作
 
+<!-- snippet: id=python-beautiful-soup-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 获取直接父节点
 print(soup.a.parent)  # p标签
@@ -269,6 +282,7 @@ for parent in soup.a.parents:
 
 ### 兄弟节点操作
 
+<!-- snippet: id=python-beautiful-soup-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 获取下一个兄弟节点
 print(soup.a.next_sibling)
@@ -293,6 +307,7 @@ Beautiful Soup 支持5种过滤器：**字符串、正则表达式、列表、Tr
 
 #### 字符串过滤器
 
+<!-- snippet: id=python-beautiful-soup-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 按标签名查找
 print(soup.find_all('b'))  # 查找所有b标签
@@ -301,6 +316,7 @@ print(soup.find_all('a'))  # 查找所有a标签
 
 #### 正则表达式过滤器
 
+<!-- snippet: id=python-beautiful-soup-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 
@@ -313,6 +329,7 @@ print(soup.find_all(string=re.compile('Dormouse')))
 
 #### 列表过滤器
 
+<!-- snippet: id=python-beautiful-soup-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 查找多个标签类型
 print(soup.find_all(['a', 'b']))  # 查找所有a标签和b标签
@@ -321,6 +338,7 @@ print(soup.find_all(['title', 'p']))  # 查找所有title和p标签
 
 #### True 过滤器
 
+<!-- snippet: id=python-beautiful-soup-18 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 查找所有标签（不返回字符串节点）
 all_tags = soup.find_all(True)
@@ -330,6 +348,7 @@ for tag in all_tags:
 
 #### 方法过滤器
 
+<!-- snippet: id=python-beautiful-soup-19 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 自定义过滤方法
 def has_class_but_no_id(tag):
@@ -350,6 +369,7 @@ print(soup.find_all(contains_sister_text))
 
 #### name 参数
 
+<!-- snippet: id=python-beautiful-soup-20 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # name 参数可以是任何过滤器类型
 print(soup.find_all(name=re.compile('^t')))  # 查找以t开头的标签
@@ -359,6 +379,7 @@ print(soup.find_all(name=True))  # 查找所有标签
 
 #### keyword 参数 (属性搜索)
 
+<!-- snippet: id=python-beautiful-soup-21 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 按属性查找
 print(soup.find_all(id=re.compile('my')))  # id包含'my'的标签
@@ -372,6 +393,7 @@ print(soup.find_all('a', class_='sister'))  # 查找class为sister的a标签
 
 #### class_ 参数详解
 
+<!-- snippet: id=python-beautiful-soup-22 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 查找特定类名的标签
 print(soup.find_all('a', class_='sister'))  # class为sister的a标签
@@ -384,6 +406,7 @@ print(soup.find_all(class_=['sister', 'title']))  # 任一类名匹配
 
 #### attrs 参数
 
+<!-- snippet: id=python-beautiful-soup-23 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 使用字典形式查找属性
 print(soup.find_all('p', attrs={'class': 'story'}))
@@ -392,6 +415,7 @@ print(soup.find_all(attrs={'id': 'link1', 'class': 'sister'}))
 
 #### string 参数
 
+<!-- snippet: id=python-beautiful-soup-24 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 按文本内容查找
 print(soup.find_all(string='Elsie'))  # 文本为'Elsie'的节点
@@ -402,6 +426,7 @@ print(soup.find_all(string=['Elsie', 'Lacie']))  # 文本为任一值的节点
 
 #### limit 参数
 
+<!-- snippet: id=python-beautiful-soup-25 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 限制返回结果数量（类似SQL的LIMIT）
 print(soup.find_all('a', limit=2))  # 只返回前2个a标签
@@ -410,6 +435,7 @@ print(soup.find_all('p', limit=1))  # 只返回第1个p标签
 
 #### recursive 参数
 
+<!-- snippet: id=python-beautiful-soup-26 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 是否递归搜索子节点
 print(soup.html.find_all('a'))  # 搜索所有子孙节点中的a标签
@@ -422,6 +448,7 @@ print(soup.html.find_all('a', recursive=False))  # 只搜索直接子节点中�
 
 #### find() 与 find_all() 的区别
 
+<!-- snippet: id=python-beautiful-soup-27 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # find_all() 返回列表，find() 返回单个元素
 title_all = soup.find_all('title', limit=1)  # [<title>The Dormouse's story</title>]
@@ -434,6 +461,7 @@ print(soup.find("nosuchtag"))  # None
 
 #### 使用场景
 
+<!-- snippet: id=python-beautiful-soup-28 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 适合查找唯一元素的场景
 body_tag = soup.find('body')  # 只有一个body标签
@@ -446,6 +474,7 @@ first_story = soup.find('p', class_='story')
 
 #### 嵌套查找的简写
 
+<!-- snippet: id=python-beautiful-soup-29 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 以下写法等价
 soup.head.title  # 简写形式
@@ -464,6 +493,7 @@ Beautiful Soup 提供了 `select()` 方法来支持 CSS 选择器语法。
 
 ### 准备示例
 
+<!-- snippet: id=python-beautiful-soup-30 mode=compile python=3.12-3.14 deps=beautifulsoup4==4.15.0 -->
 ```python
 from bs4 import BeautifulSoup
 
@@ -502,6 +532,7 @@ soup = BeautifulSoup(html_doc, 'lxml')
 
 #### 类选择器
 
+<!-- snippet: id=python-beautiful-soup-31 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 选择class为sister的所有元素
 print(soup.select('.sister'))
@@ -515,6 +546,7 @@ print(soup.select('.list.list-small'))
 
 #### ID选择器
 
+<!-- snippet: id=python-beautiful-soup-32 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 选择id为link1的元素
 print(soup.select('#link1'))
@@ -528,6 +560,7 @@ print(soup.select('#list-2 .element.xxx'))
 
 #### 标签选择器
 
+<!-- snippet: id=python-beautiful-soup-33 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 选择所有a标签
 print(soup.select('a'))
@@ -541,6 +574,7 @@ print(soup.select('li'))
 
 #### 层级选择器
 
+<!-- snippet: id=python-beautiful-soup-34 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 后代选择器（空格）
 print(soup.select('div span'))  # div下的所有span
@@ -558,6 +592,7 @@ print(soup.select('h1 ~ p'))    # h1后面的所有p
 
 #### 属性选择器
 
+<!-- snippet: id=python-beautiful-soup-35 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 选择有href属性的a标签
 print(soup.select('a[href]'))
@@ -577,6 +612,7 @@ print(soup.select('a[href$="tillie"]'))
 
 #### 伪类选择器
 
+<!-- snippet: id=python-beautiful-soup-36 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 选择第一个元素
 print(soup.select('li:first-child'))
@@ -590,6 +626,7 @@ print(soup.select('li:nth-child(2)'))
 
 ### 组合选择器
 
+<!-- snippet: id=python-beautiful-soup-37 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 多条件组合
 print(soup.select('a.sister[href*="example.com"]'))
@@ -603,6 +640,7 @@ print(soup.select('a, b, span'))
 
 ### 获取选择器结果
 
+<!-- snippet: id=python-beautiful-soup-38 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 获取属性
 selected = soup.select('#list-2 h1')[0]
@@ -618,6 +656,7 @@ print(selected.get('class'))  # ['yyyy']
 
 ### CSS选择器 vs find方法
 
+<!-- snippet: id=python-beautiful-soup-39 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # CSS选择器方式
 css_results = soup.select('.sister')

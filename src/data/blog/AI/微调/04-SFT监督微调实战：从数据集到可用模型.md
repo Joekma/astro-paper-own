@@ -2,7 +2,7 @@
 title: SFT监督微调实战：从数据集到可用模型
 author: Joekma
 pubDatetime: 2026-06-26T00:00:00.000+08:00
-modDatetime: 2026-06-26T00:00:00.000+08:00
+modDatetime: 2026-07-12T00:00:00.000+08:00
 description: "基于 Hugging Face TRL SFTTrainer 讲解监督微调完整流程，包括数据准备、聊天模板、训练配置、验证和模型保存。"
 tags:
   - AI
@@ -19,7 +19,27 @@ language: zh-CN
 
 SFT（Supervised Fine-tuning，监督微调）是大模型微调最常见的第一步。它用高质量的“输入-理想输出”样例训练模型，让模型学会任务格式、语气、边界和回答结构。
 
-![SFT 从样例数据、messages 格式、聊天模板到训练验证和模型保存的实战流程](./images/sft-workflow-chat-model-figure-01.png)
+![建立完整 SFT 流程](./images/fine-tuning-04-sft-workflow-figure-01.png)
+
+![展示 messages 渲染与角色边界](./images/fine-tuning-04-message-rendering-figure-02.png)
+
+![解释 assistant_only_loss 的模板前提](./images/fine-tuning-04-assistant-only-requirement-figure-03.png)
+
+![锁定代码、依赖、模型与数据](./images/fine-tuning-04-version-lock-figure-04.png)
+
+![映射 SFTConfig 到训练行为](./images/fine-tuning-04-training-config-figure-05.png)
+
+![识别正常训练与过拟合](./images/fine-tuning-04-validation-curves-figure-06.png)
+
+![理解完整断点状态](./images/fine-tuning-04-checkpoint-state-figure-07.png)
+
+![区分输入 token 与新生成 token](./images/fine-tuning-04-generation-slicing-figure-08.png)
+
+![总结六级 SFT 验收门](./images/fine-tuning-04-six-gates-figure-09.png)
+
+### 前置知识与学习目标
+
+你应已读过数据工程和训练基础两篇。学完本篇后，应能完成一次可复现的 SFT 小实验，并证明 loss mask、验证集、保存产物和推理模板都符合预期。
 
 ## 核心概念
 
@@ -64,7 +84,10 @@ assistant：计算 loss
 ### 1. 安装依赖
 
 ```bash
+python -m venv .venv
+# 激活虚拟环境后安装并锁定经过验证的版本；不要在生产文档中永久依赖浮动最新版。
 pip install transformers datasets accelerate trl peft
+pip freeze > requirements-lock.txt
 ```
 
 ### 2. 准备数据
@@ -133,7 +156,13 @@ training_args = SFTConfig(
     eval_strategy="steps",
     eval_steps=50,
     save_steps=50,
+    save_strategy="steps",
+    save_total_limit=2,
     bf16=True,
+    seed=42,
+    data_seed=42,
+    assistant_only_loss=True,
+    report_to="none",
 )
 
 trainer = SFTTrainer(
@@ -148,6 +177,10 @@ trainer.train()
 trainer.save_model("outputs/sft/final")
 tokenizer.save_pretrained("outputs/sft/final")
 ```
+
+`assistant_only_loss=True` 不是对任意模板都自动有效。模板必须能返回 assistant token mask；运行正式训练前，应取一条样例检查 system/user 对应 label 为 `-100`、assistant token 对应真实 token ID。若模型模板不支持该 mask，应显式预处理 labels，而不是默默退化为全序列 loss。
+
+`bf16=True` 也不是跨硬件默认值。应先检查设备是否支持 BF16；否则选择 FP16 或 FP32，并把实际 dtype 写入实验记录。
 
 ### 4. 推理验证
 
@@ -172,10 +205,28 @@ text = tokenizer.apply_chat_template(
 
 inputs = tokenizer(text, return_tensors="pt").to(model.device)
 with torch.no_grad():
-    output_ids = model.generate(**inputs, max_new_tokens=256, temperature=0.2)
+    output_ids = model.generate(
+        **inputs,
+        max_new_tokens=256,
+        do_sample=False,
+    )
 
-print(tokenizer.decode(output_ids[0], skip_special_tokens=True))
+new_tokens = output_ids[0, inputs["input_ids"].shape[1] :]
+print(tokenizer.decode(new_tokens, skip_special_tokens=True))
 ```
+
+评估时使用确定性解码可以减少采样噪声。若线上必须采样，则基座模型与微调模型必须使用完全相同的 temperature、top-p、seed 和最大输出长度。
+
+## 训练前后的验证门
+
+1. **数据门**：抽样渲染 chat template，验证角色顺序、EOS、截断和 assistant mask。
+2. **冒烟门**：用极小数据跑 1–2 step，确认 loss 有限、梯度存在且只更新预期参数。
+3. **基线门**：在训练前保存基座模型与当前 Prompt 的固定评估结果。
+4. **训练门**：记录 train/eval loss、有效 token 数、峰值显存和 checkpoint。
+5. **产物门**：最终目录同时保存 tokenizer、chat template、generation config、训练配置和依赖锁。
+6. **业务门**：固定评估集通过后才允许进入部署篇的合并或量化流程。
+
+断点续训时使用 `trainer.train(resume_from_checkpoint=True)`，并确认恢复的不只是权重，还包括 optimizer、scheduler、global step 和随机状态。
 
 ## 关键配置
 
@@ -209,6 +260,26 @@ print(tokenizer.decode(output_ids[0], skip_special_tokens=True))
 - 是否记录了训练配置和依赖版本？
 - 是否用业务样例人工检查输出质量？
 - 是否和原始基座模型做了对比？
+
+## 自检题
+
+<details><summary>1. 设置 `assistant_only_loss=True` 后为什么仍要检查模板？</summary>
+
+因为该功能依赖 chat template 提供 assistant token mask；不支持时无法可靠区分角色边界。
+
+</details>
+
+<details><summary>2. 为什么推理解码只截取新生成 token？</summary>
+
+`generate` 返回输入与续写拼接后的序列。若不切片，打印结果会把 prompt 误当成模型输出。
+
+</details>
+
+<details><summary>3. checkpoint 能加载就算恢复成功吗？</summary>
+
+不算。还要核对 optimizer、scheduler、step 和随机状态，否则训练轨迹与学习率都会改变。
+
+</details>
 
 ## 参考资料
 

@@ -3,7 +3,7 @@ title: Python Pillow 详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: python-pillow-image-processing
-modDatetime: 2026-04-22T00:00:00Z
+modDatetime: 2026-07-11T00:00:00.000+08:00
 featured: false
 draft: false
 tags:
@@ -23,14 +23,15 @@ language: zh-CN
 
 PIL：Python Imaging Library，已经是Python平台事实上的图像处理标准库了。PIL功能非常强大，但API却非常简单易用。
 
-由于PIL仅支持到Python 2.7，加上年久失修，于是一群志愿者在PIL的基础上创建了兼容的版本，名字叫**Pillow**，支持最新Python 3.x，又加入了许多新特性，因此，我们可以直接安装使用Pillow。
+Pillow 是当前维护的 Python 图像处理库，本文锁定 12.3.0。处理外部图片前先限制文件大小和像素数，并把解码失败视为不可信输入错误。
 
 ![Pillow 图像处理从打开图片、几何变换、滤镜、绘制、通道合成到保存格式和验证码生成的流程图](./images/python-pillow-image-processing-figure-01.png)
 
 ## 安装
 
+<!-- snippet: id=python-pillow-image-processing-01 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
-pip install Pillow
+python -m pip install Pillow
 ```
 
 ## 静态方法详解
@@ -65,6 +66,7 @@ pip install Pillow
 
 ### 创建图片对象
 
+<!-- snippet: id=python-pillow-image-processing-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 三种创建方式
 img = Image.open('test.jpg')      # 从文件打开
@@ -152,6 +154,7 @@ img = Image.fromarray(array)       # 从数组创建
 
 来看看最常见的图像缩放操作，只需三四行代码：
 
+<!-- snippet: id=python-pillow-image-processing-03 mode=compile python=3.12-3.14 deps=Pillow==12.3.0 -->
 ```python
 from PIL import Image
 
@@ -178,6 +181,7 @@ im.save('thumbnail.jpg', 'jpeg')
 
 比如，模糊效果也只需几行代码：
 
+<!-- snippet: id=python-pillow-image-processing-04 mode=compile python=3.12-3.14 deps=Pillow==12.3.0 -->
 ```python
 from PIL import Image, ImageFilter
 
@@ -193,6 +197,7 @@ im2.save('blur.jpg', 'jpeg')
 
 PIL的`ImageDraw`提供了一系列绘图方法，让我们可以直接绘图。比如要生成字母验证码图片：
 
+<!-- snippet: id=python-pillow-image-processing-05 mode=compile python=3.12-3.14 deps=Pillow==12.3.0 -->
 ```python
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import random
@@ -240,12 +245,14 @@ image.save('code.jpg', 'jpeg')
 
 如果运行的时候报错：
 
+<!-- snippet: id=python-pillow-image-processing-06 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
 IOError: cannot open resource
 ```
 
 这是因为PIL无法定位到字体文件的位置，可以根据操作系统提供绝对路径，比如：
 
+<!-- snippet: id=python-pillow-image-processing-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # macOS
 '/Library/Fonts/Arial.ttf'
@@ -276,6 +283,7 @@ IOError: cannot open resource
 
 ### 1. 使用上下文管理器
 
+<!-- snippet: id=python-pillow-image-processing-08 mode=compile python=3.12-3.14 deps=Pillow==12.3.0 -->
 ```python
 from PIL import Image
 
@@ -297,6 +305,7 @@ with Image.open('photo.jpg') as img:
 
 ### 3. 注意内存管理
 
+<!-- snippet: id=python-pillow-image-processing-09 mode=compile python=3.12-3.14 deps=Pillow==12.3.0 -->
 ```python
 # 大图片处理时注意内存
 from PIL import Image

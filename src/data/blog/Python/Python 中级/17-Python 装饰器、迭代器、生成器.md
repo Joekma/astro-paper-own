@@ -2,7 +2,7 @@
 title: Python 装饰器、迭代器、生成器
 author: Joekma
 pubDatetime: 2018-09-28T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-decorator-iterator-generator
 description: '深入讲解Python装饰器、迭代器、生成器：装饰器模式、迭代器协议、生成器yield等核心概念。'
 tags:
@@ -44,6 +44,7 @@ language: zh-CN
 
 >无参装饰器是最基础的装饰器类型，它不接受额外参数，直接接收函数作为参数。
 
+<!-- snippet: id=python-decorator-iterator-generator-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def decorator(func):
     def wrapper(*args, **kwargs):
@@ -71,6 +72,7 @@ say_hello()
 
 ### 简单装饰器
 
+<!-- snippet: id=python-decorator-iterator-generator-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import time
 
@@ -96,6 +98,7 @@ def decorator(func):
 
 ### 装饰器的语法糖
 
+<!-- snippet: id=python-decorator-iterator-generator-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # @装饰器的名字: 要在被装饰对象正上方单独一行写上
 import time
@@ -133,6 +136,7 @@ print(home.__doc__)   # 输出: 这是home功能
 
 >有参装饰器可以接受参数，比无参装饰器多一层嵌套。参数在装饰时确定，影响包装函数的行为。
 
+<!-- snippet: id=python-decorator-iterator-generator-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 参数默认为空字符串
 def title(show=''):
@@ -159,6 +163,7 @@ print(sub(2, 1))  # 输出: sub *************************
 
 ### 完整的有参装饰器示例
 
+<!-- snippet: id=python-decorator-iterator-generator-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def outter2(xxx, yyy):
     def outter(func):
@@ -218,6 +223,7 @@ home('mark')
 ```
 
 ### 类作为装饰器
+<!-- snippet: id=python-decorator-iterator-generator-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class CountCalls:
     def __init__(self, func):
@@ -244,6 +250,7 @@ say_hello()  # 调用次数: 2
 - 装饰器的加载顺序是：自下而上
 - 装饰器内 wrapper 函数的执行顺序是：自上而下
 
+<!-- snippet: id=python-decorator-iterator-generator-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 @A
 @B
@@ -283,6 +290,7 @@ f = A(B(C(f)))
 
 ### 迭代器示例
 
+<!-- snippet: id=python-decorator-iterator-generator-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 dic = {'x': 1, 'y': 2, 'z': 3}
 
@@ -309,6 +317,7 @@ print(res3)  # z
 2. 执行迭代器的 `__next__()` 方法得到一个返回值，然后赋值给一个变量k，运行循环体代码
 3. 循环往复，直到迭代器取值完毕抛出异常然后捕捉异常自动结束循环
 
+<!-- snippet: id=python-decorator-iterator-generator-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 dic = {'x': 1, 'y': 2, 'z': 3}
 
@@ -329,6 +338,7 @@ for k in dic:
 
 >文件也是可迭代对象，文件对象的 `__iter__` 方法返回一个迭代器对象，该迭代器对象的 `__next__` 方法返回文件的一行内容。
 
+<!-- snippet: id=python-decorator-iterator-generator-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 读取文件内容
 with open(r'db.txt', mode='rt', encoding='utf-8') as f:
@@ -349,6 +359,7 @@ with open(r'db.txt', mode='rt', encoding='utf-8') as f:
 
 >yield关键字：只能用在函数内。在函数内凡包含有yield关键字，再去执行函数，就不会立刻运行函数体代码了，会得到一个返回值，该返回值称之为生成器对象，生成器本质就是迭代器。
 
+<!-- snippet: id=python-decorator-iterator-generator-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def func():
     print('=====>第一次')
@@ -372,6 +383,7 @@ print(next(g))  # 输出: =====>第二次
 
 **不同点**：yield可以暂停函数，可以返回多次值，而return只能返回值一次函数就立刻终止
 
+<!-- snippet: id=python-decorator-iterator-generator-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def my_range(start, stop, step=1):
     while start < stop:
@@ -395,6 +407,7 @@ for item in my_range(1, 5, 2):
 
 **特点**：惰性运算，开发者自定义
 
+<!-- snippet: id=python-decorator-iterator-generator-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import time
 
@@ -422,6 +435,7 @@ print(next(g1))
 
 >监听文件输入的例子，当文件有新的内容写入时，会实时打印出来。
 
+<!-- snippet: id=python-decorator-iterator-generator-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import time
 
@@ -443,10 +457,11 @@ def tail(filename):
 
 ### 生成器与内存优化
 
+<!-- snippet: id=python-decorator-iterator-generator-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import sys
 import time
-import psutil  # 需要安装: pip install psutil
+import psutil  # 需要安装: python -m pip install psutil
 
 # 不使用生成器 - 列表方式
 def get_squares_list(n):
@@ -488,6 +503,7 @@ print(f"生成器类型: {type(squares_gen)}")
 print(f"生成器对象大小: {sys.getsizeof(squares_gen)} bytes")
 ```
 输出示例
+<!-- snippet: id=python-decorator-iterator-generator-16 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 === 列表方式 ===
 内存占用: 762.94 MB  # 10M个整数占用约763MB
@@ -507,6 +523,7 @@ print(f"生成器对象大小: {sys.getsizeof(squares_gen)} bytes")
 
 ##### 1. 处理大数据集（内存有限）
 
+<!-- snippet: id=python-decorator-iterator-generator-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def process_logs(log_files):
     for file in log_files:
@@ -519,6 +536,7 @@ def process_logs(log_files):
 
 ##### 2. 无限序列
 
+<!-- snippet: id=python-decorator-iterator-generator-18 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import random
 
@@ -531,6 +549,7 @@ def lottery_numbers():
 
 ##### 3. 流式处理
 
+<!-- snippet: id=python-decorator-iterator-generator-19 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def streaming_average(data_stream):
     total = 0
@@ -545,6 +564,7 @@ def streaming_average(data_stream):
 
 ##### 4. 分页/分批处理
 
+<!-- snippet: id=python-decorator-iterator-generator-20 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def paginate(items, page_size=100):
     for i in range(0, len(items), page_size):
@@ -559,6 +579,7 @@ def paginate(items, page_size=100):
 
 生成器只能遍历一次，耗尽后无法重新使用：
 
+<!-- snippet: id=python-decorator-iterator-generator-21 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 data_gen = (x**2 for x in range(5))
 print(sum(data_gen))  # 30
@@ -567,6 +588,7 @@ print(sum(data_gen))  # 0 - 已经耗尽了！
 
 **解决方案**：根据数据量选择
 
+<!-- snippet: id=python-decorator-iterator-generator-22 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 数据量小：直接用列表
 data_list = [x**2 for x in range(5)]
@@ -583,6 +605,7 @@ gen2 = sum((x**2 for x in range(5)))
 
 生成器不支持索引访问：
 
+<!-- snippet: id=python-decorator-iterator-generator-23 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def get_squares(n):
     for i in range(n):
@@ -601,4 +624,3 @@ gen = get_squares(10)
 | 数据量 | 大数据集、无限序列 | 小数据集、需多次遍历 |
 | 访问方式 | 顺序访问、流式处理 | 随机访问、索引访问 |
 | 内存 | 内存敏感场景 | 内存充足、需要缓存 |
-```

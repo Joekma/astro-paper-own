@@ -2,7 +2,7 @@
 title: Flask 自定义分页组件实现详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: flask-5-pagination
 description: '详细讲解 Flask 自定义分页组件的实现原理，包括 Pagination 类的设计、页码计算逻辑、分页 HTML 生成方法以及在 Flask 中的实际使用示例'
 tags:
@@ -21,6 +21,7 @@ language: zh-CN
 
 ![Flask 自定义 Pagination 组件从 page 参数计算切片索引、页码窗口并渲染 HTML 的流程图](./images/flask-custom-pagination-window-figure-01.png)
 
+<!-- snippet: id=flask-5-pagination-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from urllib.parse import urlencode, quote, unquote
 
@@ -131,6 +132,7 @@ class Pagination(object):
 
 ## 使用组件
 
+<!-- snippet: id=flask-5-pagination-02 mode=compile python=3.12-3.14 deps=Flask==3.1.3 -->
 ```python
 #!usr/bin/env python
 # -*- coding:utf-8 -*-
@@ -165,6 +167,7 @@ if __name__ == '__main__':
 
 pager.html模板：
 
+<!-- snippet: id=flask-5-pagination-03 mode=display python=3.12-3.14 deps=stdlib -->
 ```html
 <!DOCTYPE html>
 <html lang="en">

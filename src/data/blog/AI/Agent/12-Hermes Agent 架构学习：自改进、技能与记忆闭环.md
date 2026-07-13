@@ -1,10 +1,10 @@
 ---
-title: 'Hermes Agent 架构学习：自改进、技能与记忆闭环'
+title: "Hermes Agent 架构学习：自改进、技能与记忆闭环"
 author: Joekma
 pubDatetime: 2026-05-16T00:00:00.000+08:00
-modDatetime: 2026-05-16T00:00:00.000+08:00
+modDatetime: 2026-07-12T00:00:00.000+08:00
 slug: hermes-agent-architecture-learning
-description: '从 Hermes Agent 官方文档学习自改进 Agent 架构，分析工具集、技能、记忆、Cron、委派、安全扫描和多平台 Gateway。'
+description: "从 Hermes Agent 官方文档学习自改进 Agent 架构，分析工具集、技能、记忆、Cron、委派、安全扫描和多平台 Gateway。"
 tags:
   - AI
   - Agent
@@ -17,6 +17,22 @@ seriesOrder: 12
 language: zh-CN
 ---
 
+## 学习导航
+
+**前置知识**：基础 Python、JSON、HTTP 与异步编程概念。
+
+**适用读者**：首次系统学习生产级 Agent，并希望能独立实现、调试和评估的开发者。
+
+**学习目标**：
+
+- 核对 Toolsets、Backends、Skills、Memory、Cron 与 Delegation
+- 解释自改进的触发、验证和回滚边界
+- 以官方版本区分事实、发展中能力和推导
+
+**贯穿场景**：Agent 从一次成功任务中提取候选 Skill，但必须经过隔离验证和用户权限检查才能激活。
+
+> 本文中的产品特有事实以文末官方资料为准；通用架构建议会明确标为设计推导。
+
 ## 概述
 
 Hermes Agent 是 Nous Research 推出的开源 AI Agent 框架，定位于终端、消息平台和 IDE 中运行的自主编码与任务执行 Agent。它的核心特色是技能、持久记忆、多工具集、多平台 Gateway 和自改进闭环。
@@ -24,6 +40,8 @@ Hermes Agent 是 Nous Research 推出的开源 AI Agent 框架，定位于终端
 如果说 OpenClaw 更强调个人助手的入口和 Gateway，那么 Hermes Agent 更强调 Agent 如何在使用过程中积累经验，并把经验沉淀为可复用技能。
 
 ## 总体架构
+
+![Hermes 如何组织 Toolsets、Backends、Skills、Memory、Cron 与 Delegation](./images/agent-12-01-hermes-system.png)
 
 ```text
 CLI / IDE / Messaging Gateway
@@ -38,8 +56,6 @@ CLI / IDE / Messaging Gateway
 ```
 
 Hermes 文档中列出的能力非常广：Web 搜索、浏览器自动化、终端执行、文件编辑、记忆、委派、RL training、消息投递、Home Assistant、MCP 等。
-
-![Hermes Agent 架构通过 Toolsets、Skills、Memory、Terminal Backends、Cron、Delegation、Curator 和安全控制面形成自改进任务执行系统](./images/hermes-agent-self-improvement-figure-01.png)
 
 ## Toolsets
 
@@ -63,17 +79,19 @@ Hermes 将工具组织成 toolsets，例如：
 
 ## Terminal Backends
 
+![Toolsets 与 Terminal Backends 分别解决能力分组和执行隔离的哪一层](./images/agent-12-02-toolsets-backends.png)
+
 Hermes 的 terminal 工具支持多种后端：
 
-| Backend | 场景 |
-| --- | --- |
-| local | 本机开发、可信任务 |
-| docker | 隔离环境、安全执行 |
-| ssh | 远程服务器 |
-| singularity | HPC / rootless 容器 |
-| modal | 云执行 |
-| daytona | 持久远程开发环境 |
-| vercel_sandbox | 云 microVM |
+| Backend        | 场景                |
+| -------------- | ------------------- |
+| local          | 本机开发、可信任务  |
+| docker         | 隔离环境、安全执行  |
+| ssh            | 远程服务器          |
+| singularity    | HPC / rootless 容器 |
+| modal          | 云执行              |
+| daytona        | 持久远程开发环境    |
+| vercel_sandbox | 云 microVM          |
 
 这说明 Agent 的“执行位置”本身应该是可配置的。高风险任务不应该默认在用户主机上直接执行。
 
@@ -105,6 +123,8 @@ Hermes 的 Skills 是按需加载的知识文档，位于 `~/.hermes/skills/`。
 
 ## 渐进式加载
 
+![Hermes Skill 如何从索引匹配到完整加载](./images/agent-12-03-hermes-skill-loading.png)
+
 Hermes Skills 使用 progressive disclosure：
 
 ```text
@@ -116,6 +136,8 @@ skill_view(name, path)：加载具体引用文件
 这能显著降低 token 消耗，也能避免无关技能干扰当前任务。
 
 ## Persistent Memory
+
+![Hermes 持久记忆如何写入、检索并回到上下文](./images/agent-12-04-persistent-memory.png)
 
 Hermes 的内置记忆由两个文件组成：
 
@@ -140,6 +162,8 @@ Hermes 的 `cronjob` 工具支持：
 这让 Hermes 从交互式 Agent 扩展为后台自动化 Agent。
 
 ## Delegation 与 Kanban
+
+![后台任务与委派任务如何在任务板上协调](./images/agent-12-05-cron-delegation.png)
 
 Hermes 支持子代理委派和 Kanban 多 Agent 工作队列。它的重点不是单纯并发，而是给多 worker 协作提供状态边界：
 
@@ -170,6 +194,8 @@ Hermes 安全文档强调 defense-in-depth。关键机制包括：
 
 ## Curator
 
+![Curator 候选经验如何经过验证进入可复用能力](./images/agent-12-06-curator-loop.png)
+
 自改进 Agent 面临一个问题：如果不断生成技能，技能库会变乱。Hermes 的 Curator 用于维护 agent-created skills：
 
 - 跟踪使用次数
@@ -192,6 +218,57 @@ Hermes 安全文档强调 defense-in-depth。关键机制包括：
 5. 多 Agent 协作需要工作队列，而不是临时喊几个 worker。
 6. 自改进需要 curator，否则知识会变成负担。
 7. 安全扫描和审批流必须嵌入工具执行前。
+
+## 工程补全：Hermes 能力闭环与受控自改进
+
+### 接口与数据契约
+
+![快速迭代产品的架构事实如何锁定到版本与源码](./images/agent-12-08-versioned-facts.png)
+
+- 产品特有描述引用官方文档或 NousResearch/hermes-agent 源码
+- 记录核对日期、发布版本/提交和不稳定能力的状态
+- 候选 Skill 与已信任 Skill 分区存储，并有明确晋级记录
+
+### 失败路径、终止与恢复
+
+![自改进为什么不能自动扩大权限](./images/agent-12-07-controlled-self-improvement.png)
+
+- 自动学习不能自动扩大工具或文件权限
+- 验证失败的候选 Skill 隔离保留证据，不进入活跃索引
+- 记忆或 Skill 更新导致回归时回滚到已知良好版本
+
+### 可观测性与验收
+
+![如何评估候选 Skill、记忆复用与委派效果](./images/agent-12-09-hermes-metrics.png)
+
+不要只保留最终回答。每次运行应该能通过 **run_id** 关联输入、决策、工具请求、工具结果、状态变更和终止原因。本篇至少跟踪：
+
+- `candidate_skill_created`
+- `verification_pass`
+- `memory_reuse`
+- `delegation_success`
+- `rollback_rate`
+
+## 常见误区
+
+- 自改进不是让 Agent 任意修改自身
+- 持久记忆不代表每次都应加载全部历史
+- 产品文档中的能力名称不可自动推导其安全属性
+
+## 自检题
+
+1. 受控自改进需要哪些阶段？
+2. 为什么候选 Skill 不能立即激活？
+3. 产品能力变动时文章如何保持可追溯？
+
+<details>
+<summary>查看答案</summary>
+
+1. 提取候选、静态审查、隔离验证、权限审批、渐进激活、监测与回滚。
+2. 成功一次不能证明通用性或安全性，候选内容还可能含敏感数据与过度权限。
+3. 标注核对日期、版本/提交，并将事实引用到官方文档或源码。
+
+</details>
 
 ## 实操：把工具、记忆、技能串成一个 Hermes 风格闭环
 
@@ -295,7 +372,11 @@ python main.py
 
 Hermes Agent 的架构重点在“学习闭环”：工具执行产生经验，经验沉淀为技能，技能按需加载，记忆保存稳定偏好，Curator 维护技能生命周期。学习 Hermes，有助于我们理解 Agent 如何从一次性任务执行器演进为持续积累的个人工作系统。
 
-## 参考资料
+## 下一篇
+
+13-OpenClaw 与 Hermes 对比：用同一组维度完成选型与参考架构。
+
+## 资料来源与版本基线
 
 - [Hermes Agent Docs](https://hermes-agent.nousresearch.com/docs/)
 - [Hermes Agent bundled skill](https://hermes-agent.nousresearch.com/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-hermes-agent)

@@ -3,7 +3,7 @@ title: Python PyMySQL 详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: python-mysql-pymysql-guide
-modDatetime: 2026-04-22T00:00:00Z
+modDatetime: 2026-07-11T00:00:00.000+08:00
 featured: false
 draft: false
 tags:
@@ -18,220 +18,46 @@ language: zh-CN
 
 # Python PyMySQL 详解
 
-## IDE工具介绍
+## PyMySQL 事务实践
 
-生产环境还是推荐使用mysql命令行，但为了方便我们测试，可以使用IDE工具，不能依赖这种IDE。
+本文基于 PyMySQL 1.1.2。连接信息全部来自环境变量，连接和游标使用上下文管理器；SQL 中的值只通过 `%s` 占位符绑定。占位符不加引号，驱动会按类型完成转义和传输。
 
-需要掌握：
-1. 测试+链接数据库
-2. 新建库
-3. 新建表，新增字段+类型+约束
-4. 设计表：外键
-5. 新建查询
-6. 备份库/表
-
-> **注意**：批量加注释：`Ctrl+?` 键；批量去注释：`Ctrl+Shift+?` 键
-
-## pymysql模块
-
-![PyMySQL 通过连接、游标、参数化 SQL、事务提交回滚和 fetch 方法访问 MySQL 的安全操作流程图](./images/python-pymysql-query-transaction-figure-01.png)
-
-### 安装
-
-```bash
-pip3 install pymysql
-```
-
-### 准备工作
-
-```sql
-CREATE DATABASE userinfo;
-USE userinfo;
-CREATE TABLE regis(name CHAR(10), password INT(10));
-INSERT INTO regis VALUES('xuxu', 123456);
-```
-
-### 建立链接、执行sql、关闭（游标）
-
+<!-- snippet: id=python-pymysql-transaction mode=service python=3.12-3.14 deps=PyMySQL==1.1.2 service=mysql -->
 ```python
+import os
 import pymysql
+from pymysql.cursors import DictCursor
 
-user = input('用户名: ').strip()
-pwd = input('密码: ').strip()
-
-# 链接
-conn = pymysql.connect(
-    host='localhost',
-    user='root',
-    password='1234',
-    database='userinfo',
-    charset='utf8'
-)
-
-# 游标
-cursor = conn.cursor()  # 执行完毕返回的结果集默认以元组显示
-# cursor = conn.cursor(cursor=pymysql.cursors.DictCursor)  # 这种以字典的形式输出的可以很直观的看到字段和记录
-
-# 执行sql语句
-sql = 'SELECT * FROM regis WHERE name="%s" AND password="%s"' % (user, pwd)
-print(sql)
-res = cursor.execute(sql)  # 执行sql语句，返回sql查询成功的记录数目
-print(res)
-
-cursor.close()
-conn.close()
-
-if res:
-    print('登录成功')
-else:
-    print('登录失败')
-```
-执行结果：
-```
-用户名: xuxu
-密码: 123456
-SELECT * FROM regis WHERE name="xuxu" AND password="123456"
-1
-登录成功
+def find_user(username: str) -> dict | None:
+    connection = pymysql.connect(
+        host=os.environ.get("MYSQL_HOST", "127.0.0.1"),
+        port=int(os.environ.get("MYSQL_PORT", "3306")),
+        user=os.environ["MYSQL_USER"],
+        password=os.environ["MYSQL_PASSWORD"],
+        database=os.environ["MYSQL_DATABASE"],
+        charset="utf8mb4",
+        cursorclass=DictCursor,
+        connect_timeout=5,
+        read_timeout=5,
+        write_timeout=5,
+        autocommit=False,
+    )
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, username FROM users WHERE username = %s LIMIT 1",
+                (username,),
+            )
+            row = cursor.fetchone()
+        connection.commit()
+        return row
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
 ```
 
-### execute()之SQL注入
+表名、列名和排序方向不能作为值参数绑定；如果业务允许用户选择排序字段，必须把输入映射到代码中的固定白名单。密码不参与 SQL 明文比较：注册时使用框架的自适应密码哈希，查询用户后再调用密码验证 API。
 
-> **注意**：符号 `--` 会注释掉它之后的sql，正确的语法：`--` 后至少有一个任意字符
-
-**根本原理**：根据程序的字符串拼接 `name='%s'`，我们输入一个 `xxx' -- haha`，用我们输入的xxx加'在程序中拼接成一个判断条件 `name='xxx' -- haha'`
-
-最后那一个空格，在一条sql语句中如果遇到：
-
-```sql
-SELECT * FROM t1 WHERE id > 3 -- AND name='xuxu';
-```
-
-则 `--` 之后的条件被注释掉了
-
-**SQL注入类型：**
-
-1. **SQL注入之：用户存在，绕过密码**
-   ```
-   xuxu' -- 任意字符
-   ```
-
-2. **SQL注入之：用户不存在，绕过用户与密码**
-   ```
-   xxx' OR 1=1 -- 任意字符
-   ```
-
-**解决方案**
-
-原来是我们对sql进行字符串拼接：
-
-```python
-sql = "SELECT * FROM userinfo WHERE name='%s' AND password='%s'" % (user, pwd)
-print(sql)
-res = cursor.execute(sql)
-```
-
-改写为（execute帮我们做字符串拼接，我们无需且一定不能再为%s加引号了）：
-
-```python
-# 注意：%s 需要去掉引号，因为pymysql会自动为我们加上
-sql = "SELECT * FROM userinfo WHERE name=%s AND password=%s"
-res = cursor.execute(sql, [user, pwd])
-# pymysql模块自动帮我们解决sql注入的问题，只要我们按照pymysql的规矩来
-```
-### 增、删、改：conn.commit()
-
-```python
-import pymysql
-
-# 链接
-conn = pymysql.connect(host='localhost', user='root', password='123', database='egon')
-
-# 游标
-cursor = conn.cursor()
-
-# 执行sql语句
-# part1: 单条插入
-sql = 'INSERT INTO userinfo(name, password) VALUES("root", "123456");'
-res = cursor.execute(sql)
-print(res)
-
-# part2: 参数化插入
-sql = 'INSERT INTO userinfo(name, password) VALUES(%s, %s);'
-res = cursor.execute(sql, ("root", "123456"))
-print(res)
-
-# part3: 批量插入
-sql = 'INSERT INTO userinfo(name, password) VALUES(%s, %s);'
-res = cursor.executemany(sql, [("root", "123456"), ("lhf", "12356"), ("eee", "156")])
-print(res)
-
-conn.commit()  # 提交后才发现表中插入记录成功
-cursor.close()
-conn.close()
-```
-
-### 查：fetchone，fetchmany，fetchall
-
-```python
-import pymysql
-
-# 链接
-conn = pymysql.connect(host='localhost', user='root', password='123', database='egon')
-
-# 游标
-cursor = conn.cursor()
-
-# 执行sql语句
-sql = 'SELECT * FROM userinfo;'
-rows = cursor.execute(sql)  # 执行sql语句，返回sql影响成功的行数rows，将结果放入一个集合，等待被查询
-
-# cursor.scroll(3, mode='absolute')  # 相对绝对位置移动
-# cursor.scroll(3, mode='relative')  # 相对当前位置移动
-
-res1 = cursor.fetchone()
-res2 = cursor.fetchone()
-res3 = cursor.fetchone()
-res4 = cursor.fetchmany(2)
-res5 = cursor.fetchall()
-
-print(res1)
-print(res2)
-print(res3)
-print(res4)
-print(res5)
-print('%s rows in set (0.00 sec)' % rows)
-
-conn.commit()  # 提交后才发现表中插入记录成功
-cursor.close()
-conn.close()
-```
-输出结果：
-```
-(1, 'root', '123456')
-(2, 'root', '123456')
-(3, 'root', '123456')
-((4, 'root', '123456'), (5, 'root', '123456'))
-((6, 'root', '123456'), (7, 'lhf', '12356'), (8, 'eee', '156'))
-5 rows in set (0.00 sec)
-```
-
-### 获取插入的最后一条数据的自增ID
-
-```python
-import pymysql
-
-conn = pymysql.connect(host='localhost', user='root', password='123', database='egon')
-cursor = conn.cursor()
-
-sql = 'INSERT INTO userinfo(name, password) VALUES("xxx", "123");'
-rows = cursor.execute(sql)
-print(cursor.lastrowid)  # 在插入语句后查看
-
-conn.commit()
-
-cursor.close()
-conn.close()
-```
-
----
+批量写入使用 `executemany()`，大结果集分批读取；事务只包围一个业务原子操作。捕获异常后必须回滚并继续抛出，不能打印后假装成功。

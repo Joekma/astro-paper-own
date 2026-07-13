@@ -2,7 +2,7 @@
 title: Python 输入输出与基本运算符
 author: Joekma
 pubDatetime: 2018-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-03T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-input-output-basic-operators
 description: '深入讲解Python的输入输出、基本数据类型和常用运算符，详解算术运算、比较运算、赋值运算（增量赋值、链式赋值、交叉赋值、解压赋值）和逻辑运算。'
 tags:
@@ -26,6 +26,7 @@ language: zh-CN
 
 在 Python 3 中，`input()` 会将用户输入的任何内容都存成 `str` 类型。
 
+<!-- snippet: id=python-input-output-basic-operators-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 name = input("请输入您的用户名: ")     # name = "egon"
 pwd = input("请输入您的密码: ")         # pwd = '123'
@@ -36,39 +37,25 @@ else:
     print('用户名或者密码输错了')
 ```
 
-### Python 2 与 Python 3 的区别
+### 输入转换与失败路径
 
-在 Python 2 中有 `input` 和 `raw_input` 两个函数，而 Python 3 中只有一个 `input`。
+Python 3.12–3.14 的 `input()` 始终返回字符串。需要数值时显式转换，并捕获转换失败；不要执行用户输入。
 
-1. Python 2 的 `raw_input` 与 Python 3 的 `input` 是一样的
-2. Python 2 的 `input` 要求使用者必须输入一个明确的数据类型，输入什么类型就存成什么类型
-
+<!-- snippet: id=python-input-validated-conversion mode=run python=3.12-3.14 deps=stdlib -->
 ```python
-# Python 2 中
-age = input('>>>: ')  # age = "18"
-print(age, type(age))  # str 类型
-
-# 类型转换
-age = int(age)  # age = 18
-print(age > 30)  # False
-
-# 多种输入
-name = input('请输入您的用户名: ')
-age = input('请输入您的年龄: ')
-
-# 不同的输出方式
-print('my name is my age is ', name, age)
-print('my name is ', name, 'my age is ', age)
-print('my name is %s my age is %s' % (name, age))
-print('my name is %s my age is %s' % ([1, 2, 3], 18))  # %s 可以收任意类型的值
-print('my name is %s my age is %d' % ('egon', 18))
-print('my name is %s my age is %d' % ('egon', '18'))  # %d 只能接收整型
+raw = "18"
+try:
+    age = int(raw)
+except ValueError as exc:
+    raise ValueError("age must be an integer") from exc
+assert age == 18
 ```
 
 ## 基本运算符
 
 ### 1. 算术运算
 
+<!-- snippet: id=python-input-output-basic-operators-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 基本算术运算
 print(10 + 1.1)      # 加法
@@ -82,11 +69,12 @@ print(2 ** 3)         # 幂运算：2的3次方
 
 比较运算只能在同类型之间进行，其中 `int` 与 `float` 同属于数字类型。
 
+<!-- snippet: id=python-input-output-basic-operators-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print(10 > 3.1)   # True
 print(10 >= 10)   # True
 
-# 字符串比较（按 ASCII 码比较）
+# 字符串按 Unicode 码点逐项进行字典序比较
 msg1 = 'abcdefg'
 msg2 = 'abce'
 print(msg2 > msg1)  # True（按字符逐个比较）
@@ -103,6 +91,7 @@ print(list4 > list1)  # True（'c' > 'a'）
 
 #### 增量赋值
 
+<!-- snippet: id=python-input-output-basic-operators-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 age = 18
 age = age + 1
@@ -112,6 +101,7 @@ print(age)  # 20
 
 #### 链式赋值
 
+<!-- snippet: id=python-input-output-basic-operators-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 x = 10
 y = x
@@ -123,6 +113,7 @@ print(a is b is c is d is e)  # True
 
 #### 交叉赋值
 
+<!-- snippet: id=python-input-output-basic-operators-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 x = 10
 y = 20
@@ -139,6 +130,7 @@ print(x, y)  # 20 10
 
 #### 解压赋值
 
+<!-- snippet: id=python-input-output-basic-operators-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 nums = [1, 2, 3, 4, 5]
 
@@ -168,6 +160,7 @@ print(a, b)  # 1 2
 
 `and` 连接左右两个条件，两个条件必须都成立，最后结果才为 `True`。一旦左边条件为假则最终结果就为假，没有必要再去计算右面条件的值。
 
+<!-- snippet: id=python-input-output-basic-operators-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print(1 > 2 and 3 > 1)  # False（左边为 False）
 ```
@@ -176,6 +169,7 @@ print(1 > 2 and 3 > 1)  # False（左边为 False）
 
 `or` 连接左右两个条件，两个条件但凡有一个成立，结果就为 `True`。一旦左边条件为 `True` 则最终结果就为 `True`。
 
+<!-- snippet: id=python-input-output-basic-operators-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print(3 > 1 or 1 > 2)  # True（左边为 True）
 ```
@@ -184,6 +178,7 @@ print(3 > 1 or 1 > 2)  # True（左边为 True）
 
 `not` 用于取反。
 
+<!-- snippet: id=python-input-output-basic-operators-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print(not 1 > 2)  # True
 print(not 1 > 2 or 3 > 1)  # True

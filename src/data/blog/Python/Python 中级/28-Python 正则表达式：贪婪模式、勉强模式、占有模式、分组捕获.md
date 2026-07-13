@@ -2,7 +2,7 @@
 title: Python 正则表达式：贪婪模式、勉强模式、占有模式、分组捕获
 author: Joekma
 pubDatetime: 2024-08-12T00:00:00Z
-modDatetime: 2026-04-29T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-regex-advanced
 featured: false
 draft: false
@@ -39,6 +39,7 @@ language: zh-CN
 
 **原理**：量词默认使用贪婪模式，尽可能多地匹配字符。当后续模式匹配失败时，会**回溯**减少匹配数量。
 
+<!-- snippet: id=python-regex-advanced-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 
@@ -64,6 +65,7 @@ print(match.group())  # 输出: xfooxxxxxxfoo
 
 **原理**：也称为非贪婪模式，使用 `?` 后缀。尽可能少地匹配字符，一旦匹配成功就停止。
 
+<!-- snippet: id=python-regex-advanced-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 
@@ -88,6 +90,7 @@ print(match.group())  # 输出: xfoo
 
 **原理**：使用 `+` 后缀，类似贪婪模式，但**不回溯**。一旦匹配成功就锁定，不释放字符。
 
+<!-- snippet: id=python-regex-advanced-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 
@@ -117,6 +120,7 @@ print(match)  # 输出: None（匹配失败）
 
 以字符串 `232hjdhfd7474$` 和正则 `\w+[a-z]` 为例：
 
+<!-- snippet: id=python-regex-advanced-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 
@@ -187,16 +191,19 @@ print(f"占有模式: {match2}")  # 输出: None（匹配失败）
 **选择操作**  
 选择操作可在多个可选模式中匹配一个。例如，你想在"The rime of the Ancyent Mariner"中找出the出现过多少次，包括THE，The和the的形式。  
 若在RegExr上方文本框输入
-```
+<!-- snippet: id=python-regex-advanced-05 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 (THE|The|the)
 ```
 则看到所有the都被标亮。  
 可以使用选项来使分组更简短。例如：
-```
+<!-- snippet: id=python-regex-advanced-06 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 (?i)
 ```
 可以让模式不再区分大小写。所有上面带选择操作的模式可以写成
-```
+<!-- snippet: id=python-regex-advanced-07 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 (?i)the
 ```
 正则表达式中的选项  
@@ -219,12 +226,14 @@ print(f"占有模式: {match2}")  # 输出: None（匹配失败）
 **子模式**  
 正则表达式中的子模式是指分组中的一个或多个分组。  
 例如：
-```
+<!-- snippet: id=python-regex-advanced-08 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 (the|The|THE)
 (t|T)h(e|eir)
 ```
 括号对于子模式不是必须的。
-```
+<!-- snippet: id=python-regex-advanced-09 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 \b[tT]h[ceinry]*\b
 ```
 这个模式会匹配the或The还有thee，thy以及thence等单词。
@@ -237,34 +246,41 @@ print(f"占有模式: {match2}")  # 输出: None（匹配失败）
 
 **捕获分组和后向引用**  
 当一个模式的全部或者部分内容由一对括号分组时，它就对内容进行捕获并临时存储与内存中。可以通过后向引用重用捕获的内容。
-```
+<!-- snippet: id=python-regex-advanced-10 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 \1
 ```
 或者
-```
+<!-- snippet: id=python-regex-advanced-11 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 $1
 ```
 这里\1或$1引用的是第一个捕获的分组，而\2或$2引用的是第二个捕获的分组，以此类推。  
 **命名分组**  
 命名分组就是有名字的分组。  
 假如你要查找含有连续六个0的字符串：
-```
+<!-- snippet: id=python-regex-advanced-12 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 000000
 ```
 就可以用这个模式对连续三个0的分组命名：
-```
+<!-- snippet: id=python-regex-advanced-13 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 (?<z>0{3})
 ```
 然后你可以再使用该分组：
-```
+<!-- snippet: id=python-regex-advanced-14 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 (?<z>0{3})\k<z>
 ```
 或者
-```
+<!-- snippet: id=python-regex-advanced-15 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 (?<z>0{3})\k'z'
 ```
 或者
-```
+<!-- snippet: id=python-regex-advanced-16 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 (?<z>0{3})\g{z}
 ```
 命名分组的语法
@@ -280,29 +296,35 @@ $1
 
 **非捕获分组**  
 非捕获分组不会将内容存储在内存中。在你并不想引用分组的时候可以使用，因为没有存储内容，所以可以带来性能上的提升。
-```
+<!-- snippet: id=python-regex-advanced-17 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 (the|The|THE)
 ```
 这个分组不需要任何后向引用，所以可以写成非捕获分组：
-```
+<!-- snippet: id=python-regex-advanced-18 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 (?:the|The|THE)
 ```
 添加选项将其变为不区分大小写的模式：
-```
+<!-- snippet: id=python-regex-advanced-19 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 (?i)(?:the)
 ```
 也可以这样写：
-```
+<!-- snippet: id=python-regex-advanced-20 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 (?:(?i)the)
 ```
 最推荐的写法是这样的：
-```
+<!-- snippet: id=python-regex-advanced-21 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 (?i:the)
 ```
 **原子分组**  
 另一种非捕获分组是原子分组。  
 如果你使用的正则表达式引擎进行回溯操作，这种分组就可以将回溯操作关闭，但它只针对原子分组内的部分，而不针对整个正则表达式。
-```
+<!-- snippet: id=python-regex-advanced-22 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 (?>the)
 ```
 小结：
@@ -315,7 +337,8 @@ $1
 
 **匹配unicode字符**  
 有时候我们需要匹配ASCII范围之外的字符。
-```
+<!-- snippet: id=python-regex-advanced-23 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 
 "Qu’est-ce que la tolérance? c’est l’apanage de l’humanité. Nous sommes tous pétris de faiblesses et d’erreurs; pardonnons-nous réciproquement nos sottises, c’est la première loi de la nature." —Voltaire (1694–1778)
 
@@ -323,17 +346,20 @@ What is tolerance? It is the consequence of humanity. We are all formed of frail
 
 ```
 我们将伏尔泰的名言输入到<http://www.regexpal.com/>中，然后输入正则表达式
-```
+<!-- snippet: id=python-regex-advanced-24 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 \u00e9
 ```
 \u之后跟着的十六进制值00e9，这里不区分大小写，00E9也可以，00E9对接十进制值233，在ASCII（0~127）之外。  
 注意在Regexpal中字母é，即小写e加上了一个重音符，被标亮了，这是因为在unicode中é就是U+00E9，所以\u00e9可以匹配到它。  
 Regexpal.com是javascript的正则表达式实现。javascript也允许使用以下语法实现：
-```
+<!-- snippet: id=python-regex-advanced-25 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 \xe9
 ```
 现在我们在其他正则引擎中试一下。<http://regexhero.net/tester/>是.NET编写的。
-```
+<!-- snippet: id=python-regex-advanced-26 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 古池
 蛙飛び込む
 水の音
@@ -346,32 +372,38 @@ the sound of water.
 ```
 以上是日本诗人松尾芭蕉的俳句。  
 将其输入regexhero，然后输入正则
-```
+<!-- snippet: id=python-regex-advanced-27 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 \u6c60
 ```
 这是单词pond池塘所对应的日文字符的代码点。  
 另外，也可以匹配一下长破折号
-```
+<!-- snippet: id=python-regex-advanced-28 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 \u2014
 ```
 或短破折号
-```
+<!-- snippet: id=python-regex-advanced-29 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 \u2013
 ```
 **用八进制数匹配字符**  
 在正则中，用八进制数就是在反斜线后加三位数字。  
 比如
-```
+<!-- snippet: id=python-regex-advanced-30 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 \351
 ```
 等同于
-```
+<!-- snippet: id=python-regex-advanced-31 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 \u00e9
 ```
 **匹配控制字符**  
 代码库的ASCII.txt里是所有ASCII字符，一个字符一行，一共128行。  
 在正则表达式中，像这样来指定一个控制字符：
-```
+<!-- snippet: id=python-regex-advanced-32 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 \cx
 ```
 其中x就是你想匹配的控制字符  
@@ -400,6 +432,7 @@ the sound of water.
 
 在网页爬虫和数据提取中，经常需要从 HTML 中提取特定标签的内容。
 
+<!-- snippet: id=python-regex-advanced-33 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 
@@ -422,6 +455,7 @@ print("勉强模式:", matches_lazy)
 
 使用后向引用检测文本中连续出现的重复单词。
 
+<!-- snippet: id=python-regex-advanced-34 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 
@@ -442,6 +476,7 @@ for match in re.finditer(pattern, text, re.IGNORECASE):
 
 从日志文件中提取时间戳信息。
 
+<!-- snippet: id=python-regex-advanced-35 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 from datetime import datetime
@@ -469,6 +504,7 @@ for match in re.finditer(pattern, log, re.MULTILINE):
 
 使用正则表达式验证用户输入的邮箱和电话号码格式。
 
+<!-- snippet: id=python-regex-advanced-36 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 
@@ -494,6 +530,7 @@ print(validate_phone("138-1234-5678"))     # True
 
 使用正则表达式验证密码强度。
 
+<!-- snippet: id=python-regex-advanced-37 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import re
 
@@ -572,4 +609,3 @@ print(validate_password("Pass1234!")) # True
 - [Python re 模块官方文档](https://docs.python.org/3/library/re.html)
 - [正则表达式测试工具](https://regex101.com/)
 - [RegexBuddy - Windows 正则表达式工具](https://www.regexbuddy.com/)
-

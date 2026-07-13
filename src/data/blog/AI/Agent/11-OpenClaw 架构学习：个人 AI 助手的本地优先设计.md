@@ -1,10 +1,10 @@
 ---
-title: 'OpenClaw 架构学习：个人 AI 助手的本地优先设计'
+title: "OpenClaw 架构学习：个人 AI 助手的本地优先设计"
 author: Joekma
 pubDatetime: 2026-05-16T00:00:00.000+08:00
-modDatetime: 2026-05-16T00:00:00.000+08:00
+modDatetime: 2026-07-12T00:00:00.000+08:00
 slug: openclaw-architecture-learning
-description: '从 OpenClaw 官方文档学习本地优先个人 AI 助手架构，分析 Gateway、多通道、工作区、Agent Loop、Skills、Memory 与安全边界。'
+description: "从 OpenClaw 官方文档学习本地优先个人 AI 助手架构，分析 Gateway、多通道、工作区、Agent Loop、Skills、Memory 与安全边界。"
 tags:
   - AI
   - Agent
@@ -17,6 +17,22 @@ seriesOrder: 11
 language: zh-CN
 ---
 
+## 学习导航
+
+**前置知识**：基础 Python、JSON、HTTP 与异步编程概念。
+
+**适用读者**：首次系统学习生产级 Agent，并希望能独立实现、调试和评估的开发者。
+
+**学习目标**：
+
+- 从官方文档还原 Gateway、Channel、Session 和 Runtime
+- 说清 Workspace、Tools、Skills 和 Memory 的边界
+- 区分项目事实与作者推导的设计模式
+
+**贯穿场景**：用户从两个消息通道进入同一 Gateway，但不同 Agent 的 Session、Workspace 和可见 Skills 相互隔离。
+
+> 本文中的产品特有事实以文末官方资料为准；通用架构建议会明确标为设计推导。
+
 ## 概述
 
 OpenClaw 的核心定位是本地优先、开源、自托管的个人 AI 助手。它不是只在网页里聊天，而是通过一个 Gateway 把多个聊天应用、Web UI、移动节点和 Agent Runtime 连接起来，让用户可以从常用入口触发真实任务。
@@ -24,6 +40,8 @@ OpenClaw 的核心定位是本地优先、开源、自托管的个人 AI 助手�
 从架构角度看，OpenClaw 最值得学习的是：它把“交互入口”和“执行环境”分离，用 Gateway 做控制平面，用 workspace 组织 Agent 的长期上下文。
 
 ## 总体架构
+
+![OpenClaw 的 Channel、Gateway、Session、Runtime 和 Workspace 如何连接](./images/agent-11-01-openclaw-system.png)
 
 ```text
 聊天应用 / Web UI / 移动节点
@@ -41,9 +59,9 @@ OpenClaw 的核心定位是本地优先、开源、自托管的个人 AI 助手�
 
 OpenClaw 官方文档将 Gateway 描述为通道连接、会话、路由和控制面的单一来源。它支持 Discord、Google Chat、iMessage、Matrix、Microsoft Teams、Signal、Slack、Telegram、WhatsApp、Zalo 等多种通道或插件。
 
-![OpenClaw 本地优先架构通过多通道入口、Gateway 控制平面、Agent Runtime、工具沙箱和透明 Workspace 文件模型组织个人 AI 助手](./images/openclaw-local-first-architecture-figure-01.png)
-
 ## Gateway 的价值
+
+![Gateway 如何统一身份、路由、权限与审计](./images/agent-11-02-gateway-control-plane.png)
 
 Gateway 解决了三个问题。
 
@@ -53,6 +71,8 @@ Gateway 解决了三个问题。
 
 ### 2. 会话路由统一
 
+![多通道消息如何路由到正确 Agent 与 Session](./images/agent-11-03-channel-session-routing.png)
+
 不同用户、通道、sender、agent、workspace 可以有不同会话。统一路由可以避免上下文串用。
 
 ### 3. 安全边界统一
@@ -60,6 +80,8 @@ Gateway 解决了三个问题。
 Gateway 集中处理认证、绑定地址、远程访问、节点连接和通道策略。对于能执行真实动作的 Agent，这比把所有能力散落在多个入口里更可控。
 
 ## Agent Loop
+
+![一次 OpenClaw 运行在 Gateway 与 Runtime 之间如何流转](./images/agent-11-05-openclaw-loop.png)
 
 OpenClaw 的 Agent Loop 包括：
 
@@ -85,23 +107,27 @@ OpenClaw 的 Agent Loop 包括：
 
 ## Workspace 文件模型
 
+![Workspace 中的指令、记忆、技能与工作文件如何分层](./images/agent-11-04-workspace-model.png)
+
 OpenClaw 的 workspace 是 Agent 的家。典型文件包括：
 
-| 文件 | 作用 |
-| --- | --- |
-| `AGENTS.md` | Agent 操作指令 |
-| `SOUL.md` | Persona、语气和边界 |
-| `USER.md` | 用户信息和偏好 |
-| `TOOLS.md` | 本地工具约定 |
-| `HEARTBEAT.md` | 心跳任务清单 |
-| `BOOT.md` | Gateway 重启后的启动清单 |
-| `MEMORY.md` | 长期记忆 |
-| `memory/YYYY-MM-DD.md` | 每日记忆日志 |
-| `skills/` | 工作区技能 |
+| 文件                   | 作用                     |
+| ---------------------- | ------------------------ |
+| `AGENTS.md`            | Agent 操作指令           |
+| `SOUL.md`              | Persona、语气和边界      |
+| `USER.md`              | 用户信息和偏好           |
+| `TOOLS.md`             | 本地工具约定             |
+| `HEARTBEAT.md`         | 心跳任务清单             |
+| `BOOT.md`              | Gateway 重启后的启动清单 |
+| `MEMORY.md`            | 长期记忆                 |
+| `memory/YYYY-MM-DD.md` | 每日记忆日志             |
+| `skills/`              | 工作区技能               |
 
 这个设计的优点是透明。用户可以直接查看、编辑和备份这些文件，而不是把长期上下文藏在不可见数据库中。
 
 ## Skills
+
+![多 Agent 中 Skill 可见性如何与 Workspace 隔离对齐](./images/agent-11-06-skill-visibility.png)
 
 OpenClaw 使用兼容 AgentSkills 的技能目录，每个技能包含 `SKILL.md`。技能来源包括：
 
@@ -123,6 +149,8 @@ OpenClaw 将记忆放在 workspace 中，强调本地可控。每日记忆日志
 这比把所有内容直接塞进长期记忆更稳。
 
 ## 安全设计
+
+![通道身份为什么不直接等于工作区权限](./images/agent-11-07-openclaw-security.png)
 
 OpenClaw 的安全重点包括：
 
@@ -155,15 +183,17 @@ OpenClaw 很适合：
 
 ## 与传统 Agent Framework 的区别
 
-| 维度 | 传统框架 | OpenClaw |
-| --- | --- | --- |
-| 入口 | 代码调用或 Web 应用 | 多聊天通道 + Gateway |
-| 状态 | 由应用自行实现 | workspace + sessions + memory |
-| 自动化 | 需要额外集成 | Hooks、Heartbeat、Gateway 事件 |
-| 用户体验 | 开发者偏多 | 日常聊天入口 |
-| 安全重点 | 工具权限 | Gateway + workspace + sandbox |
+| 维度     | 传统框架            | OpenClaw                       |
+| -------- | ------------------- | ------------------------------ |
+| 入口     | 代码调用或 Web 应用 | 多聊天通道 + Gateway           |
+| 状态     | 由应用自行实现      | workspace + sessions + memory  |
+| 自动化   | 需要额外集成        | Hooks、Heartbeat、Gateway 事件 |
+| 用户体验 | 开发者偏多          | 日常聊天入口                   |
+| 安全重点 | 工具权限            | Gateway + workspace + sandbox  |
 
 ## 设计启发
+
+![如何在架构学习中区分项目事实与可迁移推导](./images/agent-11-08-fact-vs-inference.png)
 
 如果自己设计个人 Agent 系统，可以借鉴 OpenClaw 的几点：
 
@@ -173,6 +203,53 @@ OpenClaw 很适合：
 4. 默认本地优先，但明确区分 workspace 和 sandbox。
 5. 远程访问优先走 VPN/SSH，不把 Agent Gateway 裸露到公网。
 6. 用 Hook 承载审计、记忆保存和启动流程。
+
+## 工程补全：OpenClaw 控制面与本地工作区模型
+
+### 接口与数据契约
+
+- 每个项目特有结论都附官方文档页或源码路径
+- 文首记录核对日期与对应发布版本/提交
+- ‘可迁移启发’与‘OpenClaw 已实现’使用不同标记
+
+### 失败路径、终止与恢复
+
+- 通道身份不直接等于 Workspace 操作权限
+- Gateway 不可达时将任务明确标为未启动，不假装成功
+- 配置或 Workspace 迁移前保留可回滚备份并校验密钥不进入版本库
+
+### 可观测性与验收
+
+![OpenClaw 部署应如何监测 Gateway、路由与隔离](./images/agent-11-09-openclaw-operations.png)
+
+不要只保留最终回答。每次运行应该能通过 **run_id** 关联输入、决策、工具请求、工具结果、状态变更和终止原因。本篇至少跟踪：
+
+- `gateway_availability`
+- `routing_error`
+- `session_isolation`
+- `workspace_write`
+- `approval_denied`
+
+## 常见误区
+
+- 本地优先不等于完全离线
+- Gateway 不只是反向代理
+- Workspace 透明不代表可任意写入
+
+## 自检题
+
+1. Gateway 作为控制面的主要价值是什么？
+2. 如何在文中区分事实和设计推导？
+3. 多 Agent 为什么需要 Workspace 隔离？
+
+<details>
+<summary>查看答案</summary>
+
+1. 统一身份、路由、会话、权限、审批和审计边界。
+2. 事实绑定官方文档/源码与版本；推导显式标为‘设计启发’。
+3. 防止上下文泄漏、文件写冲突和权限横向扩散。
+
+</details>
 
 ## 实操：仿 OpenClaw 建一个本地 Workspace
 
@@ -263,13 +340,17 @@ python load_workspace.py
 
 OpenClaw 的价值不只是“能接很多聊天应用”，而是提供了一种个人 Agent 的系统架构：多通道入口、统一 Gateway、本地工作区、可编辑记忆、可复用技能和安全边界。学习 OpenClaw，可以帮助我们把 Agent 从 Demo 推向可长期使用的个人执行环境。
 
-## 参考资料
+## 下一篇
 
-- [OpenClaw Documentation](https://openclawlab.com/en/docs/)
-- [OpenClaw Home](https://openclawlab.com/en/)
-- [OpenClaw Gateway Runbook](https://openclawlab.com/en/docs/gateway/)
-- [OpenClaw Agent Loop](https://openclawlab.com/en/docs/concepts/agent-loop/)
-- [OpenClaw Agent workspace](https://documentation.openclaw.ai/concepts/agent-workspace)
-- [OpenClaw Skills](https://openclawlab.com/en/docs/tools/skills/)
-- [OpenClaw Security](https://openclawlab.com/en/docs/gateway/security/)
+12-Hermes Agent 架构：对比以 Toolsets、Skills、Memory 和 Delegation 为核心的系统。
+
+## 资料来源与版本基线
+
+- [OpenClaw Documentation](https://docs.openclaw.ai/)
+- [OpenClaw Home](https://docs.openclaw.ai/)
+- [OpenClaw Gateway Runbook](https://docs.openclaw.ai/gateway)
+- [OpenClaw Agent Loop](https://docs.openclaw.ai/agent)
+- [OpenClaw Agent workspace](https://docs.openclaw.ai/concepts/agent-workspace)
+- [OpenClaw Skills](https://docs.openclaw.ai/tools/skills)
+- [OpenClaw Security](https://docs.openclaw.ai/gatewaysecurity/)
 - [OpenClaw Source Code](https://github.com/openclaw/openclaw)

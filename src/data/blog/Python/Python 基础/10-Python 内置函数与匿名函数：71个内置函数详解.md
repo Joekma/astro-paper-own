@@ -2,7 +2,7 @@
 title: Python 内置函数与匿名函数：71个内置函数详解
 author: Joekma
 pubDatetime: 2018-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-03T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-built-in-functions-lambda
 description: '全面介绍Python的71个内置函数和匿名函数lambda的使用方法，涵盖作用域、类型转换、输入输出、反射等核心内容。'
 tags:
@@ -106,6 +106,7 @@ language: zh-CN
 
 获取全局变量的字典。
 
+<!-- snippet: id=python-built-in-functions-lambda-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 name = "Alice"
 age = 25
@@ -118,6 +119,7 @@ print(globals())
 
 获取执行本方法所在命名空间内的局部变量的字典。
 
+<!-- snippet: id=python-built-in-functions-lambda-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def test():
     name = "Bob"
@@ -128,72 +130,31 @@ test()
 # {'name': 'Bob', 'age': 30}
 ```
 
-## 字符串类型执行相关
+## 字符串解析与动态代码边界
 
-### eval()
+`eval()` 和 `exec()` 会执行 Python 代码，不能用于解析用户输入、配置、网络响应或数据库字段。即使限制 `globals`/`locals`，也不能把它们改造成可靠的安全沙箱。
 
-功能：将字符串当成有效的表达式来求值并返回计算结果。
+需要解析 Python 字面量时，使用 `ast.literal_eval()`；跨系统交换数据优先使用 JSON，并在解析后校验字段、类型和大小。
 
+<!-- snippet: id=python-built-in-functions-safe-literal-eval mode=run python=3.12-3.14 deps=stdlib -->
 ```python
-# 字符串转换成列表
-a = "[[1,2], [3,4], [5,6], [7,8], [9,0]]"
-b = eval(a)
-print(b)  # [[1, 2], [3, 4], [5, 6], [7, 8], [9, 0]]
+import ast
+import json
 
-# 字符串转换成字典
-a = "{1: 'a', 2: 'b'}"
-b = eval(a)
-print(b)  # {1: 'a', 2: 'b'}
+literal = ast.literal_eval("{'names': ['Ada', 'Lin'], 'enabled': True}")
+payload = json.loads('{"page": 2, "size": 20}')
 
-# 计算公式值
-x = 7
-print(eval('3 * x'))  # 21
-print(eval('pow(2,2)'))  # 4
-print(eval('2 + 2'))  # 4
+assert literal["enabled"] is True
+assert payload == {"page": 2, "size": 20}
 ```
 
-### exec()
-
-功能：执行储存在字符串或文件中的 Python 语句，相比于 `eval`，`exec` 可以执行更复杂的 Python 代码。
-
-```python
-# 单行语句字符串
-exec("print('runoob.com')")
-
-# 多行语句字符串
-code = """
-for i in range(5):
-    print("iter time: %d" % i)
-"""
-exec(code)
-# 输出:
-# iter time: 0
-# iter time: 1
-# iter time: 2
-# iter time: 3
-# iter time: 4
-```
-
-### compile()
-
-功能：将字符串类型的代码编译成代码对象，能够通过 `exec` 语句来执行或者 `eval()` 进行求值。
-
-```python
-# 流程语句使用 exec
-code1 = 'for i in range(0,10): print(i)'
-compile1 = compile(code1, '', 'exec')
-exec(compile1)
-
-# 简单求值表达式用 eval
-code2 = '1 + 2 + 3 + 4'
-compile2 = compile(code2, '', 'eval')
-print(eval(compile2))  # 10
-```
+`compile()` 的合理用途主要是开发工具、模板引擎或受控代码生成。它只负责生成代码对象，并不会验证代码是否安全。业务系统如果需要“可配置表达式”，应定义允许的操作符并解析 AST，或采用成熟的受限表达式语言，而不是执行任意 Python 源码。
 
 ## 输入输出相关
 
 ### input()
 
+<!-- snippet: id=python-built-in-functions-lambda-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 s = input("请输入内容: ")
 print(s)  # 输入什么打印什么，数据类型是 str
@@ -201,6 +162,7 @@ print(s)  # 输入什么打印什么，数据类型是 str
 
 ### print()
 
+<!-- snippet: id=python-built-in-functions-lambda-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def print(self, *args, sep=' ', end='\n', file=None, flush=False):
     """
@@ -217,6 +179,7 @@ def print(self, *args, sep=' ', end='\n', file=None, flush=False):
 
 **示例**：打印进度条
 
+<!-- snippet: id=python-built-in-functions-lambda-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import time
 
@@ -233,6 +196,7 @@ for i in range(0, 101, 2):
 
 返回变量的数据类型。
 
+<!-- snippet: id=python-built-in-functions-lambda-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 x = 10
 print(type(x))  # <class 'int'>
@@ -242,6 +206,7 @@ print(type(x))  # <class 'int'>
 
 返回一个变量的内存地址。
 
+<!-- snippet: id=python-built-in-functions-lambda-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 x = 10
 print(id(x))  # 140734...（内存地址）
@@ -251,6 +216,7 @@ print(id(x))  # 140734...（内存地址）
 
 返回一个可哈希变量的哈希值。
 
+<!-- snippet: id=python-built-in-functions-lambda-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 t = (1, 2, 3)
 l = [1, 2, 3]
@@ -265,6 +231,7 @@ print(hash(t))  # 可哈希，正常输出
 
 检查一个对象是否是可调用的。
 
+<!-- snippet: id=python-built-in-functions-lambda-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def func():
     pass
@@ -277,6 +244,7 @@ print(callable(123))    # False
 
 判断对象是否包含对应的属性。
 
+<!-- snippet: id=python-built-in-functions-lambda-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Person:
     name = "Alice"
@@ -290,6 +258,7 @@ print(hasattr(p, 'age'))   # False
 
 返回一个对象属性值。
 
+<!-- snippet: id=python-built-in-functions-lambda-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Person:
     name = "Alice"
@@ -305,6 +274,7 @@ print(getattr(p, 'gender', 'Unknown'))  # Unknown
 
 删除属性。
 
+<!-- snippet: id=python-built-in-functions-lambda-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Person:
     name = "Alice"
@@ -319,6 +289,7 @@ del Person.name
 
 返回模块的属性列表。
 
+<!-- snippet: id=python-built-in-functions-lambda-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print(dir(list))  # 查看列表的内置方法
 print(dir(int))   # 查看整数的内置方法
@@ -328,6 +299,7 @@ print(dir(int))   # 查看整数的内置方法
 
 ### 进制转换
 
+<!-- snippet: id=python-built-in-functions-lambda-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 二进制
 print(bin(10))   # 0b1010
@@ -341,6 +313,7 @@ print(hex(10))   # 0xa
 
 ### chr() 和 ord()
 
+<!-- snippet: id=python-built-in-functions-lambda-18 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # ord: 字符转数字
 print(ord('A'))  # 65
@@ -355,6 +328,7 @@ print(chr(97))   # a
 
 返回一个新字节数组，数组里的元素是可变的。
 
+<!-- snippet: id=python-built-in-functions-lambda-19 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 ret = bytearray('alex', encoding='utf-8')
 print(ret[0])    # 101
@@ -366,6 +340,7 @@ print(ret)        # bytearray(b'Alex')
 
 返回内存查看对象。
 
+<!-- snippet: id=python-built-in-functions-lambda-20 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 ret = memoryview(bytes('你好', encoding='utf-8'))
 print(len(ret))                          # 6
@@ -377,6 +352,7 @@ print(bytes(ret[3:]).decode('utf-8'))   # 好
 
 返回一个冻结的集合，冻结后集合不能再添加或删除任何元素。
 
+<!-- snippet: id=python-built-in-functions-lambda-21 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 a = frozenset(range(10))
 print(a)  # frozenset({0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
@@ -386,6 +362,7 @@ print(a)  # frozenset({0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
 
 反转序列。
 
+<!-- snippet: id=python-built-in-functions-lambda-22 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 l = (1, 2, 23, 213, 5612, 342, 43)
 print(list(reversed(l)))  # [43, 342, 5612, 213, 23, 2, 1]
@@ -395,6 +372,7 @@ print(list(reversed(l)))  # [43, 342, 5612, 213, 23, 2, 1]
 
 创建切片对象。
 
+<!-- snippet: id=python-built-in-functions-lambda-23 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 l = (1, 2, 23, 213, 5612, 342, 43)
 sli = slice(1, 5, 2)
@@ -405,6 +383,7 @@ print(l[sli])  # (2, 213)
 
 ### max() 和 min()
 
+<!-- snippet: id=python-built-in-functions-lambda-24 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 salaries = {
     'egon': 3000,
@@ -422,6 +401,7 @@ print(min(salaries, key=lambda k: salaries[k]))  # yuanhao
 
 对 List、Dict 进行排序。
 
+<!-- snippet: id=python-built-in-functions-lambda-25 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 按绝对值排序
 l1 = [1, 3, 5, -2, -4, -6]
@@ -451,6 +431,7 @@ print(sorted(salaries, key=lambda k: salaries[k], reverse=True))  # 降序
 
 将一个可遍历的数据对象组合为一个索引序列。
 
+<!-- snippet: id=python-built-in-functions-lambda-26 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 seasons = ['Spring', 'Summer', 'Fall', 'Winter']
 print(list(enumerate(seasons, start=1)))
@@ -459,6 +440,7 @@ print(list(enumerate(seasons, start=1)))
 
 ### all() 和 any()
 
+<!-- snippet: id=python-built-in-functions-lambda-27 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # all: 所有元素都为 True 才返回 True
 print(all([1, 2, 3]))      # True
@@ -477,6 +459,7 @@ print(any([]))              # False（空列表返回 False）
 
 过滤序列。
 
+<!-- snippet: id=python-built-in-functions-lambda-28 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 过滤出偶数
 nums = [1, 2, 3, 4, 5, 6]
@@ -488,6 +471,7 @@ print(list(result))  # [2, 4, 6]
 
 映射函数。
 
+<!-- snippet: id=python-built-in-functions-lambda-29 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 每个元素平方
 nums = [1, 2, 3, 4, 5]
@@ -499,6 +483,7 @@ print(list(result))  # [1, 4, 9, 16, 25]
 
 （需要导入 `from functools import reduce`）
 
+<!-- snippet: id=python-built-in-functions-lambda-30 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from functools import reduce
 
@@ -516,6 +501,7 @@ print(result)  # 120
 
 Python 3.10 引入的 `aiter()` 和 `anext()` 函数在 Python 3.12 中得到进一步完善：
 
+<!-- snippet: id=python-built-in-functions-lambda-31 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import asyncio
 
@@ -547,12 +533,14 @@ asyncio.run(main())
 
 ### 基本语法
 
+<!-- snippet: id=python-built-in-functions-lambda-32 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 函数名 = lambda 参数: 返回值
 ```
 
 ### 示例
 
+<!-- snippet: id=python-built-in-functions-lambda-33 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 普通函数
 def calc(n):
@@ -580,6 +568,7 @@ print(add(1, 3))  # 4
 
 #### 与 max()、min() 配合
 
+<!-- snippet: id=python-built-in-functions-lambda-34 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 salaries = {
     'egon': 3000,
@@ -594,6 +583,7 @@ print(min(salaries, key=lambda k: salaries[k]))
 
 #### 与 sorted() 配合
 
+<!-- snippet: id=python-built-in-functions-lambda-35 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 nums = [10, -1, 11, 9, 23]
 print(sorted(nums))
@@ -639,4 +629,3 @@ print(sorted(salaries, key=lambda k: salaries[k], reverse=True))
 > **注意**：虽然 lambda 函数简洁，但复杂的逻辑还是应该使用普通函数来保持代码可读性。
 
 掌握这些内置函数和 lambda 表达式的使用，可以让你的 Python 代码更加简洁和优雅。
-

@@ -2,7 +2,7 @@
 title: Python 切片实现原理剖析
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-slice-implementation
 description: '深入理解 Python 切片实现原理：序列切片、切片操作、底层实现'
 tags:
@@ -30,6 +30,7 @@ Python 的序列类型，例如字符串、列表、元组，几乎都支持切�
 Python 的序列对象既支持单个索引，也支持切片。
 单个索引返回的是**单个元素**，切片返回的是**同类型的新序列对象**。
 
+<!-- snippet: id=python-slice-implementation-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 alist = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
@@ -38,6 +39,7 @@ print(alist[0:1])
 ```
 输出结果：
 
+<!-- snippet: id=python-slice-implementation-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 0
 [0]
@@ -50,6 +52,7 @@ print(alist[0:1])
 ##  切片语法规则
 
 切片的完整形式如下：
+<!-- snippet: id=python-slice-implementation-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 sequence[start_index:stop_index:step]
 ```
@@ -63,6 +66,7 @@ sequence[start_index:stop_index:step]
 
 切片的三个参数都可以省略一部分：
 
+<!-- snippet: id=python-slice-implementation-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 alist = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
@@ -71,7 +75,8 @@ print(alist[:])
 
 输出结果：
 
-```
+<!-- snippet: id=python-slice-implementation-05 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 ```
 
@@ -83,6 +88,7 @@ print(alist[:])
 
 当 `step` 是正数时，切片会从左向右取值。此时 `stop_index` 的逻辑位置必须在 `start_index` 右边，否则结果为空。
 
+<!-- snippet: id=python-slice-implementation-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 alist = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
@@ -91,7 +97,8 @@ print(alist[1:-1])
 print(alist[-8:6])
 ```
 输出结果：
-```
+<!-- snippet: id=python-slice-implementation-07 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 [1, 2, 3, 4]
 [1, 2, 3, 4, 5, 6, 7, 8]
 [2, 3, 4, 5]
@@ -101,6 +108,7 @@ print(alist[-8:6])
 
 当 `step` 是负数时，切片会从右向左取值。此时 `stop_index` 的逻辑位置必须在 `start_index` 左边，否则结果为空。
 
+<!-- snippet: id=python-slice-implementation-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 alist = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
@@ -112,7 +120,8 @@ print(alist[6:-8:-1])
 
 输出结果：
 
-```
+<!-- snippet: id=python-slice-implementation-09 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 [9, 8, 7, 6]
 [9, 8, 7, 6]
 [9, 8, 7, 6, 5, 4, 3, 2]
@@ -123,6 +132,7 @@ print(alist[6:-8:-1])
 
 只要切片方向和逻辑位置关系成立，即使 `start_index` 或 `stop_index` 的绝对值超出序列长度，也不会报错。
 
+<!-- snippet: id=python-slice-implementation-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 alist = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
@@ -132,7 +142,8 @@ print(alist[11:-11:-1])
 
 输出结果：
 
-```
+<!-- snippet: id=python-slice-implementation-11 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
 ```
@@ -143,6 +154,7 @@ Python 中，切片本质上并不是语法糖那么简单。底层上，解释�
 
 例如：
 
+<!-- snippet: id=python-slice-implementation-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 alist = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
@@ -152,13 +164,15 @@ print(alist.__getitem__(5))
 
 输出结果：
 
-```
+<!-- snippet: id=python-slice-implementation-13 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 5
 5
 ```
 
 对于切片，解释器会把切片表达式转换成一个 `slice` 对象，再传给 `__getitem__()`。
 
+<!-- snippet: id=python-slice-implementation-14 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 alist = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
@@ -170,14 +184,16 @@ print(alist.__getitem__(slice_obj))
 
 输出结果：
 
-```
+<!-- snippet: id=python-slice-implementation-15 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 [1, 3, 5]
 [1, 3, 5]
 ```
 
 这说明下面两种写法是等价的：
 
-```
+<!-- snippet: id=python-slice-implementation-16 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 alist[1:7:2]
 alist.__getitem__(slice(1, 7, 2))
 ```
@@ -188,6 +204,7 @@ alist.__getitem__(slice(1, 7, 2))
 
 ### 取前一部分
 
+<!-- snippet: id=python-slice-implementation-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 alist = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 print(alist[:5])
@@ -195,24 +212,28 @@ print(alist[:5])
 
 ### 取后一部分
 
+<!-- snippet: id=python-slice-implementation-18 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print(alist[-5:])
 ```
 
 ### 取偶数位置元素
 
+<!-- snippet: id=python-slice-implementation-19 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print(alist[::2])
 ```
 
 ### 取奇数位置元素
 
+<!-- snippet: id=python-slice-implementation-20 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print(alist[1::2])
 ```
 
 ### 浅复制
 
+<!-- snippet: id=python-slice-implementation-21 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 blist = alist[:]
 print(blist)
@@ -220,24 +241,28 @@ print(blist)
 
 这等价于：
 
-```
+<!-- snippet: id=python-slice-implementation-22 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 blist = alist.copy()
 ```
 
 ### 逆序
 
+<!-- snippet: id=python-slice-implementation-23 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print(alist[::-1])
 ```
 
 虽然这种写法非常经典，但在强调可读性的场景里，也可以考虑：
 
+<!-- snippet: id=python-slice-implementation-24 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 print(list(reversed(alist)))
 ```
 
 ### 在某个位置插入多个元素
 
+<!-- snippet: id=python-slice-implementation-25 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 alist[3:3] = ['a', 'b', 'c']
 print(alist)
@@ -245,6 +270,7 @@ print(alist)
 
 ### 在开头插入多个元素
 
+<!-- snippet: id=python-slice-implementation-26 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 alist = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 alist[:0] = ['a', 'b', 'c']
@@ -253,6 +279,7 @@ print(alist)
 
 ### 批量替换元素
 
+<!-- snippet: id=python-slice-implementation-27 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 alist = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 alist[0:3] = ['a', 'b', 'c']
@@ -261,6 +288,7 @@ print(alist)
 
 ### 删除切片
 
+<!-- snippet: id=python-slice-implementation-28 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 alist = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 del alist[3:6]

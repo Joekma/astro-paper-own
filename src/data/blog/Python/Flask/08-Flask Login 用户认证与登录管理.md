@@ -2,7 +2,7 @@
 title: Flask Login 用户认证与登录管理
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: flask-4-login-extension
 description: '深入讲解使用Flask-Login扩展实现用户认证功能，包括用户模型创建、LoginManager配置、登录登出视图编写、路由保护装饰器以及注册功能的完整实现。'
 tags:
@@ -34,8 +34,9 @@ Flask-Login是Flask官方提供的一个扩展，专门用于处理用户会话�
 
 首先需要安装Flask-Login扩展：
 
+<!-- snippet: id=flask-4-login-extension-01 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
-pip install flask-login
+python -m pip install flask-login
 ```
 
 ## 基本配置
@@ -44,6 +45,7 @@ pip install flask-login
 
 Flask-Login要求用户模型实现以下四个属性和方法：
 
+<!-- snippet: id=flask-4-login-extension-02 mode=compile python=3.12-3.14 deps=Flask-Login==0.6.3,Flask-SQLAlchemy==3.1.1 -->
 ```python
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
@@ -66,6 +68,7 @@ class User(UserMixin, db.Model):
 
 ### 2. 初始化LoginManager
 
+<!-- snippet: id=flask-4-login-extension-03 mode=compile python=3.12-3.14 deps=Flask-Login==0.6.3,Flask==3.1.3 -->
 ```python
 from flask import Flask
 from flask_login import LoginManager
@@ -85,6 +88,7 @@ def load_user(user_id):
 
 ### 3. 创建登录视图
 
+<!-- snippet: id=flask-4-login-extension-04 mode=compile python=3.12-3.14 deps=Flask-Login==0.6.3,Flask==3.1.3 -->
 ```python
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required
@@ -119,6 +123,7 @@ def logout():
 
 使用`@login_required`装饰器保护需要登录才能访问的页面：
 
+<!-- snippet: id=flask-4-login-extension-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 @app.route('/profile')
 @login_required
@@ -135,6 +140,7 @@ def dashboard():
 
 使用Flask-WTF创建表单：
 
+<!-- snippet: id=flask-4-login-extension-06 mode=compile python=3.12-3.14 deps=WTForms==3.2.2 -->
 ```python
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField
@@ -149,6 +155,7 @@ class LoginForm(FlaskForm):
 
 ## 登录模板
 
+<!-- snippet: id=flask-4-login-extension-07 mode=display python=3.12-3.14 deps=stdlib -->
 ```html
 <!-- templates/login.html -->
 <!DOCTYPE html>
@@ -188,6 +195,7 @@ class LoginForm(FlaskForm):
 
 完整的用户系统还需要注册功能：
 
+<!-- snippet: id=flask-4-login-extension-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class RegisterForm(FlaskForm):
     username = StringField('用户名', validators=[DataRequired(), Length(min=3, max=20)])

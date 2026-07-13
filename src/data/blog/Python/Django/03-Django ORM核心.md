@@ -2,12 +2,12 @@
 title: Django ORM核心
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-05-04T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: django-orm-core
 featured: false
 draft: false
 series: django
-seriesOrder: 4
+seriesOrder: 3
 tags:
   - Python
   - Django
@@ -24,6 +24,7 @@ description: 'Django ORM核心详解，包括模型定义、字段类型、关�
 
 ### ORM vs SQL
 
+<!-- snippet: id=django-orm-core-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 使用ORM
 class Employee(models.Model):
@@ -54,6 +55,7 @@ Employee.objects.filter(name="alex")
 
 ### 字段参数
 
+<!-- snippet: id=django-orm-core-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Book(models.Model):
     title = models.CharField(max_length=100, verbose_name="书名")
@@ -67,6 +69,7 @@ class Book(models.Model):
 
 ### 一对多
 
+<!-- snippet: id=django-orm-core-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Publish(models.Model):
     name = models.CharField(max_length=100)
@@ -78,6 +81,7 @@ class Book(models.Model):
 
 在多的表中创建关联字段：
 
+<!-- snippet: id=django-orm-core-04 mode=display python=3.12-3.14 deps=stdlib -->
 ```sql
 CREATE TABLE book (
     id INT PRIMARY KEY,
@@ -89,6 +93,7 @@ CREATE TABLE book (
 
 ### 多对多
 
+<!-- snippet: id=django-orm-core-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Author(models.Model):
     name = models.CharField(max_length=100)
@@ -100,6 +105,7 @@ class Book(models.Model):
 
 Django自动创建中间表：
 
+<!-- snippet: id=django-orm-core-06 mode=display python=3.12-3.14 deps=stdlib -->
 ```sql
 CREATE TABLE book_authors (
     id INT PRIMARY KEY,
@@ -110,6 +116,7 @@ CREATE TABLE book_authors (
 
 ### 一对一
 
+<!-- snippet: id=django-orm-core-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class User(models.Model):
     username = models.CharField(max_length=100)
@@ -123,6 +130,7 @@ class UserDetail(models.Model):
 
 ### 创建
 
+<!-- snippet: id=django-orm-core-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 方式1：实例化后保存
 book = Book(title="Python", price=99)
@@ -140,6 +148,7 @@ Book.objects.bulk_create([
 
 ### 查询
 
+<!-- snippet: id=django-orm-core-09 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 # 查询所有
 Book.objects.all()
@@ -166,6 +175,7 @@ Book.objects.aggregate(total=Sum("price"))
 
 ### 更新
 
+<!-- snippet: id=django-orm-core-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 单条更新
 book = Book.objects.get(id=1)
@@ -178,6 +188,7 @@ Book.objects.filter(id=1).update(price=119)
 
 ### 删除
 
+<!-- snippet: id=django-orm-core-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 单条删除
 book = Book.objects.get(id=1)
@@ -191,6 +202,7 @@ Book.objects.filter(title="Go").delete()
 
 ### 模糊查询
 
+<!-- snippet: id=django-orm-core-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # contains 包含
 Book.objects.filter(title__contains="Python")
@@ -204,6 +216,7 @@ Book.objects.filter(title__startswith="D")
 
 ### 比较查询
 
+<!-- snippet: id=django-orm-core-13 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 Book.objects.filter(price__gt=50)    # 大于
 Book.objects.filter(price__gte=50)   # 大于等于
@@ -214,6 +227,7 @@ Book.objects.filter(price__range=(50, 100))  # 范围
 
 ### F和Q对象
 
+<!-- snippet: id=django-orm-core-14 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.db.models import F, Q
 
@@ -227,6 +241,7 @@ Book.objects.filter(Q(price__gt=50) & ~Q(title__startswith="Go"))
 
 ### 正向与反向查询
 
+<!-- snippet: id=django-orm-core-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 正向查询（已知Book，找Publish）
 book = Book.objects.get(id=1)

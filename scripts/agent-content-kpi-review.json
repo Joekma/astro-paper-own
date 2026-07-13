@@ -1,0 +1,26 @@
+{
+  "reviewedAt": "2026-07-12",
+  "scale": "1-5",
+  "passThreshold": 4,
+  "dimensions": [
+    "technicalAccuracyAndTraceability",
+    "runtimeAndDataFlowClarity",
+    "safetyFailureAndObservability",
+    "independentImplementationAndEvaluation"
+  ],
+  "articles": [
+    { "order": 1, "scores": [4.5, 4.5, 4.4, 4.4], "review": "Agent/Workflow/Chatbot 边界、最小运行时和选型准则已对齐。" },
+    { "order": 2, "scores": [4.5, 4.7, 4.5, 4.5], "review": "显式状态机、终止原因、取消、重试与事件轨迹已补齐。" },
+    { "order": 3, "scores": [4.6, 4.6, 4.7, 4.5], "review": "模型提议与可信执行分层，幂等、审批和结构化错误已纳入契约。" },
+    { "order": 4, "scores": [4.6, 4.7, 4.6, 4.5], "review": "MCP 角色、初始化、能力协商、JSON-RPC 和版本失配已纳入。" },
+    { "order": 5, "scores": [4.5, 4.6, 4.7, 4.5], "review": "历史、状态、记忆、画像与 RAG 已区分，删除和跨用户隔离可验收。" },
+    { "order": 6, "scores": [4.5, 4.6, 4.6, 4.5], "review": "Skill 发现、触发、渐进加载、供应链信任和回滚已系统化。" },
+    { "order": 7, "scores": [4.7, 4.6, 4.8, 4.6], "review": "威胁模型、数据/指令分离、能力权限、沙箱局限与事故恢复已对齐。" },
+    { "order": 8, "scores": [4.7, 4.8, 4.8, 4.8], "review": "综合项目已改为可测试 Runtime、DAG Planner、Executor、Reflection 和失败矩阵。" },
+    { "order": 9, "scores": [4.5, 4.7, 4.7, 4.6], "review": "委派契约、上下文隔离、写冲突、取消和部分成功已纳入。" },
+    { "order": 10, "scores": [4.5, 4.7, 4.7, 4.6], "review": "时区、幂等窗口、租约、执行/投递分离和后台运行指标已对齐。" },
+    { "order": 11, "scores": [4.5, 4.6, 4.6, 4.4], "review": "OpenClaw 官方来源、控制面、Workspace 隔离及事实/推导标记已补齐。" },
+    { "order": 12, "scores": [4.5, 4.6, 4.6, 4.5], "review": "Hermes 能力闭环、候选 Skill、验证、权限和回滚边界已补齐。" },
+    { "order": 13, "scores": [4.5, 4.6, 4.6, 4.6], "review": "对比维度、证据状态、决策矩阵和分阶段落地方法已统一。" }
+  ]
+}

@@ -3,7 +3,7 @@ title: Python 递归：函数递归、尾递归优化、递归算法应用
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: python-recursion-tail-recursion-algorithm
-modDatetime: 2026-04-22T00:00:00Z
+modDatetime: 2026-07-11T00:00:00.000+08:00
 featured: false
 draft: false
 tags:
@@ -35,6 +35,7 @@ language: zh-CN
 - 递归要防止栈溢出，有调用层数限制
 
 ### 直接调用
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def func():
   print('from func')
@@ -43,7 +44,8 @@ func()
 
 ```
 ### 可以总结一下常见递归的套路
-```python
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-02 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 def fun(i):
   if 成立条件:
     递归调用
@@ -55,6 +57,7 @@ def fun(i):
 ### 间接调用
 
 间接递归调用就是在函数foo()（或过程）中调用另外一个函数bar()，而该函数bar()又引用（调用）了函数foo()
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def foo():
     print('from foo')
@@ -79,6 +82,7 @@ foo()
 回溯：则是在遇到终止条件，则从最后往回返一级一级的把值返回来，这叫回溯
 
 ### 递归的实现
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 
 def age(n):
@@ -119,6 +123,7 @@ Python函数递归调用，会用到栈
 -所以递归有层数限制
 
 因为递归调用使用到栈，栈大小是由限制的，所以Python缺省情况下，递归调用限制为1000层（深度），有时候没有达到1000也会报异常。关于Python环境下阶层调用深度限制可以通过sys模块的方法修改。
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 
 import sys
@@ -136,11 +141,13 @@ print(sys.getrecursionlimit())
 一个经典的例子，讲述递归的应用：
 
 阶乘函数的定义
-```python
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-06 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 N! = factorial(N) = 1 * 2 * 3 * ... * N
 ```
 那么可以用这种方法来看阶乘函数：
-```python
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-07 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 factorial(N) = N!
              = N * (N - 1)!
              = N * (N - 1) * (N - 2)!
@@ -149,6 +156,7 @@ factorial(N) = N!
 
 ```
 于是我们有了阶乘函数的递归版本：
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def factorial(n):
     if n == 0 or n == 1: return 1
@@ -161,7 +169,8 @@ print(factorial(6))
 来看看这个问题：
 
 还是这个函数factorial(N)，让我们试试N = 999和N = 1000，问题来了，N = 999时能输出正确答案，但当N = 1000时，就出现下面的错误了：
-```python
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-09 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 RuntimeError: maximum recursion depth exceeded
 ```
 于是，请记住，默认的Python有一个可用的递归深度的限制，以避免耗尽计算机中的内存
@@ -177,6 +186,7 @@ RuntimeError: maximum recursion depth exceeded
 ## **递归的优化**
 
 一般递归
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 
 def normal_recursion(n):
@@ -187,6 +197,7 @@ def normal_recursion(n):
 
 ```
 执行：
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 normal_recursion(5)
 5 + normal_recursion(4)
@@ -203,6 +214,7 @@ normal_recursion(5)
 
 尾递归
 尾递归基于函数的尾调用, 每一级调用直接返回函数的返回值更新调用栈,而不用创建新的调用栈, 类似迭代的实现, 时间和空间上均优化了一般递归!
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def tail_recursion(n, total=0):
     if n == 0:
@@ -224,6 +236,7 @@ def tail_recursion(n, total=0):
 深入理解尾递归
 呃, 所以呢? 是不是感觉还不够过瘾… 谁说尾递归调用就不用创建新的栈呢?
 还是让我们去底层一探究竟吧
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-13 mode=display python=3.12-3.14 deps=stdlib -->
 ```c
 int tail_recursion(int n, int total) {
 if (n == 0) {
@@ -241,6 +254,7 @@ return 0;
 }
 ```
 反汇编
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-14 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 $ gcc -S tail_recursion.c -o normal_recursion.S
 $ gcc -S -O2 tail_recursion.c -o tail_recursion.S gcc开启尾递归优化
@@ -256,12 +270,14 @@ bp指向的_tail_recursion函数的地址(pushq %rbp)然后返回,
 ### 存在的问题
 
 虽然尾递归优化很好, 但python 不支持尾递归，递归深度超过1000时会报错
-```python
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-15 mode=display python=3.12-3.14 deps=stdlib -->
+```text
 RuntimeError: maximum recursion depth exceeded
 ```
 一个牛人想出的解决办法
 实现一个 tail_call_optimized 装饰器
 
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import sys
 
@@ -298,6 +314,7 @@ print(factorial(10000))
 > 说明：CPython 本身不会优化尾递归，这类装饰器属于教学演示，不建议在生产代码中依赖。
 因为尾递归没有调用栈的嵌套, 所以Python也不会报RuntimeError: maximum recursion depth exceeded错误了!
 这里解释一下 sys._getframe() 函数:
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-17 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
 
 sys._getframe([depth]):
@@ -308,6 +325,7 @@ returning the frame at the top of the call stack.
 
 ```
 即返回depth深度调用的栈帧对象.
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-18 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import sys
 
@@ -319,7 +337,8 @@ def get_cur_info():
 ```
 ### 小结
 
-递归会将前面的调用的函数暂时挂起, 等待递归的终止条件给出的明确的条件, 然后将所有的挂起的内容进行反向计算, 其实, 递归也可以看做是一种反向计算的过程, 前面调用递归的过程只是将表达式罗列出来, 等待终止条件出现后, 依次从后往前倒序进行计算前面挂起的内容, 最后将所有结果一起返回递归调用的次数过多会导致栈的溢出, 入上例中 fact(1000), 这时就需要优化尾递归优化
+每次递归调用都会创建新的 Python 栈帧，直到基线条件满足后逐层返回。CPython 不做尾调用消除，因此把递归改写成“尾递归形式”仍会增长调用栈；当输入规模可能超过递归限制时，应改为显式循环或自己维护栈，而不是期待解释器优化。
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-19 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def fact_iter(num, product):
     if num == 1:
@@ -331,12 +350,13 @@ def fact(n):
 ```
 将每次的乘积存入到 product 中, return fact_iter(num -1, num * product) 返回的仅仅是函数本身, num - 1, 和 num * product 在函数调用前就会被计算出来
 
-上例中的优化其实就是讲 原本的倒序的计算, 通过 num * product 变为了正序的计算, 还是递归的思想, 但是不会占用其他的栈帧, 因为所有的结果都已近存放在了 product 中递归主要还是有防止溢出, Python标准的解释器并没有对尾递归做出优化, 所有一定要防止 栈溢出 的情况
+上例把中间结果放进 `product`，但在 CPython 中依然为每次递归创建栈帧，并不能防止栈溢出。等价循环才是 Python 中处理大规模线性递归的推荐写法。
 
 ## **经典的递归**
 
 递归函数与三级菜单
 
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-20 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 menu = {
     '北京': {
@@ -383,6 +403,7 @@ menu = {
 }
 ```
 menu
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-21 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def threeLM(dic):
     while True:
@@ -397,6 +418,7 @@ threeLM(menu)
 ```
 递归函数实现三级菜单
 
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-22 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 l = [menu]
 while l:
@@ -410,6 +432,7 @@ while l:
 
 素因数的求法：
 
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-23 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # -*- coding:utf-8 -*-
 
@@ -429,6 +452,7 @@ suyinshu(100)
 分析下，求素因数的思路：用n对i(2到根号n)取模，为零的便证明是n的因数，将其输出，之后再用n/i作为参数，递归调用函数，再次求n（n/i）的因数，如果没有因数（证明本身是素数），便将n输出。注意return的位置，在调用结束后，函数开始返回，此时因为不需要返回值，便返回空。
 
 同时我们要理解一点，用递归解决的问题，都可以转化为循环执行，因为递归实质是调用栈，而栈和递归又可以相互转化。因此我们可以将素因数的求法用循环表示
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-24 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import math
 
@@ -445,6 +469,7 @@ suyinshu2(100)
 
 阶乘：
 
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-25 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def fact(n):
     if n == 1:
@@ -456,6 +481,7 @@ print(fact(5))  # 120
 
 可能有点懵吧，来看一看计算过程吧：
 
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-26 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 fact(5)
 5 * fact(4)
@@ -472,6 +498,7 @@ fact(5)
 
 强化阶乘的理解：
 
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-27 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def factorial(n):
   space = ' '*(4*n)
@@ -502,6 +529,7 @@ print(factorial(4))
 
 阶乘优化版本，处理小数的情况
 
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-28 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 若n为小数，则死循环,处理方法如下； 那么泛化factorial，使其能处理小数
 def factorial(n):
@@ -525,6 +553,7 @@ print(factorial(3))
 
 原理
 
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-29 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 根据需求可选择优化
 def fibonacci(n):
@@ -540,6 +569,7 @@ print(fibonacci(10))
 ```
 一个数是否是另一个数的幂
 
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-30 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 当数字 a 能被 b 整除，并且 a/b 是 b 的幂时， 它就是 b 的幂。
 # 编写一个叫 is_power 的函数，接受两个参数 a 和 b， 并且当 a 是 b 的幂时返回 True。
@@ -559,6 +589,7 @@ print(ans)
 
 最大公约数
 
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-31 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # a和 b 的最大公约数（GCD）是能被二者整除的最大数。
 # 求两个数的最大公约数的一种方法，是基于这样一个原理：如果 r 是 a 被 b 除后的余数，那么 gcd(a,b)=gcd(b,r) 。
@@ -578,6 +609,7 @@ print(gcd(4,r))
 
 汉诺塔
 
+<!-- snippet: id=python-recursion-tail-recursion-algorithm-32 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def hanoti(n,x1,x2,x3):
     if n == 1:

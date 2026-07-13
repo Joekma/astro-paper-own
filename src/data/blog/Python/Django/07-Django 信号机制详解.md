@@ -2,12 +2,12 @@
 title: Django 信号机制详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: django-signals
 featured: false
 draft: false
 series: django
-seriesOrder: 8
+seriesOrder: 7
 tags:
   - Python
   - Django
@@ -71,6 +71,7 @@ Django提供了一系列的内建信号，允许用户的代码获得Django的�
 
 ### 方式一：导入信号
 
+<!-- snippet: id=django-signals-01 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.core.signals import request_finished
 from django.core.signals import request_started
@@ -88,6 +89,7 @@ from django.db.backends.signals import connection_created
 
 放到`__init__`里：
 
+<!-- snippet: id=django-signals-02 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.db.models.signals import pre_save
 import logging
@@ -104,6 +106,7 @@ pre_save.connect(callBack)
 
 ### 方式二：使用装饰器
 
+<!-- snippet: id=django-signals-03 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
@@ -121,6 +124,7 @@ def my_callback(sender, **kwargs):
 
 一般创建一个py文件，`toppings`和`size`是接受的参数：
 
+<!-- snippet: id=django-signals-04 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 import django.dispatch
 
@@ -129,6 +133,7 @@ pizza_done = django.dispatch.Signal(providing_args=["toppings", "size"])
 
 ### 2. 注册信号
 
+<!-- snippet: id=django-signals-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def callback(sender, **kwargs):
     print("callback")
@@ -139,6 +144,7 @@ pizza_done.connect(callback)
 
 ### 3. 触发信号
 
+<!-- snippet: id=django-signals-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from 路径 import pizza_done
 
@@ -155,6 +161,7 @@ Django中的signals和操作系统（linux）中的signal完全是两会事，�
 
 django signal类定义在`django/dispatch/dispatch.py`中：
 
+<!-- snippet: id=django-signals-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 class Signal(object):
 

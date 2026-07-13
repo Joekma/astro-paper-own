@@ -2,7 +2,7 @@
 title: Python 变量机制：引用计数与深拷贝浅拷贝
 author: Joekma
 pubDatetime: 2018-09-13T16:45:00.000+08:00
-modDatetime: 2026-05-03T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: python-variables-data-types-deep-shallow-copy
 description: '深入理解Python变量机制，详解变量命名规范、引用计数机制、is与==区别、LEGB作用域规则、小整数对象池、深拷贝与浅拷贝概念。'
 tags:
@@ -39,6 +39,7 @@ language: zh-CN
 
 ### 定义变量
 
+<!-- snippet: id=python-variables-data-types-deep-shallow-copy-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 x = 10
 name = 'joek'
@@ -69,6 +70,7 @@ salary = '15k'
 
 ### 运行 Python 程序的三个阶段
 
+<!-- snippet: id=python-variables-data-types-deep-shallow-copy-02 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 python3 D:\test.py
 ```
@@ -84,6 +86,7 @@ python3 D:\test.py
 
 **引用计数增加示例**：
 
+<!-- snippet: id=python-variables-data-types-deep-shallow-copy-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 x = 10
 y = x  # 此时 x 和 y 都指向 10，引用计数为 2
@@ -91,6 +94,7 @@ y = x  # 此时 x 和 y 都指向 10，引用计数为 2
 
 **引用计数减少示例**：
 
+<!-- snippet: id=python-variables-data-types-deep-shallow-copy-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 x = 10
 del x  # 解除变量名与值 10 内存地址的绑定关系
@@ -102,6 +106,7 @@ del x  # 解除变量名与值 10 内存地址的绑定关系
 2. **type**：类型
 3. **value**：值
 
+<!-- snippet: id=python-variables-data-types-deep-shallow-copy-05 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 x = 10
 y = x
@@ -115,19 +120,21 @@ print(age)
 
 ### is 与 == 的区别
 
-- **is**：身份运算，比较的是 id 是否相等
+- **is**：身份运算，判断两个名称是否引用同一个对象；`id()` 是观察身份的辅助值，不应反过来定义 `is` 的语义
 - **==**：判断值是否相等
 
+<!-- snippet: id=python-variables-data-types-deep-shallow-copy-06 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 x = 10
 y = x
 print(id(x), id(y))  # 1839623936 1839623936
-print(x is y)  # True，id 相等，值一定相等
+print(x is y)  # True：两个名称引用同一个对象
 print(x == y)  # True
 ```
 
 > 注意：值相等 id 不一定相等
 
+<!-- snippet: id=python-variables-data-types-deep-shallow-copy-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 x = 111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
 y = 111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
@@ -141,6 +148,7 @@ print(x == y)  # True
 
 常量约定俗成用大写字母表示：
 
+<!-- snippet: id=python-variables-data-types-deep-shallow-copy-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 BOY_OF_AGE = 73
 BOY_OF_AGE = 74  # 注意：Python 中常量可以修改，只是约定不修改
@@ -176,6 +184,7 @@ print(BOY_OF_AGE)
 
 **Python 对小整数的定义是 [-5, 256]，这些整数对象是提前建立好的，不会被垃圾回收。** 在一个 Python 的程序中，无论这个整数处于 LEGB 中的哪个位置，所有位于这个范围内的整数使用的都是同一个对象。同理，单个字母也是这样的。
 
+<!-- snippet: id=python-variables-data-types-deep-shallow-copy-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 小整数对象池测试
 a = -5
@@ -195,6 +204,7 @@ print(a is b)  # False
 
 一个单词的复用机会大，所以创建一次；有空格，创建多次。但是字符串长度大于 20，就不是创建一次了。
 
+<!-- snippet: id=python-variables-data-types-deep-shallow-copy-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # 无空格字符串
 a = "abc"
@@ -219,6 +229,7 @@ print(s1 is s2)  # False
 
 > 注意：终端是每次执行一次，所以每次的大整数都重新创建；而在 PyCharm 中，每次运行是所有代码都加载到内存中，属于一个整体，所以会有一个大整数对象池。
 
+<!-- snippet: id=python-variables-data-types-deep-shallow-copy-11 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 # PyCharm 下运行
 c1 = 1000
@@ -244,4 +255,3 @@ print(C1.b is C2.b)  # False
 ## 小结
 
  **变量**：是 Python 中最基本的数据容器，通过变量名访问值
-

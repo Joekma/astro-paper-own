@@ -2,12 +2,12 @@
 title: Django 自动重载机制的实现
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: django-autoreload-mechanism
 featured: false
 draft: false
 series: django
-seriesOrder: 12
+seriesOrder: 11
 tags:
   - Python
   - Django
@@ -21,6 +21,7 @@ description: "深入讲解Django自动重载机制的实现原理和工作方式
 
 ![Django 自动重载通过父进程监控文件变化、设置 RUN_MAIN、启动子进程运行开发服务器，并在代码变更后重启子进程](./images/django-auto-reload-process-monitor-figure-01.png)
 
+<!-- snippet: id=django-autoreload-mechanism-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def restart_with_reloader():
     while True:
@@ -61,6 +62,7 @@ def python_reloader(main_func, args, kwargs):
 
 ## 文件监控与子进程重启
 
+<!-- snippet: id=django-autoreload-mechanism-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def reloader_thread():
     ensure_echo_on()
@@ -79,6 +81,7 @@ def reloader_thread():
 
 在`ensure_echo_on()`中，先判断是否成功导入`termios`模块，这个模块是unix平台的控制通信端口的，具体怎么控制不怎么懂，这个win上是没有的。经过跟踪`USE_INOTIFY`这个值是为`False`，因此判断是否文件是否修改是`code_changed`函数。
 
+<!-- snippet: id=django-autoreload-mechanism-03 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 def code_changed():
     global _mtimes, _win

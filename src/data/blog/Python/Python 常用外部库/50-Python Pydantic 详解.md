@@ -2,7 +2,7 @@
 title: Python Pydantic 详解
 author: Joekma
 pubDatetime: 2026-05-11T00:00:00.000+08:00
-modDatetime: 2026-05-11T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: pydantic-complete-guide
 description: 'Pydantic完全指南，详细介绍数据验证、类型约束、模型定义和最佳实践。'
 tags:
@@ -35,24 +35,26 @@ Pydantic 是一个基于 Python 类型注解的数据验证库。它使用 Pytho
 
 ### 安装 Pydantic
 
+<!-- snippet: id=pydantic-complete-guide-01 mode=display python=3.12-3.14 deps=stdlib -->
 ```bash
 # 使用 pip 安装
-pip install pydantic
+python -m pip install pydantic
 
 # 如果需要 email 验证功能
-pip install "pydantic[email]"
+python -m pip install "pydantic[email]"
 
 # 如果需要 Django 集成
-pip install "pydantic[django]"
+python -m pip install "pydantic[django]"
 
 # 如果需要 YAML 支持
-pip install "pydantic[yaml]"
+python -m pip install "pydantic[yaml]"
 ```
 
 ## 基础模型定义
 
 ### 创建第一个模型
 
+<!-- snippet: id=pydantic-complete-guide-02 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 # 导入 BaseModel 基类
 from pydantic import BaseModel
@@ -88,6 +90,7 @@ print(user_json)
 
 Pydantic 支持所有标准 Python 类型：
 
+<!-- snippet: id=pydantic-complete-guide-03 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel, Field
 from typing import Any, List, Dict, Optional, Union
@@ -129,6 +132,7 @@ print(model.tags)
 
 ### 可选字段和默认值
 
+<!-- snippet: id=pydantic-complete-guide-04 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -181,6 +185,7 @@ print(emp_full.skills)
 
 使用 Field 函数添加验证约束：
 
+<!-- snippet: id=pydantic-complete-guide-05 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel, Field, field_validator
 from typing import List
@@ -244,6 +249,7 @@ except Exception as e:
 
 ### 字段别名
 
+<!-- snippet: id=pydantic-complete-guide-06 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel, Field, AliasChoices
 
@@ -284,6 +290,7 @@ print(user_dict)
 
 使用 @field_validator 装饰器验证单个字段：
 
+<!-- snippet: id=pydantic-complete-guide-07 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel, field_validator
 
@@ -357,6 +364,7 @@ print(f"邮箱: {form.email}")      # 输出: zhangsan@example.com（小写）
 
 使用 @model_validator 验证多个字段之间的关系：
 
+<!-- snippet: id=pydantic-complete-guide-08 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel, model_validator
 from typing import Self
@@ -407,6 +415,7 @@ except ValueError as e:
 
 ### 跨字段验证
 
+<!-- snippet: id=pydantic-complete-guide-09 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel, model_validator, ValidationError
 from typing import Optional, Self
@@ -460,6 +469,7 @@ except ValidationError as e:
 
 ### 定义嵌套模型
 
+<!-- snippet: id=pydantic-complete-guide-10 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -518,6 +528,7 @@ print(f"第一个技能: {employee.skills[0].name}")
 
 ### 自引用模型
 
+<!-- snippet: id=pydantic-complete-guide-11 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from __future__ import annotations
 
@@ -565,6 +576,7 @@ print(f"上级的上级: {employee.supervisor.supervisor.name}")
 
 ### 模型配置类
 
+<!-- snippet: id=pydantic-complete-guide-12 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel, ConfigDict
 
@@ -615,6 +627,7 @@ print(user.email)  # 输出: test@example.com
 
 ### 使用 ConfigDict 的高级配置
 
+<!-- snippet: id=pydantic-complete-guide-13 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel, ConfigDict, ValidationError
 
@@ -674,6 +687,7 @@ print(f"用户ID: {user.user_id}")
 
 ### 模型_dump 和模型_dump_json
 
+<!-- snippet: id=pydantic-complete-guide-14 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel
 from datetime import datetime
@@ -730,6 +744,7 @@ print(f"格式化 JSON: {product_json_formatted}")
 
 ### 自定义序列化器
 
+<!-- snippet: id=pydantic-complete-guide-15 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel, field_serializer
 from datetime import datetime, date
@@ -782,6 +797,7 @@ print(order.model_dump())
 
 ### 模型继承
 
+<!-- snippet: id=pydantic-complete-guide-16 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel, field_validator
 
@@ -848,6 +864,7 @@ print(f"管理员权限: {admin.permissions}")
 
 ### 模型组合
 
+<!-- snippet: id=pydantic-complete-guide-17 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel, field_validator
 
@@ -910,8 +927,9 @@ print(f"邮箱: {employee.contact.email}")
 
 ### Pydantic Settings
 
+<!-- snippet: id=pydantic-complete-guide-18 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
-# 导入 Settings 类（需要先 pip install pydantic-settings）
+# 导入 Settings 类（需要先 python -m pip install pydantic-settings）
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
@@ -952,6 +970,7 @@ print(f"端口: {settings.port}")
 
 ### 嵌套 Settings
 
+<!-- snippet: id=pydantic-complete-guide-19 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -1025,6 +1044,7 @@ print(f"SMTP 主机: {settings.email.smtp_host}")
 
 ### SQLAlchemy 模型集成
 
+<!-- snippet: id=pydantic-complete-guide-20 mode=compile python=3.12-3.14 deps=SQLAlchemy==2.0.51,pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Column, Integer, String, Float, Boolean
@@ -1093,6 +1113,7 @@ print(f"产品名称: {product_read.name}")
 
 ### 验证错误处理
 
+<!-- snippet: id=pydantic-complete-guide-21 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel, ValidationError, field_validator
 from typing import List, Optional
@@ -1173,6 +1194,7 @@ if not is_valid:
 
 ### 函数验证器
 
+<!-- snippet: id=pydantic-complete-guide-22 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel, BeforeValidator
 from typing import Annotated
@@ -1221,6 +1243,7 @@ print(f"手机号2: {contact2.phone}")
 
 ### 模型提取和排除
 
+<!-- snippet: id=pydantic-complete-guide-23 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel
 
@@ -1269,6 +1292,7 @@ print(f"更新后的活跃状态: {user_inactive.is_active}")
 
 ### 1. 使用类型注解
 
+<!-- snippet: id=pydantic-complete-guide-24 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel
 from typing import List, Optional, Dict
@@ -1288,6 +1312,7 @@ class BadModel(BaseModel):
 
 ### 2. 使用 Field 提供文档
 
+<!-- snippet: id=pydantic-complete-guide-25 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel, Field
 
@@ -1299,6 +1324,7 @@ class DocumentedModel(BaseModel):
 
 ### 3. 分层模型设计
 
+<!-- snippet: id=pydantic-complete-guide-26 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel
 from typing import List, Optional
@@ -1339,6 +1365,7 @@ user = UserRead(
 
 ### 4. 合理的验证层次
 
+<!-- snippet: id=pydantic-complete-guide-27 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel, field_validator
 
@@ -1379,6 +1406,7 @@ class RegisterForm(BaseModel):
 
 ### FastAPI 中的 Pydantic
 
+<!-- snippet: id=pydantic-complete-guide-28 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from fastapi import FastAPI
 from pydantic import BaseModel, ConfigDict, Field, field_validator, HttpUrl
@@ -1438,6 +1466,7 @@ async def create_website(website: Website):
 
 ### Q1：如何处理枚举类型？
 
+<!-- snippet: id=pydantic-complete-guide-29 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel
 from enum import Enum
@@ -1460,6 +1489,7 @@ print(order.status.value)  # 输出: pending
 
 ### Q2：如何处理日期时间？
 
+<!-- snippet: id=pydantic-complete-guide-30 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from pydantic import BaseModel, Field, field_validator
 from datetime import datetime, date
@@ -1490,6 +1520,7 @@ print(f"开始日期: {event.start_date}")
 
 ### Q3：如何处理循环引用？
 
+<!-- snippet: id=pydantic-complete-guide-31 mode=compile python=3.12-3.14 deps=pydantic==2.12.5 -->
 ```python
 from __future__ import annotations
 

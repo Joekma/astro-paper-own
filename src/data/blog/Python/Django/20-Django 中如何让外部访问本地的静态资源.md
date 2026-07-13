@@ -2,7 +2,7 @@
 title: Django 中如何让外部访问本地的静态资源
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-11T00:00:00.000+08:00
 slug: django-static-resources
 featured: false
 draft: false
@@ -22,12 +22,14 @@ description: "Django 中如何让外部访问本地的静态资源"
 
 ### 第一步：配置 settings
 
+<!-- snippet: id=django-static-resources-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 ```
 
 ### 第二步：配置路由
 
+<!-- snippet: id=django-static-resources-02 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 ```python
 from django.views.static import serve
 
