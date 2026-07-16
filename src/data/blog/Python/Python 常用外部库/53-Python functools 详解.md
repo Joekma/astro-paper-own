@@ -1,348 +1,156 @@
 ---
-title: Python functools 详解
+title: Python functools 详解：保持函数契约的适配
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: python-functools
-modDatetime: 2026-07-11T00:00:00.000+08:00
+modDatetime: 2026-07-17T00:00:00.000+08:00
 featured: false
 draft: false
 tags:
   - Python
   - functools
   - docs
-description: Python functools 详解，详解 partial 偏函数和 wraps 装饰器保留元信息的最佳实践。
-
+description: 用 partial、wraps、lru_cache 与 singledispatch 理解函数适配、元数据保留、缓存键和分派边界。
 series: python
 seriesOrder: 53
 language: zh-CN
 ---
 
-# Python functools 详解
+# Python functools 详解：保持函数契约的适配
 
-## 简介
+## 前置知识与学习目标
 
-`functools` 是 Python 标准库中非常实用的一组函数工具集合。它主要用于函数式编程风格、装饰器开发、参数预绑定以及函数元信息维护等场景。
+你需要理解函数是一等对象、闭包和装饰器。本文只解决：**如何改变函数的调用方式或执行策略，同时保留可调试、可测试的函数契约？**
 
-在实际业务开发中，不是每个函数都会高频用到，但其中有几个成员几乎是日常必备，尤其是：
+完成后你应能选择 `partial`、`wraps`、`lru_cache` 或 `singledispatch`，解释它们改变了什么，并识别缓存副作用与错误分派边界。
 
-- **`partial`**：偏函数，预先绑定部分参数
-- **`wraps`**：装饰器中保留原函数元信息
+## 四种不同的适配
 
-这篇文章重点整理这两个最常见、最实用的工具。
+- `partial`：预绑定部分参数，生成新的可调用对象；
+- `wraps`：包装时复制元数据并设置 `__wrapped__`；
+- `lru_cache`/`cache`：按可哈希参数缓存返回值；
+- `singledispatch`：按第一个参数的运行时类型选择实现。
 
-![functools partial 固定参数生成新函数以及 wraps 在装饰器中保留函数元信息的机制图](./images/python-functools-partial-wraps-figure-01.png)
+<!-- figure-anchor:s53-f01 -->
 
-## functools 是什么
+## 调用契约如何被保留或改变
 
-`functools` 在 Python 2.5 中引入，用于集中提供一些与函数相关的辅助能力。
+![围绕 callable，partial 改参数形状，wraps 保持包装元数据，lru_cache 复用计算，singledispatch 按首参数类型分派](./images/s53-f01-functools-callable-contracts.png)
 
-在 Python 3 中，它已经扩展得更完整。比如在 Python 3.6 中，可以看到它包含如下成员：
+这四个工具都作用于 callable，但解决的问题不同：参数形状、包装透明性、重复计算和类型分派不能混为“装饰器技巧”。
 
-<!-- snippet: id=python-functools-01 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import functools
+## partial：把配置变成专用函数
 
-print(dir(functools))
-```
-
-示例输出：
-
-<!-- snippet: id=python-functools-02 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-[
-    'MappingProxyType', 'RLock', 'WRAPPER_ASSIGNMENTS',
-    'WRAPPER_UPDATES', 'WeakKeyDictionary', '_CacheInfo',
-    '_HashedSeq', '__all__', '__builtins__', '__cached__', '__doc__',
-    '__file__', '__loader__', '__name__', '__package__', '__spec__',
-    '_c3_merge', '_c3_mro', '_compose_mro', '_convert',
-    '_find_impl', '_ge_from_gt', '_ge_from_le', '_ge_from_lt',
-    '_gt_from_ge', '_gt_from_le', '_gt_from_lt', '_le_from_ge',
-    '_le_from_gt', '_le_from_lt', '_lru_cache_wrapper', '_lt_from_ge',
-    '_lt_from_gt', '_lt_from_le', 'cmp_to_key',
-    'get_cache_token', 'lru_cache', 'namedtuple', 'partial',
-    'partialmethod', 'recursive_repr', 'reduce', 'singledispatch',
-    'total_ordering', 'update_wrapper', 'wraps'
-]
-```
-
-## 常见成员概览
-
-虽然 `functools` 里工具不少，但在普通业务代码里最常见的通常是：
-
-| 成员 | 说明 | 使用频率 |
-|------|------|----------|
-| **`partial`** | 给函数预先绑定一部分参数 | 高 |
-| **`wraps`** | 装饰器中保留原函数名称、文档字符串等元信息 | 高 |
-| **`lru_cache`** | 缓存函数结果 | 中 |
-| **`reduce`** | 把序列中的元素按规则累计计算 | 中 |
-
-> **说明**：本文重点展开前两个。
-
-## `partial`：偏函数
-
-### 什么是偏函数
-
-`partial` 可以把一个函数的部分参数预先固定下来，生成一个新的函数。这样后续调用时，就不需要每次都重复传那些固定参数了。
-
-它特别适合：
-
-- **封装默认参数**
-- **构造更易调用的新函数**
-- **回调函数预绑定参数**
-
-### 基本示例
-
-<!-- snippet: id=python-functools-03 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import functools
-
-def showarg(*args, **kw):
-    print(args)
-    print(kw)
-
-p1 = functools.partial(showarg, 1, 2, 3)
-p1()
-p1(4, 5, 6)
-p1(a='python', b='itcast')
-
-p2 = functools.partial(showarg, a=3, b='linux')
-p2()
-p2(1, 2)
-p2(a='python', b='itcast')
-```
-
-输出结果：
-
-<!-- snippet: id=python-functools-04 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-(1, 2, 3)
-{}
-(1, 2, 3, 4, 5, 6)
-{}
-(1, 2, 3)
-{'a': 'python', 'b': 'itcast'}
-()
-{'a': 3, 'b': 'linux'}
-(1, 2)
-{'a': 3, 'b': 'linux'}
-()
-{'a': 'python', 'b': 'itcast'}
-```
-
-### 如何理解
-
-例如：
-
-<!-- snippet: id=python-functools-05 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-p1 = functools.partial(showarg, 1, 2, 3)
-```
-
-这表示创建了一个新函数 `p1`，它等价于"把 `showarg` 的前三个位置参数固定为 `1, 2, 3`"。
-
-后续调用：
-
-<!-- snippet: id=python-functools-06 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-p1(4, 5, 6)
-```
-
-本质上相当于：
-
-<!-- snippet: id=python-functools-07 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-showarg(1, 2, 3, 4, 5, 6)
-```
-
-### 适用场景
-
-#### 场景一：为通用函数生成专用版本
-
-<!-- snippet: id=python-functools-08 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from functools import partial
 
-def power(base, exponent):
-    return base ** exponent
+def calculate_total(qty: int, unit_price: int, *, discount: float) -> float:
+    return qty * unit_price * discount
 
-square = partial(power, exponent=2)
-cube = partial(power, exponent=3)
-
-print(square(5))  # 输出: 25
-print(cube(2))    # 输出: 8
+vip_total = partial(calculate_total, discount=0.9)
+assert vip_total(2, 100) == 180
 ```
 
-#### 场景二：给回调函数预绑定上下文参数
+`partial` 不执行原函数，只保存预绑定参数。它适合回调和依赖注入，不适合隐藏频繁变化的全局状态。
 
-在 GUI、异步任务或调度系统中，`partial` 常用来把回调函数和固定参数组合在一起。
+## wraps：让装饰器保持可观测性
 
-<!-- snippet: id=python-functools-09 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
-from functools import partial
-import tkinter as tk
+from functools import wraps
+from time import perf_counter
 
-def on_click(button_name, event):
-    print(f"Button {button_name} clicked")
-
-root = tk.Tk()
-btn1 = tk.Button(root, text="Button 1")
-btn2 = tk.Button(root, text="Button 2")
-
-btn1.bind('<Button-1>', partial(on_click, 'Button 1'))
-btn2.bind('<Button-1>', partial(on_click, 'Button 2'))
-
-root.mainloop()
-```
-
-## `wraps`：保留被装饰函数元信息
-
-### 为什么需要 `wraps`
-
-使用装饰器后，原函数通常会被包装成一个新的函数对象。如果不做额外处理，那么函数名、文档字符串等元信息会变成包装函数自己的信息。
-
-这会带来一些问题：
-
-- **调试时函数名不准确**
-- **自动化测试和反射场景下信息失真**
-- **文档工具拿到的是包装函数而不是原函数**
-
-### 不使用 `wraps` 的示例
-
-<!-- snippet: id=python-functools-10 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-def note(func):
-    "note function"
-
-    def wrapper():
-        "wrapper function"
-        print('note something')
-        return func()
-
-    return wrapper
-
-@note
-def test():
-    "test function"
-    print('I am test')
-
-test()
-print(test.__doc__)
-```
-
-输出结果：
-
-<!-- snippet: id=python-functools-11 mode=display python=3.12-3.14 deps=stdlib -->
-```text
-note something
-I am test
-wrapper function
-```
-
-> **问题**：可以看到，`test.__doc__` 变成了包装函数 `wrapper` 的文档，而不是原始 `test` 函数的文档。
-
-### 使用 `wraps` 的示例
-
-<!-- snippet: id=python-functools-12 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import functools
-
-def note(func):
-    "note function"
-
-    @functools.wraps(func)
-    def wrapper():
-        "wrapper function"
-        print('note something')
-        return func()
-
-    return wrapper
-
-@note
-def test():
-    "test function"
-    print('I am test')
-
-test()
-print(test.__doc__)
-```
-
-输出结果：
-
-<!-- snippet: id=python-functools-13 mode=display python=3.12-3.14 deps=stdlib -->
-```text
-note something
-I am test
-test function
-```
-
-> **解决**：正确保留了原函数的文档字符串。
-
-### `wraps` 做了什么
-
-`functools.wraps(func)` 本质上会把原函数的重要元信息复制到包装函数上，例如：
-
-- `__name__`：函数名称
-- `__doc__`：文档字符串
-- `__module__`：模块名称
-
-所以在写装饰器时，一个非常实用的习惯是：
-
-<!-- snippet: id=python-functools-14 mode=display python=3.12-3.14 deps=stdlib -->
-```text
-@functools.wraps(func)
-```
-
-> **提示**：几乎可以视为标准写法。
-
-### 推荐写法模板
-
-<!-- snippet: id=python-functools-15 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import functools
-
-def decorator(func):
-    @functools.wraps(func)
+def timed(func):
+    @wraps(func)
     def wrapper(*args, **kwargs):
-        # 前置逻辑
-        result = func(*args, **kwargs)
-        # 后置逻辑
-        return result
-
+        started = perf_counter()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            print(f"{func.__name__}: {perf_counter() - started:.6f}s")
     return wrapper
+
+@timed
+def normalize_sku(value: str) -> str:
+    """Normalize an SKU for comparison."""
+    return value.strip().upper()
+
+assert normalize_sku(" a-1 ") == "A-1"
+assert normalize_sku.__name__ == "normalize_sku"
+assert normalize_sku.__wrapped__(" b-2 ") == "B-2"
 ```
 
-> **最佳实践**：以后写装饰器时，优先加上 `@functools.wraps(func)`，除非有明确理由不保留原函数信息。
+没有 `wraps` 时，日志、帮助系统、测试工具和框架可能只看到 `wrapper`。`__wrapped__` 还允许检查或显式调用原函数。
 
-## 使用建议
+## 缓存：只缓存纯且有界的计算
 
-### 1. 写装饰器时优先加 `wraps`
+```python
+from functools import lru_cache
 
-如果你自己写装饰器，除非有明确理由不保留原函数信息，否则几乎都建议加上 `@functools.wraps(func)`。
+@lru_cache(maxsize=256)
+def tax_rate(region: str, policy_version: str) -> float:
+    table = {("east", "2026-07"): 0.06, ("west", "2026-07"): 0.05}
+    return table[(region, policy_version)]
 
-### 2. `partial` 适合做"函数定制"
+assert tax_rate("east", "2026-07") == 0.06
+print(tax_rate.cache_info())
+tax_rate.cache_clear()
+```
 
-如果你发现某个函数总是以相似参数反复调用，可以考虑用 `partial` 生成一个更专用、更简洁的函数。
+参数必须可哈希；返回的可变对象会被所有命中者共享。外部数据会变化时，把版本纳入缓存键或明确失效。不要缓存依赖当前时间、用户权限或隐式环境的函数，除非这些因素全部进入键。
 
-### 3. 不要为了"函数式"而函数式
+## singledispatch：按输入类型扩展
 
-`functools` 很强大，但是否使用它，应该以代码可读性为前提。尤其在团队项目中，清晰比技巧更重要。
+```python
+from functools import singledispatch
 
-### 4. 结合使用场景选择工具
+@singledispatch
+def normalize(value):
+    raise TypeError(f"unsupported type: {type(value).__name__}")
 
-- 需要**简化函数调用** → 考虑 `partial`
-- 需要**写装饰器** → 必须加 `wraps`
-- 需要**缓存结果** → 考虑 `lru_cache`
-- 需要**累计计算** → 考虑 `reduce`
+@normalize.register
+def _(value: str) -> str:
+    return value.strip()
 
-## 小结
+@normalize.register
+def _(value: int) -> int:
+    return value
 
-`functools` 是 Python 标准库里非常值得掌握的一部分工具集合，而在日常开发中最常用的通常就是这两个：
+assert normalize(" A ") == "A"
+assert normalize(3) == 3
+```
 
-- **`partial`**：提前绑定部分参数，生成新函数
-- **`wraps`**：让装饰器保留原函数元信息
+它只按第一个参数的类型分派，不按返回类型或多个参数组合分派。若规则由业务值而不是类型决定，普通映射或策略对象更清楚。
 
-如果把这篇内容浓缩成一句话，那就是：
+## 常见误区与适用边界
 
-> **`partial` 让函数更容易调用，`wraps` 让装饰器更规范。**
+- `wraps` 保留元数据，不会自动让装饰器保持原函数签名语义或线程安全。
+- `lru_cache` 不是跨进程缓存，每个进程各有一份。
+- 实例方法缓存可能把 `self` 留在缓存键中，延长对象生命周期。
+- 不要为了“函数式”而堆叠难以调试的装饰器；契约不清时用显式函数或类。
 
----
+## 三道自检题
+
+1. `partial` 与立即调用函数有什么区别？
+2. `wraps` 为什么设置 `__wrapped__`？
+3. 哪类函数不适合 `lru_cache`？
+
+<details>
+<summary>展开答案</summary>
+
+1. `partial` 保存部分参数并返回 callable，不执行原函数。
+2. 让检查、调试和测试工具能访问被包装函数。
+3. 有副作用、依赖隐式易变状态、参数不可哈希或返回可变共享对象且无隔离策略的函数。
+
+</details>
+
+## 本篇总结
+
+`functools` 的价值在于显式适配函数契约。先判断要改变的是参数、包装、计算复用还是类型分派，再选择最小工具并保留可观测性。
+
+## 下一篇衔接
+
+系列最后一篇把函数和数据放进基础设施边界：RabbitMQ 负责可靠传递事件，Memcached 只负责可丢失缓存，两者不能互换。
+
+## 资料来源
+
+- [Python functools](https://docs.python.org/3/library/functools.html)

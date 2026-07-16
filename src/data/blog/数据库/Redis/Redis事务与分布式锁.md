@@ -1,379 +1,215 @@
 ---
-title: Redis事务与分布式锁
+title: Redis 原子操作：Pipeline、MULTI/EXEC、WATCH 与 Lua
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: redis-transactions-locks
 featured: false
 draft: false
 tags:
   - Redis
-  - 数据库
   - 事务
-  - 锁
-description: "Redis事务和锁机制，包括MULTI/EXEC和分布式锁实现"
+  - WATCH
+  - Lua
+description: 区分批量传输、事务队列、乐观并发控制与服务端脚本，用可观察的库存示例解释原子性、冲突和失败边界。
 series: Redis
-seriesOrder: 7
+seriesOrder: 5
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
 
-Redis 提供了事务和锁机制来保证数据一致性和并发控制，适用于电商库存、账户转账等场景。
+你应理解 redis-py、Pipeline、库存键 `stock:{1001}`，并知道单条 Redis 命令具有原子执行边界。
 
-![Redis 事务通过 MULTI 和 EXEC 顺序提交命令，WATCH 负责乐观锁冲突检测，Lua 脚本提供服务端原子执行](./images/redis-transaction-watch-lua-figure-01.png)
+读完后，你应该能够：
 
-## 管道
+- 根据问题选择普通命令、非事务 Pipeline、MULTI/EXEC、WATCH 或 Lua；
+- 解释 Redis 事务为什么保证顺序执行，却不提供关系数据库式回滚；
+- 用 WATCH 实现有界重试的 CAS，用 Lua 完成短小的服务端原子状态变化；
+- 识别脚本阻塞、结果未知、跨槽和外部副作用等失败边界。
 
-管道用于把多个命令一次性发送到 Redis，减少网络往返次数。它不等同于事务，但常和批量读写、统计更新一起使用。
+## 真实场景：读取后再写入会丢更新
+
+两个请求同时购买商品 `1001`。若都先 `GET stock:{1001}` 读到 1，再各自 `SET 0`，两次购买都可能成功。单条 `GET` 和 `SET` 各自原子，却没有把“检查库存大于 0”和“扣减 1”绑定为一个状态变化。
+
+解决前先区分四个问题：减少网络往返、让命令连续执行、检测并发修改、把判断与写入放进一个服务端原子操作。
+
+## 选择矩阵
+
+<!-- figure-anchor:r05-a01 -->
+
+<!-- figure-managed:r05-f01:start -->
+
+![undefined](./images/r05-f01-atomic-mechanism-choice.png)
+
+<!-- figure-managed:r05-f01:end -->
+
+| 机制                | 主要目标         | 是否阻止命令间插入 | 冲突处理           | 典型场景                       |
+| ------------------- | ---------------- | ------------------ | ------------------ | ------------------------------ |
+| 单条命令            | 最小原子操作     | 该命令内部是       | 无                 | `INCR`、`HSET`、带条件的 `SET` |
+| Pipeline 非事务模式 | 减少 RTT         | 否                 | 无                 | 批量独立读写                   |
+| MULTI/EXEC          | 队列整体连续执行 | EXEC 执行阶段是    | 不自动检测读写冲突 | 多条不含客户端判断的写         |
+| WATCH + MULTI/EXEC  | 乐观 CAS         | 冲突时整批不执行   | 客户端重试         | 读取后条件更新                 |
+| Lua/Functions       | 服务端原子逻辑   | 脚本执行期间是     | 由脚本返回码表达   | 短小的检查并写入               |
+
+优先寻找已有单条命令。`DECR` 已能原子减 1，但若要拒绝负库存，还需要额外条件逻辑。
+
+## MULTI/EXEC：顺序执行，但没有回滚
 
 ```bash
-redis-cli --pipe < commands.txt
-```
-
-```python
-pipe = r.pipeline(transaction=False)
-pipe.set('name', 'zhangsan')
-pipe.incr('counter')
-pipe.get('name')
-results = pipe.execute()
-```
-
-## 事务命令
-
-### 基本事务
-
-```bash
-# 开启事务
 MULTI
-
-# 命令入队
-SET name zhangsan
-INCR age
-SET email zhang@example.com
-
-# 执行事务
-EXEC
-
-# 取消事务
-DISCARD
-```
-
-### 事务特性
-
-| 特性         | 说明                                   |
-| ------------ | -------------------------------------- |
-| **原子性**   | 事务内命令要么全部执行，要么全部不执行 |
-| **批量操作** | 一次性发送多个命令                     |
-| **顺序执行** | 按入队顺序执行                         |
-
-### 事务示例
-
-```python
-import redis
-
-r = redis.Redis()
-
-# 使用事务
-pipe = r.pipeline()
-pipe.set('name', 'zhangsan')
-pipe.incr('age')
-pipe.set('email', 'zhang@example.com')
-results = pipe.execute()
-
-print(results)  # [True, 1, True]
-```
-
-## WATCH 监视
-
-### 乐观锁
-
-```bash
-WATCH name
-GET name
-MULTI
-SET name lisi
+SET order:{9001}:status pending
+DECR stock:{1001}
 EXEC
 ```
 
-### 监视示例
+`MULTI` 后命令先进入队列，`EXEC` 才连续执行。其他客户端不会在这批命令的执行中间插入命令；若连接在 `EXEC` 前断开，队列不会执行。
+
+Redis 不提供关系数据库式回滚。命令入队时可发现的语法错误会使事务拒绝执行；执行期错误则可能只让某条命令失败，前后其他命令仍已生效。例如对错误类型执行 `INCR` 不会撤销之前成功的 `SET`。应用必须检查 `EXEC` 返回数组中的每个结果。
+
+## WATCH：把 EXEC 变成条件提交
+
+<!-- figure-anchor:r05-a02 -->
+
+<!-- figure-managed:r05-f02:start -->
+
+![undefined](./images/r05-f02-watch-cas-conflict-timeline.png)
+
+<!-- figure-managed:r05-f02:end -->
 
 ```python
 import redis
 
-r = redis.Redis()
-
-# 监视 key
-r.watch('account:1', 'account:2')
-
-# 读取当前值
-balance1 = int(r.get('account:1'))
-balance2 = int(r.get('account:2'))
-
-# 开启事务
-pipe = r.pipeline()
-pipe.multi()
-pipe.set('account:1', balance1 - 100)
-pipe.set('account:2', balance2 + 100)
-pipe.execute()
-```
-
-### WATCH 失败处理
-
-```python
-import redis
-
-def transfer_with_retry(r, from_account, to_account, amount, max_retries=3):
-    for i in range(max_retries):
+def reserve_with_watch(r: redis.Redis, product_id: int, attempts: int = 5) -> int:
+    key = f"stock:{{{product_id}}}"
+    for _ in range(attempts):
         try:
-            pipe = r.pipeline(True)
-            pipe.watch(from_account, to_account)
+            with r.pipeline() as pipe:
+                pipe.watch(key)
+                current_raw = pipe.get(key)
+                if current_raw is None:
+                    raise LookupError("stock key is missing")
+                current = int(current_raw)
+                if current <= 0:
+                    return 0
 
-            from_balance = int(r.get(from_account))
-            to_balance = int(r.get(to_account))
-
-            if from_balance < amount:
-                raise Exception('余额不足')
-
-            pipe.multi()
-            pipe.set(from_account, from_balance - amount)
-            pipe.set(to_account, to_balance + amount)
-            pipe.execute()
-            return True
-
+                pipe.multi()
+                pipe.set(key, current - 1)
+                pipe.execute()
+                return current - 1
         except redis.WatchError:
-            print(f'并发冲突，重试第 {i+1} 次')
             continue
-
-    return False
+    raise TimeoutError("stock changed too frequently")
 ```
 
-## 分布式锁
+输入是商品 ID 和最多重试次数；成功返回扣减后的库存，`0` 表示售罄。若从 `WATCH` 到 `EXEC` 之间键被修改、过期或淘汰，`EXEC` 中止并触发 `WatchError`。
 
-### 实现原理
+重试必须有次数和总时间预算。高冲突热点会让大量客户端重复读取与重试，此时 Lua 或重新分片业务状态通常更合适。
 
-```python
-import redis
-import uuid
-import time
-
-class RedisLock:
-    def __init__(self, redis_client, lock_name, timeout=10):
-        self.redis = redis_client
-        self.lock_name = f'lock:{lock_name}'
-        self.lock_value = str(uuid.uuid4())
-        self.timeout = timeout
-
-    def acquire(self):
-        return self.redis.set(
-            self.lock_name,
-            self.lock_value,
-            nx=True,
-            ex=self.timeout
-        )
-
-    def release(self):
-        script = """
-        if redis.call('get', KEYS[1]) == ARGV[1] then
-            return redis.call('del', KEYS[1])
-        else
-            return 0
-        end
-        """
-        return self.redis.eval(script, 1, self.lock_name, self.lock_value)
-
-    def extend(self):
-        script = """
-        if redis.call('get', KEYS[1]) == ARGV[1] then
-            return redis.call('expire', KEYS[1], ARGV[2])
-        else
-            return 0
-        end
-        """
-        return self.redis.eval(script, 1, self.lock_name, self.lock_value, self.timeout)
-```
-
-### 使用示例
-
-```python
-import redis
-
-r = redis.Redis()
-
-def transfer_money(from_id, to_id, amount):
-    lock = RedisLock(r, f'account:{from_id}')
-
-    if lock.acquire():
-        try:
-            from_balance = int(r.get(f'account:{from_id}'))
-            to_balance = int(r.get(f'account:{to_id}'))
-
-            if from_balance < amount:
-                raise Exception('余额不足')
-
-            r.set(f'account:{from_id}', from_balance - amount)
-            r.set(f'account:{to_id}', to_balance + amount)
-
-        finally:
-            lock.release()
-    else:
-        raise Exception('获取锁失败')
-```
-
-### 可重入锁
-
-```python
-import redis
-import uuid
-import threading
-
-class ReentrantLock:
-    def __init__(self, redis_client, lock_name):
-        self.redis = redis_client
-        self.lock_name = f'lock:{lock_name}'
-        self.thread_id = threading.get_ident()
-        self.lock_value = str(uuid.uuid4())
-        self.locks = {}
-
-    def acquire(self, blocking=True, timeout=None):
-        current_count = self.locks.get(self.thread_id, 0)
-
-        if current_count > 0:
-            self.locks[self.thread_id] = current_count + 1
-            return True
-
-        result = self.redis.set(
-            self.lock_name,
-            self.lock_value,
-            nx=True,
-            ex=timeout or 10
-        )
-
-        if result:
-            self.locks[self.thread_id] = 1
-            return True
-
-        return False
-
-    def release(self):
-        current_count = self.locks.get(self.thread_id, 0)
-
-        if current_count <= 0:
-            return
-
-        if current_count == 1:
-            self.redis.delete(self.lock_name)
-            del self.locks[self.thread_id]
-        else:
-            self.locks[self.thread_id] = current_count - 1
-```
-
-## Lua 脚本
-
-### 为什么用 Lua
-
-| 特性       | 说明                                 |
-| ---------- | ------------------------------------ |
-| **原子性** | Lua 脚本整体执行，不会被其他命令打断 |
-| **可编程** | 支持复杂逻辑                         |
-| **高性能** | Redis 内置 Lua 解释器                |
-
-### 常用脚本
+## Lua：在服务端完成检查与写入
 
 ```lua
--- INCR atomically
-local key = KEYS[1]
-local current = redis.call('GET', key) or '0'
-redis.call('SET', key, current + 1)
-return current + 1
-```
-
-```lua
--- Set if not exists with expiration
-local key = KEYS[1]
-local value = ARGV[1]
-local ttl = ARGV[2]
-
-if redis.call('EXISTS', key) == 0 then
-    redis.call('SET', key, value, 'EX', ttl)
-    return 1
-else
-    return 0
-end
-```
-
-### Python 调用 Lua
-
-```python
-# 预加载脚本
-script = r.register_script("""
+-- KEYS[1]: stock key
+-- ARGV[1]: positive quantity
 local current = redis.call('GET', KEYS[1])
-current = current or '0'
-redis.call('SET', KEYS[1], tonumber(current) + 1)
-return tonumber(current) + 1
-""")
+if not current then
+  return {-2, 0}
+end
 
-result = script(keys=['counter'])
-print(result)
+local quantity = tonumber(ARGV[1])
+local stock = tonumber(current)
+if not quantity or quantity <= 0 then
+  return {-3, stock}
+end
+if stock < quantity then
+  return {0, stock}
+end
+
+local remaining = redis.call('DECRBY', KEYS[1], quantity)
+return {1, remaining}
 ```
-
-## 实战场景
-
-### 库存扣减
 
 ```python
-def decrease_stock(product_id, quantity):
-    lock = RedisLock(r, f'stock:{product_id}')
+RESERVE_LUA = """-- 上方 Lua 内容原样放在这里"""
 
-    if lock.acquire():
-        try:
-            stock_key = f'stock:{product_id}'
-            current = int(r.get(stock_key) or 0)
-
-            if current < quantity:
-                return False, '库存不足'
-
-            r.set(stock_key, current - quantity)
-            return True, '扣减成功'
-
-        finally:
-            lock.release()
-
-    return False, '系统繁忙'
+def reserve_with_lua(r, product_id: int, quantity: int) -> tuple[int, int]:
+    if quantity <= 0:
+        raise ValueError("quantity must be positive")
+    script = r.register_script(RESERVE_LUA)
+    status, remaining = script(keys=[f"stock:{{{product_id}}}"], args=[quantity])
+    return int(status), int(remaining)
 ```
 
-### 秒杀系统
+返回码 `1` 表示成功，`0` 表示库存不足，`-2` 表示键缺失，`-3` 表示参数非法。生产代码应保存完整脚本文件并测试；示例中的占位字符串只是避免在文章中重复同一段脚本。
 
-```lua
--- Lua 脚本实现原子扣减
-local stock_key = KEYS[1]
-local order_key = KEYS[2]
-local user_id = ARGV[1]
-local quantity = tonumber(ARGV[2])
+<!-- figure-anchor:r05-a03 -->
 
--- 检查是否已购买
-if redis.call('SISMEMBER', order_key, user_id) == 1 then
-    return -1
-end
+<!-- figure-managed:r05-f03:start -->
 
--- 检查库存
-local stock = tonumber(redis.call('GET', stock_key) or 0)
-if stock < quantity then
-    return 0
-end
+![undefined](./images/r05-f03-lua-atomic-boundary.png)
 
--- 扣减库存并记录购买
-redis.call('DECRBY', stock_key, quantity)
-redis.call('SADD', order_key, user_id)
-return 1
+<!-- figure-managed:r05-f03:end -->
+
+脚本执行期间不会穿插其他命令，因此必须短小、确定且不做网络/磁盘外部调用。长循环或大集合扫描会阻塞实例。Redis Cluster 中脚本涉及的键必须位于同一槽位，`KEYS` 数组应显式声明全部键。
+
+## 结果未知与幂等边界
+
+客户端在发送 `EXEC` 或脚本后超时，无法仅凭超时判断服务端是否已经执行。若直接重试扣库存，可能重复生效。高风险写需要请求 ID：例如将 `request_id` 与执行结果一起记录，并在同一 Lua 脚本中先检查去重键。
+
+Redis 原子性只覆盖 Redis 内部状态，不能把数据库支付、HTTP 调用或消息发送纳入同一事务。跨系统流程应使用 Outbox、幂等消费者、补偿或工作流状态机。
+
+## 最小验证
+
+```bash
+SET stock:{1001} 2
+EVAL "local s=tonumber(redis.call('GET',KEYS[1])); if s < tonumber(ARGV[1]) then return {0,s} end; return {1,redis.call('DECRBY',KEYS[1],ARGV[1])}" 1 stock:{1001} 1
+GET stock:{1001}
 ```
 
-## 小结
+预期脚本返回 `[1, 1]`，随后库存为 1。并发测试应同时验证：成功数量不超过初始库存、最终库存不为负、重复请求 ID 不重复扣减。
 
-| 机制         | 命令/方法  | 适用场景 |
-| ------------ | ---------- | -------- |
-| **事务**     | MULTI/EXEC | 批量操作 |
-| **监视**     | WATCH      | 乐观锁   |
-| **分布式锁** | SET NX     | 并发控制 |
-| **Lua 脚本** | EVAL       | 原子操作 |
-| **管道**     | pipeline   | 批量优化 |
+## 常见误区与适用边界
+
+- Pipeline 优化传输，不自动解决读改写竞争。
+- MULTI/EXEC 没有关系数据库式回滚，必须检查每条结果。
+- WATCH 是乐观冲突检测，不是长期持有的锁。
+- Lua 的原子性以阻塞其他命令为代价，脚本越长风险越高。
+- Redis 内部原子操作不能替代跨数据库、支付和消息系统的一致性协议。
+
+## 本篇自检
+
+<details>
+<summary>1. 三个独立读取为什么适合非事务 Pipeline，却不保证同一时刻快照？</summary>
+
+Pipeline 只把请求批量传输；服务端仍逐条执行，其他客户端可能在它们之间写入。
+
+</details>
+
+<details>
+<summary>2. WATCH 冲突后为什么要限制重试？</summary>
+
+热点键可能持续变化，无限重试会放大负载和尾延迟。次数与总超时耗尽后应失败、排队或改变方案。
+
+</details>
+
+<details>
+<summary>3. Lua 扣库存成功后客户端超时，安全重试需要什么？</summary>
+
+需要请求 ID 和服务端原子去重，让重复调用返回第一次结果，而不是再次扣减。仅凭超时无法判断首次调用是否执行。
+
+</details>
+
+## 本篇总结
+
+先判断问题是 RTT、连续执行、冲突检测还是服务端条件逻辑，再选择 Pipeline、MULTI/EXEC、WATCH 或 Lua。原子边界只在 Redis 内部；执行期错误、超时结果未知和跨系统副作用仍要由幂等与业务协议处理。
+
+## 下一篇衔接
+
+下一篇把短原子操作扩展为跨进程的限时租约：如何证明锁的所有权、续期，为什么 TTL 不足以阻止过期持有者，以及 fencing token 怎样保护下游资源。
+
+## 资料来源
+
+- [Redis transactions](https://redis.io/docs/latest/develop/using-commands/transactions/)
+- [Scripting with Lua](https://redis.io/docs/latest/develop/programmability/eval-intro/)
+- [redis-py pipelines and transactions](https://redis.io/docs/latest/develop/clients/redis-py/transpipe/)
+- [EVAL command](https://redis.io/docs/latest/commands/eval/)

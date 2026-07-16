@@ -1,12 +1,12 @@
 ---
-title: Playwright 开发环境配置与安装
+title: Playwright 开发环境配置：建立可复现的版本合同
 series: playwright
 seriesOrder: 2
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
-modDatetime: 2026-05-09T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: playwright-installation
-description: '详细介绍Playwright的各种安装方式，包括Python、Node.js环境配置，以及浏览器驱动的安装和管理。'
+description: "用虚拟环境、锁定依赖、配套浏览器和验证脚本建立可在本地与 CI 复现的 Playwright Python 环境。"
 tags:
   - Playwright
   - RPA
@@ -16,589 +16,165 @@ draft: false
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
 
-在开始使用 Playwright 之前，我们需要正确配置开发环境。Playwright 支持多种编程语言，包括 Python、JavaScript/TypeScript、Java 和 .NET。本教程以 Python 为主要示例，同时提供其他语言的简要说明。
+你已经理解 `Browser`、`BrowserContext` 和 `Page` 的层级，并能使用终端。完成本篇后，你应能：
 
-![Playwright 开发环境与安装流程图](./images/playwright-install-environment-figure-01.png)
+- 解释 Python 包、Playwright 驱动、浏览器二进制和系统依赖之间的版本合同；
+- 创建隔离环境并验证 Chromium 能实际启动；
+- 设计本地与 CI 使用同一安装入口的项目目录。
 
-### 系统要求
+## 为什么“pip 安装成功”仍可能不能运行
 
-| 要求 | 说明 |
-|------|------|
-| **操作系统** | Windows 10+, macOS 10.14+, Linux |
-| **Python** | 3.7 或更高版本 |
-| **内存** | 至少 4GB RAM（推荐 8GB） |
-| **磁盘空间** | 至少 2GB（用于浏览器驱动） |
-| **网络** | 稳定的网络连接（用于下载浏览器） |
+Playwright Python 包提供 API 和驱动，实际执行页面的是 Playwright 下载并管理的浏览器二进制；Linux 还需要字体、图形和媒体相关系统库。只复制虚拟环境、只缓存浏览器目录，或升级包后不重装浏览器，都可能破坏合同。
 
-## Python 环境配置
+<!-- figure:s02-f01 -->
 
-### 方式一：使用虚拟环境（推荐）
-
-虚拟环境可以隔离项目依赖，避免版本冲突：
-
-```bash
-# 创建虚拟环境
-python -m venv playwright-env
-
-# 激活虚拟环境
-# Windows
-playwright-env\Scripts\activate
-
-# macOS/Linux
-source playwright-env/bin/activate
-
-# 安装 Playwright
-pip install playwright
-
-# 安装浏览器驱动
-playwright install
-```
-
-### 方式二：使用 Conda 环境
-
-```bash
-# 创建 conda 环境
-conda create -n playwright-env python=3.11
-
-# 激活环境
-conda activate playwright-env
-
-# 安装 Playwright
-pip install playwright
-
-# 安装浏览器驱动
-playwright install
-```
-
-### 方式三：全局安装
-
-```bash
-# 直接全局安装
-pip install playwright
-
-# 安装浏览器驱动
-playwright install
-```
-
-## 浏览器驱动安装
-
-### 安装所有浏览器
-
-```bash
-playwright install
-```
-
-这将安装 Chromium、Firefox 和 WebKit 三种浏览器。
-
-### 安装特定浏览器
-
-```bash
-# 仅安装 Chromium
-playwright install chromium
-
-# 仅安装 Firefox
-playwright install firefox
-
-# 仅安装 WebKit
-playwright install webkit
-```
-
-### 安装特定版本
-
-```bash
-# 安装特定版本的 Chromium
-playwright install chromium --version=999.0.0.0
-
-# 查看可用版本
-playwright install --help
-```
-
-### 安装系统依赖（Linux）
-
-在 Linux 系统上，可能需要安装系统依赖：
-
-```bash
-# Debian/Ubuntu
-playwright install-deps
-
-# 或者手动安装
-sudo apt-get install -y \
-    libgtk-3-0 \
-    libwebkit2gtk-4.0-37 \
-    libnss3 \
-    libx11-xcb1 \
-    libxcb-dri3-0 \
-    libdrm2 \
-    libgbm1 \
-    libasound2
-```
-
-### 验证安装
-
-创建验证脚本：
-
-```python
-from playwright.sync_api import sync_playwright
-
-def verify_installation():
-    print("🔍 开始验证 Playwright 安装...\n")
-    
-    with sync_playwright() as p:
-        # 检查 Chromium
-        print("✅ Chromium:")
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context()
-        page = context.new_page()
-        page.goto("data:text/html,<h1>Hello from Chromium</h1>")
-        print(f"   - 版本: {p.chromium.name}")
-        print(f"   - 状态: 正常")
-        browser.close()
-        
-        # 检查 Firefox
-        print("\n✅ Firefox:")
-        browser = p.firefox.launch(headless=True)
-        context = browser.new_context()
-        page = context.new_page()
-        page.goto("data:text/html,<h1>Hello from Firefox</h1>")
-        print(f"   - 版本: {p.firefox.name}")
-        print(f"   - 状态: 正常")
-        browser.close()
-        
-        # 检查 WebKit
-        print("\n✅ WebKit:")
-        browser = p.webkit.launch(headless=True)
-        context = browser.new_context()
-        page = context.new_page()
-        page.goto("data:text/html,<h1>Hello from WebKit</h1>")
-        print(f"   - 版本: {p.webkit.name}")
-        print(f"   - 状态: 正常")
-        browser.close()
-    
-    print("\n🎉 所有浏览器驱动安装成功！")
-
-if __name__ == "__main__":
-    verify_installation()
-```
-
-运行结果：
+![理解依赖锁、Python 包、驱动、浏览器与系统库必须版本配套](./images/final/s02-f01-environment-version-contract.png)
 
 ```text
-🔍 开始验证 Playwright 安装...
-
-✅ Chromium:
-   - 版本: chromium
-   - 状态: 正常
-
-✅ Firefox:
-   - 版本: firefox
-   - 状态: 正常
-
-✅ WebKit:
-   - 版本: webkit
-   - 状态: 正常
-
-🎉 所有浏览器驱动安装成功！
+requirements.lock
+  -> Python 环境
+  -> Playwright 包与驱动
+  -> 该版本配套的 Chromium / Firefox / WebKit
+  -> 操作系统依赖与字体
+  -> 启动验证
 ```
 
-## Pytest 集成配置
+官方当前系统要求会随版本变化，安装前应以官方 Installation 页面为准，不要把某个历史版本的操作系统清单永久写死在内部文档。
 
-Playwright 可以与 pytest 完美集成，适合测试场景：
+## 推荐目录与唯一安装入口
 
-### 安装 pytest 插件
+```text
+order-automation/
+├── requirements.txt
+├── pytest.ini
+├── tests/
+│   ├── conftest.py
+│   └── test_smoke.py
+├── src/
+│   └── order_bot/
+└── artifacts/
+```
+
+`requirements.txt` 只保留直接依赖并锁定经验证的版本；升级应通过单独变更完成，而不是每次运行都拉取“最新版”。
+
+```text
+playwright==<verified-version>
+pytest==<verified-version>
+pytest-playwright==<verified-version>
+```
+
+`<verified-version>` 是团队测试通过的真实版本，不应原样复制。安装入口保持简单：
 
 ```bash
-pip install pytest-playwright
+python -m venv .venv
+
+# PowerShell
+.venv\Scripts\Activate.ps1
+
+# macOS / Linux
+source .venv/bin/activate
+
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m playwright install chromium
 ```
 
-### 创建 pytest 配置文件
+Linux CI 或容器可使用：
 
-创建 `pytest.ini`：
+```bash
+python -m playwright install --with-deps chromium
+```
+
+只安装实际执行的浏览器能缩小下载量。跨浏览器回归应在 CI 矩阵中明确安装对应浏览器，而不是假设本机缓存存在。
+
+## 最小启动验证
+
+验证目标不是“能 import”，而是浏览器能启动、页面能执行脚本、断言能通过。
+
+```python
+from playwright.sync_api import expect, sync_playwright
+
+def main() -> None:
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        page = browser.new_page()
+        page.set_content("<h1>environment ready</h1>")
+        expect(page.get_by_role("heading")).to_have_text("environment ready")
+        print(f"chromium={browser.version}")
+        browser.close()
+
+if __name__ == "__main__":
+    main()
+```
+
+失败边界可按层定位：`ModuleNotFoundError` 属于 Python 环境；“Executable doesn't exist”通常表示浏览器未安装或版本不匹配；Linux 共享库错误属于系统依赖；启动后页面乱码常与字体有关。
+
+## pytest 的最小基线
+
+官方推荐使用 `pytest-playwright` 编写端到端测试。插件提供每个测试独立的 `page` 上下文，避免手工 fixture 错误地共享状态。
 
 ```ini
 [pytest]
 testpaths = tests
-python_files = test_*.py
-python_classes = Test*
-python_functions = test_*
-addopts = -v --tb=short
+addopts = -q --browser chromium
 ```
-
-### 创建基础测试类
-
-创建 `tests/conftest.py`：
 
 ```python
-import pytest
-from playwright.sync_api import Page, Browser, BrowserContext
+from playwright.sync_api import Page, expect
 
-@pytest.fixture(scope="session")
-def browser(browser_type: Browser):
-    """会话级别的浏览器实例"""
-    return browser_type
-
-@pytest.fixture(scope="function")
-def page(browser: Browser):
-    """函数级别的页面实例"""
-    context = browser.new_context()
-    page = context.new_page()
-    yield page
-    context.close()
-
-@pytest.fixture(scope="function")
-def context(browser: Browser) -> BrowserContext:
-    """提供新的浏览器上下文"""
-    context = browser.new_context()
-    yield context
-    context.close()
+def test_runtime_contract(page: Page) -> None:
+    page.set_content("<button>导出订单</button>")
+    expect(page.get_by_role("button", name="导出订单")).to_be_visible()
 ```
 
-### 创建测试文件
-
-创建 `tests/test_example.py`：
-
-```python
-def test_page_title(page):
-    """测试页面标题"""
-    page.goto("https://example.com")
-    assert page.title() == "Example Domain"
-
-def test_navigation(page):
-    """测试页面导航"""
-    page.goto("https://example.com")
-    assert page.url == "https://example.com/"
-```
-
-### 运行测试
+运行：
 
 ```bash
-# 运行所有测试
 pytest
-
-# 运行特定测试
-pytest tests/test_example.py::test_page_title
-
-# 显示详细输出
-pytest -v -s
 ```
 
-## 项目结构组织
+## 缓存、代理与容器边界
 
-### 推荐的项目结构
+- 浏览器缓存只能加速安装，不能替代锁定依赖；缓存键至少应包含操作系统和依赖锁文件哈希。
+- 企业代理应通过受控环境变量或 CI Secret 配置，不要把凭据写入仓库。
+- 官方容器镜像方便提供系统依赖，但镜像版本仍应与项目 Playwright 版本匹配。
+- 认证状态文件可能包含可复用 Cookie，必须加入 `.gitignore`，不能当普通 fixture 提交。
 
-```text
-my-playwright-project/
-├── playwright_env/          # 虚拟环境
-├── tests/                   # 测试文件
-│   ├── __init__.py
-│   ├── conftest.py         # pytest 配置
-│   ├── test_basic.py       # 基础测试
-│   ├── test_advanced.py    # 高级测试
-│   └── pages/              # 页面对象模型
-│       ├── __init__.py
-│       ├── home_page.py
-│       └── login_page.py
-├── pages/                  # 页面对象模型
-│   ├── __init__.py
-│   ├── base_page.py
-│   ├── home_page.py
-│   └── login_page.py
-├── utils/                  # 工具函数
-│   ├── __init__.py
-│   ├── helpers.py
-│   └── constants.py
-├── screenshots/            # 截图保存目录
-├── reports/                # 测试报告
-├── requirements.txt        # 依赖列表
-├── pytest.ini             # pytest 配置
-└── run_tests.py           # 测试运行脚本
-```
+## 常见误区与不适用边界
 
-### requirements.txt 示例
+1. **全局安装方便。** 它让多个项目互相覆盖依赖，降低复现性。
+2. **手工指定浏览器内部版本。** 应让当前 Playwright 版本管理配套二进制。
+3. **升级 Python 包但沿用旧缓存。** 应重新执行浏览器安装并运行冒烟测试。
+4. **把开发机目录整体复制进容器。** 平台相关二进制和路径通常不可移植。
+5. **每次构建都无条件安装全部浏览器。** 只需要 Chromium 的流水线不必支付三套浏览器成本。
 
-```txt
-playwright==1.40.0
-pytest==7.4.3
-pytest-playwright==0.4.3
-pytest-html==4.1.1
-pytest-xdist==3.5.0
-allure-pytest==2.13.2
-```
+## 自检题
 
-## IDE 配置
+1. 为什么 `pip install playwright` 和 `playwright install chromium` 是两个步骤？
+2. 浏览器启动报缺少共享库时，应修改 Python 代码吗？
+3. CI 浏览器缓存命中后，为什么仍要运行冒烟测试？
 
-### VS Code 配置
+<details>
+<summary>查看答案</summary>
 
-创建 `.vscode/settings.json`：
+1. 前者安装 Python API/驱动，后者安装该版本配套的浏览器二进制。
+2. 不应；这是系统依赖层问题，应使用 `--with-deps`、受支持镜像或补齐系统库。
+3. 缓存只说明文件存在，不能证明版本、权限、系统库和字体合同仍有效。
 
-```json
-{
-    "python.defaultInterpreterPath": "${workspaceFolder}/playwright_env/Scripts/python.exe",
-    "python.linting.enabled": true,
-    "python.linting.pylintEnabled": false,
-    "python.linting.flake8Enabled": true,
-    "python.formatting.provider": "black",
-    "python.testing.pytestEnabled": true,
-    "python.testing.unittestEnabled": false,
-    "editor.formatOnSave": true
-}
-```
+</details>
 
-### PyCharm 配置
+## 本篇总结
 
-1. **设置 Python 解释器**
-   - File → Settings → Project → Python Interpreter
-   - 选择虚拟环境中的 Python
+可复现环境由依赖锁、浏览器二进制、系统依赖和启动验证共同构成。把它们收敛到同一安装入口，才能让本地、容器和 CI 的行为可比较。
 
-2. **配置 pytest**
-   - File → Settings → Tools → Python Integrated Tools
-   - Default test runner: pytest
+## 下一篇衔接
 
-3. **安装插件**
-   - Python 插件
-   - Atom Material Theme（可选）
+环境稳定后，下一篇进入运行时隔离：如何用 `BrowserContext` 表达账号边界，并安全处理多标签页、弹窗、iframe 与认证状态。
 
-## 常用配置选项
+## 资料来源
 
-### 浏览器启动配置
-
-```python
-from playwright.sync_api import sync_playwright
-
-def browser_config_examples():
-    with sync_playwright() as p:
-        # 基本配置
-        browser = p.chromium.launch()
-        
-        # 有头模式（显示浏览器窗口）
-        browser = p.chromium.launch(headless=False)
-        
-        # 自定义浏览器路径
-        browser = p.chromium.launch(
-            executable_path="/path/to/chromium"
-        )
-        
-        # 禁用 GPU
-        browser = p.chromium.launch(
-            args=["--disable-gpu"]
-        )
-        
-        # 禁用自动化提示栏
-        browser = p.chromium.launch(
-            args=["--disable-blink-features=AutomationControlled"]
-        )
-        
-        # 设置视口大小
-        context = browser.new_context(
-            viewport={"width": 1920, "height": 1080}
-        )
-        
-        # 设置用户代理
-        context = browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        )
-        
-        browser.close()
-```
-
-### 上下文配置
-
-```python
-def context_config_examples():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        
-        # 地理位置配置
-        context = browser.new_context(
-            geolocation={"latitude": 39.9042, "longitude": 116.4074},
-            permissions=["geolocation"]
-        )
-        
-        # 模拟设备
-        context = browser.new_context(
-            **p.devices["iPhone 13"]
-        )
-        
-        # 自定义语言
-        context = browser.new_context(
-            locale="zh-CN",
-            timezone_id="Asia/Shanghai"
-        )
-        
-        # 设置视口和设备比例
-        context = browser.new_context(
-            viewport={"width": 1280, "height": 720},
-            device_scale_factor=2
-        )
-        
-        browser.close()
-```
-
-## 常见问题解决
-
-### 问题 1：安装超时
-
-```bash
-# 使用国内镜像
-pip install playwright -i https://pypi.tuna.tsinghua.edu.cn/simple
-
-# 设置浏览器下载镜像
-export PLAYWRIGHT_DOWNLOAD_HOST=https://playwright.azureedge.net
-playwright install
-```
-
-### 问题 2：权限错误（Linux）
-
-```bash
-# 添加执行权限
-chmod +x ~/.cache/ms-playwright/chromium-*/chrome-linux/chrome
-```
-
-### 问题 3：浏览器无法启动
-
-```python
-# 清理缓存并重新安装
-import subprocess
-subprocess.run(["playwright", "install", "--force"])
-```
-
-### 问题 4：找不到 Chromium
-
-```python
-# 手动指定浏览器路径
-from playwright.sync_api import sync_playwright
-
-with sync_playwright() as p:
-    browser = p.chromium.launch(
-        executable_path="/usr/bin/chromium-browser",
-        # 或者 Windows
-        # executable_path="C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
-    )
-    page = browser.new_page()
-    page.goto("https://example.com")
-    browser.close()
-```
-
-## 更新 Playwright
-
-### 检查当前版本
-
-```python
-import playwright
-print(playwright.__version__)
-```
-
-### 升级到最新版本
-
-```bash
-# 升级 Playwright
-pip install --upgrade playwright
-
-# 重新安装浏览器驱动
-playwright install
-```
-
-### 升级特定浏览器
-
-```bash
-# 只升级 Chromium
-playwright install chromium
-```
-
-## Docker 环境配置
-
-### Dockerfile 示例
-
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-# 安装系统依赖
-RUN apt-get update && apt-get install -y \
-    libgtk-3-0 \
-    libwebkit2gtk-4.0-37 \
-    libnss3 \
-    libx11-xcb1 \
-    libxcb-dri3-0 \
-    libdrm2 \
-    libgbm1 \
-    libasound2 \
-    && rm -rf /var/lib/apt/lists/*
-
-# 复制依赖文件
-COPY requirements.txt .
-
-# 安装 Python 依赖
-RUN pip install --no-cache-dir -r requirements.txt
-
-# 安装 Playwright 浏览器
-RUN playwright install chromium
-
-# 复制项目文件
-COPY . .
-
-# 运行测试
-CMD ["pytest"]
-```
-
-### docker-compose.yml 示例
-
-```yaml
-version: '3.8'
-
-services:
-  playwright:
-    build: .
-    container_name: playwright-test
-    volumes:
-      - ./tests:/app/tests
-      - ./reports:/app/reports
-    environment:
-      - PYTHONPATH=/app
-```
-
-## 性能优化配置
-
-### 并行浏览器启动
-
-```python
-from playwright.sync_api import sync_playwright
-from concurrent.futures import ThreadPoolExecutor
-
-def run_parallel_tests():
-    def test_in_browser(browser_name):
-        with sync_playwright() as p:
-            browser = getattr(p, browser_name).launch()
-            page = browser.new_page()
-            page.goto("https://example.com")
-            result = page.title()
-            browser.close()
-            return result
-    
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        browsers = ["chromium", "firefox", "webkit"]
-        results = list(executor.map(test_in_browser, browsers))
-    
-    print(results)
-
-run_parallel_tests()
-```
-
-### 浏览器复用
-
-```python
-# 在测试会话中复用浏览器实例
-@pytest.fixture(scope="session")
-def browser_with_context(browser_type: Browser):
-    context = browser_type.launch()
-    yield context
-    context.close()
-
-@pytest.fixture(scope="function")
-def page(browser_with_context: Browser, request):
-    page = browser_with_context.new_page()
-    yield page
-    page.close()
-```
+- [Playwright Python：Installation](https://playwright.dev/python/docs/intro)
+- [Playwright Python：Browsers](https://playwright.dev/python/docs/browsers)
+- [Playwright Python：Continuous Integration](https://playwright.dev/python/docs/ci)

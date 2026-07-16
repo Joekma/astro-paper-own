@@ -2,9 +2,9 @@
 title: Python 垃圾回收机制
 author: Joekma
 pubDatetime: 2024-08-11T00:00:00.000+08:00
-modDatetime: 2026-07-11T00:00:00.000+08:00
+modDatetime: 2026-07-17T00:00:00.000+08:00
 slug: python-garbage-collection
-description: '深入理解 Python 垃圾回收机制：引用计数、分代回收、循环垃圾回收'
+description: "以 CPython 为基线理解引用计数、循环垃圾回收、弱引用与内存问题的证据化排查。"
 tags:
   - Python
   - 内存管理
@@ -17,566 +17,184 @@ seriesOrder: 27
 language: zh-CN
 ---
 
-# Python 垃圾回收机制
+## 前置知识与学习目标
 
-## 什么是垃圾回收？
+你需要理解对象引用、容器和上下文管理器。本文以 CPython 3.12–3.14 为基线，解决报表服务运行数天后内存持续上升的问题。
 
-**垃圾回收（Garbage Collection，GC）**是自动内存管理的一种形式，用于自动回收不再使用的内存。
+学完后，你应该能够：
 
-**为什么需要垃圾回收？**
-- 手动管理内存容易出错
-- 防止内存泄漏
-- 避免悬挂指针
-- 提高开发效率
+1. 区分引用计数与循环垃圾回收的职责。
+2. 解释“不可达对象”“仍被缓存持有”和“进程 RSS 未下降”的差异。
+3. 使用 `weakref`、`gc` 与 `tracemalloc` 收集证据。
+4. 避免依赖析构时机、手动调阈值和强制 `collect()` 的常见误区。
 
-![Python 垃圾回收以引用计数为主，并通过分代回收、标记清除、weakref、gc 模块和内存分析工具处理循环引用与内存泄漏](./images/python-garbage-collection-memory-model-figure-01.png)
+## 真实场景与核心问题
 
-## Python 内存管理基础
+报表任务完成后，业务变量已 `del`，进程内存却不下降。可能原因至少有三类：对象仍被全局缓存或回调引用；对象形成不可达引用环，等待循环收集；对象已释放给 Python 分配器，但内存暂未归还操作系统。
 
-### 引用计数
+“内存上涨”等于线索，不等于垃圾回收器失效。
 
-Python 使用**引用计数**作为主要的内存管理机制。
+## CPython 的两套机制
 
-<!-- snippet: id=python-garbage-collection-01 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import sys
+CPython 主要用引用计数管理对象寿命：强引用增加计数，引用消失减少计数，计数到零时通常立即释放。仅靠引用计数无法回收互相引用且外部已不可达的对象，因此还有循环垃圾回收器跟踪适合参与环的容器对象。
 
-# 查看对象的引用计数
-a = [1, 2, 3]  # 引用计数 = 1
-print(f"引用计数: {sys.getrefcount(a)}")
+<!-- figure-anchor:s27-f01 -->
 
-b = a  # 引用计数 = 2
-print(f"引用计数: {sys.getrefcount(a)}")
+<!-- figure-ref:s27-f01 -->
 
-c = [a]  # 引用计数 = 3
-print(f"引用计数: {sys.getrefcount(a)}")
+![对比引用计数归零立即释放与孤立引用环需循环 GC 才能识别。](./images/s27-f01-reference-count-cycle-collection.png)
 
-del b  # 引用计数 = 2
-print(f"引用计数: {sys.getrefcount(a)}")
+<!-- snippet: id=python-intermediate-27-01 mode=compile python=3.12-3.14 deps=stdlib -->
 
-del c  # 引用计数 = 1
-print(f"引用计数: {sys.getrefcount(a)}")
-
-del a  # 引用计数 = 0，对象被销毁
-```
-
-### 引用计数的优缺点
-
-**引用计数的优点**：
-- 简单高效
-- 实时回收内存
-- 无暂停时间
-
-**引用计数的缺点**：
-- 无法处理循环引用
-- 需要额外的内存存储引用计数
-- 频繁的引用计数更新
-
-## 循环引用问题
-
-### 什么是循环引用？
-
-<!-- snippet: id=python-garbage-collection-02 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 循环引用示例
-a = []  # 对象 A
-b = []  # 对象 B
-a.append(b)  # A 引用 B
-b.append(a)  # B 引用 A
-
-# 此时 A 和 B 的引用计数都是 2
-# 即使删除 a 和 b，它们也无法被回收
-del a
-del b
-# A 和 B 仍然互相引用，无法释放
-```
-
-### 循环引用导致内存泄漏
-
-<!-- snippet: id=python-garbage-collection-03 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import tracemalloc
-import gc
-
-# 启用内存追踪
-tracemalloc.start()
-
-def create_cycle():
-    a = []
-    b = []
-    a.append(b)
-    b.append(a)
-    # 没有显式删除，循环引用存在
-
-# 创建大量循环引用
-for i in range(10000):
-    create_cycle()
-
-# 手动触发垃圾回收
-gc.collect()
-
-# 查看内存使用
-snapshot = tracemalloc.take_snapshot()
-top_stats = snapshot.statistics('lineno')
-print("\n前10个内存使用最多的位置:")
-for stat in top_stats[:10]:
-    print(stat)
-```
-
-## Python 垃圾回收器
-
-### 分代回收
-
-Python 将对象按存活时间分为三代：
-
-<!-- snippet: id=python-garbage-collection-04 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import gc
-
-# 查看垃圾回收器信息
-print("GC 阈值:", gc.get_threshold())
-print("GC 计数:", gc.get_count())
-print("GC 分代:", gc.get世代())
-
-# 默认阈值：(700, 10, 10)
-# - 第 0 代：700 个对象
-# - 第 1 代：10 次第 0 代回收
-# - 第 2 代：10 次第 1 代回收
-```
-
-### 触发条件
-
-<!-- snippet: id=python-garbage-collection-05 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import gc
-
-# 当第 0 代的对象数量超过阈值时，触发垃圾回收
-# gc.get_threshold() 返回 (700, 10, 10)
-# 含义：
-# - 第 0 代：700 个对象
-# - 第 1 代：10 次第 0 代回收
-# - 第 2 代：10 次第 1 代回收
-```
-
-### 手动控制垃圾回收
-
-<!-- snippet: id=python-garbage-collection-06 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import gc
-
-# 手动触发垃圾回收
-gc.collect()
-
-# 禁用自动垃圾回收
-gc.disable()
-
-# 启用自动垃圾回收
-gc.enable()
-
-# 检查是否启用
-print("GC 是否启用:", gc.isenabled())
-
-# 设置垃圾回收阈值
-gc.set_threshold(100, 10, 10)
-```
-
-## 垃圾回收算法
-
-### 标记-清除算法
-
-<!-- snippet: id=python-garbage-collection-07 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 标记-清除算法分为两个阶段：
-# 1. 标记阶段：遍历所有对象，标记可达对象
-# 2. 清除阶段：删除所有未标记的对象
-
-# 示例说明
-class GraphNode:
-    def __init__(self, name):
-        self.name = name
-        self.edges = []
-
-    def add_edge(self, other):
-        self.edges.append(other)
-
-# 创建循环引用
-node1 = GraphNode("A")
-node2 = GraphNode("B")
-node1.add_edge(node2)
-node2.add_edge(node1)
-
-# 标记阶段：从根对象开始，标记所有可达对象
-# 可达对象：node1, node2
-# 未标记：无
-
-# 清除阶段：删除未标记的对象
-# 无对象被删除（因为有外部引用）
-```
-
-### 标记-压缩算法
-
-<!-- snippet: id=python-garbage-collection-08 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 标记-压缩算法在标记-清除的基础上，增加压缩步骤
-# 将存活对象移动到一端，减少内存碎片
-
-# 示例
-before = [None] * 10
-before[2] = "A"
-before[5] = "B"
-before[8] = "C"
-
-# 压缩后
-after = ["A", "B", "C"] + [None] * 7
-```
-
-## 追踪对象
-
-### gc 模块追踪
-
-<!-- snippet: id=python-garbage-collection-09 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import gc
-import sys
-
-# 创建测试对象
-class TestObject:
-    def __init__(self, name):
-        self.name = name
-
-    def __repr__(self):
-        return f"TestObject({self.name})"
-
-# 创建对象
-obj1 = TestObject("obj1")
-obj2 = TestObject("obj2")
-obj3 = TestObject("obj3")
-
-# 获取所有追踪的对象
-tracked_objects = gc.get_objects()
-print(f"追踪的对象数量: {len(tracked_objects)}")
-
-# 查找特定类型的对象
-test_objects = [obj for obj in tracked_objects if isinstance(obj, TestObject)]
-print(f"TestObject 数量: {len(test_objects)}")
-
-# 查看对象的引用
-print("\nobj1 的引用:")
-for ref in gc.get_referrers(obj1):
-    print(f"  - {type(ref)}: {ref if not isinstance(ref, dict) else 'dict'}")
-```
-
-### 引用关系
-
-<!-- snippet: id=python-garbage-collection-10 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 查看对象的引用者
-import gc
-
-a = [1, 2, 3]
-b = {"key": a}
-c = (a,)
-
-print("a 的引用者:")
-for ref in gc.get_referrers(a):
-    print(f"  {type(ref).__name__}: {ref}")
-
-# 查看对象引用的对象
-print("\na 引用的对象:")
-for ref in gc.get_referents(a):
-    print(f"  {type(ref).__name__}: {ref}")
-```
-
-## 内存泄漏与排查
-
-### 常见内存泄漏
-
-<!-- snippet: id=python-garbage-collection-11 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 1. 全局变量持有引用
-global_list = []
-
-def leak_memory():
-    # 不断添加到全局列表，导致内存泄漏
-    data = [i for i in range(10000)]
-    global_list.append(data)
-
-# 2. 缓存未清理
-cache = {}
-
-def leaky_cache(key, value):
-    cache[key] = value
-    # 缓存无限增长
-
-# 3. 事件处理器未移除
-class EventEmitter:
-    def __init__(self):
-        self.listeners = []
-
-    def on(self, event, callback):
-        self.listeners.append((event, callback))
-
-    def remove_all_listeners(self):
-        # 未清理，监听器持有引用
-        self.listeners.clear()
-```
-
-### 使用 weakref 避免内存泄漏
-
-<!-- snippet: id=python-garbage-collection-12 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
 import weakref
 
-# 使用弱引用，不增加引用计数
+
 class Node:
-    def __init__(self, value):
-        self.value = value
-        self.parent = None
-        self.children = []
+    def __init__(self, name: str) -> None:
+        self.name = name
+        self.peer: Node | None = None
 
-    def add_child(self, child):
-        self.children.append(child)
-        child.parent = self
 
-# 使用弱引用
-class WeakNode:
-    def __init__(self, value):
-        self.value = value
-        self.parent = weakref.ref(self)
-        self.children = []
+left = Node("left")
+right = Node("right")
+left.peer = right
+right.peer = left
+left_ref = weakref.ref(left)
+right_ref = weakref.ref(right)
 
-    def add_child(self, child):
-        self.children.append(child)
-        child.parent = weakref.ref(self)
+del left, right
+gc.collect()
 
-# 示例
-root = WeakNode("root")
-child1 = WeakNode("child1")
-root.add_child(child1)
-
-print(f"root 的引用计数: {sys.getrefcount(root)}")
-print(f"child1 的引用计数: {sys.getrefcount(child1)}")
-
-# 即使有循环引用，弱引用也不会阻止垃圾回收
-del root
-del child1
-
-# 检查对象是否被回收
-# 如果对象已被回收，weakref 返回 None
+assert left_ref() is None
+assert right_ref() is None
 ```
 
-### 缓存实现
+弱引用不增加对象的强引用计数，适合缓存、观察者和回指等“不要因此延长寿命”的关系。但并非所有类型都支持弱引用，且取出弱引用后对象仍可能已消失，调用方必须处理 `None`。
 
-<!-- snippet: id=python-garbage-collection-13 mode=compile python=3.12-3.14 deps=stdlib -->
+## 分代是优化策略，不是业务契约
+
+循环收集器按代管理被跟踪对象，利用“多数新对象很快死亡”的经验减少每次扫描成本。代数、阈值含义和自由线程构建的触发条件会随 CPython 版本演进；业务代码不应假设固定默认阈值或精确回收时刻。
+
+可观察接口包括：
+
 ```python
-import weakref
-import functools
-
-# 使用弱引用的缓存
-class Cache:
-    def __init__(self):
-        self.cache = weakref.WeakValueDictionary()
-
-    def get(self, key):
-        return self.cache.get(key)
-
-    def set(self, key, value):
-        self.cache[key] = value
-
-# 使用装饰器实现缓存
-def memoize(func):
-    cache = weakref.WeakValueDictionary()
-
-    @functools.wraps(func)
-    def wrapper(*args):
-        if args in cache:
-            return cache[args]
-        result = func(*args)
-        cache[args] = result
-        return result
-
-    return wrapper
-
-@memoize
-def expensive_computation(x, y):
-    print(f"执行计算: {x} + {y}")
-    return x + y
+gc.isenabled()
+gc.get_count()
+gc.get_threshold()
+gc.get_stats()
 ```
 
-## 性能优化
+它们用于诊断当前运行时，不应写成跨版本不变量。禁用 GC 只影响循环收集，不关闭引用计数；在没有基准、停顿和内存证据时不要调阈值。
 
-### 减少垃圾回收频率
+## 先找“谁还在引用”，再谈泄漏
 
-<!-- snippet: id=python-garbage-collection-14 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import gc
+常见强引用来源：
 
-# 调整垃圾回收阈值，减少 GC 频率
-gc.set_threshold(10000, 100, 100)
+- 无上限字典或 LRU 缓存。
+- 日志 handler、事件订阅和回调闭包。
+- 后台任务、队列和线程局部变量。
+- IPython/Notebook 输出历史。
+- 异常 traceback 保存局部变量。
 
-# 或者禁用 GC（慎用）
-gc.disable()
+`gc.get_referrers` 可能包含调试器自身临时对象，结果必须谨慎解释。更稳定的第一步通常是比较分配快照。
 
-try:
-    # 执行批量操作
-    for i in range(100000):
-        data = process_data()
-finally:
-    # 操作完成后重新启用 GC
-    gc.enable()
-```
+<!-- figure-anchor:s27-f02 -->
 
-### 及时清理大对象
+<!-- figure-ref:s27-f02 -->
 
-<!-- snippet: id=python-garbage-collection-15 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 对于大对象，及时清理
-def process_large_data():
-    large_data = load_large_file()
+![把负载、缓存指标、tracemalloc 快照、对象引用和 RSS 组合成分层诊断流程。](./images/s27-f02-memory-diagnostics-evidence-loop.png)
 
-    try:
-        result = process(large_data)
-        return result
-    finally:
-        # 显式清理
-        del large_data
-        gc.collect()
-```
+<!-- snippet: id=python-intermediate-27-02 mode=compile python=3.12-3.14 deps=stdlib -->
 
-### 使用 __slots__ 减少内存占用
-
-<!-- snippet: id=python-garbage-collection-16 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 普通类
-class Point:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-# 使用 __slots__
-class PointWithSlots:
-    __slots__ = ['x', 'y']
-
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-# __slots__ 的优点：
-# 1. 减少内存占用
-# 2. 加快属性访问
-# 3. 防止动态添加属性
-```
-
-## 调试内存问题
-
-### tracemalloc 模块
-
-<!-- snippet: id=python-garbage-collection-17 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 import tracemalloc
 
-# 启动追踪
+
+def allocate_reports(count: int) -> list[bytes]:
+    return [b"x" * 1024 for _ in range(count)]
+
+
 tracemalloc.start()
+before = tracemalloc.take_snapshot()
+reports = allocate_reports(100)
+after = tracemalloc.take_snapshot()
 
-# 执行代码
-def process():
-    data = [i for i in range(10000)]
-    return sum(data)
+top = after.compare_to(before, "lineno")
+assert top
 
-process()
-
-# 获取快照
-snapshot = tracemalloc.take_snapshot()
-
-# 显示前10个内存使用最多的地方
-top_stats = snapshot.statistics('lineno')
-print("前10个内存使用最多的位置:")
-for stat in top_stats[:10]:
-    print(stat)
-
-# 比较两个快照
-snapshot1 = tracemalloc.take_snapshot()
-# ... 执行一些代码 ...
-snapshot2 = tracemalloc.take_snapshot()
-
-# 显示差异
-top_stats = snapshot2.compare_to(snapshot1, 'lineno')
-print("\n内存增长最多的地方:")
-for stat in top_stats[:5]:
-    print(stat)
+del reports
+tracemalloc.stop()
 ```
 
-### objgraph 模块
+生产排查应在相同负载阶段比较快照，按模块和 traceback 聚合，并同时记录任务量、缓存大小与进程 RSS。`tracemalloc` 追踪 Python 分配，不覆盖所有扩展库的原生内存。
 
-<!-- snippet: id=python-garbage-collection-18 mode=compile python=3.12-3.14 deps=stdlib -->
+## 资源释放不应交给 GC 猜时机
+
+文件、套接字、锁和事务要用 `with` 或显式 `close()`。对象回收时机在不同 Python 实现、不同并发和不同引用图下不保证一致；`__del__` 还会增加循环和解释器关闭阶段的复杂性。
+
 ```python
-# 安装: python -m pip install objgraph
+from pathlib import Path
 
-import objgraph
-
-# 显示增长最多的对象类型
-objgraph.show_most_common_types(limit=10)
-
-# 显示某个类型的对象
-objgraph.show_backref([obj], max_depth=3)
-
-# 统计某个类型的对象数量
-count = objgraph.count('MyClass')
-print(f"MyClass 实例数量: {count}")
+with Path("report.txt").open("w", encoding="utf-8") as file:
+    file.write("done")
 ```
 
-### memory_profiler
+## 常见误区与适用边界
 
-<!-- snippet: id=python-garbage-collection-19 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 安装: python -m pip install memory_profiler
+### `del obj` 会立刻释放对象
 
-from memory_profiler import profile
+它只删除一个名字到对象的引用。其他容器、闭包、traceback 或缓存仍可能持有对象。
 
-@profile
-def memory_intensive_function():
-    data = [i ** 2 for i in range(1000000)]
-    return sum(data)
+### `gc.collect()` 是内存优化按钮
 
-if __name__ == '__main__':
-    memory_intensive_function()
-```
+频繁强制收集会增加停顿，也无法释放仍可达对象。它适合受控诊断或极少数有测量依据的生命周期边界。
 
-## 最佳实践
+### RSS 不下降说明对象没释放
 
-**Python 内存管理最佳实践**：
+Python 分配器或系统分配器可能保留内存供后续复用。应结合对象数量、快照和稳定负载判断。
 
-1. **避免循环引用**
-   - 使用弱引用
-   - 及时清理引用
+### `sys.getrefcount(obj)` 给出业务引用数
 
-2. **使用合适的数据结构**
-   - __slots__ 优化内存
-   - 生成器代替列表
+把对象传给函数本身会产生临时引用，调试工具也可能增加引用。它适合相对观察，不是精确所有权证明。
 
-3. **手动控制垃圾回收**
-   - 批量操作时禁用 GC
-   - 操作完成后显式回收
+## 本篇自检
 
-4. **使用内存分析工具**
-   - tracemalloc
-   - objgraph
-   - memory_profiler
+<details>
+<summary>1. 引用计数为什么不能单独回收两个互相引用的不可达对象？</summary>
 
-5. **及时清理大对象**
-   - 使用 finally 清理
-   - 显式 del 对象
+两者仍各自持有对方的强引用，引用计数不会降到零；循环收集器需要从可达性角度识别这个孤立环。
 
-## 总结
+</details>
 
-Python 的垃圾回收机制包括：
+<details>
+<summary>2. 为什么文件关闭不能依赖对象析构？</summary>
 
-1. **引用计数**：主要内存管理机制，实时回收
-2. **标记-清除**：处理循环引用
-3. **分代回收**：优化性能，减少 GC 开销
+回收时机不是跨实现稳定契约；资源可能长时间占用。上下文管理器提供确定的退出边界。
 
-**理解垃圾回收机制有助于**：
-- 避免内存泄漏
-- 优化内存使用
-- 编写高效的 Python 代码
-- 调试内存问题
+</details>
+
+<details>
+<summary>3. 内存增长时第一步为什么不是调 GC 阈值？</summary>
+
+增长可能来自仍可达缓存、原生扩展或分配器保留。应先用负载指标和快照定位分配与引用来源。
+
+</details>
+
+## 本篇总结
+
+在 CPython 中，引用计数处理多数对象，循环垃圾回收器补足不可达引用环。内存排查的核心是区分可达性、分配来源和操作系统指标，并用确定性资源管理取代对回收时机的假设。
+
+## 下一篇衔接
+
+下一篇处理报表日志：正则引擎如何回溯，贪婪、勉强和占有量词怎样改变搜索空间，以及何时应换用解析器。
+
+## 资料来源与版本基线
+
+- [Python `gc`](https://docs.python.org/3/library/gc.html)
+- [Python Garbage collector design](https://devguide.python.org/internals/garbage-collector/)
+- [Python `weakref`](https://docs.python.org/3/library/weakref.html)
+- [Python `tracemalloc`](https://docs.python.org/3/library/tracemalloc.html)
+
+版本基线：CPython 3.12–3.14。代际实现与阈值是版本相关实现细节，示例不把默认值写成固定契约。

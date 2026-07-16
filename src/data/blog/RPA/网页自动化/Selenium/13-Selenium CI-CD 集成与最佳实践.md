@@ -4,9 +4,9 @@ series: selenium
 seriesOrder: 13
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
-modDatetime: 2026-05-09T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: selenium-ci-cd-integration
-description: '详细介绍Selenium在CI/CD环境中的集成，包括GitHub Actions、GitLab CI配置，以及测试报告生成和最佳实践。'
+description: "详细介绍Selenium在CI/CD环境中的集成，包括GitHub Actions、GitLab CI配置，以及测试报告生成和最佳实践。"
 tags:
   - Selenium
   - RPA
@@ -16,11 +16,32 @@ draft: false
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
+
+已能用 pytest 运行隔离的 Selenium 测试，理解容器、CI job、制品和并行执行的基本概念。
+
+读完后，你应该能够：
+
+- 设计从提交、构建、浏览器矩阵到报告门禁的流水线；
+- 区分 CI runner、浏览器容器、RemoteWebDriver 与 Grid 组件；
+- 按 CPU、内存和会话时长估算并行容量；
+- 保留可关联的测试报告、截图、日志和环境清单，并保护 Grid 边界；
+
+全系列沿用同一个案例：在测试环境自动化 Acme 采购门户。用户登录后搜索采购单 PO-2026-0715，在明细页导出 CSV；测试使用 data-testid 作为稳定定位契约，并把失败截图、日志和下载文件写入独立运行目录。
+
+**本篇边界：**本篇只讲交付系统，不重复本地安装和 pytest 语法。Grid 用于远程、并行和跨平台会话，不是所有项目的默认依赖。
+
+## 真实场景与核心问题
 
 将 Selenium 集成到 CI/CD 流程中可以实现自动化测试、持续监控和快速反馈。本教程将详细介绍如何在各种 CI/CD 平台上配置 Selenium。
 
-![Selenium CI CD 与 Grid 浏览器矩阵流水线图](./images/selenium-cicd-grid-pipeline-figure-01.png)
+<!-- figure-anchor:s13-a01 -->
+
+<!-- figure-managed:s13-f01:start -->
+
+![展示 Git push、CI runner、pytest、RemoteWebDriver、Grid Router、队列、分发、节点槽位、制品与质量门](./images/s13-f01-ci-grid-pipeline.png)
+
+<!-- figure-managed:s13-f01:end -->
 
 ### CI/CD 集成架构
 
@@ -97,7 +118,7 @@ allure-pytest==2.13.2
 ### docker-compose.yml
 
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   selenium-tests:
@@ -108,12 +129,18 @@ services:
       - ./reports:/app/reports
     environment:
       - PYTHONPATH=/app
-    shm_size: '2gb'
+    shm_size: "2gb"
 ```
 
 ## GitHub Actions 集成
 
-### 基础工作流
+<!-- figure-anchor:s13-a02 -->
+
+<!-- figure-managed:s13-f02:start -->
+
+![用测试数、平均时长、槽位、CPU/RAM 与启动重试开销解释并行容量上限](./images/s13-f02-parallel-capacity-model.png)
+
+<!-- figure-managed:s13-f02:end -->### 基础工作流
 
 ```yaml
 # .github/workflows/selenium-tests.yml
@@ -121,56 +148,56 @@ name: Selenium Tests
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    
-    - name: Install Chrome
-      run: |
-        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
-        echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list
-        apt-get update
-        apt-get install -y google-chrome-stable
-    
-    - name: Run Selenium tests
-      run: |
-        pytest tests/ \
-          --html=reports/report.html \
-          --junitxml=reports/results.xml \
-          --tb=short
-    
-    - name: Upload HTML Report
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: playwright-report
-        path: reports/
-        retention-days: 30
-    
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-results
-        path: reports/results.xml
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Chrome
+        run: |
+          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
+          echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list
+          apt-get update
+          apt-get install -y google-chrome-stable
+
+      - name: Run Selenium tests
+        run: |
+          pytest tests/ \
+            --html=reports/report.html \
+            --junitxml=reports/results.xml \
+            --tb=short
+
+      - name: Upload HTML Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: reports/
+          retention-days: 30
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: reports/results.xml
 ```
 
 ### 跨浏览器测试
@@ -181,7 +208,7 @@ name: Multi-Browser Tests
 
 on:
   schedule:
-    - cron: '0 2 * * *'
+    - cron: "0 2 * * *"
 
 jobs:
   chrome:
@@ -190,7 +217,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
       - run: pip install -r requirements.txt
       - run: pip install pytest pytest-xdist
       - run: pytest tests/ --browser=chrome -n 4
@@ -201,7 +228,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
       - run: pip install -r requirements.txt
       - run: pip install pytest pytest-xdist
       - run: pytest tests/ --browser=firefox -n 4
@@ -222,12 +249,12 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4]
-    
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
       - run: pip install -r requirements.txt
       - run: pytest tests/ --shard=${{ matrix.shard }}/4
       - uses: actions/upload-artifact@v4
@@ -298,19 +325,19 @@ pipeline {
             args '-u root:root'
         }
     }
-    
+
     environment {
         BROWSER = 'chrome'
         HEADLESS = 'true'
     }
-    
+
     stages {
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
-        
+
         stage('Setup') {
             steps {
                 sh '''
@@ -321,7 +348,7 @@ pipeline {
                 '''
             }
         }
-        
+
         stage('Test') {
             steps {
                 sh '''
@@ -332,7 +359,7 @@ pipeline {
                 '''
             }
         }
-        
+
         stage('Report') {
             steps {
                 junit 'reports/results.xml'
@@ -347,7 +374,7 @@ pipeline {
             }
         }
     }
-    
+
     post {
         always {
             cleanWs()
@@ -375,7 +402,7 @@ markers =
     integration: marks tests as integration tests
     slow: marks tests as slow
 
-addopts = 
+addopts =
     -v
     --tb=short
     --strict-markers
@@ -405,13 +432,13 @@ def browser():
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--window-size=1920,1080")
-    
+
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
     driver.implicitly_wait(10)
-    
+
     yield driver
-    
+
     driver.quit()
 
 @pytest.fixture
@@ -425,7 +452,7 @@ def pytest_runtest_makereport(item, call):
     """失败时截图"""
     outcome = yield
     rep = outcome.get_result()
-    
+
     if rep.when == "call" and rep.failed:
         driver = item.funcargs.get("browser")
         if driver:
@@ -465,13 +492,13 @@ from typing import List, Dict
 
 class TestReportGenerator:
     """测试报告生成器"""
-    
+
     def __init__(self, output_dir: str = "reports"):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
         self.test_results: List[Dict] = []
-    
-    def record_test(self, test_name: str, status: str, 
+
+    def record_test(self, test_name: str, status: str,
                    duration: float, error: str = None):
         """记录测试结果"""
         self.test_results.append({
@@ -481,16 +508,16 @@ class TestReportGenerator:
             "error": error,
             "timestamp": datetime.now().isoformat()
         })
-    
+
     def generate_html_report(self):
         """生成 HTML 报告"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         report_path = self.output_dir / f"report_{timestamp}.html"
-        
+
         total = len(self.test_results)
         passed = sum(1 for r in self.test_results if r["status"] == "passed")
         failed = sum(1 for r in self.test_results if r["status"] == "failed")
-        
+
         html_content = f"""
 <!DOCTYPE html>
 <html>
@@ -522,7 +549,7 @@ class TestReportGenerator:
             <th>Error</th>
         </tr>
 """
-        
+
         for result in self.test_results:
             html_content += f"""
         <tr>
@@ -532,16 +559,16 @@ class TestReportGenerator:
             <td>{result.get('error', '-') or '-'}</td>
         </tr>
 """
-        
+
         html_content += """
     </table>
 </body>
 </html>
 """
-        
+
         with open(report_path, "w", encoding="utf-8") as f:
             f.write(html_content)
-        
+
         return report_path
 ```
 
@@ -623,22 +650,21 @@ from selenium.webdriver.chrome.options import Options
 def get_chrome_options(headless=False):
     """获取 Chrome 配置"""
     options = Options()
-    
+
     if headless:
         options.add_argument("--headless")
-    
+
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--disable-extensions")
     options.add_argument("--disable-plugins")
-    
+
     # 禁用图片加载（加速）
     prefs = {"profile.managed_default_content_settings.images": 2}
     options.add_experimental_option("prefs", prefs)
-    
+
     return options
 ```
 
@@ -678,11 +704,11 @@ from datetime import datetime
 
 class TestMonitor:
     """测试监控"""
-    
+
     def __init__(self, webhook_url: str):
         self.webhook_url = webhook_url
-    
-    def send_notification(self, status: str, total: int, 
+
+    def send_notification(self, status: str, total: int,
                         passed: int, failed: int):
         """发送通知"""
         color = {
@@ -690,7 +716,7 @@ class TestMonitor:
             "failure": "red",
             "warning": "yellow"
         }.get(status, "gray")
-        
+
         message = {
             "msgtype": "markdown",
             "markdown": {
@@ -706,9 +732,54 @@ class TestMonitor:
 """
             }
         }
-        
+
         try:
             requests.post(self.webhook_url, json=message)
         except Exception as e:
             print(f"通知发送失败: {e}")
 ```
+
+## 常见误区与适用边界
+
+- 提高 xdist worker 数不会无限加速；浏览器受 CPU、内存、端口和服务容量约束。
+- 只上传 HTML 报告会丢失现场；报告必须能关联截图、浏览器日志、版本与运行 ID。
+- Grid 端口不能直接暴露到公网；它可执行浏览器会话并访问内部资源，必须做网络隔离和认证控制。
+
+## 本篇自检
+
+<details>
+<summary>1. 如何估算一个 120 条、平均 30 秒、6 个并行槽位的理想下限？</summary>
+
+忽略启动和排队开销时约为 120×30÷6=600 秒；实际还要加入冷启动、失败重试和资源争用。
+
+</details>
+
+<details>
+<summary>2. 何时单机无头浏览器比 Grid 更合适？</summary>
+
+测试量小、浏览器矩阵有限且单个 runner 能在目标时限内完成时，单机方案更简单。
+
+</details>
+
+<details>
+<summary>3. CI 失败后最少保留哪些制品？</summary>
+
+测试结果、失败截图/源码、浏览器与驱动日志、依赖和浏览器版本、运行 ID；敏感内容应脱敏并限制保留期。
+
+</details>
+
+## 本篇总结
+
+CI/CD 把 Selenium 变成受资源与安全约束的交付系统。可靠门禁依赖可复现环境、隔离会话、有限并行、完整制品和可解释失败。
+
+## 下一篇衔接
+
+至此系列闭环。下一步可用同一采购门户案例建立一条最小回归链，并按失败证据反向改进定位、等待、断言和工作流边界。
+
+## 资料来源与版本基线
+
+本文以 Selenium 4 与 Python 3.10+ 为基线；具体版本与浏览器支持应以发布时的官方说明为准。
+
+- [Getting started with Selenium Grid](https://www.selenium.dev/documentation/grid/getting_started/)
+- [Selenium Grid components](https://www.selenium.dev/documentation/grid/components/)
+- [When to use Grid](https://www.selenium.dev/documentation/grid/applicability/)

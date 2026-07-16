@@ -1,12 +1,12 @@
 ---
-title: Playwright 自动化测试：断言与验证
+title: Playwright 自动化测试：用断言、隔离与证据构建回归合同
 series: playwright
 seriesOrder: 7
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
-modDatetime: 2026-05-09T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: playwright-assertions-testing
-description: '详细介绍Playwright的断言API和自动化测试实践，包括expect语法、软断言、测试框架集成等。'
+description: "区分 Web-first 断言与瞬时 assert，使用 pytest fixture、页面对象和 trace 构建可诊断、可隔离的端到端测试。"
 tags:
   - Playwright
   - RPA
@@ -16,776 +16,140 @@ draft: false
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
 
-自动化测试的核心是验证——确认网页行为符合预期。Playwright 提供了强大的断言系统，结合 `expect` API，你可以编写清晰、可靠的测试用例。本教程将详细介绍 Playwright 的断言语法和测试最佳实践。
+你应能为动作选择精确的完成信号。完成本篇后，你能够：
 
-![Playwright 断言验证与失败证据链路图](./images/playwright-assertion-validation-figure-01.png)
+- 区分会重试的 Playwright `expect` 与立即求值的 Python `assert`；
+- 用 pytest 的 `page` fixture 保证每个测试上下文隔离；
+- 设计可读的 Given–When–Then 测试和轻量页面对象；
+- 在失败时保留 trace、截图和业务标识，而不泄露敏感信息。
 
-### 断言在测试中的位置
+## 测试的核心不是步骤，而是合同
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                     Test Flow                                │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐              │
-│  │ Arrange  │───▶│   Act    │───▶│  Assert  │              │
-│  │  准备    │    │   执行   │    │   验证   │              │
-│  └──────────┘    └──────────┘    └──────────┘              │
-│                                      │                      │
-│                                      ▼                      │
-│                               ┌──────────┐                  │
-│                               │  报告   │                  │
-│                               └──────────┘                  │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
-```
+订单审核测试要证明：给定一个待审核订单，审核员提交后，订单状态最终变为“已通过”，且页面发出正确请求。只写“填写、点击、关闭浏览器”无法说明成功条件。
 
-## expect API 详解
+<!-- figure:s07-f01 -->
 
-### 基本语法
+![区分 UI Web-first 断言、协议断言和诊断证据](./images/final/s07-f01-assertion-evidence-layers.png)
+
+## Web-first 断言与立即断言
 
 ```python
-from playwright.sync_api import expect, sync_playwright
+from playwright.sync_api import expect
 
-def expect_basics():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com")
-        
-        # 基本断言
-        expect(page.locator("#title")).to_be_visible()
-        expect(page.locator("#title")).to_have_text("Welcome")
-        
-        # 否定断言
-        expect(page.locator("#error")).not_to_be_visible()
-        expect(page.locator("#title")).not_to_have_text("Error")
-        
-        browser.close()
+# 会在超时内反复解析 Locator 并检查文本
+expect(page.get_by_test_id("order-status")).to_have_text("已通过")
+
+# 立即读取一次；页面稍后更新就会误报
+assert page.get_by_test_id("order-status").text_content() == "已通过"
 ```
 
-### 常用断言方法
+页面状态、URL、可见性、数量和值优先使用 `expect`。对已经取得的纯 Python 数据、HTTP 状态码或业务计算，可使用 `assert`。断言应尽量接近用户可见结果，同时为关键请求保留协议级验证。
 
-#### 可见性断言
+## 最小端到端测试
 
 ```python
-def visibility_assertions():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com")
-        
-        # 元素可见
-        expect(page.locator("#visible-element")).to_be_visible()
-        
-        # 元素不可见
-        expect(page.locator("#hidden-element")).to_be_hidden()
-        
-        # 元素 Attached 到 DOM
-        expect(page.locator("#attached-element")).to_be_attached()
-        
-        # 元素在 DOM 中不存在
-        expect(page.locator("#non-existent")).not_to_be_attached()
-        
-        browser.close()
-```
-
-#### 文本内容断言
-
-```python
-def text_assertions():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com")
-        
-        # 精确匹配文本
-        expect(page.locator("#title")).to_have_text("Welcome to Our Site")
-        
-        # 包含文本
-        expect(page.locator("#description")).to_contain_text("Welcome")
-        
-        # 正则匹配
-        expect(page.locator("#email")).to_have_text(re.compile(r"^[a-z]+@example\.com$"))
-        
-        # 包含文本（正则）
-        expect(page.locator("#message")).to_contain_text(re.compile(r"(success|completed)"))
-        
-        # 获取文本并手动断言
-        text = page.locator("#content").inner_text()
-        assert "expected text" in text
-        
-        browser.close()
-```
-
-#### 值断言
-
-```python
-def value_assertions():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com/form")
-        
-        # 输入框值
-        expect(page.locator("input[name='username']")).to_have_value("testuser")
-        
-        # 输入框值匹配正则
-        expect(page.locator("input[name='email']")).to_have_value(re.compile(r"@example\.com"))
-        
-        # 空值
-        expect(page.locator("input[name='comment']")).to_have_value("")
-        
-        # 获取输入值
-        value = page.locator("input[name='username']").input_value()
-        assert value == "expected"
-        
-        browser.close()
-```
-
-#### 状态断言
-
-```python
-def state_assertions():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com/form")
-        
-        # 元素启用
-        expect(page.locator("#submit-btn")).to_be_enabled()
-        
-        # 元素禁用
-        expect(page.locator("#disabled-btn")).to_be_disabled()
-        
-        # 复选框选中
-        expect(page.locator("#agree-checkbox")).to_be_checked()
-        
-        # 复选框未选中
-        expect(page.locator("#optional-checkbox")).not_to_be_checked()
-        
-        # 单选框选中
-        expect(page.locator("input[value='male']")).to_be_checked()
-        
-        browser.close()
-```
-
-#### 属性断言
-
-```python
-def attribute_assertions():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com")
-        
-        # 元素有特定属性
-        expect(page.locator("#link")).to_have_attribute("href", "https://example.com")
-        
-        # 属性匹配正则
-        expect(page.locator("#image")).to_have_attribute("src", re.compile(r"\.jpg$"))
-        
-        # 获取属性值
-        href = page.locator("a.link").get_attribute("href")
-        assert href == "https://example.com"
-        
-        # 检查多个属性
-        btn = page.locator("button.submit")
-        expect(btn).to_have_attribute("type", "submit")
-        expect(btn).to_have_attribute("class", re.compile("btn-primary"))
-        
-        browser.close()
-```
-
-#### 计数断言
-
-```python
-def count_assertions():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com/list")
-        
-        # 元素计数
-        expect(page.locator(".item")).to_have_count(10)
-        
-        # 至少有几个元素
-        assert page.locator(".item").count() >= 10
-        
-        # 获取实际计数
-        count = page.locator(".item").count()
-        assert count == 10
-        
-        browser.close()
-```
-
-## pytest 集成
-
-### 安装 pytest
-
-```bash
-pip install pytest
-```
-
-### 基础测试结构
-
-```python
-import pytest
 from playwright.sync_api import Page, expect
 
-class TestExampleSite:
-    """示例网站测试套件"""
-    
-    @pytest.fixture(autouse=True)
-    def setup(self, page: Page):
-        """每个测试前执行"""
-        self.page = page
-        self.page.goto("https://example.com")
-    
-    def test_page_title(self):
-        """测试页面标题"""
-        expect(self.page).to_have_title("Example Domain")
-    
-    def test_heading_visible(self):
-        """测试标题可见"""
-        expect(self.page.locator("h1")).to_be_visible()
-    
-    def test_link_works(self):
-        """测试链接可点击"""
-        link = self.page.locator("a >> text=More information")
-        expect(link).to_be_visible()
-        link.click()
-        expect(self.page).to_have_url(re.compile(r"example\.org"))
+def test_reviewer_can_approve_order(page: Page) -> None:
+    # Given
+    page.set_content("""
+      <button aria-label="审核 ORD-2026-0042"
+              onclick="status.textContent='已通过'">审核</button>
+      <p data-testid="order-status">待审核</p>
+    """)
+
+    # When
+    page.get_by_role("button", name="审核 ORD-2026-0042").click()
+
+    # Then
+    expect(page.get_by_test_id("order-status")).to_have_text("已通过")
 ```
 
-### 创建 conftest.py
+输入是一个待审核订单页面；动作是审核；关键状态从“待审核”转为“已通过”；失败会在断言日志中给出实际文本和重试过程。这个代码块可在安装 `pytest-playwright` 后独立运行。
+
+## fixture 与隔离
+
+官方 pytest 插件为每个测试提供新的上下文和 `page`。会话级浏览器可以复用，但测试状态不复用：
 
 ```python
-import pytest
-from playwright.sync_api import sync_playwright, Browser, Page
+def test_a(page):
+    page.set_content("<p>clean A</p>")
 
-@pytest.fixture(scope="session")
-def browser():
-    """会话级别的浏览器"""
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        yield browser
-        browser.close()
-
-@pytest.fixture(scope="function")
-def context(browser: Browser):
-    """函数级别的上下文"""
-    context = browser.new_context()
-    yield context
-    context.close()
-
-@pytest.fixture(scope="function")
-def page(context):
-    """函数级别的页面"""
-    page = context.new_page()
-    yield page
-    page.close()
-
-@pytest.fixture
-def authenticated_page(page: Page):
-    """已认证的页面"""
-    page.goto("https://example.com/login")
-    page.fill("#username", "testuser")
-    page.fill("#password", "password123")
-    page.click("button[type='submit']")
-    page.wait_for_url("**/dashboard")
-    return page
+def test_b(page):
+    page.set_content("<p>clean B</p>")
 ```
 
-### 运行测试
+需要通用上下文参数时使用插件的 `browser_context_args` fixture，而不是重新定义一个与插件同名的 `page` 并手工管理浏览器。认证状态可通过受控 fixture 加载，但不同角色必须使用不同状态文件。
 
-```bash
-# 运行所有测试
-pytest
+<!-- figure:s07-f02 -->
 
-# 运行特定文件
-pytest tests/test_login.py
+![理解 session Browser 复用与 per-test Context 隔离](./images/final/s07-f02-pytest-isolation-lifecycle.png)
 
-# 运行特定测试
-pytest tests/test_login.py::TestLogin::test_valid_login
-
-# 显示详细输出
-pytest -v
-
-# 显示 print 输出
-pytest -s
-
-# 生成 HTML 报告
-pytest --html=reports/report.html
-
-# 并行运行
-pytest -n auto
-```
-
-## 软断言
-
-### 非致命断言
+## 页面对象只封装业务语言
 
 ```python
-def soft_assertions():
-    from playwright.sync_api import sync_playwright
-    
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com")
-        
-        # 方法1：手动收集多个失败
-        failures = []
-        
-        try:
-            assert page.locator("#title").inner_text() == "Expected"
-        except AssertionError as e:
-            failures.append(f"标题: {e}")
-        
-        try:
-            assert page.locator("#subtitle").inner_text() == "Expected Subtitle"
-        except AssertionError as e:
-            failures.append(f"副标题: {e}")
-        
-        try:
-            assert page.locator("#link").get_attribute("href") == "https://expected.com"
-        except AssertionError as e:
-            failures.append(f"链接: {e}")
-        
-        # 最后统一报告
-        if failures:
-            print(f"发现 {len(failures)} 个问题:")
-            for failure in failures:
-                print(f"  - {failure}")
-        
-        browser.close()
-```
-
-### 使用 pytest 软断言
-
-```python
-import pytest
-
-def test_multiple_checks(page):
-    """收集多个断言失败"""
-    page.goto("https://example.com")
-    
-    # 使用 pytest 的上下文管理器
-    with pytest.collect():
-        expect(page.locator("#h1")).to_have_text("Example Domain")
-        expect(page.locator("#link")).to_have_attribute("href", "https://www.iana.org/domains/example")
-        expect(page.locator("#paragraph")).to_contain_text("Internet")
-```
-
-## 高级测试模式
-
-### 页面对象模式
-
-```python
-class LoginPage:
-    """登录页面对象"""
-    
+class OrdersPage:
     def __init__(self, page):
         self.page = page
-        self.username_input = page.locator("#username")
-        self.password_input = page.locator("#password")
-        self.submit_btn = page.locator("button[type='submit']")
-        self.error_msg = page.locator(".error-message")
-        self.success_msg = page.locator(".success-message")
-    
-    def goto(self):
-        self.page.goto("https://example.com/login")
-    
-    def login(self, username, password):
-        self.username_input.fill(username)
-        self.password_input.fill(password)
-        self.submit_btn.click()
-    
-    def expect_error(self, message):
-        expect(self.error_msg).to_contain_text(message)
-    
-    def expect_success(self):
-        expect(self.success_msg).to_be_visible()
 
-class DashboardPage:
-    """仪表盘页面对象"""
-    
-    def __init__(self, page):
-        self.page = page
-        self.user_info = page.locator(".user-info")
-        self.logout_btn = page.locator("button.logout")
-    
-    def expect_logged_in(self, username):
-        expect(self.user_info).to_contain_text(username)
+    def approve(self, order_id: str) -> None:
+        row = self.page.get_by_role("row").filter(has_text=order_id)
+        row.get_by_role("button", name="审核").click()
 
-# 测试中使用
-def test_login_flow(page):
-    login_page = LoginPage(page)
-    dashboard_page = DashboardPage(page)
-    
-    login_page.goto()
-    login_page.login("testuser", "password123")
-    
-    page.wait_for_url("**/dashboard")
-    dashboard_page.expect_logged_in("testuser")
+    def expect_status(self, order_id: str, status: str) -> None:
+        row = self.page.get_by_role("row").filter(has_text=order_id)
+        expect(row.get_by_test_id("order-status")).to_have_text(status)
 ```
 
-### 参数化测试
+页面对象应保留 `Locator`，不要在构造函数中缓存元素句柄；方法名表达业务动作，不要把每个 `click` 再包装一层。断言放在测试还是页面对象都可以，但团队应统一，以便失败信息易定位。
 
-```python
-import pytest
-from playwright.sync_api import expect
+## 正向、负向与软断言
 
-@pytest.mark.parametrize("username,password,should_succeed", [
-    ("user1", "pass1", True),
-    ("user2", "pass2", True),
-    ("invalid", "wrong", False),
-    ("", "password", False),
-    ("user", "", False),
-])
-def test_login_combinations(page, username, password, should_succeed):
-    page.goto("https://example.com/login")
-    page.fill("#username", username)
-    page.fill("#password", password)
-    page.click("button[type='submit']")
-    
-    if should_succeed:
-        expect(page).to_have_url(re.compile(r"dashboard"))
-    else:
-        expect(page.locator(".error")).to_be_visible()
-```
+负向断言要定义时间语义。“元素此刻不存在”与“5 秒内始终未出现”不是同一件事。对安全提示、重复提交等关键负向行为，应使用明确超时并避免过短窗口。
 
-### 跳过和条件执行
+软断言允许继续收集多个问题，但最终测试仍失败。它适合同一页面的非依赖检查，不适合登录失败后继续执行后续业务，因为后续错误只是级联噪声。软断言能力依赖支持的 pytest-playwright 版本，使用前锁定并验证插件版本。
 
-```python
-@pytest.mark.skip(reason="功能未实现")
-def test_future_feature(page):
-    pass
+## 失败证据与调试路径
 
-@pytest.mark.skipif(True, reason="CI 环境跳过")
-def test_browser_feature(page):
-    pass
+推荐证据优先级：断言调用日志 -> trace -> 关键截图 -> 控制台/网络摘要。trace 可回放动作前后 DOM、网络和时间线，通常比单张截图更能解释竞态。
 
-@pytest.mark.xfail(reason="已知问题")
-def test_known_issue(page):
-    expect(page.locator("#broken")).to_be_visible()
+CI 中只在失败或首次重试保留 trace，避免体积失控。截图和日志必须遮蔽密码、令牌、个人信息与完整认证状态。为每次任务记录 `run_id` 和业务订单 ID，便于串联应用日志。
 
-@pytest.mark.skip_browser("firefox", reason="Firefox 不支持")
-def test_chrome_only_feature(page):
-    pass
+## 常见误区与适用边界
 
-@pytest.mark.only_browser("chromium")
-def test_chromium_feature(page):
-    pass
-```
+1. **所有检查都用 Python `assert`。** 动态 UI 需要可重试断言。
+2. **一个测试覆盖完整一天业务。** 测试过长会增加诊断和清理成本，应按独立业务结果切分。
+3. **测试之间依赖执行顺序。** 这会破坏并行和单测重跑。
+4. **失败自动重试到通过就算成功。** 重试通过仍是稳定性信号，应统计并治理。
+5. **截图包含全部页面最方便。** 可能泄露敏感数据，应按证据最小化原则采集。
 
-## 测试报告
+## 自检题
 
-### 使用 Allure 生成报告
+1. 页面状态异步更新时，为什么 `expect(...).to_have_text()` 优于读取后 `assert`？
+2. 为什么一个测试失败后不应污染下一个测试？
+3. trace 与截图相比，额外提供了什么？
 
-```bash
-pip install allure-pytest
-```
+<details>
+<summary>查看答案</summary>
 
-```python
-import allure
-from playwright.sync_api import expect
+1. 前者会在预算内重新定位和检查，表达最终一致状态。
+2. 独立上下文让失败可单独复现，也允许任意顺序和并行。
+3. trace 提供动作时间线、DOM 快照、网络与调用信息，可解释因果过程。
 
-def test_with_allure_reporting():
-    """带有详细报告的测试"""
-    with allure.step("打开页面"):
-        page.goto("https://example.com")
-    
-    with allure.step("验证页面标题"):
-        expect(page).to_have_title("Example Domain")
-        allure.attach(
-            page.screenshot(),
-            name="page_screenshot",
-            attachment_type=allure.attachment_type.PNG
-        )
-    
-    with allure.step("验证主要内容"):
-        heading = page.locator("h1")
-        expect(heading).to_be_visible()
-        allure.attach(
-            heading.inner_text(),
-            name="heading_text",
-            attachment_type=allure.attachment_type.TEXT
-        )
-```
+</details>
 
-### 运行并生成报告
+## 本篇总结
 
-```bash
-# 运行测试并生成报告
-pytest --alluredir=./allure-results
+可维护测试由隔离的前置条件、语义动作、Web-first 结果断言和最小失败证据组成。重试不是成功标准，而是需要治理的稳定性指标。
 
-# 生成 HTML 报告
-allure serve ./allure-results
-```
+## 下一篇衔接
 
-## 测试夹具
+下一篇处理证据与文件边界：截图、PDF、上传和下载文件在上下文关闭前后如何保存、验证与清理。
 
-### 浏览器夹具
+## 资料来源
 
-```python
-# conftest.py
-@pytest.fixture(scope="session")
-def browser():
-    """跨浏览器测试"""
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        yield browser
-        browser.close()
-
-@pytest.fixture(params=["chromium", "firefox", "webkit"])
-def all_browsers(request, browser):
-    """参数化浏览器测试"""
-    return browser
-```
-
-### 数据夹具
-
-```python
-# test_data.py
-TEST_USERS = [
-    {"username": "admin", "password": "admin123", "role": "admin"},
-    {"username": "user1", "password": "user123", "role": "user"},
-    {"username": "guest", "password": "guest", "role": "guest"},
-]
-
-@pytest.fixture(params=TEST_USERS)
-def user_credentials(request):
-    """用户数据夹具"""
-    return request.param
-
-def test_login_with_different_users(page, user_credentials):
-    """测试不同用户的登录"""
-    page.goto("https://example.com/login")
-    page.fill("#username", user_credentials["username"])
-    page.fill("#password", user_credentials["password"])
-    page.click("button[type='submit']")
-    expect(page.locator(".user-role")).to_contain_text(user_credentials["role"])
-```
-
-## 钩子函数
-
-### 测试生命周期
-
-```python
-# conftest.py
-
-def pytest_configure(config):
-    """测试配置钩子"""
-    config.addinivalue_line("markers", "slow: marks tests as slow")
-    config.addinivalue_line("markers", "integration: marks tests as integration tests")
-
-@pytest.fixture(scope="session")
-def browser():
-    """会话开始"""
-    print("启动浏览器...")
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        yield browser
-        print("关闭浏览器...")
-        browser.close()
-
-@pytest.fixture(scope="function")
-def page(browser):
-    """测试开始"""
-    print("创建新页面...")
-    context = browser.new_context()
-    page = context.new_page()
-    yield page
-    print("关闭页面...")
-    page.close()
-    context.close()
-
-def pytest_runtest_makereport(item, call):
-    """测试报告钩子"""
-    if call.when == "call":
-        if call.excinfo is not None:
-            print(f"测试失败: {item.name}")
-```
-
-## 最佳实践
-
-### 测试组织
-
-```python
-class TestNavigation:
-    """导航测试"""
-    
-    def test_homepage_loads(self, page):
-        page.goto("https://example.com")
-        expect(page).to_have_title("Example Domain")
-    
-    def test_navigation_links(self, page):
-        page.goto("https://example.com")
-        page.click("text=More information")
-        expect(page).to_have_url(re.compile(r"example\.org"))
-
-class TestForms:
-    """表单测试"""
-    
-    def test_form_validation(self, page):
-        page.goto("https://example.com/form")
-        page.click("button[type='submit']")
-        expect(page.locator(".error")).to_be_visible()
-    
-    def test_form_submission(self, page):
-        page.goto("https://example.com/form")
-        page.fill("input[name='email']", "test@example.com")
-        page.click("button[type='submit']")
-        expect(page.locator(".success")).to_be_visible()
-
-class TestUserFlows:
-    """用户流程测试"""
-    
-    def test_complete_purchase_flow(self, page):
-        """完整的购买流程"""
-        # 1. 浏览商品
-        page.goto("https://shop.example.com")
-        page.click(".product:first-child")
-        
-        # 2. 添加购物车
-        page.click(".add-to-cart")
-        expect(page.locator(".cart-count")).to_have_text("1")
-        
-        # 3. 结账
-        page.click(".checkout")
-        page.fill("#email", "buyer@example.com")
-        page.fill("#card", "4242424242424242")
-        page.click(".pay")
-        
-        # 4. 验证订单
-        expect(page.locator(".order-confirmation")).to_be_visible()
-```
-
-### 命名规范
-
-```python
-# ✅ 好的命名
-def test_login_page_displays_username_field():
-    pass
-
-def test_user_can_login_with_valid_credentials():
-    pass
-
-def test_login_fails_with_invalid_password():
-    pass
-
-def test_shopping_cart_updates_quantity_correctly():
-    pass
-
-# ❌ 差的命名
-def test_login():
-    pass
-
-def test_form():
-    pass
-
-def test_button():
-    pass
-```
-
-### 断言最佳实践
-
-```python
-def assertion_best_practices():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com")
-        
-        # ✅ 使用 expect（推荐）
-        expect(page.locator("#title")).to_have_text("Expected Title")
-        
-        # ✅ 提供有意义的错误信息
-        assert page.title() == "Expected", f"期望标题为'Expected'，实际为'{page.title()}'"
-        
-        # ✅ 使用精确的选择器
-        expect(page.locator("#main-form button.submit")).to_be_enabled()
-        
-        # ✅ 组合多个条件
-        element = page.locator("#complex-widget")
-        expect(element).to_be_visible()
-        expect(element).to_have_attribute("data-state", "active")
-        
-        # ⚠️ 避免无意义的断言
-        # ❌ assert True
-        # ❌ assert 1 == 1
-        
-        browser.close()
-```
-
-## 调试测试
-
-### 截图和跟踪
-
-```python
-def debugging_tests():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com")
-        
-        # 失败时自动截图
-        try:
-            expect(page.locator("#title")).to_have_text("Wrong Title")
-        except AssertionError:
-            page.screenshot(path="debug.png")
-            raise
-        
-        # 捕获控制台日志
-        page.on("console", lambda msg: print(f"[{msg.type}] {msg.text}"))
-        
-        # 捕获网络请求
-        page.on("request", lambda req: print(f"Request: {req.url}"))
-        page.on("response", lambda res: print(f"Response: {res.status}"))
-        
-        browser.close()
-```
-
-### Playwright 追踪查看器
-
-```python
-from playwright.sync_api import sync_playwright
-
-def trace_viewer_demo():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context = browser.new_context()
-        
-        # 开始追踪
-        context.tracing.start(
-            screenshots=True,
-            snapshots=True,
-            sources=True
-        )
-        
-        page = context.new_page()
-        page.goto("https://example.com")
-        page.fill("#username", "testuser")
-        page.click("#submit")
-        
-        # 停止追踪
-        context.tracing.stop(path="trace.zip")
-        
-        # 使用 `npx playwright show-trace trace.zip` 查看
-        
-        browser.close()
-```
+- [Playwright Python：Writing tests](https://playwright.dev/python/docs/writing-tests)
+- [Playwright Python：Assertions](https://playwright.dev/python/docs/test-assertions)
+- [Playwright Python：Trace viewer](https://playwright.dev/python/docs/trace-viewer)

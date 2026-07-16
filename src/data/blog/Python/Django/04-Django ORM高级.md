@@ -1,8 +1,8 @@
 ---
-title: Django ORM高级
+title: Django ORM 高级：表达式、关联与事务
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-11T00:00:00.000+08:00
+modDatetime: 2026-07-17T00:00:00.000+08:00
 slug: django-orm-advanced
 featured: false
 draft: false
@@ -12,187 +12,131 @@ tags:
   - Python
   - Django
   - ORM
-  - 性能优化
-description: 'Django ORM高级特性，包括QuerySet缓存、关联查询、性能优化技巧'
+description: "围绕原子借阅流程，讲清 Q/F 表达式、聚合、关联加载、事务与行锁的语义边界。"
 ---
 
-> 本篇介绍 Django ORM 的高级特性，包括 QuerySet 惰性查询、缓存机制、关联查询优化等。
+## 前置知识与学习目标
 
-![Django ORM 高级优化围绕 QuerySet 惰性查询、缓存、exists、count、select_related、prefetch_related、annotate 和 N+1 查询治理展开](./images/django-orm-advanced-query-optimization-figure-01.png)
+你需要掌握第 3 篇的模型、关系、Manager、QuerySet 与惰性求值。读完后应能：
 
-## QuerySet特性
+1. 用 `Q`、`F`、`annotate()` 表达数据库端条件与计算。
+2. 根据关系方向选择 `select_related()` 或 `prefetch_related()`。
+3. 用 `transaction.atomic()`、`select_for_update()` 和约束保证借阅操作原子性。
 
-### 惰性查询
+本篇关注“复杂语义是否正确”，不把所有 API 变成性能技巧；性能必须在第 23 篇用证据判断。
 
-QuerySet 是惰性的，创建查询集不会立即访问数据库：
+## 数据库端表达式：避免读改写竞态
 
-<!-- snippet: id=django-orm-advanced-01 mode=compile python=3.12-3.14 deps=stdlib -->
+`Q` 组合 AND/OR/NOT 条件，`F` 引用当前行字段，让比较与更新发生在数据库端。
+
+<!-- snippet: id=django-orm-advanced-expressions mode=project python=3.12-3.14 deps=Django~=6.0 -->
+
 ```python
-queryset = Book.objects.all()  # 不访问数据库
-print(queryset)                # 访问数据库
+from django.db.models import Count, F, Q
+
+available = Book.objects.filter(Q(is_active=True) & Q(available_copies__gt=0))
+popular = Book.objects.annotate(
+    open_loans=Count("loans", filter=Q(loans__returned_at__isnull=True))
+).filter(open_loans__gte=3)
+
+updated = Book.objects.filter(pk=42, available_copies__gt=0).update(
+    available_copies=F("available_copies") - 1
+)
 ```
 
-### 可切片
+最后一个条件更新把“库存大于零”和“减一”放在同一 SQL 中，`updated == 0` 表示图书不存在或库存不足。与先读取 Python 值再保存相比，它缩小了并发窗口；多表写入仍需事务。
 
-<!-- snippet: id=django-orm-advanced-02 mode=compile python=3.12-3.14 deps=stdlib -->
+## 关联加载：两种机制，不是两个魔法开关
+
+<!-- figure:s04-f01:start -->
+
+![单值关系用 select_related 的 JOIN，多值关系用 prefetch_related 独立查询后 Python 合并](./images/s04-f01-related-loading-choice.png)
+
+<!-- figure:s04-f01:end -->
+
+`select_related()` 对外键和一对一关系使用 SQL JOIN，适合单值关系；`prefetch_related()` 先执行主查询，再执行关联查询并在 Python 中合并，适合多值关系、反向外键和多对多。
+
 ```python
-Book.objects.all()[:5]     # LIMIT 5
-Book.objects.all()[5:10]   # OFFSET 5 LIMIT 5
+from django.db.models import Prefetch
+
+open_loans = Loan.objects.filter(returned_at__isnull=True).select_related("member")
+books = Book.objects.prefetch_related(
+    Prefetch("loans", queryset=open_loans, to_attr="open_loans")
+)
 ```
 
-### 缓存机制
+输出中每个 `book.open_loans` 是预取列表。主查询和预取查询之间并非一个原子快照；强一致读取需要结合数据库隔离级别和事务判断。不要同时调用 `.loans.filter(...)` 并期待复用 `to_attr` 的列表。
 
-每个 QuerySet 都包含缓存，第一次求值时查询数据库并缓存结果：
+## 原子借阅：调用链与状态变化
 
-<!-- snippet: id=django-orm-advanced-03 mode=compile python=3.12-3.14 deps=stdlib -->
+<!-- figure:s04-f02:start -->
+
+![借阅事务先锁定 Book #42，验证库存后创建 Loan 并减库存，成功提交后执行 on_commit，失败则回滚](./images/s04-f02-atomic-loan-transaction.png)
+
+<!-- figure:s04-f02:end -->
+
+输入为 `member_id`、`book_id`；成功输出 `Loan`，中间状态是被锁定的 `Book` 行；失败包括图书不存在、库存不足、约束冲突和事务回滚。
+
+<!-- snippet: id=django-orm-advanced-borrow mode=project python=3.12-3.14 deps=Django~=6.0 file=loans/services.py -->
+
 ```python
-# 错误：两次查询
-print([book.title for book in Book.objects.all()])
-print([book.price for book in Book.objects.all()])  # 再次查询
+from django.db import transaction
 
-# 正确：复用缓存
-books = Book.objects.all()
-print([book.title for book in books])
-print([book.price for book in books])  # 复用缓存
-```
+from catalog.models import Book
+from .models import Loan
 
-### exists和count
 
-<!-- snippet: id=django-orm-advanced-04 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 检查是否存在（不加载所有数据）
-if Book.objects.filter(title="Python").exists():
+class OutOfStock(Exception):
     pass
 
-# 计数
-count = Book.objects.count()
+
+@transaction.atomic
+def borrow_book(*, member, book_id):
+    book = Book.objects.select_for_update().get(pk=book_id, is_active=True)
+    if book.available_copies < 1:
+        raise OutOfStock(book_id)
+    loan = Loan.objects.create(member=member, book=book)
+    book.available_copies -= 1
+    book.save(update_fields=["available_copies"])
+    return loan
 ```
 
-## 关联查询
+`atomic()` 成功时提交，异常越过边界时回滚。`select_for_update()` 必须在事务中使用，支持范围依数据库而异；SQLite 不能代表生产数据库的锁行为。发送邮件、发布任务等外部副作用应放入 `transaction.on_commit()`，避免数据库回滚后外部系统已经收到“成功”消息。
 
-### select_related
+## 聚合、子查询与结果形状
 
-用于一对一和多对一关系，预加载关联数据，减少查询次数：
+`annotate()` 给当前结果的每一行增加计算列，`aggregate()` 把整个 QuerySet 汇总成一个字典。过滤和注解顺序会改变 SQL 与结果。复杂查询应先写出期望表格：一行代表 Book 还是 Loan？聚合前后基数是否变化？再检查 `str(queryset.query)` 与测试数据结果。
 
-<!-- snippet: id=django-orm-advanced-05 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 无select_related：N+1问题
-books = Book.objects.all()
-for book in books:
-    print(book.publish.name)  # 每次都查询
+## 常见误区与适用边界
 
-# 使用select_related：一对多时使用
-books = Book.objects.select_related("publish").all()
-for book in books:
-    print(book.publish.name)  # 使用预加载的数据
-```
+- `atomic()` 不会自动锁住所有读取；需要按竞争资源选择条件更新或行锁。
+- 捕获数据库异常时不要在同一 `atomic` 块中继续查询，应该让异常越过该保存点后再处理。
+- `select_related()` 不适合多值集合，`prefetch_related()` 也不是越多越好。
+- 批量 `update()`/`bulk_create()` 不走逐对象 `save()` 语义，信号和默认值行为需查 API 合同。
+- 事务越长，锁持有越久；不要把网络请求放在事务内。
 
-### prefetch_related
+## 最小行为测试
 
-用于多对多和反向外键，预加载关联数据：
+使用与生产相同的数据库后端测试：库存 1 时第一次借阅成功、第二次失败且库存不为负；创建 Loan 失败时库存回滚；`on_commit` 回调只在提交后执行；预取列表只包含未归还记录。并发测试需要两个真实连接，普通 `TestCase` 的外层事务可能掩盖行为。
 
-<!-- snippet: id=django-orm-advanced-06 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 无prefetch_related：N+1问题
-books = Book.objects.all()
-for book in books:
-    for author in book.authors.all():  # 每次都查询
-        print(author.name)
+## 自检题
 
-# 使用prefetch_related：多对多时使用
-books = Book.objects.prefetch_related("authors").all()
-for book in books:
-    for author in book.authors.all():  # 使用预加载
-        print(author.name)
-```
+1. `F("available_copies") - 1` 为什么比 Python 读改写更安全？
+2. 预取多值关系为什么不能用 `select_related()`？
+3. 为什么发送邮件应放到 `on_commit()`？
 
-### annotate
+<details><summary>答案</summary>
 
-聚合查询，为每个对象添加注解：
+1. 比较和更新可在数据库的一条条件语句中完成。2. JOIN 会放大行数，Django 用独立查询在 Python 中合并集合。3. 防止数据库回滚后外部副作用已经发生。
 
-<!-- snippet: id=django-orm-advanced-07 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
-```python
-from django.db.models import Count
+</details>
 
-# 每个作者关联的书籍数量
-authors = Author.objects.annotate(book_count=Count("book"))
-for author in authors:
-    print(f"{author.name}: {author.book_count} 本书")
-```
+## 本篇总结与下一篇
 
-## 性能优化
+高级 ORM 的重点是结果基数、事务边界和并发状态，而不是 API 数量。下一篇沿 `GET /books/42/` 追踪从服务器入口到响应返回的完整生命周期。
 
-### 选择合适字段
+## 资料来源
 
-<!-- snippet: id=django-orm-advanced-08 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 使用notull=False而非null=True
-name = models.CharField(max_length=100, null=False)
-
-# 使用CharField而非TextField存储短文本
-title = models.CharField(max_length=200)
-```
-
-### 批量操作
-
-<!-- snippet: id=django-orm-advanced-09 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 批量插入
-Book.objects.bulk_create([
-    Book(title="Book1"),
-    Book(title="Book2"),
-    Book(title="Book3"),
-])
-
-# 批量更新
-Book.objects.filter(id__gt=100).update(price=F("price") * 0.9)
-```
-
-### 避免循环查询
-
-<!-- snippet: id=django-orm-advanced-10 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
-```python
-# 错误：循环中查询
-for author in authors:
-    print(author.book_set.count())  # N次查询
-
-# 正确：预先聚合
-from django.db.models import Count
-authors = Author.objects.annotate(book_count=Count("book"))
-for author in authors:
-    print(author.book_count)  # 1次查询
-```
-
-### only和defer
-
-<!-- snippet: id=django-orm-advanced-11 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 只读取title字段
-books = Book.objects.only("title")
-
-# 排除content字段
-books = Book.objects.defer("content")
-```
-
-### values和values_list
-
-<!-- snippet: id=django-orm-advanced-12 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 返回字典列表
-books = Book.objects.values("title", "price")
-
-# 返回元组列表
-books = Book.objects.values_list("title", "price")
-
-# 返回单个字段
-titles = Book.objects.values_list("title", flat=True)
-```
-
-## 小结
-
-- **select_related**：一对一、多对一关系
-- **prefetch_related**：多对多、反向外键
-- **annotate**：聚合统计
-- **bulk_create/bulk_update**：批量操作
-- **only/defer**：字段选择
-- **values/values_list**：数据格式
+- [查询表达式](https://docs.djangoproject.com/en/6.0/ref/models/expressions/)
+- [数据库事务](https://docs.djangoproject.com/en/6.0/topics/db/transactions/)
+- [QuerySet 关联加载 API](https://docs.djangoproject.com/en/6.0/ref/models/querysets/)

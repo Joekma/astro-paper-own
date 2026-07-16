@@ -1,10 +1,10 @@
 ---
-title: Python 模块与包：import、from、循环导入、搜索路径
+title: Python 模块与包：导入系统、搜索路径与循环依赖
 author: Joekma
-pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-11T00:00:00.000+08:00
+pubDatetime: 2018-08-13T00:00:00.000+08:00
+modDatetime: 2026-07-17T00:00:00.000+08:00
 slug: python-modules-and-packages
-description: '深入理解Python的模块与包组织结构，详解import、from...import、模块搜索路径、循环导入问题和__all__控制导入，包含实战技巧。'
+description: "从 order_report 包结构追踪 import 的查找、模块创建、sys.modules 缓存、执行、相对导入与循环依赖边界。"
 tags:
   - Python
   - 模块
@@ -17,446 +17,145 @@ seriesOrder: 11
 language: zh-CN
 ---
 
-> 模块是 Python 编程的核心概念之一。本文将详细介绍模块的定义、导入方式、循环导入问题，以及模块搜索路径和编译文件等高级主题。
+模块解决代码组织与名称隔离，包解决模块分组。`import` 不是文本复制，而是一次“查找—创建—缓存—执行—绑定”的协议。
 
-![Python 模块与包的导入机制涉及 import、from import、sys.modules 缓存、循环导入、__name__、sys.path、pyc 和 __init__.py](./images/python-modules-packages-import-system-figure-01.png)
+## 前置知识与学习目标
 
-## 模块
+你应理解函数、名称空间和文件路径。学完后你应该能：
 
-### 什么是模块
+- 设计职责清晰的包结构；
+- 解释首次导入与 `sys.modules` 缓存；
+- 区分绝对导入、显式相对导入与脚本入口；
+- 从依赖图而不是“挪动 import”角度解决循环导入。
 
-模块就是一组功能的集合体，我们的程序可以导入模块来复用模块里的功能。一个模块就是一个包含了功能的 Python 文件，比如 `spam.py`，模块名为 `spam`，可以通过 `import spam` 使用。
+## order_report 包结构
 
-在 Python 中，模块可以分为以下几类：
-
-| 类型 | 说明 |
-|------|------|
-| **Python 文件** | 使用 Python 编写的 `.py` 文件 |
-| **C/C++ 扩展** | 已被编译为共享库或 DLL 的 C 或 C++ 扩展 |
-| **包** | 一系列模块组织在一起的文件夹（包含 `__init__.py`） |
-| **内置模块** | 使用 C 编写并链接到 Python 解释器的内置模块 |
-
-## import 的使用
-
-### 模块导入的基本过程
-
-模块可以包含可执行的语句和函数的定义，这些语句的目的是初始化模块。它们只在模块名第一次遇到导入语句时才执行。
-
-<!-- snippet: id=python-modules-and-packages-01 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# spam.py
-import spam
-
-# 执行结果：只会打印一次 'from the spam.py'
-import spam
-import spam
-import spam
-```
-
-> Python 优化手段：第一次导入后将模块名加载到内存，后续的 import 语句仅是对已经加载到内存中的模块对象增加了一次引用，不会重新执行模块内的语句。
-
-### 第一次导入模块的三件事
-
-1. 为源文件创建新的名称空间
-2. 在新创建的命名空间中执行模块中包含的代码
-3. 创建名字来引用该命名空间
-
-### sys.module
-
-我们可以从 `sys.module` 中找到当前已经加载的模块，它是一个字典，包含模块名与模块对象的映射。
-
-<!-- snippet: id=python-modules-and-packages-02 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import sys
-print(sys.modules)  # 查看所有已加载的模块
-```
-
-### 被导入模块有独立的名称空间
-
-每个模块都是一个独立的名称空间，定义在这个模块中的函数把这个模块的名称空间当做全局名称空间。
-
-<!-- snippet: id=python-modules-and-packages-03 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# test.py
-import spam
-money = 10
-print(spam.money)  # 1000
-```
-
-### 为模块名起别名
-
-为已经导入的模块起别名的方式对编写可扩展的代码很有用：
-
-<!-- snippet: id=python-modules-and-packages-04 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import spam as sm
-print(sm.money)
-```
-
-### 逻辑内导入
-
-<!-- snippet: id=python-modules-and-packages-05 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-if file_format == 'xml':
-    import xmlreader as reader
-elif file_format == 'csv':
-    import csvreader as reader
-
-data = reader.read_data(filename)
-```
-
-### 一行导入多个模块
-
-<!-- snippet: id=python-modules-and-packages-06 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import sys, os, json
-```
-
-## from...import... 的使用
-
-<!-- snippet: id=python-modules-and-packages-07 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-from spam import read1, read2
-```
-
-### from...import 与 import 的区别
-
-**唯一区别**：使用 `from...import...` 则是将 `spam` 中的名字直接导入到当前的名称空间中，所以在当前名称空间中，直接使用名字就可以了，无需加前缀。
-
-**好处**：使用起来方便了
-**坏处**：容易与当前执行文件中的名字冲突
-
-<!-- snippet: id=python-modules-and-packages-08 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 导入的函数 read1，执行时仍然回到 spam.py 中寻找全局变量 money
-from spam import read1
-money = 1000
-read1()
-# 输出: from the spam.py
-#       spam->read1->money 1000
-```
-
-### 重名覆盖
-
-<!-- snippet: id=python-modules-and-packages-09 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-from spam import read1
-
-def read1():
-    print('==========')
-
-read1()  # 执行结果: ==========
-```
-
-### 支持 as
-
-<!-- snippet: id=python-modules-and-packages-10 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-from spam import read1 as read
-```
-
-### 一行导入多个名字
-
-<!-- snippet: id=python-modules-and-packages-11 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-from spam import read1, read2, money
-```
-
-### from...import *
-
-`from spam import *` 把 `spam` 中所有的不是以下划线 `_` 开头的名字都导入到当前位置。
-
-可以使用 `__all__` 来控制 `*` 导入：
-
-<!-- snippet: id=python-modules-and-packages-12 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# spam.py
-__all__ = ['money', 'read1']  # 只允许导入这两个名字
-
-# 另一个文件中
-from spam import *  # 只能导入 money 和 read1
-```
-
-## 模块循环导入问题
-
-### 问题分析
-
-模块循环/嵌套导入抛出异常的根本原因是由于在 Python 中模块被导入一次之后，就不会重新导入，只会在第一次导入时执行模块内代码。
-
-<!-- snippet: id=python-modules-and-packages-13 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# m1.py
-print('正在导入m1')
-from m2 import y
-x = 'm1'
-
-# m2.py
-print('正在导入m2')
-from m1 import x
-y = 'm2'
-
-# run.py
-import m1
-```
-
-**执行结果**：
-
-<!-- snippet: id=python-modules-and-packages-14 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
-正在导入m1
-正在导入m2
-Traceback (most recent call last):
-  File "run.py", line 1, in <module>
-    import m1
-  File "m1.py", line 2, in <module>
-    from m2 import y
-  File "m2.py", line 2, in <module>
-    from m1 import x
-ImportError: cannot import name 'x'
-```
-
-### 解决方法
-
-**方法一**：导入语句放到最后
-
-<!-- snippet: id=python-modules-and-packages-15 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# m1.py
-print('正在导入m1')
-x = 'm1'
-from m2 import y
-
-# m2.py
-print('正在导入m2')
-y = 'm2'
-from m1 import x
-```
-
-**方法二**：导入语句放到函数中
-
-<!-- snippet: id=python-modules-and-packages-16 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# m1.py
-print('正在导入m1')
-
-def f1():
-    from m2 import y
-    print(x, y)
-
-x = 'm1'
-
-# m2.py
-print('正在导入m2')
-
-def f2():
-    from m1 import x
-    print(x, y)
-
-y = 'm2'
-```
-
-## __name__ 的使用
-
-<!-- snippet: id=python-modules-and-packages-17 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# fib.py
-def fib(n):
-    a, b = 0, 1
-    while b < n:
-        print(b, end=' ')
-        a, b = b, a + b
-    print()
-
-def fib2(n):
-    result = []
-    a, b = 0, 1
-    while b < n:
-        result.append(b)
-        a, b = b, a + b
-    return result
-
-if __name__ == "__main__":
-    import sys
-    fib(int(sys.argv[1]))
-```
-
-**说明**：
-
-1. 如果模块是被导入，`__name__` 的值为模块名字
-2. 如果模块是被直接执行，`__name__` 的值为 `'__main__'`
-
-## 模块的重载
-
-考虑到性能的原因，每个模块只被导入一次。如果你想交互测试一个模块，可以使用 `importlib.reload()`：
-
-<!-- snippet: id=python-modules-and-packages-18 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import importlib
-import aa
-
-# 重新加载 aa 模块
-importlib.reload(aa)
-aa.func1()
-```
-
-## 模块搜索路径
-
-### 查找顺序
-
-模块的查找顺序是：
-
-1. **内存中已经加载的模块** - 如果模块已经被加载到内存中，则直接引用
-2. **内置模块** - 查找同名的内建模块
-3. **sys.path 路径** - 从 sys.path 给出的目录列表中依次寻找
-
-### sys.path 的初始化
-
-`sys.path` 从以下位置初始化：
-
-1. **执行文件所在的当前目录**
-2. **PYTHONPATH**（包含一系列目录名，与 shell 变量 PATH 语法一样）
-3. **依赖安装时默认指定的目录**
-
-### sys.path 的修改
-
-在初始化后，Python 程序可以修改 `sys.path`：
-
-<!-- snippet: id=python-modules-and-packages-19 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import sys
-
-# 添加到末尾
-sys.path.append('/a/b/c/d')
-
-# 添加到开头（优先搜索）
-sys.path.insert(0, '/x/y/z')
-```
-
-### .zip 和 .egg 文件
-
-`sys.path` 中还可能包含 .zip 归档文件和 .egg 文件：
-
-<!-- snippet: id=python-modules-and-packages-20 mode=display python=3.12-3.14 deps=stdlib -->
-```bash
-# 制作归档文件
-zip module.zip foo.py bar.py
-
-import sys
-sys.path.append('module.zip')
-import foo, bar
-```
-
-> `.egg` 文件是由 setuptools 创建的包，实际上只是添加了额外元数据的 .zip 文件。
-
-## 编译 Python 文件
-
-### 什么是 pyc 文件
-
-`.pyc` 是一种二进制文件，是由 `.py` 文件经过编译后生成的文件，是一种 byte code。
-
-### 编译命令
-
-<!-- snippet: id=python-modules-and-packages-21 mode=display python=3.12-3.14 deps=stdlib -->
-```bash
-# 编译成 pyc 文件
-python -m py_compile file.py
-python -m py_compile /path/to/file.py
-
-# 编译成 pyo 文件（优化）
-python -O -m py_compile file.py
-```
-
-或者使用代码：
-
-<!-- snippet: id=python-modules-and-packages-22 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import py_compile
-py_compile.compile('path')
-```
-
-### pyc 文件的特点
-
-1. **跨平台**：相同的库可以在不同的架构的系统之间共享
-2. **版本相关**：不同版本的 Python 编译后的 .pyc 文件是不同的
-3. **可反编译**：.pyc 文件不是用来加密的，只是提升模块的加载速度
-4. **自动编译**：Python 检查源文件的修改时间与编译的版本进行对比，如果过期就需要重新编译
-
-## 包
-
-### 什么是包
-
-包是一个包含 `__init__.py` 文件的文件夹，用于组织模块。
-
-### 包的结构
-
-<!-- snippet: id=python-modules-and-packages-23 mode=display python=3.12-3.14 deps=stdlib -->
-```text
-my_package/
+order_report/
 ├── __init__.py
-├── module1.py
-├── module2.py
-└── sub_package/
-    ├── __init__.py
-    └── module3.py
+├── __main__.py
+├── parser.py
+├── calculator.py
+└── renderer.py
 ```
 
-### 导入包的方式
+`parser` 只负责把外部数据变成订单；`calculator` 只负责计算；`renderer` 只负责输出。`__main__.py` 组合它们，使 `python -m order_report` 成为稳定入口。
 
-<!-- snippet: id=python-modules-and-packages-24 mode=compile python=3.12-3.14 deps=stdlib -->
+## 一次 import 的关键阶段
+
+<!-- figure:s11-f01:start -->
+
+![import 先查 sys.modules，再查找 spec、创建并提前缓存模块、执行顶层代码并绑定名称](./images/s11-f01-import-system-state-machine.png)
+
+<!-- figure:s11-f01:end -->
+
+1. 检查目标是否已在 `sys.modules`；
+2. 由 finder 根据模块名和搜索路径找到 spec；
+3. 创建模块对象并提前放入 `sys.modules`；
+4. loader 执行模块顶层代码；
+5. 把模块或导入的名称绑定到当前名称空间。
+
+提前缓存可以支持递归导入，但也意味着循环依赖可能看到“部分初始化模块”。真正的字典名称是 `sys.modules`，不是 `sys.module`。
+
+<!-- snippet: id=python-import-cache-observation mode=run python=3.12-3.14 deps=stdlib -->
+
 ```python
-# 导入整个包
-import my_package
+import json
+import sys
 
-# 导入包中的模块
-from my_package import module1
-
-# 导入包中的函数
-from my_package.module1 import my_function
-
-# 使用别名
-from my_package import module1 as m1
+assert sys.modules["json"] is json
+before = id(json)
+import json as json_again
+assert id(json_again) == before
 ```
 
-### __init__.py 的作用
+模块顶层代码通常只在首次导入时执行。`importlib.reload()` 主要用于交互实验，不是生产热更新方案，旧引用也不会自动替换。
 
-1. **标识包**：`__init__.py` 让 Python 知道这是一个包
-2. **初始化代码**：包被导入时自动执行的代码
-3. **控制导出**：可以在 `__init__.py` 中设置 `__all__` 来控制 `from package import *` 的行为
+## import 与 from import
 
-<!-- snippet: id=python-modules-and-packages-25 mode=compile python=3.12-3.14 deps=stdlib -->
+`import order_report.parser` 绑定清晰的限定名称；`from order_report.parser import parse` 把 `parse` 直接绑定到当前模块，使用方便但更容易重名。`from module import *` 隐藏依赖来源，应避免；`__all__` 只控制星号导出的公共名字，不是安全边界。
+
+包内部可写：
+
+<!-- snippet: id=python-package-relative-import mode=display python=3.12-3.14 deps=stdlib -->
+
 ```python
-# my_package/__init__.py
-from .module1 import my_function
-from .module2 import another_function
-
-__all__ = ['my_function', 'another_function']
+# order_report/__main__.py
+from .calculator import total
+from .parser import parse_orders
+from .renderer import render
 ```
 
-## 小结
+显式相对导入依赖包上下文。直接执行 `python order_report/__main__.py` 可能失败，应从包的父目录运行 `python -m order_report`。
 
-### 模块相关
+## 搜索路径与影子模块
 
-| 概念 | 说明 |
-|------|------|
-| **模块导入** | `import` 和 `from...import` |
-| **模块别名** | `import spam as sm` |
-| **循环导入** | 将导入语句放到函数中或最后 |
-| **搜索路径** | 内存 → 内置模块 → sys.path |
-| **编译文件** | `.pyc` 文件提升加载速度 |
+路径导入器会使用 `sys.path`。其初始化受入口脚本目录或当前目录、`PYTHONPATH`、标准库、虚拟环境和 site 配置影响。不要在业务代码中随意 `sys.path.insert()` 修补项目结构；使用可安装包、虚拟环境和模块入口。
 
-### 包相关
+把本地文件命名为 `json.py`、`logging.py` 等会遮蔽标准库。诊断时检查：
 
-| 概念 | 说明 |
-|------|------|
-| **包结构** | 包含 `__init__.py` 的文件夹 |
-| **导入方式** | `import package` 或 `from package import module` |
-| **__init__.py** | 包的标识文件，可用于初始化和导出控制 |
+<!-- snippet: id=python-module-origin mode=run python=3.12-3.14 deps=stdlib -->
 
-### 最佳实践
+```python
+import json
 
-1. **避免循环导入**：将导入语句放到函数中或文件最后
-2. **使用 `__all__`**：控制模块/包的导出接口
-3. **合理组织结构**：将相关的功能放在同一个模块或包中
-4. **注意命名冲突**：使用 `from...import` 时注意变量名冲突
+assert json.__spec__ is not None
+print(json.__spec__.origin)
+```
 
-掌握这些模块和包的知识，可以帮助你更好地组织和管理 Python 代码，实现代码的复用和模块化。
+## 循环导入是依赖设计信号
+
+<!-- figure:s11-f02:start -->
+
+![循环导入通过提取共同模型和入口组合重构为单向依赖](./images/s11-f02-circular-import-dependency.png)
+
+<!-- figure:s11-f02:end -->
+
+若 `parser` 导入 `renderer`，同时 `renderer` 又导入 `parser` 的顶层名称，后者可能尚未定义。优先解决方案：
+
+1. 把共同数据模型或常量提取到低层模块；
+2. 让依赖方向单向，例如入口层组合各模块；
+3. 仅在确实延迟可选依赖时使用函数内导入，并说明原因。
+
+“把 import 挪到文件末尾”只是在赌初始化顺序，不能消除结构问题。
+
+## 包、命名空间包与 pyc
+
+普通包通常含 `__init__.py`；Python 也支持无该文件的命名空间包，可跨多个目录组合。`.pyc` 是与 Python 实现/版本相关的字节码缓存，用于减少解析编译开销，不是加密格式，也不应当作跨版本发布物。
+
+## 常见误区与适用边界
+
+- 模块是对象和名称空间，不只是 `.py` 文件；扩展模块与命名空间包也可导入。
+- 包不一定必须有 `__init__.py`，但基础项目用普通包更显式。
+- 导入缓存按模块名索引；同一文件用不一致名称导入可能产生意外双实例。
+- 不在库模块导入时执行网络请求、启动线程或读取生产配置；顶层副作用会让测试和工具导入困难。
+- 依赖安装与 `pyproject.toml` 属于包装发布专题，本篇不展开。
+
+## 自检题
+
+1. 为什么循环导入可能看到“部分初始化模块”？
+2. 包内 `from .parser import parse` 为什么适合配合 `python -m order_report`？
+3. 本地 `logging.py` 为什么可能让 `import logging` 得到错误模块？
+
+<details>
+<summary>参考答案</summary>
+
+1. 模块对象在执行顶层代码前就放入 `sys.modules`，递归导入能找到对象但所需名称可能尚未定义。
+2. `-m` 建立正确包上下文，点号可解析到同一包。
+3. 当前入口目录通常位于搜索路径前部，本地同名文件会遮蔽标准库。
+
+</details>
+
+## 本篇总结
+
+模块提供名称空间，包组织依赖。导入系统先查缓存，再按 spec 查找和执行；循环导入应通过分层和依赖反转解决，而非依赖偶然顺序。
+
+## 下一篇衔接
+
+下一篇为解析、文件和计算错误建立异常合同：捕获具体异常、保留异常链、用 `else` 分隔成功路径，并用 `finally` 或 `with` 清理资源。
+
+## 资料来源
+
+- [Python 教程：模块](https://docs.python.org/3.14/tutorial/modules.html)
+- [Python 语言参考：导入系统](https://docs.python.org/3.14/reference/import.html)
+- [importlib：导入系统实现](https://docs.python.org/3.14/library/importlib.html)

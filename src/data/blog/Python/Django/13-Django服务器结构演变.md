@@ -1,8 +1,8 @@
 ---
-title: Django 服务器结构演变
+title: Django 服务器结构：从开发链路到生产拓扑
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-11T00:00:00.000+08:00
+modDatetime: 2026-07-17T00:00:00.000+08:00
 slug: django-server-structure-evolution
 featured: false
 draft: false
@@ -12,191 +12,92 @@ tags:
   - Python
   - Django
   - 服务器
-description: "深入讲解Django服务器结构的演变和各个Handler之间的关系。"
+description: "比较 runserver、StaticFilesHandler、WSGI/ASGI 应用服务器、反向代理与生产依赖的职责边界。"
 ---
 
-## 起步
+## 前置知识与学习目标
 
-根据前面的分析实在是有太多太多`Handler`，绕来绕去，今天就从头整理，将一个最基础的服务器慢慢改成类似django的服务器结构。
+你需要掌握请求生命周期、WSGI/ASGI、自动重载和 app registry。读完后应能：
 
-![Django 服务器结构可以从 simple_server 演变到 StaticFilesHandler 外层包装、WSGI application、request 封装、handler 分发和 response 封装](./images/django-server-structure-evolution-figure-01.png)
+1. 区分开发服务器、静态文件包装器、应用服务器和反向代理。
+2. 把 502、404、500、静态资源失败与超时定位到正确层。
+3. 解释为何开发拓扑不能靠“加进程”直接变成生产拓扑。
 
-## 从simple_server说起
+## 开发拓扑
 
-根据django运行的服务器`django.core.servers.basehttp`的`run`函数，我们也利用`simpler_server`模块起一个很简单的服务：
+`runserver` 把自动重载、开发 HTTP server、Django application 和在特定条件下的 `StaticFilesHandler` 组合起来，目标是快速反馈。它可能在代码变化后重建进程，静态服务也只面向开发便利。
 
-<!-- snippet: id=django-server-structure-evolution-01 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-from wsgiref.simple_server import WSGIServer, WSGIRequestHandler
-
-def demo_app(environ, start_response):
-    """示例的app"""
-    stdout = "Hello world!"
-    h = sorted(environ.items())
-    for k, v in h:
-        stdout += k + '=' + repr(v) + "\r\n"
-    print(start_response)
-    start_response("200 OK", [('Content-Type', 'text/plain; charset=utf-8')])
-    return [stdout.encode("utf-8")]
-
-server = WSGIServer(('', 8000), WSGIRequestHandler)
-server.set_app(demo_app)
-server.serve_forever()
+```text
+Browser -> runserver -> StaticFilesHandler? -> WSGIHandler -> Django
+                    \-> autoreload monitors source files
 ```
 
-我们会将这个程序改造成与django服务器结构差不多的形式，便于理解其各个`Handler`之间的关系。运行这个程序，访问`http://localhost:8000`可以看到打印了`Hello World!`和`environ`字典中各个项。结构上，我们可以将字符串通过`[stdout.encode("utf-8")]`bytes对象组成的数组作为`response`返回即可。
+这条链能帮助学习 handler，但没有生产安全、容量或稳定性承诺。
 
-## 最外层的StaticFilesHandler
+## 生产拓扑
 
-`StaticFilesHandler`是服务器结构第一个接手的对象。所有请求都是先通过这个对象接手再由其他对象处理的。这个对象处理请求也比较简单，就是判断一下请求是否是静态文件，是的话自己处理，不是的话，交个其他handler处理。我们模拟一下这个类：
+<!-- figure:s13-f01:start -->
 
-<!-- snippet: id=django-server-structure-evolution-02 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-class StaticFilesHandler:
-    """处理静态文件的句柄"""
-    def __init__(self, application):
-        self.application = application
+![开发用 runserver 组合自动重载和静态辅助，生产分离反向代理、应用服务器、Django、数据库与 CDN](./images/s13-f01-development-production-topology.png)
 
-    def __call__(self, environ, start_response):
-        if True:  # 假设所有请求都不是静态文件
-            return self.application(environ, start_response)
+<!-- figure:s13-f01:end -->
+
+```text
+Client -> TLS/Reverse Proxy -> WSGI or ASGI server -> Django
+                         |                      |-> Database
+                         |-> static/CDN         |-> Cache/queue/storage
 ```
 
-启动程序：
+反向代理处理 TLS、连接、静态资产、大小限制和部分安全头；应用服务器管理 worker、超时和优雅重启；Django 处理路由、认证和业务；数据库、缓存、队列与媒体存储各自持久化。层与层之间必须有明确的超时、连接和健康合同。
 
-<!-- snippet: id=django-server-structure-evolution-03 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-server = WSGIServer(('', 8000), WSGIRequestHandler)
-static_handler = StaticFilesHandler(demo_app)
-server.set_app(static_handler)
-server.serve_forever()
-```
+## 职责矩阵
 
-这部分比较好理解，就是简单套了一个对象做代理。最终调用还是`demo_app`函数。
+| 层             | 输入/输出                      | 典型失败              | 证据                       |
+| -------------- | ------------------------------ | --------------------- | -------------------------- |
+| DNS/TLS/代理   | 域名、连接、HTTP               | 证书、502、上传过大   | 代理 access/error log      |
+| 应用服务器     | socket 与 application callable | worker 超时、启动失败 | worker 日志、PID、健康检查 |
+| Django         | request/response               | 404、403、500         | request-id、异常、路由     |
+| 数据与外部依赖 | SQL/缓存/任务/对象             | 超时、锁、不可用      | 慢查询、池指标、队列指标   |
 
-## 封装请求的request
+遇到 502 时先证明代理能否连接 socket；遇到 Django 404 时看 URL resolver；静态 404 则检查收集目录和代理 alias。不要从所有故障都“重启 Django”开始。
 
-在封装请求之前，要先定义一下`request`的样子，这部分代码在`django.http.request`中`HttpRequest`，作为模仿，简单的展示这个类：
+## 同步与异步结构
 
-<!-- snippet: id=django-server-structure-evolution-04 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-class HttpRequest(object):
-    """定义request所需的属性"""
-    def __init__(self):
-        self.GET = {}
-        self.POST = {}
-        self.COOKIES = {}
-        self.META = {}
-        self.FILES = {}
+WSGI worker 适合典型同步 Django 请求；ASGI 为 async view、长连接和异步服务器提供接口。只换服务器不改变同步 ORM 或阻塞库。混合栈还可能触发同步/异步切换，应在真实负载下测量。
 
-        self.path = ''
-        self.path_info = ''
-        self.method = None
-```
+## 最小分层验证
 
-这个类是定义其属性，将其派生个子类，作用是将`environ`转换成对应的属性：
+1. `curl -I https://library.example.com/static/app.css` 验证代理静态路径。
+2. `curl --unix-socket /run/library/gunicorn.sock http://localhost/health/` 绕过代理验证应用服务器。
+3. 请求只返回进程信息的存活端点，再请求带关键依赖的就绪端点。
+4. 用同一 request-id 串联代理与 Django 日志，定位耗时分布。
 
-<!-- snippet: id=django-server-structure-evolution-05 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-class WSGIRequest(HttpRequest):
-    """将环境变量转到request属性"""
-    def __init__(self, environ):
-        script_name = environ["SCRIPT_NAME"]
-        path_info = environ["PATH_INFO"]
-        if not path_info:
-            path_info = '/'
+## 常见误区与适用边界
 
-        self.environ = environ
-        self.path_info = path_info
+- `StaticFilesHandler` 不是生产静态服务器。
+- 应用服务器 worker 数不是固定公式，受 CPU、I/O、数据库连接和内存约束。
+- 健康检查不能无限依赖所有下游，否则一次依赖抖动会造成级联摘除。
+- 客户端断开不必然取消数据库或外部请求。
+- 代理 IP/协议头只有在可信代理正确覆盖时才可信。
 
-        self.path = '%s/%s' % (script_name.rstrip('/'), path_info.replace('/', '', 1))
-        self.META = environ
-        self.META['PATH_INFO'] = path_info
-        self.META['SCRIPT_NAME'] = script_name
-        self.method = environ['REQUEST_METHOD'].upper()
-```
+## 自检题
 
-## 定义应用application
+1. 代理返回 502 与 Django 返回 500 的定位起点有何不同？
+2. 为什么 `runserver` 能服务静态文件不代表生产也应如此？
+3. 换成 ASGI 服务器后，同步数据库调用会自动变成非阻塞吗？
 
-`WSGIServer`利用`set_app(app)`将应用作为回调的，根据上面通过`StaticFilesHandler`代理，但最后执行的是`demo_app`，现在需要将其改造一下，用上我们的`WSGIRequest`：
+<details><summary>答案</summary>
 
-<!-- snippet: id=django-server-structure-evolution-06 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-def get_response(request):
-    print("path = %s" % request.path)
-    print("method = %s" % request.method)
-    return [str(request).encode("utf-8")]
+1. 502 先查代理到 upstream 的连接，500 查应用异常。2. 开发包装器只为便利，没有生产能力承诺。3. 不会，仍需异步兼容的调用路径或受控适配。
 
-class WSGIHandler(object):
-    request_class = WSGIRequest
+</details>
 
-    def __call__(self, environ, start_response):
-        request = self.request_class(environ)
-        response = get_response(request)
-        start_response("200 OK", [('Content-Type', 'text/plain; charset=utf-8')])
-        return response
-```
+## 本篇总结与下一篇
 
-这样，在`get_response`中，就是`request`对象了。定义了`__call__`函数用于`StaticFilesHandler`对实例进行调用`self.application(environ, start_response)`。而在这个`__call__`函数中，根据`environ`环境变量创建一个`WSGIRequest`的对象，`get_response`函数中的`request`就是通常使用的django中views里面的`request`。
+服务器结构是一组有边界的层，而不是一个“大 Django 进程”。下一篇进入应用安全层，区分认证、会话和授权，并规划自定义用户模型。
 
-将启动应用的代码稍作修改：
+## 资料来源
 
-<!-- snippet: id=django-server-structure-evolution-07 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-application = WSGIHandler()
-static_handler = StaticFilesHandler(application)
-
-server = WSGIServer(('', 8000), WSGIRequestHandler)
-server.set_app(static_handler)
-server.serve_forever()
-```
-
-## 封装响应的response
-
-现在还差对响应进行封装了，这个封装其实也比较简单，最后返回的是一个`[bytes()]`形式的既可：
-
-<!-- snippet: id=django-server-structure-evolution-08 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-class HttpResponse(object):
-    """一个简单封装的response类"""
-    def __init__(self, content="", status=200,
-                 charset="utf-8", content_type="text/plain; charset=utf-8",
-                 *args, **kwargs):
-        self._headers = {'Content-Type': content_type}
-        self._charset = charset
-        self.content(content)
-        self.status_code = status
-
-    def serialize_headers(self):
-        """序列化headers"""
-        def to_bytes(val, encoding):
-            return val if isinstance(val, bytes) else val.encode(encoding)
-
-        headers = [
-            (b': '.join([to_bytes(key, 'ascii'), to_bytes(value, 'latin-1')]))
-            for key, value in self._headers.values()
-        ]
-        return b'\r\n'.join(headers)
-
-    def content(self, value):
-        """将str转为bytes"""
-        content = bytes(value.encode(self._charset))
-        self._container = [content]
-
-    def __iter__(self):
-        """将对象视为可迭代"""
-        return iter(self._container)
-```
-
-这样，我们的`get_response`就可以很自由的操作响应对象了：
-
-<!-- snippet: id=django-server-structure-evolution-09 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-def get_response(request):
-    print("path = %s" % request.path)
-    print("method = %s" % request.method)
-    res = HttpResponse("hello world")
-    res.status_code = 400
-    res._headers["hahahah"] = "xxxxxx"
-    return res
-```
+- [Django 部署概览](https://docs.djangoproject.com/en/6.0/howto/deployment/)
+- [runserver](https://docs.djangoproject.com/en/6.0/ref/django-admin/#runserver)
+- [staticfiles runserver](https://docs.djangoproject.com/en/6.0/ref/contrib/staticfiles/#runserver)

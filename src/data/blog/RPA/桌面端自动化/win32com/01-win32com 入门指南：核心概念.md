@@ -4,562 +4,164 @@ series: pywin32
 seriesOrder: 1
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
-modDatetime: 2026-05-09T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: win32com-getting-started
-description: '详细介绍 Python pywin32 库的核心概念，包括 COM 组件、窗口句柄、Win32 API 和进程管理等基础知识。'
+description: "厘清 pywin32、win32com、Win32 API 与句柄的边界，并建立安全选择 Windows 自动化抽象层的方法。"
 tags:
   - pywin32
-  - Win32 API
   - RPA
   - 桌面自动化
-  - Python
+  - Windows
 draft: false
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
 
-pywin32 是 Python 访问 Windows 操作的桥梁，它提供了对 Windows COM 组件和 Win32 API 的访问能力。通过 pywin32，Python 可以操作 Windows 应用程序、访问系统功能、管理进程等。
+你需要会创建 Python 虚拟环境、处理异常，并理解进程是相互隔离的。本篇只回答：**pywin32 暴露了哪些 Windows 能力，什么时候应该使用它，而不是 UI Automation 或更高层库？**
 
-![pywin32 核心概念与 Windows 对象关系图](./images/pywin32-core-concepts-architecture-figure-01.png)
+读完后你应能区分 `pywin32`、`win32com`、窗口句柄和内核句柄，按任务选择模块，并解释权限、会话和资源生命周期为什么是功能的一部分。
 
-### 为什么选择 pywin32？
+> 目录和部分 slug 沿用历史名称 `win32com`，用于保持既有路径稳定；正文统一使用准确术语。`win32com` 只是 `pywin32` 的 COM 子包，不是整个包的同义词。
 
-| 特性 | 说明 |
-|------|------|
-| **Windows 完整访问** | 访问所有 Windows API |
-| **简单易用** | Pythonic 的 API 设计 |
-| **功能强大** | COM 组件、系统调用全覆盖 |
-| **广泛应用** | 大量现有库基于此构建 |
-| **免费开源** | MIT 许可证 |
+## 从抽象层选择开始
 
-### 安装 pywin32
+<!-- figure-anchor:s01-a01 -->
 
-```bash
-# 安装 pywin32
-pip install pywin32
+<!-- figure:s01-f01:start -->
 
-# 验证安装
-python -c "import win32api; print('win32api installed')"
-```
+![按任务语义选择标准库、UI Automation、pywin32 模块或 COM](./images/s01-f01-pywin32-abstraction-selection.png)
 
-### pywin32 模块组成
+<!-- figure:s01-f01:end -->
 
-| 模块 | 说明 |
-|------|------|
-| **win32api** | 基础 Windows API |
-| **win32gui** | GUI 编程接口 |
-| **win32con** | Windows 常量定义 |
-| **win32process** | 进程和线程 |
-| **win32service** | Windows 服务 |
-| **win32com.client** | COM 客户端 |
-| **win32evtlog** | 事件日志 |
-| **win32file** | 文件操作 |
-| **win32reg** | 注册表操作 |
+仍以记事本为贯穿案例：启动、定位窗口、输入文本、验证、关闭。不同抽象层处理的是不同问题：
 
-## 核心概念
+| 需求                       | 优先选择                          | 原因                           |
+| -------------------------- | --------------------------------- | ------------------------------ |
+| 按语义定位和操作控件       | UI Automation                     | 能查询元素、属性和行为 Pattern |
+| 管理 HWND、窗口样式和消息  | `win32gui`                        | 直接映射 User32 窗口 API       |
+| 查询进程/线程归属          | `win32process`                    | 连接 HWND、PID 和进程句柄      |
+| 文件通知、设备或特殊句柄   | `win32file`                       | 暴露 Win32 文件与 I/O 能力     |
+| 自动化 Excel 等 COM 服务器 | `win32com.client`                 | 创建和调用 COM 对象            |
+| 普通文件、进程和注册表任务 | `pathlib`、`subprocess`、`winreg` | 标准库更简单、可测试、可移植   |
 
-### 窗口句柄（HWND）
+pywin32 是“接近 Windows 的工具箱”，不是每个桌面任务的默认答案。
 
-窗口句柄是 Windows 中每个窗口的唯一标识：
+## 包、模块与系统边界
+
+常用模块的职责如下：
+
+- `win32gui`：窗口枚举、属性、位置、消息；
+- `win32con`：Win32 常量；
+- `win32api`：通用 Win32 函数和句柄辅助；
+- `win32process`：进程/线程与窗口归属；
+- `win32event`：等待内核对象；
+- `win32file`：文件句柄、目录变更、命名管道等；
+- `win32com.client`：COM 客户端自动化；
+- `pywintypes`：pywin32 的公共类型和异常。
+
+记住“模块对应 API 家族”，比背函数列表更有用。一个完整自动化往往组合标准库、UIA 和少量 pywin32，而不是全部用 pywin32 重写。
+
+## HWND、HANDLE、PID 和消息
+
+<!-- figure-anchor:s01-a02 -->
+
+<!-- figure:s01-f02:start -->
+
+![区分 HWND、内核 HANDLE、PID 与窗口消息的身份和生命周期](./images/s01-f02-windows-identity-message-boundaries.png)
+
+<!-- figure:s01-f02:end -->
+
+### HWND
+
+`HWND` 是当前桌面会话中窗口对象的不透明标识。它可能在窗口销毁后失效，数值也可能被系统复用。每次动作前可用 `win32gui.IsWindow(hwnd)` 验证，不能把它持久化到配置文件长期使用。
+
+### 内核 HANDLE
+
+进程、线程、文件和事件使用内核句柄。句柄伴随访问权限，打开成功后必须关闭。Python 对象被回收并不应成为资源管理策略；用 `try/finally` 明确释放。
+
+### PID
+
+PID 标识进程，但进程退出后也可能被复用。把 PID 与启动时间、可执行路径或当前 HWND 一起验证，才能降低误操作风险。
+
+### 窗口消息
+
+窗口所属线程从消息队列取出消息并交给窗口过程。`SendMessage` 通常同步等待处理，`PostMessage` 只入队后返回。跨进程消息受 User Interface Privilege Isolation（UIPI）和参数编组限制，不是通用远程调用协议。
+
+## 最小示例：按 PID 枚举顶层窗口
+
+输入是 PID，输出是当前可见且有标题的顶层窗口快照：
 
 ```python
+from dataclasses import dataclass
+
 import win32gui
-import win32con
+import win32process
 
-# 获取桌面窗口句柄
-desktop_hwnd = win32gui.GetDesktopWindow()
-print(f"桌面句柄: {desktop_hwnd}")
 
-# 获取前台窗口句柄
-foreground_hwnd = win32gui.GetForegroundWindow()
-print(f"前台窗口: {foreground_hwnd}")
+@dataclass(frozen=True)
+class WindowInfo:
+    hwnd: int
+    title: str
 
-# 获取窗口标题
-title = win32gui.GetWindowText(foreground_hwnd)
-print(f"窗口标题: {title}")
-```
 
-### 窗口查找
+def top_level_windows(process_id: int) -> list[WindowInfo]:
+    result: list[WindowInfo] = []
 
-```python
-# 按标题查找窗口
-hwnd = win32gui.FindWindow(None, "无标题 - 记事本")
-print(f"找到窗口: {hwnd}")
-
-# 按类名查找
-hwnd = win32gui.FindWindow("Notepad", None)
-print(f"记事本窗口: {hwnd}")
-
-# 枚举所有窗口
-def enum_windows_callback(hwnd, windows):
-    if win32gui.IsWindowVisible(hwnd):
+    def visit(hwnd: int, _: object) -> bool:
+        if not win32gui.IsWindowVisible(hwnd):
+            return True
+        _, pid = win32process.GetWindowThreadProcessId(hwnd)
         title = win32gui.GetWindowText(hwnd)
-        if title:
-            windows.append((hwnd, title))
-    return True
-
-windows = []
-win32gui.EnumWindows(enum_windows_callback, windows)
-
-for hwnd, title in windows[:10]:  # 只显示前10个
-    print(f"{hwnd}: {title}")
-```
-
-### 窗口信息
-
-```python
-# 获取窗口信息
-hwnd = win32gui.FindWindow(None, "无标题 - 记事本")
-
-# 获取窗口类名
-class_name = win32gui.GetClassName(hwnd)
-print(f"类名: {class_name}")
-
-# 获取窗口矩形
-left, top, right, bottom = win32gui.GetWindowRect(hwnd)
-print(f"位置: ({left}, {top}) - ({right}, {bottom})")
-print(f"大小: {right - left} x {bottom - top}")
-
-# 获取客户区矩形
-client_left, client_top, client_right, client_bottom = win32gui.GetClientRect(hwnd)
-```
-
-## 窗口操作
-
-### 移动和调整大小
-
-```python
-import win32gui
-import win32con
-
-hwnd = win32gui.FindWindow(None, "无标题 - 记事本")
-
-# 移动窗口
-win32gui.SetWindowPos(
-    hwnd,
-    0,  # 插入句柄
-    100, 100,  # x, y
-    800, 600,  # 宽, 高
-    win32con.SWP_NOZORDER  # 标志
-)
-
-# 移动窗口（另一种方式）
-win32gui.MoveWindow(hwnd, 100, 100, 800, 600, True)
-```
-
-### 显示和隐藏
-
-```python
-hwnd = win32gui.FindWindow(None, "无标题 - 记事本")
-
-# 显示窗口
-win32gui.ShowWindow(hwnd, win32con.SW_SHOW)
-
-# 隐藏窗口
-win32gui.ShowWindow(hwnd, win32con.SW_HIDE)
-
-# 最大化
-win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
-
-# 最小化
-win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
-
-# 还原
-win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-
-# SW_SHOWMAXIMIZED 等常量
-win32gui.ShowWindow(hwnd, win32con.SW_SHOWMAXIMIZED)
-win32gui.ShowWindow(hwnd, win32con.SW_SHOWMINIMIZED)
-```
-
-### 激活窗口
-
-```python
-hwnd = win32gui.FindWindow(None, "无标题 - 记事本")
-
-# 将窗口带到前台
-win32gui.SetForegroundWindow(hwnd)
-
-# 设置为活动窗口
-win32gui.SetActiveWindow(hwnd)
-
-# 强制获取焦点
-win32gui.SetFocus(hwnd)
-```
-
-## 发送消息
-
-### WM_* 消息
-
-```python
-import win32gui
-import win32con
-import win32api
-
-hwnd = win32gui.FindWindow(None, "无标题 - 记事本")
-
-# 发送关闭消息
-win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
-
-# 发送按键消息
-# WM_KEYDOWN
-win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
-# WM_KEYUP
-win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
-
-# 发送字符消息
-win32gui.PostMessage(hwnd, win32con.WM_CHAR, ord('A'), 0)
-```
-
-### SendMessage vs PostMessage
-
-| 方法 | 说明 | 用途 |
-|------|------|------|
-| **SendMessage** | 同步发送，等待处理完成 | 需要确认结果 |
-| **PostMessage** | 异步发送，立即返回 | 快速发送 |
-
-```python
-# SendMessage - 同步，等待响应
-result = win32gui.SendMessage(
-    hwnd, 
-    win32con.WM_GETTEXT, 
-    256,  # 缓冲区大小
-    0  # 接收缓冲区
-)
-
-# PostMessage - 异步，不等待
-win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
-```
-
-## 进程操作
-
-### win32process
-
-```python
-import win32process
-import win32api
-import win32con
-
-# 启动进程
-process_info = win32process.CreateProcess(
-    r"C:\Windows\System32\notepad.exe",  # 程序路径
-    "",  # 命令行参数
-    None,  # 进程安全属性
-    None,  # 线程安全属性
-    0,  # 继承句柄
-    win32con.CREATE_NEW_CONSOLE,  # 创建标志
-    None,  # 环境变量
-    None,  # 当前目录
-    win32process.STARTUPINFO()  # 启动信息
-)
-
-h_process, h_thread, process_id, thread_id = process_info
-print(f"进程ID: {process_id}, 线程ID: {thread_id}")
-
-# 打开现有进程
-h_process = win32api.OpenProcess(
-    win32con.PROCESS_ALL_ACCESS,  # 访问权限
-    False,  # 不继承
-    process_id  # 进程ID
-)
-print(f"句柄: {h_process}")
-
-# 关闭句柄
-win32api.CloseHandle(h_process)
-```
-
-### 进程信息
-
-```python
-import win32process
-import win32api
-
-# 获取当前进程
-h_process = win32api.GetCurrentProcess()
-print(f"当前进程ID: {win32api.GetCurrentProcessId()}")
-
-# 获取进程信息
-process_id = 1234
-h_process = win32api.OpenProcess(
-    win32con.PROCESS_QUERY_INFORMATION | win32con.PROCESS_VM_READ,
-    False,
-    process_id
-)
-
-# 获取进程镜像路径
-exename = win32process.GetModuleFileNameEx(h_process, 0)
-print(f"进程路径: {exename}")
-
-# 获取内存信息
-mem_info = win32process.GetProcessMemoryInfo(h_process)
-print(f"工作集大小: {mem_info['WorkingSetSize'] / 1024 / 1024:.2f} MB")
-
-win32api.CloseHandle(h_process)
-```
-
-## 第一个完整示例
-
-### 操作记事本
-
-```python
-import win32gui
-import win32con
-import win32process
-import win32api
-import time
-
-def find_window_by_title(title):
-    """按标题查找窗口"""
-    hwnd = win32gui.FindWindow(None, title)
-    return hwnd
-
-def find_child_window(parent_hwnd, class_name=None, title=None):
-    """查找子窗口"""
-    if class_name and title:
-        return win32gui.FindWindowEx(parent_hwnd, 0, class_name, title)
-    elif class_name:
-        return win32gui.FindWindowEx(parent_hwnd, 0, class_name, None)
-    elif title:
-        return win32gui.FindWindowEx(parent_hwnd, 0, None, title)
-    return None
-
-def main():
-    # 1. 启动记事本
-    print("启动记事本...")
-    process_info = win32process.CreateProcess(
-        r"C:\Windows\System32\notepad.exe",
-        "",
-        None,
-        None,
-        0,
-        win32con.CREATE_NEW_CONSOLE,
-        None,
-        None,
-        win32process.STARTUPINFO()
-    )
-    
-    time.sleep(0.5)  # 等待窗口创建
-    
-    # 2. 查找窗口
-    hwnd = find_window_by_title("无标题 - 记事本")
-    if not hwnd:
-        print("找不到记事本窗口")
-        return
-    
-    print(f"找到窗口: {hwnd}")
-    
-    # 3. 查找编辑区
-    edit_hwnd = find_child_window(hwnd, "Edit")
-    if edit_hwnd:
-        print(f"找到编辑区: {edit_hwnd}")
-        
-        # 4. 发送文本
-        # 设置焦点
-        win32gui.SetFocus(edit_hwnd)
-        
-        # 发送字符
-        for char in "Hello, win32com!":
-            win32gui.PostMessage(
-                edit_hwnd,
-                win32con.WM_CHAR,
-                ord(char),
-                0
-            )
-            time.sleep(0.01)  # 模拟打字
-        
-        print("文本已输入")
-    
-    print("按任意键关闭记事本...")
-    win32api.GetChar()
-    
-    # 5. 关闭窗口
-    win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
-    print("记事本已关闭")
-
-if __name__ == "__main__":
-    main()
-```
-
-## 事件处理
-
-### 窗口消息钩子
-
-```python
-import win32gui
-import win32con
-
-# 消息回调
-def wnd_proc(hwnd, msg, wparam, lparam):
-    if msg == win32con.WM_DESTROY:
-        win32gui.PostQuitMessage(0)
-        return 0
-    elif msg == win32con.WM_COMMAND:
-        print(f"WM_COMMAND: wparam={wparam}, lparam={lparam}")
-    elif msg == win32con.WM_KEYDOWN:
-        print(f"按键: {wparam}")
-    
-    return win32gui.DefWindowProc(hwnd, msg, wparam, lparam)
-
-# 注册窗口类
-wc = win32gui.WNDCLASS()
-wc.lpfnWndProc = wnd_proc
-wc.hInstance = win32api.GetModuleHandle(None)
-wc.lpszClassName = "MyWindowClass"
-
-class_atom = win32gui.RegisterClass(wc)
-
-# 创建窗口
-hwnd = win32gui.CreateWindow(
-    class_atom,
-    "测试窗口",
-    win32con.WS_OVERLAPPEDWINDOW,
-    win32con.CW_USEDEFAULT,
-    win32con.CW_USEDEFAULT,
-    400,
-    300,
-    0,
-    0,
-    wc.hInstance,
-    None
-)
-
-# 显示窗口
-win32gui.ShowWindow(hwnd, win32con.SW_SHOWNORMAL)
-win32gui.UpdateWindow(hwnd)
-
-# 消息循环
-msg = win32gui.MSG()
-while win32gui.GetMessage(msg, 0, 0, 0):
-    win32gui.TranslateMessage(msg)
-    win32gui.DispatchMessage(msg)
-```
-
-## 最佳实践
-
-### 错误处理
-
-```python
-import win32gui
-import win32api
-
-try:
-    hwnd = win32gui.FindWindow(None, "不存在的窗口")
-    if hwnd == 0:
-        print("窗口未找到")
-    else:
-        # 操作窗口
-        pass
-except win32api.error as e:
-    print(f"Windows API 错误: {e}")
-except Exception as e:
-    print(f"错误: {e}")
-```
-
-### 等待窗口出现
-
-```python
-import win32gui
-import time
-
-def wait_for_window(title, timeout=10):
-    """等待窗口出现"""
-    start = time.time()
-    
-    while time.time() - start < timeout:
-        hwnd = win32gui.FindWindow(None, title)
-        if hwnd != 0:
-            return hwnd
-        time.sleep(0.1)
-    
-    return 0
-
-# 使用
-hwnd = wait_for_window("无标题 - 记事本", timeout=5)
-if hwnd:
-    print(f"窗口已出现: {hwnd}")
-else:
-    print("窗口未在超时时间内出现")
-```
-
-### 窗口遍历
-
-```python
-def get_all_child_windows(hwnd):
-    """获取所有子窗口"""
-    windows = []
-    
-    def callback(child_hwnd, _):
-        if win32gui.IsWindowVisible(child_hwnd):
-            windows.append({
-                'hwnd': child_hwnd,
-                'class': win32gui.GetClassName(child_hwnd),
-                'title': win32gui.GetWindowText(child_hwnd)
-            })
+        if pid == process_id and title:
+            result.append(WindowInfo(hwnd=hwnd, title=title))
         return True
-    
-    win32gui.EnumChildWindows(hwnd, callback, None)
-    return windows
 
-# 使用
-hwnd = win32gui.FindWindow(None, "无标题 - 记事本")
-if hwnd:
-    children = get_all_child_windows(hwnd)
-    for child in children:
-        print(f"{child['hwnd']}: [{child['class']}] {child['title']}")
+    win32gui.EnumWindows(visit, None)
+    return result
 ```
 
-## 常见任务
+“列表为空”是正常结果，不应直接索引 `[0]`。窗口可能尚未创建、位于别的会话、没有标题或权限层级不同。第 3 篇会为它加入截止时间、唯一性和句柄再验证。
 
-### 截图窗口
+## 调用链与失败边界
 
-```python
-import win32gui
-import win32ui
-import win32con
-from PIL import Image
-
-def capture_window(hwnd):
-    """截取窗口图像"""
-    # 获取窗口设备上下文
-    left, top, right, bottom = win32gui.GetWindowRect(hwnd)
-    width = right - left
-    height = bottom - top
-    
-    # 获取窗口 DC
-    hwndDC = win32gui.GetWindowDC(hwnd)
-    mfcDC = win32ui.CreateDCFromHandle(hwndDC)
-    saveDC = mfcDC.CreateCompatibleDC()
-    
-    # 创建位图
-    saveBitMap = win32ui.CreateBitmap()
-    saveBitMap.CreateCompatibleBitmap(mfcDC, width, height)
-    saveDC.SelectObject(saveBitMap)
-    
-    # 复制窗口内容到位图
-    saveDC.BitBlt((0, 0), (width, height), mfcDC, (0, 0), win32con.SRCCOPY)
-    
-    # 保存为图像
-    bmpinfo = saveBitMap.GetInfo()
-    bmpstr = saveBitMap.GetBitmapBits(True)
-    img = Image.frombuffer(
-        'RGB',
-        (bmpinfo['bmWidth'], bmpinfo['bmHeight']),
-        bmpstr, 'bytes', bmpinfo['bmWidth'] * 3, 0
-    )
-    
-    # 清理
-    win32gui.DeleteObject(saveBitMap.GetHandle())
-    saveDC.DeleteDC()
-    mfcDC.DeleteDC()
-    win32gui.ReleaseDC(hwnd, hwndDC)
-    
-    return img
-
-# 使用
-hwnd = win32gui.FindWindow(None, "无标题 - 记事本")
-if hwnd:
-    img = capture_window(hwnd)
-    img.save("screenshot.png")
-    print("截图已保存")
+```text
+Python 调用 -> pywin32 扩展模块 -> Win32 API -> 对象/目标线程 -> 返回值或 pywintypes.error
 ```
+
+每一层都有独立失败：参数类型不匹配、API 返回失败、句柄已失效、访问掩码不足、目标线程无响应。`pywintypes.error` 通常保留 Win32 错误码、函数名和系统消息；捕获 `Exception` 后只打印“失败”会丢失这些证据。日志应保留异常对象和目标摘要，但避免记录敏感窗口内容。
+
+## 适用边界与常见误区
+
+- UIA 能提供语义能力时，不要先用坐标或伪造按键；
+- 普通进程启动优先 `subprocess`，普通注册表操作优先 `winreg`；
+- 不要默认申请 `PROCESS_ALL_ACCESS`，只申请实际操作所需权限；
+- 不要把 `PostMessage` 返回成功解释为目标已经完成动作；
+- 不要在锁屏、服务会话或安全桌面中假定交互式 UI 可用；
+- 位数不是所有问题的根因；必须匹配的是加载到当前进程的原生 DLL 或进程内 COM 组件，进程外 COM 服务器通常可跨 x86/x64 通信。
+
+## 自检题
+
+1. `pywin32` 与 `win32com` 是什么关系？
+2. 为什么 HWND 不能长期保存后复用？
+3. 普通文件复制为什么通常不应首选 `win32file`？
+
+<details>
+<summary>查看答案</summary>
+
+1. `pywin32` 是整个包，`win32com` 是其中用于 COM 的子包。
+2. 窗口销毁后句柄失效，其数值还可能被系统分配给新对象；动作前必须重新定位和验证。
+3. 标准库接口更简单、可移植且更易测试；只有需要 Windows 特有句柄、通知或标志时才下沉。
+
+</details>
+
+## 本篇总结与下一篇
+
+pywin32 的价值是精确进入 Windows 原生边界。正确顺序是先选抽象层，再选择模块、最小权限和资源生命周期。下一篇将建立隔离环境、验证二进制扩展可加载，并创建可测试的项目骨架。
+
+## 资料来源
+
+- [pywin32 项目与安装说明](https://github.com/mhammond/pywin32)
+- [Kernel Objects](https://learn.microsoft.com/en-us/windows/win32/sysinfo/kernel-objects)
+- [About Messages and Message Queues](https://learn.microsoft.com/en-us/windows/win32/winmsg/about-messages-and-message-queues)
+- [User Interface Privilege Isolation](https://learn.microsoft.com/en-us/windows/security/application-security/application-control/user-interface-privilege-isolation)

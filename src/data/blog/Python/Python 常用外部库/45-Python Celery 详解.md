@@ -1,492 +1,137 @@
 ---
-title: Python Celery 详解
+title: Python Celery 详解：可靠的异步任务边界
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: celery
-modDatetime: 2026-07-11T00:00:00.000+08:00
+modDatetime: 2026-07-17T00:00:00.000+08:00
 featured: false
 draft: false
 tags:
   - Python
   - Celery
   - docs
-description: Celery 分布式任务队列详解，包含异步任务、定时任务和 Django 集成。
+description: 从消息发布、Worker 执行、确认、重试和结果存储理解 Celery，并用幂等任务建立可靠异步边界。
 series: python
 seriesOrder: 45
 language: zh-CN
 ---
 
-# Celery 详解
+# Python Celery 详解：可靠的异步任务边界
 
-## Celery架构
+## 前置知识与学习目标
 
-Celery的架构由三部分组成：消息中间件（message broker）、任务执行单元（worker）和任务执行结果存储（task result store）组成。
+你需要理解函数、进程和消息队列的基本概念。本文只回答：**Web 请求把任务交给 Celery 后，系统如何知道任务是否真正完成，并在重复投递时保持业务正确？**
 
-![Celery 分布式任务从生产者进入 Broker 队列、Worker 执行、结果后端存储并由 Beat 调度定时任务的架构图](./images/python-celery-task-queue-figure-01.png)
+完成后你应能解释 Broker、Worker、Result Backend 的职责，区分发布成功、执行成功与结果可查询，并写出有边界的重试与幂等任务。
 
-### 消息中间件
+## 直觉：`.delay()` 不是远程函数调用
 
-Celery本身不提供消息服务，但是可以方便的和第三方提供的消息中间件集成，包括RabbitMQ、Redis等。
+调用 `.delay()` 通常只表示生产者把“任务名 + 参数”序列化为消息并尝试发送到 Broker。它不保证 Worker 已执行，更不保证数据库写入成功。`AsyncResult` 是任务标识和状态查询句柄，不是业务事务。
 
-### 任务执行单元
+<!-- figure-anchor:s45-f01 -->
 
-Worker是Celery提供的任务执行的单元，worker并发的运行在分布式的系统节点中。
+## 一次任务的调用链与状态
 
-### 任务结果存储
+![Celery 任务从 Producer 经 Broker 到 Worker，业务事务提交后 ACK，并可选写入 Result Backend](./images/s45-f01-celery-task-delivery-chain.png)
 
-Task result store用来存储Worker执行的任务的结果，Celery支持以不同方式存储任务的结果，包括AMQP、Redis等。
+主路径为：Producer → Broker → Worker → 业务副作用 → ACK；Result Backend 是可选旁路。发布确认解决 Producer 到 Broker 的接管，消费确认解决 Worker 到 Broker 的处理结果，两者不能相互替代。
 
-## 版本基线
+## 最小配置与任务
 
-本文锁定 Celery 5.6.3，并以 Python 3.12–3.14 为验证范围。Broker、结果后端及其客户端还需分别锁定版本；升级时先检查任务序列化、重试语义和 worker 滚动发布兼容性。
-
-## 使用场景
-
-### 异步任务
-
-将耗时操作任务提交给Celery去异步执行，比如发送短信/邮件、消息推送、音视频处理等等。
-
-### 定时任务
-
-定时执行某件事情，比如每天数据统计。
-
-## Celery的安装配置
-
-<!-- snippet: id=celery-01 mode=display python=3.12-3.14 deps=stdlib -->
-```bash
-python -m pip install celery
-```
-
-消息中间件：RabbitMQ/Redis
-
-<!-- snippet: id=celery-02 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-app = Celery('任务名', backend='xxx', broker='xxx')
-```
-
-## Celery执行异步任务
-
-### 基本使用
-
-#### 创建项目celerytest
-
-#### 创建py文件：celery_app_task.py
-
-<!-- snippet: id=celery-03 mode=compile python=3.12-3.14 deps=celery==5.6.3 -->
-```python
-import celery
-import time
-
-# broker='redis://127.0.0.1:6379/2' 不加密码
-backend='redis://:123456@127.0.0.1:6379/1'
-broker='redis://:123456@127.0.0.1:6379/2'
-cel=celery.Celery('test',backend=backend,broker=broker)
-
-@cel.task
-def add(x,y):
-    return x+y
-```
-
-#### 创建py文件：add_task.py, 添加任务
-
-<!-- snippet: id=celery-04 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-from celery_app_task import add
-
-result = add.delay(4,5)
-print(result.id)
-```
-
-#### 创建py文件：run.py，执行任务
-
-或者使用命令执行：`celery worker -A celery_app_task -l info`
-
-> 注：Windows下：`celery worker -A celery_app_task -l info -P eventlet`
-
-<!-- snippet: id=celery-05 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-from celery_app_task import cel
-
-if __name__ == '__main__':
-    cel.worker_main()
-    # cel.worker_main(argv=['--loglevel=info'])
-```
-
-#### 创建py文件：result.py，查看任务执行结果
-
-<!-- snippet: id=celery-06 mode=compile python=3.12-3.14 deps=celery==5.6.3 -->
-```python
-from celery.result import AsyncResult
-from celery_app_task import cel
-
-task_result = AsyncResult(id="e919d97d-2938-4d0f-9265-fd8237dc2aa3", app=cel)
-
-if task_result.successful():
-    result = task_result.get()
-    print(result)
-    # result.forget()  # 将结果删除
-elif task_result.failed():
-    print('执行失败')
-elif task_result.status == 'PENDING':
-    print('任务等待中被执行')
-elif task_result.status == 'RETRY':
-    print('任务异常后正在重试')
-elif task_result.status == 'STARTED':
-    print('任务已经开始被执行')
-```
-
-#### 执行步骤
-
-1. 执行 add_task.py，添加任务，并获取任务ID
-2. 执行 run.py，或者执行命令：`celery worker -A celery_app_task -l info`
-3. 执行 result.py, 检查任务状态并获取结果
-
-### 多任务结构
-
-#### 项目结构
-
-<!-- snippet: id=celery-07 mode=display python=3.12-3.14 deps=stdlib -->
-```text
-pro_cel
-├── celery_task        # celery相关文件夹
-│   ├── celery.py       # celery连接和配置相关文件，必须叫这个名字
-│   ├── tasks1.py      # 所有任务函数
-│   └── tasks2.py      # 所有任务函数
-├── check_result.py    # 检查结果
-└── send_task.py       # 触发任务
-```
-
-#### celery.py
-
-<!-- snippet: id=celery-08 mode=compile python=3.12-3.14 deps=celery==5.6.3 -->
 ```python
 from celery import Celery
 
-cel = Celery(
-    'celery_demo',
-    broker='redis://127.0.0.1:6379/1',
-    backend='redis://127.0.0.1:6379/2',
-    # 包含以下两个任务文件，去相应的py文件中找任务，对多个任务做分类
-    include=['celery_task.tasks1',
-             'celery_task.tasks2'
-    ])
+app = Celery(
+    "order_jobs",
+    broker="redis://127.0.0.1:6379/0",
+    backend="redis://127.0.0.1:6379/1",
+)
+app.conf.update(
+    task_serializer="json",
+    accept_content=["json"],
+    result_serializer="json",
+    task_track_started=True,
+)
 
-# 时区
-cel.conf.timezone = 'Asia/Shanghai'
-# 是否使用UTC
-cel.conf.enable_utc = False
+@app.task(
+    bind=True,
+    autoretry_for=(TimeoutError,),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=5,
+)
+def import_catalog(self, import_id: str) -> dict[str, str]:
+    # 真实实现应先检查 import_id 是否已完成，再写入同一幂等键。
+    return {"import_id": import_id, "status": "done"}
 ```
 
-#### tasks1.py
-
-<!-- snippet: id=celery-09 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import time
-from celery_task.celery import cel
-
-@cel.task
-def test_celery(res):
-    time.sleep(5)
-    return "test_celery任务结果:%s" % res
+```bash
+celery -A tasks worker --loglevel=INFO
 ```
 
-#### tasks2.py
+生产者只传递小而稳定的标识符：
 
-<!-- snippet: id=celery-10 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
-import time
-from celery_task.celery import cel
-
-@cel.task
-def test_celery2(res):
-    time.sleep(5)
-    return "test_celery2任务结果:%s" % res
-```
-
-#### check_result.py
-
-<!-- snippet: id=celery-11 mode=compile python=3.12-3.14 deps=celery==5.6.3 -->
-```python
-from celery.result import AsyncResult
-from celery_task.celery import cel
-
-task_result = AsyncResult(id="08eb2778-24e1-44e4-a54b-56990b3519ef", app=cel)
-
-if task_result.successful():
-    result = task_result.get()
-    print(result)
-    # result.forget()  # 将结果删除, 执行完成，结果不会自动删除
-    # task_result.revoke(terminate=True)  # 无论现在是什么时候，都要终止
-    # task_result.revoke(terminate=False)  # 如果任务还没有开始执行呢，那么就可以终止。
-elif task_result.failed():
-    print('执行失败')
-elif task_result.status == 'PENDING':
-    print('任务等待中被执行')
-elif task_result.status == 'RETRY':
-    print('任务异常后正在重试')
-elif task_result.status == 'STARTED':
-    print('任务已经开始被执行')
-```
-
-#### send_task.py
-
-<!-- snippet: id=celery-12 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-from celery_task.tasks1 import test_celery
-from celery_task.tasks2 import test_celery2
-
-# 立即告知celery去执行test_celery任务，并传入一个参数
-result = test_celery.delay('第一个的执行')
-print(result.id)
-result = test_celery2.delay('第二个的执行')
+result = import_catalog.delay("imp-20260717-001")
 print(result.id)
 ```
 
-#### 执行步骤
+不要把 ORM 对象、文件句柄或大块二进制数据塞进消息；传 ID，让 Worker 在自己的事务与连接中重新读取。
 
-添加任务（执行send_task.py），开启work：`celery worker -A celery_task -l info -P eventlet`，检查任务执行结果（执行check_result.py）
+## 幂等、确认与重试
 
-## Celery执行定时任务
+![任务先检查幂等键，未完成则执行业务并提交后 ACK，瞬时错误有限退避，永久错误终止](./images/s45-f02-celery-idempotent-retry-state.png)
 
-### 设定时间让celery执行一个任务
+可靠任务通常按以下顺序设计：
 
-#### add_task.py
+1. 用业务幂等键查询是否已经完成；
+2. 在事务中写入结果或状态；
+3. 提交业务事务；
+4. 任务返回后再确认消息（若使用 `acks_late=True`）。
 
-<!-- snippet: id=celery-13 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-from celery_app_task import add
-from datetime import datetime
+`acks_late` 会扩大重投递可能性，因此任务必须幂等。重试只用于超时、临时断连等瞬时错误；参数错误、权限错误等永久失败应快速终止。设置指数退避、抖动和最大次数，避免重试风暴。
 
-# 方式一
-v1 = datetime(2019, 2, 13, 18, 19, 56)
-print(v1)
-v2 = datetime.utcfromtimestamp(v1.timestamp())
-print(v2)
-result = add.apply_async(args=[1, 3], eta=v2)
-print(result.id)
+Celery 不能让“数据库提交”和“消息 ACK”天然成为同一个原子事务。关键事件可采用事务发件箱（outbox）：业务事务同时写业务表和待发布事件，再由独立发布器发送。
 
-# 方式二
-ctime = datetime.now()
-# 默认用utc时间
-utc_ctime = datetime.utcfromtimestamp(ctime.timestamp())
-from datetime import timedelta
-time_delay = timedelta(seconds=10)
-task_time = utc_ctime + time_delay
+## 定时任务与结果边界
 
-# 使用apply_async并设定时间
-result = add.apply_async(args=[4, 3], eta=task_time)
-print(result.id)
-```
+Celery Beat 是调度器，不是 Worker；同一调度计划通常只运行一个 Beat 实例，或使用具备互斥能力的调度方案。结果 Backend 适合状态查询和短期结果，不应替代业务数据库；不需要结果时可 `ignore_result=True`。
 
-### 类似于crontab的定时任务
+不要在任务内部同步等待另一个任务的 `.get()`，这会占住 Worker 槽位并可能造成死锁。使用 chain、group、chord 等 Canvas 原语表达依赖。
 
-#### 多任务结构中celery.py修改如下
+## 常见误区与适用边界
 
-<!-- snippet: id=celery-14 mode=compile python=3.12-3.14 deps=celery==5.6.3 -->
-```python
-from datetime import timedelta
-from celery import Celery
-from celery.schedules import crontab
+- “调用成功”不等于“任务完成”；HTTP 响应应返回任务 ID 或业务作业 ID。
+- 超时等待结果不会自动终止 Worker 中的任务。
+- Celery 适合秒级到分钟级后台工作；要求强一致、毫秒级同步响应的逻辑应留在请求事务内。
+- 队列长度不是唯一健康指标，还要观察最老消息年龄、失败率、重试率和执行时延。
 
-cel = Celery('tasks', broker='redis://127.0.0.1:6379/1', backend='redis://127.0.0.1:6379/2', include=[
-        'celery_task.tasks1',
-        'celery_task.tasks2',
-])
-cel.conf.timezone = 'Asia/Shanghai'
-cel.conf.enable_utc = False
+## 三道自检题
 
-cel.conf.beat_schedule = {
-    # 名字随意命名
-    'add-every-10-seconds': {
-        # 执行tasks1下的test_celery函数
-        'task': 'celery_task.tasks1.test_celery',
-        # 每隔2秒执行一次
-        # 'schedule': 1.0,
-        # 'schedule': crontab(minute="*/1"),
-        'schedule': timedelta(seconds=2),
-        # 传递参数
-        'args': ('test',)
-    },
-    # 'add-every-12-seconds': {
-    #     'task': 'celery_task.tasks1.test_celery',
-    #     每年4月11号，8点42分执行
-    #     'schedule': crontab(minute=42, hour=8, day_of_month=11, month_of_year=4),
-    #     'schedule': crontab(minute=42, hour=8, day_of_month=11, month_of_year=4),
-    #     'args': (16, 16)
-    # },
-}
-```
+1. Broker 与 Result Backend 分别保存什么？
+2. 为什么 `acks_late=True` 必须配合幂等任务？
+3. 哪些错误适合自动重试？
 
-#### 启动命令
+<details>
+<summary>展开答案</summary>
 
-- 启动一个beat：`celery beat -A celery_task -l info`
-- 启动work执行：`celery worker -A celery_task -l info -P eventlet`
+1. Broker 传递待执行消息；Result Backend 可选地保存任务状态和返回值。
+2. Worker 在提交业务结果后、ACK 前崩溃会导致消息再次投递，重复执行必须无额外副作用。
+3. 网络超时、临时限流等瞬时错误；确定的参数、认证和业务规则错误不应盲目重试。
 
-## Django中使用Celery
+</details>
 
-旧的 `django-celery` / `djcelery` 已经不适合新项目。Celery 3.1 之后就内置支持 Django，现代项目通常直接使用 Celery 实例、`CELERY_` 命名空间配置和 `@shared_task`。
+## 本篇总结
 
-参考：[Celery 官方 Django 集成文档](https://docs.celeryq.dev/en/latest/django/first-steps-with-django.html)
+Celery 的核心不是“异步语法”，而是跨进程、跨网络的交付边界。用业务幂等键、有限重试、明确 ACK 时机和可观测状态，才能把任务做成可靠系统组件。
 
-### 安装
+## 下一篇衔接
 
-<!-- snippet: id=celery-15 mode=display python=3.12-3.14 deps=stdlib -->
-```bash
-python -m pip install celery redis
-```
+异步导入后的文章需要被搜索。下一篇比较搜索抽象与 Django/PostgreSQL 原生全文搜索，并解释查询、向量、排名和索引为何必须保持一致。
 
-如果需要在 Django Admin 中管理定时任务，再安装：
+## 资料来源
 
-<!-- snippet: id=celery-16 mode=display python=3.12-3.14 deps=stdlib -->
-```bash
-python -m pip install django-celery-beat
-```
-
-如果需要 Web 监控界面，再安装：
-
-<!-- snippet: id=celery-17 mode=display python=3.12-3.14 deps=stdlib -->
-```bash
-python -m pip install flower
-```
-
-### 项目结构
-
-<!-- snippet: id=celery-18 mode=display python=3.12-3.14 deps=stdlib -->
-```text
-proj/
-  manage.py
-  proj/
-    __init__.py
-    celery.py
-    settings.py
-  users/
-    tasks.py
-    views.py
-```
-
-### 创建 `proj/celery.py`
-
-<!-- snippet: id=celery-19 mode=compile python=3.12-3.14 deps=celery==5.6.3 -->
-```python
-import os
-
-from celery import Celery
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "proj.settings")
-
-app = Celery("proj")
-app.config_from_object("django.conf:settings", namespace="CELERY")
-app.autodiscover_tasks()
-
-@app.task(bind=True, ignore_result=True)
-def debug_task(self):
-    print(f"Request: {self.request!r}")
-```
-
-### 在 `proj/__init__.py` 中加载 Celery
-
-<!-- snippet: id=celery-20 mode=compile python=3.12-3.14 deps=celery==5.6.3 -->
-```python
-from .celery import app as celery_app
-
-__all__ = ("celery_app",)
-```
-
-这样 Django 启动时会同时加载 Celery app，后续各个应用中的 `@shared_task` 就能绑定到同一个 Celery 实例。
-
-### 在 `settings.py` 中配置
-
-<!-- snippet: id=celery-21 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-INSTALLED_APPS += [
-    "django_celery_beat",
-]
-
-CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
-CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/1"
-CELERY_TIMEZONE = "Asia/Shanghai"
-CELERY_TASK_TRACK_STARTED = True
-CELERY_TASK_TIME_LIMIT = 30 * 60
-CELERY_WORKER_MAX_TASKS_PER_CHILD = 100
-CELERY_WORKER_PREFETCH_MULTIPLIER = 1
-```
-
-如果使用 `django-celery-beat`，需要执行迁移：
-
-<!-- snippet: id=celery-22 mode=display python=3.12-3.14 deps=stdlib -->
-```bash
-python manage.py migrate django_celery_beat
-```
-
-### 创建任务
-
-<!-- snippet: id=celery-23 mode=compile python=3.12-3.14 deps=Django==6.0.7,celery==5.6.3 -->
-```python
-from celery import shared_task
-from django.contrib.auth import get_user_model
-from django.core.mail import send_mail
-
-@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
-def send_welcome_email(self, user_id):
-    user = get_user_model().objects.get(pk=user_id)
-    send_mail(
-        subject="Welcome",
-        message=f"Hello, {user.username}",
-        from_email="noreply@example.com",
-        recipient_list=[user.email],
-    )
-```
-
-### 在视图中调用任务
-
-如果任务依赖刚写入数据库的数据，建议在事务提交后再投递，避免 worker 先执行却查不到数据。
-
-<!-- snippet: id=celery-24 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
-```python
-from django.db import transaction
-from django.http import JsonResponse
-
-from users.tasks import send_welcome_email
-
-def register_done(request, user):
-    transaction.on_commit(lambda: send_welcome_email.delay(user.id))
-    return JsonResponse({"status": "queued"})
-```
-
-普通异步调用可以直接使用：
-
-<!-- snippet: id=celery-25 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-result = send_welcome_email.delay(user_id=1)
-print(result.id)
-```
-
-### 定时任务
-
-简单固定计划可以直接写在配置中：
-
-<!-- snippet: id=celery-26 mode=compile python=3.12-3.14 deps=celery==5.6.3 -->
-```python
-from celery.schedules import crontab
-
-CELERY_BEAT_SCHEDULE = {
-    "send-report-every-morning": {
-        "task": "reports.tasks.send_daily_report",
-        "schedule": crontab(hour=8, minute=0),
-        "args": (),
-    },
-}
-```
-
-如果运营或后台人员需要动态调整任务频率，优先使用 `django-celery-beat`，通过 Django Admin 管理 `PeriodicTask`。
-
-### 启动命令
-
-<!-- snippet: id=celery-27 mode=display python=3.12-3.14 deps=stdlib -->
-```bash
-celery -A proj worker -l INFO
-celery -A proj beat -l INFO
-celery -A proj flower --basic_auth=admin:strong-password
-```
-
-生产环境通常用 systemd、Supervisor、Docker Compose 或 Kubernetes 托管 worker 和 beat。不要让多个 beat 实例同时调度同一套周期任务，否则可能重复投递。
+- [Celery Tasks](https://docs.celeryq.dev/en/stable/userguide/tasks.html)
+- [Celery Calling Tasks](https://docs.celeryq.dev/en/stable/userguide/calling.html)
+- [Celery Canvas](https://docs.celeryq.dev/en/stable/userguide/canvas.html)
+- [Celery Periodic Tasks](https://docs.celeryq.dev/en/stable/userguide/periodic-tasks.html)

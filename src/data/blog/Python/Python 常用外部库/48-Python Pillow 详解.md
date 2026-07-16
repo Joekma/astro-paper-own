@@ -1,325 +1,117 @@
 ---
-title: Python Pillow 详解
+title: Python Pillow 详解：安全的图片处理管道
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: python-pillow-image-processing
-modDatetime: 2026-07-11T00:00:00.000+08:00
+modDatetime: 2026-07-17T00:00:00.000+08:00
 featured: false
 draft: false
 tags:
   - Python
   - Pillow
   - docs
-description: Pillow 图像处理库完全指南，涵盖图片打开、缩放、滤镜、验证码生成等常用操作。
+description: 从延迟解码、EXIF 方向、颜色模式、缩放和编码理解 Pillow，并为不可信图片建立资源与元数据边界。
 series: python
 seriesOrder: 48
 language: zh-CN
-
 ---
 
-# Python Pillow 详解
+# Python Pillow 详解：安全的图片处理管道
 
-## 简介
+## 前置知识与学习目标
 
-PIL：Python Imaging Library，已经是Python平台事实上的图像处理标准库了。PIL功能非常强大，但API却非常简单易用。
+你需要会使用文件路径与上下文管理器。本文的核心问题是：**如何把不可信的上传图片转换为尺寸、方向、颜色和元数据都可预测的输出？**
 
-Pillow 是当前维护的 Python 图像处理库，本文锁定 12.3.0。处理外部图片前先限制文件大小和像素数，并把解码失败视为不可信输入错误。
+完成后你应能解释 `Image.open()` 的延迟解码生命周期，区分像素尺寸与颜色模式，并构造“验证 → 校正 → 转换 → 缩放 → 编码”的安全管道。
 
-![Pillow 图像处理从打开图片、几何变换、滤镜、绘制、通道合成到保存格式和验证码生成的流程图](./images/python-pillow-image-processing-figure-01.png)
+## 直觉：打开文件不等于像素已进入内存
 
-## 安装
+`Image.open()` 先识别格式并读取元数据，像素通常在 `load()` 或首次处理时才解码。单帧图片解码后可脱离文件；多帧图片仍可能需要底层文件以 `seek()` 到其他帧。因此应使用上下文管理器，并在退出前完成所需帧的读取或复制。
 
-<!-- snippet: id=python-pillow-image-processing-01 mode=display python=3.12-3.14 deps=stdlib -->
-```bash
-python -m pip install Pillow
-```
+<!-- figure-anchor:s48-f01 -->
 
-## 静态方法详解
+## 图片从字节到输出文件的状态链
 
-### 图片打开与创建
+![图片文件字节经 verify 后重新打开，完成像素解码、EXIF 方向、模式、尺寸和编码转换并受资源上限保护](./images/s48-f01-pillow-image-lifecycle.png)
 
-| 方法 | 说明 | 示例 |
-|------|------|------|
-| `PIL.Image.open(fp, mode='r')` | 传入文件路径(str)，返回一个image对象 | `Image.open('test.jpg')` |
-| `PIL.Image.new(mode, size, color=0)` | 创建新的图片 | `Image.new('RGB', (100, 100), (255, 0, 0))` |
-| `PIL.Image.fromarray(obj, mode=None)` | 从数组中创建图片 | `Image.fromarray(array)` |
-| `PIL.Image.frombytes(mode, size, data, decoder_name='raw', *args)` | 从二进制文件中创建图片 | - |
-| `PIL.Image.fromstring(*args, **kw)` | 从字符串中创建文件 | - |
-| `PIL.Image.frombuffer(mode, size, data, decoder_name='raw', *args)` | 从buffer中创建文件 | - |
+一张上传图依次经过：文件字节 → 格式与尺寸检查 → 像素解码 → EXIF 方向校正 → `RGB/RGBA` 模式 → 目标尺寸 → PNG/JPEG/WebP 编码。每一步都可能失败，不能把扩展名当成真实格式。
 
-### 图片混合与合成
+## 最小可运行缩略图管道
 
-| 方法 | 说明 | 示例 |
-|------|------|------|
-| `PIL.Image.alpha_composite(im1, im2)` | 混合两个图片 | - |
-| `PIL.Image.blend(im1, im2, alpha)` | 通过对两个图片插值生成新的图片 | `blend(img1, img2, 0.5)` |
-| `PIL.Image.composite(image1, image2, mask)` | 混合两个图片（带蒙版） | - |
-
-### 其他静态方法
-
-| 方法 | 说明 |
-|------|------|
-| `PIL.Image.eval(image, *args)` | 对图片应用表达式 |
-| `PIL.Image.merge(mode, bands)` | 合并不同的bands为一个图片 |
-
-## Image 对象方法
-
-### 创建图片对象
-
-<!-- snippet: id=python-pillow-image-processing-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
-# 三种创建方式
-img = Image.open('test.jpg')      # 从文件打开
-img = Image.new('RGB', (100, 100))  # 创建空白图片
-img = Image.fromarray(array)       # 从数组创建
+from pathlib import Path
+import warnings
+
+from PIL import Image, ImageOps, UnidentifiedImageError
+
+def make_thumbnail(source: Path, target: Path, size: tuple[int, int] = (800, 800)) -> None:
+    warnings.simplefilter("error", Image.DecompressionBombWarning)
+
+    try:
+        with Image.open(source) as opened:
+            opened.verify()  # 校验容器；verify 后必须重新打开才能解码
+
+        with Image.open(source) as opened:
+            image = ImageOps.exif_transpose(opened)
+            image.load()
+            image = image.convert("RGB")
+            image.thumbnail(size, Image.Resampling.LANCZOS)
+
+            target.parent.mkdir(parents=True, exist_ok=True)
+            image.save(target, format="JPEG", quality=85, optimize=True)
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as exc:
+        raise ValueError(f"invalid image: {source.name}") from exc
 ```
 
-### 图片基本操作
+输入是路径，输出是最大边不超过 800 的 JPEG。`thumbnail()` 保持宽高比并原地修改对象；若需要固定画布，可根据语义选择 `ImageOps.contain()`、`fit()` 或 `pad()`，三者的裁剪行为不同。
 
-| 方法 | 说明 | 示例 |
-|------|------|------|
-| `Image.convert(mode=None, matrix=None, dither=None, palette=0, colors=256)` | 返回修改之后的副本 | `img.convert('L')` |
-| `Image.copy()` | 复制该图片 | `img.copy()` |
-| `Image.crop(box=None)` | 返回矩形的区域 | `img.crop((0, 0, 100, 100))` |
-| `Image.resize(size, resample=0, box=None)` | 返回调整大小的图片 | `img.resize((200, 200))` |
-| `Image.rotate(angle, resample=0, expand=0, center=None, translate=None)` | 旋转图像 | `img.rotate(45)` |
-| `Image.thumbnail(size, resample=3)` | 生成缩略图（原地修改） | `img.thumbnail((100, 100))` |
-| `Image.save(fp, format=None, **params)` | 保存图片 | `img.save('output.jpg')` |
-| `Image.show(title=None, command=None)` | 展示图片 | `img.show()` |
+## 模式、透明度与编码
 
-### 图片信息获取
+- `RGB`：三通道彩色，无 Alpha；适合 JPEG。
+- `RGBA`：四通道，含透明度；适合需要透明背景的 PNG/WebP。
+- `L`：灰度；`P`：调色板索引。
 
-| 方法 | 说明 | 示例 |
-|------|------|------|
-| `Image.getbands()` | 返回图片的类型 | `img.getbands()` |
-| `Image.getbbox()` | 计算非0的区域 | `img.getbbox()` |
-| `Image.getcolors(maxcolors=256)` | 计算图片中的出现的颜色 | - |
-| `Image.getdata(band=None)` | 返回这个图片的像素值 | - |
-| `Image.getextrema()` | 获得最小和最大的像素值 | - |
-| `Image.getpalette()` | 返回这个图片的调色板 | - |
-| `Image.getpixel(xy)` | 返回指定像素的值 | `img.getpixel((0, 0))` |
-| `Image.histogram(mask=None, extrema=None)` | 返回图片的柱状图 | - |
-| `Image.size` | 返回图片尺寸 | `img.size` |
-| `Image.format` | 返回图片格式 | `img.format` |
-| `Image.mode` | 返回图片模式 | `img.mode` |
+把 `RGBA` 直接保存为 JPEG 会失败或丢失透明语义。必须先选择背景色进行 Alpha 合成，再转为 `RGB`。格式与内容目标应一起决定：照片常用 JPEG/WebP，透明图与精确线条常用 PNG。
 
-### 图片像素操作
+## 不可信输入的安全边界
 
-| 方法 | 说明 |
-|------|------|
-| `Image.putpixel(xy, value)` | 更改指定位置的像素 |
-| `Image.putdata(data, scale=1.0, offset=0.0)` | 复制像素 |
-| `Image.paste(im, box=None, mask=None)` | 粘贴其他图片 |
-| `Image.point(lut, mode=None)` | 点操作 |
-| `Image.putalpha(alpha)` | 添加alpha层 |
-| `Image.putpalette(data, rawmode='RGB')` | 添加调色板 |
+压缩炸弹可用很小文件声明巨量像素。不要在生产环境把 `Image.MAX_IMAGE_PIXELS` 设为 `None`；将 `DecompressionBombWarning` 升级为错误，并在应用或容器层限制文件字节数、像素数、CPU、内存与处理时间。
 
-### 图片滤镜与变换
+EXIF、XMP、PNG 文本块和 ICC profile 都是输入数据，不应未经校验写入数据库或页面。公开输出若不需要元数据，应创建新图像或保存时不传入原元数据，并在 CI 中验证结果。
 
-| 方法 | 说明 |
-|------|------|
-| `Image.filter(filter)` | 使用过滤器过滤图片 |
-| `Image.transform(size, method, data=None, resample=0, fill=1, fillcolor=None)` | 变形图片 |
-| `Image.transpose(method)` | 翻转/旋转图片 |
-| `Image.draft(mode, size)` | 根据模式调整大小 |
+## 常见误区与适用边界
 
-### 图片通道操作
+- `verify()` 不解码完整像素，且调用后应重新打开文件。
+- `resize()` 强制得到指定尺寸，可能拉伸；`thumbnail()` 保持比例且不放大。
+- Pillow 适合单机解码与变换，不负责上传鉴权、对象存储一致性或任务调度。
+- 超大图批量处理应交给受资源限制的 Worker，并记录输入哈希、格式、尺寸、耗时和失败原因。
 
-| 方法 | 说明 |
-|------|------|
-| `Image.split()` | 分割成不同的bands |
-| `Image.getchannel(channel)` | 返回单通道的图片 |
-| `Image.tobitmap(name='image')` | 转换为bitmap |
-| `Image.tobytes(encoder_name='raw', *args)` | 转化为二进制文件 |
-| `Image.tostring(*args, **kw)` | 转化为字符串文件 |
+## 三道自检题
 
-### 其他方法
+1. 为什么 `Image.open()` 后文件仍可能保持打开？
+2. `verify()` 后为什么要重新打开图片？
+3. 将透明 PNG 转成 JPEG 前必须做什么决策？
 
-| 方法 | 说明 |
-|------|------|
-| `Image.alpha_composite(im, dest=(0, 0), source=(0, 0))` | 复合图片 |
-| `Image.seek(frame)` | 跳转到指定帧 |
-| `Image.tell()` | 返回当前框架的数字 |
-| `Image.verify()` | 验证图片完整性 |
-| `Image.fromstring(*args, **kw)` | 从字符串读取图片 |
-| `Image.load()` | 加载图片到内存 |
-| `Image.close()` | 关闭图片 |
-| `Image.offset(xoffset, yoffset=None)` | 偏移图片 |
-| `Image.quantize(colors=256, method=None, kmeans=0, palette=None)` | 量化颜色 |
-| `Image.remap_palette(dest_map, source_palette=None)` | 重新调色 |
+<details>
+<summary>展开答案</summary>
 
-## 实用操作示例
+1. 它采用延迟解码，像素或后续帧可能仍需从文件读取。
+2. `verify()` 会检查容器并使对象不再适合后续像素加载。
+3. 选择背景色进行 Alpha 合成，再转换为 `RGB`。
 
-### 图片缩放
+</details>
 
-来看看最常见的图像缩放操作，只需三四行代码：
+## 本篇总结
 
-<!-- snippet: id=python-pillow-image-processing-03 mode=compile python=3.12-3.14 deps=Pillow==12.3.0 -->
-```python
-from PIL import Image
+Pillow 管道的可靠性来自显式状态：真实格式、像素上限、方向、模式、尺寸和编码参数都要验证。图片不是“打开后保存”这么简单。
 
-# 打开一个jpg图像文件，注意是当前路径:
-im = Image.open('test.jpg')
+## 下一篇衔接
 
-# 获得图像尺寸:
-w, h = im.size
-print('Original image size: %sx%s' % (w, h))
+处理后的商品数据需要写入数据库。下一篇使用 PyMySQL 解释参数绑定、事务边界和连接资源，避免把“执行 SQL”误当成“数据已安全提交”。
 
-# 缩放到50%:
-im.thumbnail((w//2, h//2))
-print('Resize image to: %sx%s' % (w//2, h//2))
+## 资料来源
 
-# 把缩放后的图像用jpeg格式保存:
-im.save('thumbnail.jpg', 'jpeg')
-```
-
-> **说明**：`thumbnail()` 方法会原地修改图片，如果需要保留原图，先用 `copy()` 复制一份。
-
-### 图片模糊效果
-
-其他功能如切片、旋转、滤镜、输出文字、调色板等一应俱全。
-
-比如，模糊效果也只需几行代码：
-
-<!-- snippet: id=python-pillow-image-processing-04 mode=compile python=3.12-3.14 deps=Pillow==12.3.0 -->
-```python
-from PIL import Image, ImageFilter
-
-# 打开一个jpg图像文件:
-im = Image.open('test.jpg')
-
-# 应用模糊滤镜:
-im2 = im.filter(ImageFilter.BLUR)
-im2.save('blur.jpg', 'jpeg')
-```
-
-### 生成字母验证码
-
-PIL的`ImageDraw`提供了一系列绘图方法，让我们可以直接绘图。比如要生成字母验证码图片：
-
-<!-- snippet: id=python-pillow-image-processing-05 mode=compile python=3.12-3.14 deps=Pillow==12.3.0 -->
-```python
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
-import random
-
-def rndChar():
-    """随机字母"""
-    return chr(random.randint(65, 90))
-
-def rndColor():
-    """随机颜色1"""
-    return (random.randint(64, 255), random.randint(64, 255), random.randint(64, 255))
-
-def rndColor2():
-    """随机颜色2"""
-    return (random.randint(32, 127), random.randint(32, 127), random.randint(32, 127))
-
-# 240 x 60:
-width = 60 * 4
-height = 60
-image = Image.new('RGB', (width, height), (255, 255, 255))
-
-# 创建Font对象:
-font = ImageFont.truetype('Arial.ttf', 36)
-
-# 创建Draw对象:
-draw = ImageDraw.Draw(image)
-
-# 填充每个像素:
-for x in range(width):
-    for y in range(height):
-        draw.point((x, y), fill=rndColor())
-
-# 输出文字:
-for t in range(4):
-    draw.text((60 * t + 10, 10), rndChar(), font=font, fill=rndColor2())
-
-# 模糊:
-image = image.filter(ImageFilter.BLUR)
-image.save('code.jpg', 'jpeg')
-```
-
-> **说明**：我们用随机颜色填充背景，再画上文字，最后对图像进行模糊，得到验证码。
-
-### 字体问题处理
-
-如果运行的时候报错：
-
-<!-- snippet: id=python-pillow-image-processing-06 mode=display python=3.12-3.14 deps=stdlib -->
-```text
-IOError: cannot open resource
-```
-
-这是因为PIL无法定位到字体文件的位置，可以根据操作系统提供绝对路径，比如：
-
-<!-- snippet: id=python-pillow-image-processing-07 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# macOS
-'/Library/Fonts/Arial.ttf'
-
-# Linux
-'/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
-
-# Windows
-'C:/Windows/Fonts/Arial.ttf'
-```
-
-## 常用滤镜一览
-
-| 滤镜 | 说明 |
-|------|------|
-| `ImageFilter.BLUR` | 模糊 |
-| `ImageFilter.CONTOUR` | 轮廓 |
-| `ImageFilter.DETAIL` | 细节增强 |
-| `ImageFilter.EDGE_ENHANCE` | 边缘增强 |
-| `ImageFilter.EDGE_ENHANCE_MORE` | 深度边缘增强 |
-| `ImageFilter.EMBOSS` | 浮雕效果 |
-| `ImageFilter.FIND_EDGES` | 边缘查找 |
-| `ImageFilter.SMOOTH` | 平滑 |
-| `ImageFilter.SMOOTH_MORE` | 深度平滑 |
-| `ImageFilter.SHARPEN` | 锐化 |
-
-## 最佳实践
-
-### 1. 使用上下文管理器
-
-<!-- snippet: id=python-pillow-image-processing-08 mode=compile python=3.12-3.14 deps=Pillow==12.3.0 -->
-```python
-from PIL import Image
-
-# 推荐写法
-with Image.open('photo.jpg') as img:
-    img.thumbnail((200, 200))
-    img.save('thumbnail.jpg')
-```
-
-### 2. 合理的图片格式选择
-
-| 场景 | 推荐格式 | 原因 |
-|------|----------|------|
-| 照片 | JPEG | 高压缩比，适合照片 |
-| 图标/透明图 | PNG | 支持透明通道 |
-| 网页图片 | WebP | 现代格式，更小体积 |
-| 动图 | GIF | 支持动画 |
-| 文档扫描 | PNG/TIFF | 无损压缩 |
-
-### 3. 注意内存管理
-
-<!-- snippet: id=python-pillow-image-processing-09 mode=compile python=3.12-3.14 deps=Pillow==12.3.0 -->
-```python
-# 大图片处理时注意内存
-from PIL import Image
-
-# 不要一次性加载多个大图片
-img = Image.open('big_image.jpg')
-img.verify()  # 先验证图片完整性
-img = Image.open('big_image.jpg')  # 再重新打开
-```
-
-## 更多资源
-
-要详细了解PIL的强大功能，请参考Pillow官方文档：
-
-> **官方文档**：<https://pillow.readthedocs.org/>
-
----
+- [Pillow File handling](https://pillow.readthedocs.io/en/stable/reference/open_files.html)
+- [Pillow Image module](https://pillow.readthedocs.io/en/stable/reference/Image.html)
+- [Pillow Security](https://pillow.readthedocs.io/en/stable/handbook/security.html)
+- [Pillow ImageOps](https://pillow.readthedocs.io/en/stable/reference/ImageOps.html)

@@ -2,9 +2,9 @@
 title: Python 装饰器、迭代器、生成器
 author: Joekma
 pubDatetime: 2018-09-28T00:00:00.000+08:00
-modDatetime: 2026-07-11T00:00:00.000+08:00
+modDatetime: 2026-07-17T00:00:00.000+08:00
 slug: python-decorator-iterator-generator
-description: '深入讲解Python装饰器、迭代器、生成器：装饰器模式、迭代器协议、生成器yield等核心概念。'
+description: "从调用包装与惰性数据流出发，理解 Python 装饰器、迭代协议和生成器的协作边界。"
 tags:
   - Python
   - 装饰器
@@ -16,611 +16,209 @@ seriesOrder: 17
 language: zh-CN
 ---
 
-# Python 装饰器、迭代器、生成器
+## 前置知识与学习目标
 
-![Python 装饰器、迭代器和生成器分别通过函数包装、迭代器协议和 yield 暂停恢复机制，扩展函数调用与数据遍历方式](./images/python-decorators-iterators-generators-figure-01.png)
+你需要会定义函数、传参、捕获异常和编写 `for` 循环。本文用“报表流水线”贯穿全系列：数据记录从文件进入程序，经过校验、转换、导出和发送。
 
-## 装饰器
+学完后，你应该能够：
 
-### 什么是装饰器
+1. 解释装饰器为何是“接收可调用对象并返回可调用对象”。
+2. 区分可迭代对象、迭代器与生成器，并说出 `for` 的停止条件。
+3. 用装饰器处理横切关注点，用生成器构造只遍历一次的惰性数据流。
+4. 识别元数据丢失、迭代器耗尽和资源生命周期过长等失败边界。
 
->装饰器本身可以是任意可调用的对象 => 函数
->被装饰的对象也可以是任意可调用的对象 => 函数
+## 真实场景与核心问题
 
->一个另一个函数作为参数另一个函数作为参数的函数。在装饰器内部动态定义一个函数：`wrapper`。这个函数将被包装在原始函数的四周，因此就可以在原始函数`之前`和`之后`执行一些代码。
+报表流水线需要记录每个处理步骤的耗时，还要逐行处理可能有数 GB 的输入。如果把计时逻辑复制进每个函数，业务代码会被污染；如果先把所有行读进列表，内存会随输入线性增长。
 
-### 为何要用装饰器
+两个问题看似无关，实质都在控制“什么时候做事”：装饰器把行为包在函数调用前后，生成器把计算推迟到请求下一个值时。
 
->开放封闭原则：软件一旦上线就应该对修改封闭，对扩展开放
+## 装饰器：在不改调用方的前提下包装行为
 
-- 对修改封闭：
-  1. 不能修改功能的源代码
-  2. 也不能修改功能的调用方式
-- 对扩展开放：可以为原有的功能添加新的功能
+函数是对象，可以被传入、保存和返回。装饰器语法：
 
->装饰器就是要在`不修改功能源代码`以及`调用方式`的前提下，为原功能添加额外新的功能。
-
-### 无参装饰器
-
->无参装饰器是最基础的装饰器类型，它不接受额外参数，直接接收函数作为参数。
-
-<!-- snippet: id=python-decorator-iterator-generator-01 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
-def decorator(func):
-    def wrapper(*args, **kwargs):
-        # 在函数执行前做点什么
-        print("Before function")
-        
-        result = func(*args, **kwargs)
-        
-        # 在函数执行后做点什么
-        print("After function")
-        
-        return result
-    return wrapper
-
-@decorator
-def say_hello():
-    print("Hello!")
-
-say_hello()
-# 输出：
-# Before function
-# Hello!
-# After function
+@timer
+def normalize(record):
+    ...
 ```
 
-### 简单装饰器
+等价于：
 
-<!-- snippet: id=python-decorator-iterator-generator-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
-import time
+def normalize(record):
+    ...
 
-def index():
-    print('welcome to index page')
-    time.sleep(3)
-    return 123
-
-def home(name):
-    print('welcome %s to home page' % name)
-    time.sleep(1)
-
-def decorator(func):
-    # func = 最原始那个home的内地址
-    def wrapper(*args, **kwargs):
-        start = time.time()
-        res = func(*args, **kwargs)
-        stop = time.time()
-        print('run time is %s' % (stop - start))
-        return res
-    return wrapper
+normalize = timer(normalize)
 ```
 
-### 装饰器的语法糖
+装饰发生在函数定义执行时，不是每次调用时。真正的业务调用进入包装函数，再由包装函数调用原函数。
 
-<!-- snippet: id=python-decorator-iterator-generator-03 mode=compile python=3.12-3.14 deps=stdlib -->
+<!-- figure-anchor:s17-f01 -->
+
+<!-- figure-ref:s17-f01 -->
+
+![区分定义时装饰与调用时执行，理解原函数名被 wrapper 替换。](./images/s17-f01-decorator-definition-call-chain.png)
+
+<!-- snippet: id=python-intermediate-17-01 mode=compile python=3.12-3.14 deps=stdlib -->
+
 ```python
-# @装饰器的名字: 要在被装饰对象正上方单独一行写上
-import time
+from collections.abc import Callable
 from functools import wraps
+from time import perf_counter
+from typing import ParamSpec, TypeVar
 
-def timmer(func):
-    @wraps(func)  # 自动保存原函数的属性
-    def wrapper(*args, **kwargs):
-        start = time.time()
-        res = func(*args, **kwargs)
-        stop = time.time()
-        print('run time is %s' % (stop - start))
-        return res
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
+def timed(func: Callable[P, R]) -> Callable[P, R]:
+    @wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        started = perf_counter()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            elapsed = perf_counter() - started
+            print(f"{func.__name__}: {elapsed:.6f}s")
+
     return wrapper
 
-@timmer
-def index():
-    """这是index功能"""
-    print('welcome to index page')
-    time.sleep(3)
-    return 123
 
-@timmer
-def home(name):
-    """这是home功能"""
-    print('welcome %s to home page' % name)
-    time.sleep(1)
+@timed
+def normalize(record: dict[str, str]) -> dict[str, str]:
+    return {key: value.strip() for key, value in record.items()}
 
-# 查看函数属性
-print(home.__name__)  # 输出: home
-print(home.__doc__)   # 输出: 这是home功能
+
+assert normalize({"name": " Ada "}) == {"name": "Ada"}
+assert normalize.__name__ == "normalize"
 ```
 
-### 有参装饰器
+`ParamSpec` 与 `TypeVar` 保留参数和返回值的静态类型关系，`wraps` 复制 `__name__`、`__doc__` 等元数据，`finally` 保证原函数抛异常时仍记录耗时。装饰器不应吞掉未知异常。
 
->有参装饰器可以接受参数，比无参装饰器多一层嵌套。参数在装饰时确定，影响包装函数的行为。
+带参数装饰器只是多一层“配置函数”：`retry(attempts=3)` 先接收配置并返回装饰器，装饰器再接收目标函数。三层闭包虽然合法，但如果状态、分支和生命周期变复杂，类或显式组合通常更清楚。
 
-<!-- snippet: id=python-decorator-iterator-generator-04 mode=compile python=3.12-3.14 deps=stdlib -->
+## 迭代协议：`for` 实际做了什么
+
+术语必须严格区分：
+
+| 术语                   | 最小契约                                      | 是否一次性 |
+| ---------------------- | --------------------------------------------- | ---------- |
+| 可迭代对象（iterable） | `iter(obj)` 能返回迭代器                      | 不一定     |
+| 迭代器（iterator）     | `iter(it) is it`，并支持 `next(it)`           | 通常是     |
+| 生成器（generator）    | 由含 `yield` 的函数或生成器表达式创建的迭代器 | 是         |
+
+`for item in source` 的核心语义可以压缩为：
+
 ```python
-# 参数默认为空字符串
-def title(show=''):
-    def printStar(func):
-        def f(a, b):
-            print(show, "*************************")
-            return func(a, b)
-        return f
-    return printStar
-
-@title('add')
-def add(a, b):
-    return a + b
-
-@title('sub')
-def sub(a, b):
-    return a - b
-
-print(add(1, 1))  # 输出: add *************************
-                      #   2
-print(sub(2, 1))  # 输出: sub *************************
-                      #   1
+iterator = iter(source)
+while True:
+    try:
+        item = next(iterator)
+    except StopIteration:
+        break
+    # 使用 item
 ```
 
-### 完整的有参装饰器示例
+迭代器被耗尽后不会自动回到开头。列表是可重复迭代的容器，每次 `iter(list)` 可得到新迭代器；生成器对象则保存一次执行状态。
 
-<!-- snippet: id=python-decorator-iterator-generator-05 mode=compile python=3.12-3.14 deps=stdlib -->
+## 生成器：把循环状态交给解释器保存
+
+调用含 `yield` 的函数时，函数体不会立刻执行，而是返回生成器对象。每次 `next()` 从上次暂停点继续，遇到下一个 `yield` 再暂停；正常返回对应 `StopIteration`。
+
+<!-- figure-anchor:s17-f02 -->
+
+<!-- figure-ref:s17-f02 -->
+
+![看懂生成器对象在 created、running、suspended、closed 状态间如何随 next/yield/return 迁移。](./images/s17-f02-generator-state-machine.png)
+
+<!-- snippet: id=python-intermediate-17-02 mode=compile python=3.12-3.14 deps=stdlib -->
+
 ```python
-def outter2(xxx, yyy):
-    def outter(func):
-        def wrapper(*args, **kwargs):
-            res = func(*args, **kwargs)
-            print(xxx)
-            print(yyy)
-            return res
-        return wrapper
-    return outter
+from collections.abc import Iterable, Iterator
 
-import time
 
-user_info = {'current_user': None}
-
-def auth2(engine=''):
-    def auth(func):
-        def wrapper(*args, **kwargs):
-            if user_info['current_user'] is not None:
-                res = func(*args, **kwargs)
-                return res
-            inp_user = input('username>>>: ').strip()
-            inp_pwd = input('password>>>: ').strip()
-            if engine == 'file':
-                print('基于文件的认证')
-                if inp_user == 'mark' and inp_pwd == '123':
-                    user_info['current_user'] = inp_user
-                    print('login successful')
-                    res = func(*args, **kwargs)
-                    return res
-                else:
-                    print('user or password error')
-            elif engine == 'mysql':
-                print('基于mysql数据的认证')
-            elif engine == 'ldap':
-                print('基于ldap的认证')
-            else:
-                print('无法识别认证源')
-        return wrapper
-    return auth
-
-@auth2(engine='file')
-def index():
-    """这是index功能"""
-    print('welcome to index page')
-    time.sleep(2)
-    return 123
-
-@auth2(engine='file')
-def home(name):
-    """这是home功能"""
-    print('welcome %s to home page' % name)
-    time.sleep(1)
-
-index()
-home('mark')
-```
-
-### 类作为装饰器
-<!-- snippet: id=python-decorator-iterator-generator-06 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-class CountCalls:
-    def __init__(self, func):
-        self.func = func
-        self.count = 0
-    
-    def __call__(self, *args, **kwargs):
-        self.count += 1
-        print(f"调用次数: {self.count}")
-        return self.func(*args, **kwargs)
-
-@CountCalls
-def say_hello():
-    print("Hello!")
-
-say_hello()  # 调用次数: 1
-say_hello()  # 调用次数: 2
-```
-
-### 叠加多个装饰器
-
-当一个被装饰的对象同时叠加多个装饰器时：
-
-- 装饰器的加载顺序是：自下而上
-- 装饰器内 wrapper 函数的执行顺序是：自上而下
-
-<!-- snippet: id=python-decorator-iterator-generator-07 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-@A
-@B
-@C
-def f():
-    pass
-
-# 等价于：
-f = A(B(C(f)))
-
-# 调用时的执行顺序：
-# 1. A 的前置代码
-# 2.   B 的前置代码
-# 3.     C 的前置代码
-# 4.       原始函数 f
-# 5.     C 的后置代码
-# 6.   B 的后置代码
-# 7. A 的后置代码
-```
-记忆技巧：装饰器像洋葱，从外到内应用，从内到外执行。
-
-## 迭代器
-
-### 什么是迭代器
-
->迭代指的是一个重复的过程，每一次重复都是基于上一次的结果而来的。
->迭代器指的是迭代取值的工具，该工具的特点是可以不依赖于索引取值。
-
-### 为何要用迭代器
-
->为了找出一种通用的、可以不依赖于索引的迭代取值方式。
-
-### 如何用迭代器
-
-- **可迭代的对象**：但凡内置有 `.__iter__` 方法的对象都称之为可迭代的对象
-- **迭代器对象**：既内置有 `__iter__` 方法，又内置有 `__next__` 方法
-
-### 迭代器示例
-
-<!-- snippet: id=python-decorator-iterator-generator-08 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-dic = {'x': 1, 'y': 2, 'z': 3}
-
-# 把字典转化成迭代器
-iter_dic = dic.__iter__()
-print(iter_dic)
-
-# __iter__返回迭代器本身
-print(iter_dic.__iter__())
-
-# 迭代取值
-res1 = iter_dic.__next__()
-print(res1)  # x
-res2 = iter_dic.__next__()
-print(res2)  # y
-res3 = iter_dic.__next__()
-print(res3)  # z
-```
-
-### for循环的原理
-
->for准确地说应该是迭代器循环，for循环的原理如下：
-1. 先调用 in 后面那个值的 `__iter__` 方法，得到迭代器对象
-2. 执行迭代器的 `__next__()` 方法得到一个返回值，然后赋值给一个变量k，运行循环体代码
-3. 循环往复，直到迭代器取值完毕抛出异常然后捕捉异常自动结束循环
-
-<!-- snippet: id=python-decorator-iterator-generator-09 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-dic = {'x': 1, 'y': 2, 'z': 3}
-
-for k in dic:
-    print(k)
-
-# 等价于:
-# iter_dic = dic.__iter__()
-# while True:
-#     try:
-#         k = iter_dic.__next__()
-#         print(k)
-#     except StopIteration:
-#         break
-```
-
-### 文件也是可迭代对象
-
->文件也是可迭代对象，文件对象的 `__iter__` 方法返回一个迭代器对象，该迭代器对象的 `__next__` 方法返回文件的一行内容。
-
-<!-- snippet: id=python-decorator-iterator-generator-10 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 读取文件内容
-with open(r'db.txt', mode='rt', encoding='utf-8') as f:
-    for line in f:
-        print(line)
-
-# 等价于:
-# iter_file = f.__iter__()
-# while True:
-#     try:
-#         line = iter_file.__next__()
-#         print(line)
-#     except StopIteration:
-#         break
-```
-
-### 自定义迭代器（生成器）
-
->yield关键字：只能用在函数内。在函数内凡包含有yield关键字，再去执行函数，就不会立刻运行函数体代码了，会得到一个返回值，该返回值称之为生成器对象，生成器本质就是迭代器。
-
-<!-- snippet: id=python-decorator-iterator-generator-11 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-def func():
-    print('=====>第一次')
-    yield 1
-    print('=====>第二次')
-    yield 2
-    print('=====>第三次')
-    yield 3
-    print('=====>第四次')
-
-g = func()
-print(next(g))  # 输出: =====>第一次
-                  #       1
-print(next(g))  # 输出: =====>第二次
-                  #       2
-```
-
-### yield VS return
-
-**相同点**：都可以用于返回值
-
-**不同点**：yield可以暂停函数，可以返回多次值，而return只能返回值一次函数就立刻终止
-
-<!-- snippet: id=python-decorator-iterator-generator-12 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-def my_range(start, stop, step=1):
-    while start < stop:
-        yield start
-        start += step
-
-# 生成器按需产生值，节省内存
-for item in my_range(1, 5, 2):
-    print(item)
-# 输出: 1
-#       3
-```
-
-## 生成器
-
-### 生成器函数
-
->生成器函数：常规函数定义，但是使用yield语句而不是return语句返回结果。
-
-**本质**：迭代器（自带了 `__iter__` 方法和 `__next__` 方法，不需要我们去实现）
-
-**特点**：惰性运算，开发者自定义
-
-<!-- snippet: id=python-decorator-iterator-generator-13 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import time
-
-def generator_fun1():
-    a = 1
-    print('现在定义了a变量')
-    yield a
-    b = 2
-    print('现在又定义了b变量')
-    yield b
-
-g1 = generator_fun1()
-print('g1 : ', g1)  # 输出: g1 :  <generator object generator_fun1 at 0x...>
-print('-' * 20)
-print(next(g1))
-# 输出: 现在定义了a变量
-#       1
-time.sleep(1)
-print(next(g1))
-# 输出: 现在又定义了b变量
-#       2
-```
-
-### 生成器监听文件输入的例子
-
->监听文件输入的例子，当文件有新的内容写入时，会实时打印出来。
-
-<!-- snippet: id=python-decorator-iterator-generator-14 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import time
-
-def tail(filename):
-    f = open(filename)
-    f.seek(0, 2)  # 从文件末尾算起
-    while True:
-        line = f.readline()  # 读取文件中新的文本行
-        if not line:
-            time.sleep(0.1)
+def valid_records(rows: Iterable[str]) -> Iterator[dict[str, str]]:
+    for line_number, row in enumerate(rows, start=1):
+        text = row.strip()
+        if not text or text.startswith("#"):
             continue
-        yield line
+        name, separator, amount = text.partition(",")
+        if not separator:
+            raise ValueError(f"line {line_number}: missing comma")
+        yield {"name": name.strip(), "amount": amount.strip()}
 
-# 使用生成器实时监控日志文件
-# g = tail('access.log')
-# for line in g:
-#     print(line)
+
+source = ["# name,amount", "Ada, 10", "Linus, 20"]
+stream = valid_records(source)
+assert next(stream) == {"name": "Ada", "amount": "10"}
+assert list(stream) == [{"name": "Linus", "amount": "20"}]
+assert list(stream) == []
 ```
 
-### 生成器与内存优化
+流水线可继续用生成器表达式连接：
 
-<!-- snippet: id=python-decorator-iterator-generator-15 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
-import sys
-import time
-import psutil  # 需要安装: python -m pip install psutil
-
-# 不使用生成器 - 列表方式
-def get_squares_list(n):
-    result = []
-    for i in range(n):
-        result.append(i * i)
-    return result
-
-# 使用生成器 - 生成器方式
-def get_squares_generator(n):
-    for i in range(n):
-        yield i * i
-
-# 内存占用对比
-def memory_usage():
-    """获取当前进程内存使用（MB）"""
-    process = psutil.Process()
-    return process.memory_info().rss / 1024 / 1024
-
-# 测试大数量级
-n = 10_000_000
-
-# 列表方式
-print("=== 列表方式 ===")
-mem_before = memory_usage()
-squares_list = get_squares_list(n)  # 立即创建所有数据
-mem_after = memory_usage()
-print(f"内存占用: {mem_after - mem_before:.2f} MB")
-print(f"列表长度: {len(squares_list)}")
-print(f"列表类型: {type(squares_list)}")
-
-# 生成器方式
-print("\n=== 生成器方式 ===")
-mem_before = memory_usage()
-squares_gen = get_squares_generator(n)  # 只创建生成器对象
-mem_after = memory_usage()
-print(f"内存占用: {mem_after - mem_before:.2f} MB")  # 几乎为0
-print(f"生成器类型: {type(squares_gen)}")
-print(f"生成器对象大小: {sys.getsizeof(squares_gen)} bytes")
-```
-输出示例
-<!-- snippet: id=python-decorator-iterator-generator-16 mode=display python=3.12-3.14 deps=stdlib -->
-```bash
-=== 列表方式 ===
-内存占用: 762.94 MB  # 10M个整数占用约763MB
-列表长度: 10000000
-
-=== 生成器方式 ===
-内存占用: 0.01 MB     # 只占用极少量内存
-生成器类型: <class 'generator'>
-生成器对象大小: 112 bytes  # 固定大小，与n无关！
+amounts = (int(record["amount"]) for record in valid_records(source))
+total = sum(amounts)
 ```
 
-### 生成器的优势与局限
+惰性意味着低峰值内存和更快首条输出，不意味着“免费”：整个序列仍会消耗 CPU；第二次遍历需要重新创建数据源；如果生成器持有打开的文件，文件可能直到生成器关闭才释放。资源边界应放在显式 `with` 中，并在同一作用域完成消费。
 
-生成器不是银弹，了解其适用场景才能用得恰到好处。
+## 常见误区与适用边界
 
-#### 适合使用生成器的场景
+### 把装饰器当作普通注释
 
-##### 1. 处理大数据集（内存有限）
+装饰器会替换原名字指向的对象，可能改变异常、签名、同步/异步语义。公共装饰器应保留元数据并明确是否可重入、是否线程安全。
 
-<!-- snippet: id=python-decorator-iterator-generator-17 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-def process_logs(log_files):
-    for file in log_files:
-        with open(file) as f:
-            for line in f:
-                yield parse_line(line)
-```
+### 用生成器后还要求随机访问
 
-**适用场景**：日志分析、大文件处理
+生成器不支持 `stream[10]`，也不适合需要反复排序、回看或多次聚合的流程。数据规模可控且需要随机访问时，列表更直接。
 
-##### 2. 无限序列
+### 手动抛出 `StopIteration`
 
-<!-- snippet: id=python-decorator-iterator-generator-18 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import random
+生成器用 `return` 表示结束。业务失败应抛有语义的异常；不要用 `StopIteration` 伪装解析错误。
 
-def lottery_numbers():
-    while True:
-        yield random.randint(1, 49)
-```
+### 把三个概念绑成固定组合
 
-**适用场景**：游戏、随机数生成、实时数据流
+装饰器与迭代协议彼此独立。只有当调用包装和惰性数据流同时解决当前问题时才组合使用，不要为了“高级”增加间接层。
 
-##### 3. 流式处理
+## 本篇自检
 
-<!-- snippet: id=python-decorator-iterator-generator-19 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-def streaming_average(data_stream):
-    total = 0
-    count = 0
-    for value in data_stream:
-        total += value
-        count += 1
-        yield total / count  # 实时计算平均值
-```
+<details>
+<summary>1. `@timer` 在什么时候执行，`wrapper` 又在什么时候执行？</summary>
 
-**适用场景**：监控系统、实时统计
+定义被装饰函数时执行 `timer(original)` 并替换函数名；每次调用这个名字时执行返回的 `wrapper`。
 
-##### 4. 分页/分批处理
+</details>
 
-<!-- snippet: id=python-decorator-iterator-generator-20 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-def paginate(items, page_size=100):
-    for i in range(0, len(items), page_size):
-        yield items[i:i + page_size]
-```
+<details>
+<summary>2. 为什么 `list(stream)` 第二次通常为空？</summary>
 
-**适用场景**：API 分页、数据库查询
+生成器是一次性迭代器。第一次消费已经把执行推进到结束，第二次不会自动重建或回到起点。
 
-#### 不适合使用生成器的场景
+</details>
 
-##### 1. 需要多次遍历
+<details>
+<summary>3. 什么时候应优先返回列表而不是生成器？</summary>
 
-生成器只能遍历一次，耗尽后无法重新使用：
+结果规模可控，并且调用方需要随机访问、多次遍历、排序或稳定快照时，列表的契约更合适。
 
-<!-- snippet: id=python-decorator-iterator-generator-21 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-data_gen = (x**2 for x in range(5))
-print(sum(data_gen))  # 30
-print(sum(data_gen))  # 0 - 已经耗尽了！
-```
+</details>
 
-**解决方案**：根据数据量选择
+## 本篇总结
 
-<!-- snippet: id=python-decorator-iterator-generator-22 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 数据量小：直接用列表
-data_list = [x**2 for x in range(5)]
-print(sum(data_list))  # 30
-print(sum(data_list))  # 30 - 可以重复使用
+装饰器控制一次函数调用的外层行为；迭代协议规定如何逐个取值；生成器用 `yield` 实现保存执行状态的迭代器。正确选择取决于契约，而不是语法新奇程度。
 
-# 数据量大：重新创建生成器
-data_gen = (x**2 for x in range(5))
-gen1 = sum(data_gen)
-gen2 = sum((x**2 for x in range(5)))
-```
+## 下一篇衔接
 
-##### 2. 需要随机访问
+下一篇把函数与数据进一步组织成对象：报表任务应该保存什么状态，类与实例的命名空间如何分工，以及什么时候根本不需要类。
 
-生成器不支持索引访问：
+## 资料来源与版本基线
 
-<!-- snippet: id=python-decorator-iterator-generator-23 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-def get_squares(n):
-    for i in range(n):
-        yield i * i
+- [Python 术语表：decorator](https://docs.python.org/3/glossary.html#term-decorator)
+- [Python `functools.wraps`](https://docs.python.org/3/library/functools.html#functools.wraps)
+- [Python Iterator Types](https://docs.python.org/3/library/stdtypes.html#iterator-types)
+- [Python `yield` expressions](https://docs.python.org/3/reference/expressions.html#yield-expressions)
 
-gen = get_squares(10)
-# print(gen[5])  # TypeError: 'generator' object is not subscriptable
-```
-
-**解决方案**：使用列表或实现支持索引的迭代器类
-
-#### 生成器适用场景总结
-
-| 场景 | 推荐使用 | 不推荐使用 |
-|------|---------|------------|
-| 数据量 | 大数据集、无限序列 | 小数据集、需多次遍历 |
-| 访问方式 | 顺序访问、流式处理 | 随机访问、索引访问 |
-| 内存 | 内存敏感场景 | 内存充足、需要缓存 |
+版本基线：Python 3.12–3.14；示例只依赖标准库。

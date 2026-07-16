@@ -1,528 +1,152 @@
 ---
-title: 并发编程之协程：Greenlet、Gevent与单线程并发
+title: 并发编程之协程：Greenlet、Gevent与协作式调度
 series: python
 seriesOrder: 35
 language: zh-CN
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00Z
 slug: python-coroutine-greenlet-gevent
-modDatetime: 2026-07-11T00:00:00.000+08:00
+modDatetime: 2026-07-17T00:00:00.000+08:00
 featured: false
 draft: false
 tags:
   - Python
   - 并发编程
   - 协程
-description: '深入讲解Greenlet、Gevent等协程模块，实现单线程下的并发编程。'
+description: 从协作式切换解释 Greenlet 与 Gevent 的调度、monkey patch 边界、并发控制和迁移决策。
 ---
 
-# 并发编程之协程
+# 并发编程之协程：Greenlet、Gevent与协作式调度
 
-## 引言
+## 前置知识与学习目标
 
-本节的主题是基于单线程来实现并发，即只用一个主线程（很明显可利用的cpu只有一个）情况下实现并发，为此我们需要先回顾下并发的本质：切换+保存状态。
+你应理解线程如何在阻塞 I/O 时并发推进。本篇只解决：**Greenlet/Gevent 怎样在一个线程里切换大量 I/O 任务，以及什么时候这种隐式协作会失效？**
 
-cpu正在运行一个任务，会在两种情况下切走去执行其他的任务（切换由操作系统强制控制），一种情况是该任务发生了阻塞，另外一种情况是该任务计算的时间过长或有一个优先级更高的程序替代了当前任务。
+学完后你应能区分生成器、Greenlet 与原生协程，指出让出点，限制 Gevent 并发量，并判断维护旧系统还是迁移到 `asyncio`。
 
-ps：在介绍进程理论时，提及进程的三种执行状态，而线程才是执行单位，所以也可以将上图理解为线程的三种状态。
+## 从订单查询的等待时间切入
 
-**一**：其中第二种情况并不能提升效率，只是为了让cpu能够雨露均沾，实现看起来所有任务都被"同时"执行的效果，如果多个任务都是纯计算的，这种切换反而会降低效率。为此我们可以基于yield来验证。yield本身就是一种在单线程下可以保存任务运行状态的方法，我们来简单复习一下：
+订单服务的大部分时间可能都在等待网络。若一个任务等待时主动把控制权交给另一个任务，同一线程也能让多个订单在一段时间内都有进展。这是协作式调度：切换发生在明确或被兼容层接管的让出点，而不是操作系统随时抢占。
 
-yield可以保存状态，yield的状态保存与操作系统的保存线程状态很像，但是yield是代码级别控制的，更轻量级。send可以把一个函数的结果传给另外一个函数，以此实现单线程内程序之间的切换。
+## 三个容易混淆的对象
 
-<!-- snippet: id=python-coroutine-greenlet-gevent-01 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# yield功能（可以把函数暂停住，保存原来的状态）
-def f1():
-    print('first')
-    yield 1
-    print('second')
-    yield 2
-    print('third')
-    yield 3
+| 对象             | 暂停方式   | 谁负责调度         | 能否直接表示 I/O 完成      |
+| ---------------- | ---------- | ------------------ | -------------------------- |
+| 生成器           | `yield`    | 调用方             | 不能，它主要是惰性迭代协议 |
+| Greenlet         | `switch()` | 应用或 Gevent Hub  | 本身不能，需要事件循环配合 |
+| `async def` 协程 | `await`    | `asyncio` 事件循环 | 可以等待兼容的 awaitable   |
 
-# print(f1())  # 加了yield返回的是一个生成器
-g = f1()
-print(next(g))  # 当遇见了yield的时候就返回一个值，而且保存原来的状态
-print(next(g))  # 当遇见了yield的时候就返回一个值
-print(next(g))  # 当遇见了yield的时候就返回一个值
-```
+“能保存栈状态”不等于“自动获得并发”。只有当前任务到达让出点，其他任务才有机会运行；一个长时间 CPU 循环会卡住整个线程。
 
-**yield保存状态举例**
+## Greenlet：显式切换的最小模型
 
-<!-- snippet: id=python-coroutine-greenlet-gevent-02 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# yield表达式形式（对于表达式的yield）
-import time
+Greenlet 保存独立的调用栈，`switch()` 把控制权转给另一个 Greenlet。它展示了机制，但不提供套接字轮询、超时和任务池。生产代码一般通过 Gevent 使用，而不是手写切换网络协议。
 
-def wrapper(func):
-    def inner(*args, **kwargs):
-        ret = func(*args, **kwargs)
-        next(ret)
-        return ret
-    return inner
-
-@wrapper
-def consumer():
-    while True:
-        x = yield
-        print(x)
-
-def producer(target):
-    '''生产者制造产品'''
-    # next(g)  # 相当于 g.send(None)
-    for i in range(10):
-        time.sleep(0.5)
-        target.send(i)  # 要用send就得用两个yield
-
-producer(consumer())
-```
-
-**send传递函数结果**
-
-<!-- snippet: id=python-coroutine-greenlet-gevent-03 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-'''
-1、协程：
-    单线程实现并发
-    在应用程序里控制多个任务的切换+保存状态
-    优点：
-        应用程序级别速度要远远高于操作系统的切换
-    缺点：
-        多个任务一旦有一个阻塞没有切，整个线程都阻塞在原地
-        该线程内的其他的任务都不能执行了
-
-        一旦引入协程，就需要检测单线程下所有的IO行为，
-        实现遇到IO就切换，少一个都不行，因为一旦一个任务阻塞了，整个线程就阻塞了，
-        其他的任务即便是可以计算，但是也无法运行了
-2、协程的目的：
-    想要在单线程下实现并发
-    并发指的是多个任务看起来是同时运行的
-    并发 = 切换 + 保存状态
-'''
-
-# 串行执行
-import time
-
-def func1():
-    for i in range(10000000):
-        i + 1
-
-def func2():
-    for i in range(10000000):
-        i + 1
-
-start = time.time()
-func1()
-func2()
-stop = time.time()
-print(stop - start)
-
-# 基于yield并发执行
-import time
-
-def func1():
-    while True:
-        yield
-
-def func2():
-    g = func1()
-    for i in range(10000000):
-        i + 1
-        next(g)
-
-start = time.time()
-func2()
-stop = time.time()
-print(stop - start)
-```
-
-**单纯的切换反而会降低运行效率**
-
-**二**：第一种情况的切换。在任务一遇到io情况下，切到任务二去执行，这样就可以利用任务一阻塞的时间完成任务二的计算，效率的提升就在于此。
-
-<!-- snippet: id=python-coroutine-greenlet-gevent-04 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import time
-
-def func1():
-    while True:
-        print('func1')
-        yield
-
-def func2():
-    g = func1()
-    for i in range(10000000):
-        i + 1
-        next(g)
-        time.sleep(3)
-        print('func2')
-
-start = time.time()
-func2()
-stop = time.time()
-print(stop - start)
-```
-
-**对于单线程下，我们不可避免程序中出现io操作，但如果我们能在自己的程序中（即用户程序级别，而非操作系统级别）控制单线程下的多个任务能在一个任务遇到io阻塞时就切换到另外一个任务去计算，这样就保证了该线程能够最大限度地处于就绪态，即随时都可以被cpu执行的状态，相当于我们在用户程序级别将自己的io操作最大限度地隐藏起来，从而可以迷惑操作系统，让其看到：该线程好像是一直在计算，io比较少，从而更多的将cpu的执行权限分配给我们的线程。**
-
-协程的本质就是在单线程下，由用户自己控制一个任务遇到io阻塞了就切换另外一个任务去执行，以此来提升效率。为了实现它，我们需要找寻一种可以同时满足以下条件的解决方案：
-
-1. 可以控制多个任务之间的切换，切换之前将任务的状态保存下来，以便重新运行时，可以基于暂停的位置继续执行
-2. 作为1的补充：可以检测io操作，在遇到io操作的情况下才发生切换
-
-## 协程介绍
-
-协程：是单线程下的并发，又称微线程，纤程。英文名Coroutine。一句话说明什么是线程：协程是一种用户态的轻量级线程，即协程是由用户程序自己控制调度的。
-
-需要强调的是：
-
-<!-- snippet: id=python-coroutine-greenlet-gevent-05 mode=display python=3.12-3.14 deps=stdlib -->
-```text
-python的线程属于内核级别的，即由操作系统控制调度（如单线程遇到io或执行时间过长就会被迫交出cpu执行权限，切换其他线程运行）
-单线程内开启协程，一旦遇到io，就会从应用程序级别（而非操作系统）控制切换，以此来提升效率（！！！非io操作的切换与效率无关）
-```
-
-对比操作系统控制线程的切换，用户在单线程内控制协程的切换：
-
-**优点如下：**
-
-- 协程的切换开销更小，属于程序级别的切换，操作系统完全感知不到，因而更加轻量级
-- 单线程内就可以实现并发的效果，最大限度地利用cpu
-
-**缺点如下：**
-
-- 协程的本质是单线程下，无法利用多核，可以是一个程序开启多个进程，每个进程内开启多个线程，每个线程内开启协程。协程指的是单个线程，因而一旦协程出现阻塞，将会阻塞整个线程
-
-**总结协程特点：**
-
-1. **必须在只有一个单线程里实现并发**
-2. **修改共享数据不需加锁**
-3. **用户程序里自己保存多个控制流的上下文**
-4. **附加：一个协程遇到IO操作自动切换到其它协程（如何实现检测IO，yield、greenlet都无法实现，就用到了gevent模块（select机制））**
-
-### Greenlet
-
-如果我们在单个线程内20个任务，要想实现在多个任务之间切换，使用yield生成器的方式过于麻烦（需要先得到初始化一次的生成器，然后再调用send...非常麻烦），而使用greenlet模块可以非常简单地实现20个任务直接的切换。
-
-<!-- snippet: id=python-coroutine-greenlet-gevent-06 mode=display python=3.12-3.14 deps=stdlib -->
-```bash
-# 安装
-python -m pip install greenlet
-```
-
-<!-- snippet: id=python-coroutine-greenlet-gevent-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from greenlet import greenlet
 
-def eat(name):
-    print('%s eat 1' % name)
-    g2.switch('egon')
-    print('%s eat 2' % name)
-    g2.switch()
 
-def play(name):
-    print('%s play 1' % name)
-    g1.switch()
-    print('%s play 2' % name)
+def first() -> None:
+    print("O-100: prepare")
+    second_greenlet.switch()
+    print("O-100: persist")
 
-g1 = greenlet(eat)
-g2 = greenlet(play)
 
-g1.switch('egon')  # 可以在第一次switch时传入参数，以后都不需要
+def second() -> None:
+    print("O-101: prepare")
+    first_greenlet.switch()
+
+
+first_greenlet = greenlet(first)
+second_greenlet = greenlet(second)
+first_greenlet.switch()
 ```
 
-单纯的切换（在没有io的情况下或者没有重复开辟内存空间的操作），反而会降低程序的执行速度。
+输出顺序由代码中的切换点决定：`O-100: prepare`、`O-101: prepare`、`O-100: persist`。
 
-<!-- snippet: id=python-coroutine-greenlet-gevent-08 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 顺序执行
-import time
+## Gevent：Hub、事件与兼容层
 
-def f1():
-    res = 1
-    for i in range(100000000):
-        res += i
+<!-- figure:s35-f01 -->
 
-def f2():
-    res = 1
-    for i in range(100000000):
-        res *= i
+![Greenlet A、patched I/O、Gevent Hub、I/O 就绪、Greenlet B、CPU 长任务、无法让出](./images/final/s35-f01-gevent-hub-yield-cycle.png)
 
-start = time.time()
-f1()
-f2()
-stop = time.time()
-print('run time is %s' % (stop - start))  # 10.985628366470337
+Gevent 的 Hub 负责监听 I/O 和计时器，Greenlet 在 `gevent.sleep()` 或已被 Gevent 接管的阻塞调用处让出。`monkey.patch_all()` 会替换部分标准库对象，使同步风格代码在这些调用处协作；它必须在导入被修补模块之前执行，否则可能只修补到一部分引用。
 
-# 切换
-from greenlet import greenlet
-import time
-
-def f1():
-    res = 1
-    for i in range(100000000):
-        res += i
-        g2.switch()
-
-def f2():
-    res = 1
-    for i in range(100000000):
-        res *= i
-        g1.switch()
-
-start = time.time()
-g1 = greenlet(f1)
-g2 = greenlet(f2)
-g1.switch()
-stop = time.time()
-print('run time is %s' % (stop - start))  # 52.763017892837524
-```
-
-greenlet只是提供了一种比generator更加便捷的切换方式，当切到一个任务执行时如果遇到io，那就原地阻塞，仍然是没有解决遇到IO自动切换来提升效率的问题。
-
-单线程里的这20个任务的代码通常会既有计算操作又有阻塞操作，我们完全可以在执行任务1时遇到阻塞，就利用阻塞的时间去执行任务2......如此，才能提高效率，这就用到了Gevent模块。
-
-### Gevent介绍
-
-<!-- snippet: id=python-coroutine-greenlet-gevent-09 mode=display python=3.12-3.14 deps=stdlib -->
-```bash
-# 安装
-python -m pip install gevent
-```
-
-Gevent 是一个第三方库，可以轻松通过gevent实现并发同步或异步编程，在gevent中用到的主要模式是**Greenlet**，它是以C扩展模块形式接入Python的轻量级协程。Greenlet全部运行在主程序操作系统进程的内部，但它们被协作式地调度。
-
-<!-- snippet: id=python-coroutine-greenlet-gevent-10 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 用法
-g1 = gevent.spawn(func, 1, 2, 3, x=4, y=5)  # 创建一个协程对象g1，spawn括号内第一个参数是函数名，如eat，后面可以有多个参数，可以是位置实参或关键字实参，都是传给函数eat
-g2 = gevent.spawn(func2)
-
-g1.join()  # 等待g1结束
-
-g2.join()  # 等待g2结束
-
-# 或者上述两步合作一步：gevent.joinall([g1, g2])
-
-g1.value  # 拿到func1的返回值
-```
-
-**遇到IO阻塞时会自动切换任务**
-
-<!-- snippet: id=python-coroutine-greenlet-gevent-11 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import gevent
-
-def eat(name):
-    print('%s eat 1' % name)
-    gevent.sleep(2)
-    print('%s eat 2' % name)
-
-def play(name):
-    print('%s play 1' % name)
-    gevent.sleep(1)
-    print('%s play 2' % name)
-
-g1 = gevent.spawn(eat, 'egon')
-g2 = gevent.spawn(play, name='egon')
-g1.join()
-g2.join()
-# 或者gevent.joinall([g1, g2])
-print('主线程结束')
-```
-
-**上例gevent.sleep(2)模拟的是gevent可以识别的io阻塞**
-
-**而time.sleep(2)或其他的阻塞，gevent是不能直接识别的需要用下面一行代码打补丁，就可以识别了**
-
-**from gevent import monkey; monkey.patch_all() 必须放到被打补丁者的前面，如time，socket模块之前**
-
-**或者我们干脆记忆成：要用gevent，需要将 from gevent import monkey; monkey.patch_all() 放到文件的开头**
-
-<!-- snippet: id=python-coroutine-greenlet-gevent-12 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
 from gevent import monkey
-monkey.patch_all()
+
+monkey.patch_all()  # 必须早于 requests 等网络库导入
 
 import gevent
-import time
+from gevent.pool import Pool
 
-def eat():
-    print('eat food 1')
-    time.sleep(2)
-    print('eat food 2')
 
-def play():
-    print('play 1')
-    time.sleep(1)
-    print('play 2')
+def fetch_status(order_id: str) -> tuple[str, str]:
+    gevent.sleep(0.01)  # 模拟可协作的网络等待
+    return order_id, "PAID"
 
-g1 = gevent.spawn(eat)
-g2 = gevent.spawn(play)
-gevent.joinall([g1, g2])
-print('主线程结束')
+
+def run_batch(order_ids: list[str]) -> list[tuple[str, str]]:
+    pool = Pool(size=20)
+    jobs = [pool.spawn(fetch_status, order_id) for order_id in order_ids]
+    gevent.joinall(jobs, timeout=2, raise_error=True)
+    if any(not job.ready() for job in jobs):
+        raise TimeoutError("batch did not finish")
+    return sorted(job.value for job in jobs)
+
+
+print(run_batch(["O-100", "O-101"]))
 ```
 
-我们可以用 threading.current_thread().getName() 来查看每个g1和g2，查看的结果为DummyThread-n，即假线程。
+输入是订单 ID 列表，输出是与身份绑定的状态列表。`Pool(size=20)` 限制同时在途任务；`timeout` 只是停止等待，业务还要决定是否杀掉未完成 Greenlet、重试或记录未知状态。
 
-### Gevent之同步与异步
+## 调用链与失败边界
 
-<!-- snippet: id=python-coroutine-greenlet-gevent-13 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-from gevent import spawn, joinall, monkey
-monkey.patch_all()
+主路径是：应用函数 → 被修补的 I/O → Gevent Hub 注册就绪事件 → 当前 Greenlet 挂起 → 其他 Greenlet 运行 → I/O 就绪后恢复。
 
-import time
+以下调用可能破坏这条路径：
 
-def task(pid):
-    """
-    Some non-deterministic task
-    """
-    time.sleep(0.5)
-    print('Task %s done' % pid)
+- 未被修补的 C 扩展执行阻塞 I/O；
+- CPU 密集函数长期不让出；
+- 修补前已缓存原始 `socket` 或 `time.sleep` 引用；
+- 同时混用多个事件循环或依赖线程局部状态的库。
 
-def synchronous():
-    for i in range(10):
-        task(i)
+在接入第三方库前，应查明它是否与 Gevent 兼容，并用并发压测验证“一个慢请求不会冻结全部请求”。
 
-def asynchronous():
-    g_l = [spawn(task, i) for i in range(10)]
-    joinall(g_l)
+## 常见误区与适用边界
 
-if __name__ == '__main__':
-    print('Synchronous:')
-    synchronous()
+1. **把协程等同于并行。** 单线程 Gevent 不会让两个 Python CPU 循环同时运行。
+2. **无限 `spawn`。** Greenlet 虽轻量，任务对象、响应体、连接和对端配额仍有限。
+3. **在任意位置调用 monkey patch。** 修补时机与全局副作用必须在进程入口明确记录。
+4. **把超时当取消。** 等待超时后，底层操作可能仍在继续；要设计资源清理和幂等重试。
 
-    print('Asynchronous:')
-    asynchronous()
+Gevent 适合已有同步调用栈、依赖已验证兼容库的维护型系统。新建 Python 服务通常优先选择标准库 `asyncio` 和原生异步客户端，因为让出点、取消与类型边界更显式。
 
-# 上面程序的重要部分是将task函数封装到Greenlet内部线程的gevent.spawn
-# 初始化的greenlet列表存放在数组threads中，此数组被传给gevent.joinall函数
-# 后者阻塞当前流程，并执行所有给定的greenlet
-# 执行流程只会在所有greenlet执行完后才会继续向下走
-```
+## 自检题
 
-### Gevent之应用举例一
+1. 为什么生成器不是网络并发框架？
+2. 某个 Greenlet 执行 5 秒纯计算时，其他 Greenlet 会怎样？
+3. 为什么 `monkey.patch_all()` 要放在入口早期？
 
-<!-- snippet: id=python-coroutine-greenlet-gevent-14 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-from gevent import monkey
-monkey.patch_all()
-import gevent
-import requests
-import time
+<details>
+<summary>展开答案</summary>
 
-def get_page(url):
-    print('GET: %s' % url)
-    response = requests.get(url)
-    if response.status_code == 200:
-        print('%d bytes received from %s' % (len(response.text), url))
+1. `yield` 只定义值和控制权的交接，不负责监听 I/O 就绪、超时或调度任务。
+2. 同一线程无法获得控制权，都会停顿，除非计算函数主动让出或被移到线程/进程。
+3. 已导入模块可能保存原始阻塞函数引用，晚修补会形成不完整且难排查的混合行为。
 
-start_time = time.time()
-gevent.joinall([
-    gevent.spawn(get_page, 'https://www.python.org/'),
-    gevent.spawn(get_page, 'https://www.yahoo.com/'),
-    gevent.spawn(get_page, 'https://github.com/'),
-])
-stop_time = time.time()
-print('run time is %s' % (stop_time - start_time))
-```
+</details>
 
-<!-- snippet: id=python-coroutine-greenlet-gevent-15 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-from gevent import joinall, spawn, monkey
-monkey.patch_all()
-import requests
-from threading import current_thread
+## 本篇总结
 
-def parse_page(res):
-    print('%s PARSE %s' % (current_thread().getName(), len(res)))
+Greenlet 提供可切换栈，Gevent 用 Hub 和兼容层把 I/O 等待变成调度点。真正要验证的是让出点、库兼容性、并发上限、超时后的资源状态，而不是 Greenlet 数量。
 
-def get_page(url, callback=parse_page):
-    print('%s GET %s' % (current_thread().getName(), url))
-    response = requests.get(url)
-    if response.status_code == 200:
-        callback(response.text)
+## 下一篇衔接
 
-if __name__ == '__main__':
-    urls = [
-        'https://www.baidu.com',
-        'https://www.taobao.com',
-        'https://www.openstack.org',
-    ]
+协作式调度的根基是“I/O 何时就绪”。下一篇下沉到 Socket、TCP 字节流和多路复用，解释事件循环真正监听的对象。
 
-    tasks = []
-    for url in urls:
-        tasks.append(spawn(get_page, url))
+## 资料来源
 
-    joinall(tasks)
-```
-
-协程应用爬虫加了回调函数。
-
-### Gevent之应用举例二
-
-通过gevent实现单线程下的socket并发（from gevent import monkey; monkey.patch_all() 一定要放到导入socket模块之前，否则gevent无法识别socket的阻塞）。
-
-**服务端利用协程**
-
-<!-- snippet: id=python-coroutine-greenlet-gevent-16 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-#!usr/bin/env python
-# -*- coding:utf-8 -*-
-from gevent import monkey
-monkey.patch_all()
-import gevent
-from socket import *
-
-print('start running...')
-
-def talk(conn, addr):
-    while True:
-        data = conn.recv(1024)
-        print('%s:%s %s' % (addr[0], addr[1], data))
-        conn.send(data.upper())
-    conn.close()
-
-def server(ip, port):
-    server = socket(AF_INET, SOCK_STREAM)
-    server.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-    server.bind((ip, port))
-    server.listen(5)
-    while True:
-        conn, addr = server.accept()  # 等待链接
-        gevent.spawn(talk, conn, addr)  # 异步执行
-        # （p = Process(target=talk, args=(conn, addr))
-        #     p.start()）相当于开进程里的这两步
-
-    server.close()
-
-if __name__ == '__main__':
-    server('127.0.0.1', 8081)
-```
-
-**客户端多开**
-
-<!-- snippet: id=python-coroutine-greenlet-gevent-17 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-#!usr/bin/env python
-# -*- coding:utf-8 -*-
-from multiprocessing import Process
-from gevent import monkey
-monkey.patch_all()
-from socket import *
-
-def client(ip, port):
-    client = socket(AF_INET, SOCK_STREAM)
-    client.connect((ip, port))
-    while True:
-        client.send('hello'.encode('utf-8'))
-        data = client.recv(1024)
-        print(data.decode('utf-8'))
-
-if __name__ == '__main__':
-    for i in range(100):
-        p = Process(target=client, args=('127.0.0.1', 8081))
-        p.start()
-```
+- [greenlet 文档](https://greenlet.readthedocs.io/)
+- [Gevent 文档](https://www.gevent.org/)
+- [Gevent monkey patch API](https://www.gevent.org/api/gevent.monkey.html)

@@ -1,433 +1,216 @@
 ---
-title: Redis Cluster集群配置、原理和运维
+title: Redis Cluster：槽位、重定向、扩缩容与故障边界
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: redis-cluster-tutorial
 featured: false
 draft: false
 tags:
   - Redis Cluster
-  - 数据库
-  - 集群
-description: "Redis Cluster集群配置、原理和运维"
+  - 分片
+  - 高可用
+description: 从 16384 个槽位理解 Redis Cluster 的键路由、hash tag、多键约束、MOVED/ASK 重定向、在线迁移和故障转移。
 series: Redis
-seriesOrder: 2
+seriesOrder: 9
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
 
-Redis Cluster 是 Redis 官方提供的分布式集群解决方案，支持数据分片和高可用，能够在部分节点故障时继续提供服务。
+你应理解 Redis 键、异步复制、Sentinel 故障窗口和客户端连接池。本文假设客户端原生支持 Redis Cluster 协议。
 
-![Redis Cluster 通过 16384 个槽位分片到多个主节点，并借助副本、重定向和故障转移维持集群可用性](./images/redis-cluster-slots-failover-figure-01.png)
+读完后，你应该能够：
 
-## 集群架构
+- 解释 key、hash tag、16384 个槽和主节点之间的映射；
+- 区分 MOVED 与 ASK，并说明客户端如何刷新拓扑和临时重试；
+- 设计同槽多键操作，同时识别过度使用 hash tag 的热点风险；
+- 观察扩缩容和故障转移，并识别 Cluster 不提供的强一致与跨槽能力。
 
-```
-┌─────────────────────────────────────────────┐
-│              Redis Cluster                   │
-│                                             │
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐    │
-│  │ Node 1  │  │ Node 2  │  │ Node 3  │    │
-│  │ M:0-5460│  │M:5461- │  │M:10923- │    │
-│  │ S:0-5460│  │  10922  │  │  16383  │    │
-│  │         │  │ S:5461- │  │ S:10923-│    │
-│  │         │  │  10922  │  │  16383  │    │
-│  └─────────┘  └─────────┘  └─────────┘    │
-│                                             │
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐    │
-│  │ Node 4  │  │ Node 5  │  │ Node 6  │    │
-│  │ M:0-5460│  │M:5461- │  │M:10923- │    │
-│  │ S:0-5460│  │  10922  │  │  16383  │    │
-│  │         │  │ S:5461- │  │ S:10923-│    │
-│  │         │  │  10922  │  │  16383  │    │
-│  └─────────┘  └─────────┘  └─────────┘    │
-└─────────────────────────────────────────────┘
+## 真实场景：单节点放不下，也不能只加副本
 
-M = Master 节点  S = Slave 节点
-```
+`shop-api` 的数据与流量超过单个主节点容量。增加副本只能复制相同数据，不能分摊主节点写入和内存。Redis Cluster 把键空间分为 16384 个槽，再把槽分配给多个主节点；每个主节点可配置副本用于故障转移。
 
-## 槽位分配
+应用不是先选机器再算键，而是先由键算槽，再由拓扑找到当前负责该槽的节点。
 
-### 16384 个槽位
+## 槽位与 hash tag
 
-| 槽位范围      | 节点            |
-| ------------- | --------------- |
-| 0 - 5460      | 节点 1 (Master) |
-| 5461 - 10922  | 节点 2 (Master) |
-| 10923 - 16383 | 节点 3 (Master) |
+<!-- figure-anchor:r09-a01 -->
 
-### 槽位计算
+<!-- figure-managed:r09-f01:start -->
 
-```python
-# CRC16 算法计算 key 对应的槽位
-import crcmod
+![undefined](./images/r09-f01-key-slot-topology.png)
 
-crc16 = crcmod.predefined.mkCrcFun('crc-ccitt-false')
+<!-- figure-managed:r09-f01:end -->
 
-def slot(key):
-    return crc16(key) % 16384
+普通键的槽位近似表示为：
 
-# 示例
-print(slot('user:1001'))  # 5283
-print(slot('user:1002'))  # 12045
+```text
+slot = CRC16(key) mod 16384
 ```
 
-## 集群配置
-
-### 配置文件
+若键包含非空的第一对 `{...}`，只对花括号内内容计算。例如 `product:{1001}`、`stock:{1001}` 和 `orders:{1001}` 都使用 `1001`，因此同槽。
 
 ```bash
-# redis.conf
-port 6379
-cluster-enabled yes
-cluster-config-file nodes.conf
-cluster-node-timeout 15000
-cluster-replica-validity-factor 10
-cluster-migration-barrier 1
-cluster-require-full-coverage yes
+redis-cli CLUSTER KEYSLOT product:{1001}
+redis-cli CLUSTER KEYSLOT stock:{1001}
+redis-cli CLUSTER KEYSLOT product:{1002}
 ```
 
-### 参数说明
+同槽允许 `MGET`、事务或 Lua 同时访问相关键；不同槽的多键命令会返回 `CROSSSLOT`。但把大量键都写成 `{shop}:...` 会把它们压到一个槽，抵消分片并形成热点。hash tag 应围绕确实需要原子协作的最小业务实体。
 
-| 参数                                | 说明             | 默认值     |
-| ----------------------------------- | ---------------- | ---------- |
-| **cluster-enabled**                 | 开启集群模式     | no         |
-| **cluster-config-file**             | 集群节点配置文件 | nodes.conf |
-| **cluster-node-timeout**            | 节点超时时间(ms) | 15000      |
-| **cluster-replica-validity-factor** | 从节点有效因子   | 10         |
-| **cluster-migration-barrier**       | 迁移障碍         | 1          |
-| **cluster-require-full-coverage**   | 槽位全覆盖要求   | yes        |
+## 拓扑与请求路由
 
-## 集群创建
+典型最小高可用拓扑有 3 个主节点，各自负责一部分槽，并各有至少 1 个副本。节点通过 cluster bus 交换槽映射、存活状态和故障信息；客户端维护拓扑缓存并直接访问目标节点。
 
-### 方式一：手动创建
+Cluster 不是代理层。客户端必须理解拓扑、重定向、节点故障和连接池更新。只用普通单节点客户端连接一个地址，遇到其他槽就无法正确工作。
 
-```bash
-# 1. 创建节点目录
-mkdir -p /opt/redis-cluster/{7000,7001,7002,7003,7004,7005}
+## MOVED 与 ASK
 
-# 2. 创建各节点配置文件
-for port in 7000 7001 7002 7003 7004 7005; do
-cat > /opt/redis-cluster/$port/redis.conf <<EOF
-port $port
+<!-- figure-anchor:r09-a02 -->
+
+<!-- figure-managed:r09-f02:start -->
+
+![undefined](./images/r09-f02-moved-ask-routing.png)
+
+<!-- figure-managed:r09-f02:end -->
+
+- **MOVED**：槽的稳定负责人是另一个节点。客户端应重试目标地址，并刷新槽位映射。
+- **ASK**：槽正在迁移，本次键可能在目标节点。客户端先向目标发送 `ASKING`，再只重试当前命令；不能把 ASK 当永久拓扑更新。
+
+迁移期间，源节点对不存在的迁移槽键返回 ASK；已有键仍可能由源节点处理。客户端若忽略这一区别，会在扩缩容时出现周期性错误或错误缓存拓扑。
+
+## 最小实验配置
+
+每个节点至少启用：
+
+```conf
+port 7000
 cluster-enabled yes
-cluster-config-file nodes.conf
-cluster-node-timeout 15000
+cluster-config-file nodes-7000.conf
+cluster-node-timeout 5000
 appendonly yes
-EOF
-done
+```
 
-# 3. 启动节点
-for port in 7000 7001 7002 7003 7004 7005; do
-  redis-server /opt/redis-cluster/$port/redis.conf &
-done
+`nodes-7000.conf` 由 Redis 自动维护，不能让多个实例共享。实验环境启动 7000–7005 六个节点后，可创建三主三副本集群：
 
-# 4. 创建集群
+```bash
 redis-cli --cluster create \
-  127.0.0.1:7000 \
-  127.0.0.1:7001 \
-  127.0.0.1:7002 \
-  127.0.0.1:7003 \
-  127.0.0.1:7004 \
-  127.0.0.1:7005 \
+  127.0.0.1:7000 127.0.0.1:7001 127.0.0.1:7002 \
+  127.0.0.1:7003 127.0.0.1:7004 127.0.0.1:7005 \
   --cluster-replicas 1
 ```
 
-### 方式二：Docker Compose
+这不是生产拓扑：同一主机无法提供独立故障域，端口、announce 地址、TLS、ACL、持久化和内核参数也需要单独设计。
 
-```yaml
-version: "3"
-services:
-  redis-node1:
-    image: redis:7
-    container_name: redis-node1
-    ports:
-      - "7000:7000"
-    command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf --port 7000
-
-  redis-node2:
-    image: redis:7
-    container_name: redis-node2
-    ports:
-      - "7001:7001"
-    command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf --port 7001
-
-  redis-node3:
-    image: redis:7
-    container_name: redis-node3
-    ports:
-      - "7002:7002"
-    command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf --port 7002
-
-  redis-node4:
-    image: redis:7
-    container_name: redis-node4
-    ports:
-      - "7003:7003"
-    command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf --port 7003
-
-  redis-node5:
-    image: redis:7
-    container_name: redis-node5
-    ports:
-      - "7004:7004"
-    command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf --port 7004
-
-  redis-node6:
-    image: redis:7
-    container_name: redis-node6
-    ports:
-      - "7005:7005"
-    command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf --port 7005
-```
-
-## 集群命令
-
-### 管理命令
-
-```bash
-# 连接集群
-redis-cli -c -p 7000
-
-# 查看集群信息
-CLUSTER INFO
-
-# 查看节点列表
-CLUSTER NODES
-
-# 查看槽位分配
-CLUSTER SLOTS
-
-# 检查集群状态
-redis-cli --cluster check 127.0.0.1:7000
-```
-
-### 槽位管理
-
-```bash
-# 重新分配槽位
-redis-cli --cluster reshard 127.0.0.1:7000
-
-# 移动槽位
-CLUSTER SETSLOT 0 MIGRATING node_id
-CLUSTER SETSLOT 0 IMPORTING node_id
-CLUSTER SETSLOT 0 node_id
-```
-
-### 节点管理
-
-```bash
-# 添加主节点
-redis-cli --cluster add-node 127.0.0.1:7006 127.0.0.1:7000
-
-# 添加从节点
-redis-cli --cluster add-node 127.0.0.1:7007 127.0.0.1:7000 --cluster-slave
-
-# 删除节点
-redis-cli --cluster del-node 127.0.0.1:7000 node_id
-
-# 分配从节点
-CLUSTER REPLICATE node_id
-```
-
-## Python 客户端
-
-### redis-py-cluster
+## Cluster 客户端
 
 ```python
-from rediscluster import RedisCluster
+from redis.cluster import RedisCluster
 
-# 创建集群客户端
-startup_nodes = [
-    {'host': '127.0.0.1', 'port': 7000},
-    {'host': '127.0.0.1', 'port': 7001},
-    {'host': '127.0.0.1', 'port': 7002},
-]
-
-rc = RedisCluster(
-    startup_nodes=startup_nodes,
-    decode_responses=True
+client = RedisCluster(
+    host="127.0.0.1",
+    port=7000,
+    decode_responses=True,
+    socket_connect_timeout=1.0,
+    socket_timeout=0.5,
 )
 
-# 基本操作
-rc.set('key1', 'value1')
-rc.get('key1')
-
-# 批量操作
-rc.mset({'key2': 'value2', 'key3': 'value3'})
-rc.mget(['key2', 'key3'])
-
-# 哈希操作
-rc.hset('user:1', mapping={'name': '张三', 'age': 25})
-rc.hgetall('user:1')
+client.set("stock:{1001}", 50)
+client.set("price:{1001}", 69900)
+print(client.mget("stock:{1001}", "price:{1001}"))
 ```
 
-### 槽位计算
+输入是任一可达启动节点；客户端获取完整槽拓扑。预期输出为 `['50', '69900']`。若第二个键改为 `{1002}`，`MGET` 跨槽失败；这不是网络错误，盲重试不会修复数据模型。
 
-```python
-import redis
+## 在线扩缩容的状态变化
 
-def get_slot(key):
-    """计算 key 所在的槽位"""
-    return hex(hash(key) % 16384)
+<!-- figure-anchor:r09-a03 -->
 
-def get_node(key, cluster_nodes):
-    """计算 key 所在的节点"""
-    slot = hash(key) % 16384
+<!-- figure-managed:r09-f03:start -->
 
-    for node in cluster_nodes:
-        if slot in node['slots']:
-            return node
+![undefined](./images/r09-f03-reshard-slot-migration.png)
 
-    return None
+<!-- figure-managed:r09-f03:end -->
 
-# 示例
-key = 'user:1001'
-slot = get_slot(key)
-print(f"Key: {key}, Slot: {slot}")
-```
-
-## 高可用原理
-
-### 故障检测
+扩容不是“加入节点后自动平均”：新主节点加入时没有槽，需要把部分槽从旧节点迁移过去。流程包括加入节点、分配/迁移槽、传输键、更新拓扑和验证负载。
 
 ```bash
-# 节点超时配置
-cluster-node-timeout 15000
-
-# 主观下线
-# 一个节点认为另一个节点超时
-
-# 客观下线
-# 多个节点都认为某个节点下线
-```
-
-### 故障转移
-
-```bash
-# 从节点升级为主节点
-# 1. 从节点发现主节点下线
-# 2. 从节点申请成为主节点
-# 3. 其他主节点投票
-# 4. 超过半数同意
-# 5. 从节点升级为主节点
-```
-
-### 集群选主
-
-```bash
-# 使用 Raft 协议进行选主
-# 节点状态：
-# - NULL：未分配槽位
-# - FAIL：已下线
-# - OK：正常
-# - LOADING：正在加载数据
-```
-
-## 运维管理
-
-### 日常维护
-
-```bash
-# 检查集群健康
-redis-cli -c -p 7000 CLUSTER INFO
-
-# 检查所有节点
-redis-cli -c -p 7000 CLUSTER NODES
-
-# 验证数据完整性
 redis-cli --cluster check 127.0.0.1:7000
-
-# 平衡槽位
-redis-cli --cluster rebalance 127.0.0.1:7000
-```
-
-### 扩缩容
-
-```bash
-# 添加新主节点
-redis-cli --cluster add-node 127.0.0.1:7008 127.0.0.1:7000
-
-# 迁移槽位
+redis-cli --cluster add-node 127.0.0.1:7006 127.0.0.1:7000
 redis-cli --cluster reshard 127.0.0.1:7000
-
-# 删除主节点（需先迁移槽位）
-redis-cli --cluster del-node 127.0.0.1:7000 node_id
 ```
 
-### 数据迁移
+迁移前记录每个槽/节点的键数、内存、QPS 和大键。平均迁移槽数不一定能平均负载：槽内键大小和访问频率可能极不均匀。迁移后还要观察 ASK、MOVED、超时、网络流量和主从复制积压。
+
+缩容先迁空目标主节点的全部槽，再删除节点；不能直接停掉仍负责槽的节点。
+
+## 故障转移与一致性边界
+
+<!-- figure-anchor:r09-a04 -->
+
+<!-- figure-managed:r09-f04:start -->
+
+![undefined](./images/r09-f04-cluster-failover-boundary.png)
+
+<!-- figure-managed:r09-f04:end -->
+
+Cluster 节点通过多数主节点视角判定主节点失败，并从其副本中选举晋升者。若某个槽没有可用负责人，且要求 full coverage，集群会停止接受大部分请求以避免部分键空间静默不可用。
+
+复制仍是异步的：刚确认但未复制的写可能在晋升中丢失；网络分区中的旧主也可能在有限窗口接收写。Cluster 以可用性和性能为目标，不提供线性一致性或跨槽分布式事务。
+
+## 运维观察与故障演练
 
 ```bash
-# 使用 MIGRATE 命令
-MIGRATE target_host target_port "" 0 5000 KEYS key1 key2
-
-# 使用 redis-cli --cluster import
-redis-cli --cluster import 127.0.0.1:7008 \
-  --cluster-from 127.0.0.1:7000 \
-  --cluster-copy
+redis-cli -c -p 7000 CLUSTER INFO
+redis-cli -c -p 7000 CLUSTER NODES
+redis-cli --cluster check 127.0.0.1:7000
+redis-cli --cluster rebalance 127.0.0.1:7000 --cluster-use-empty-masters
 ```
 
-## 常见问题
+演练至少验证：客户端收到重定向后能恢复；一个主节点故障时对应副本晋升；写丢失窗口被业务接受或检测；恢复节点不会带着错误角色继续服务；槽覆盖、复制积压和 p99 延迟回到基线。
 
-### MOVED 重定向
+## 常见误区与适用边界
 
-```bash
-# 客户端收到 MOVED 错误
-GET user:1001
-# MOVED 5200 127.0.0.1:7001
+- 16384 是槽数量，不是节点或分片数量。
+- hash tag 解决同槽，不应把整个业务固定到一个槽。
+- ASK 是迁移期单次引导，MOVED 才表示稳定负责人变化。
+- Cluster 提供分片与高可用，不提供跨槽事务和强一致。
+- 单个超大键或热键仍只落在一个槽/主节点，不能被自动拆分。
 
-# 自动重定向模式
-redis-cli -c -p 7000
+## 本篇自检
 
-# 手动处理
-if response.startswith('MOVED'):
-    _, slot, node = response.split()
-    host, port = node.split(':')
-    connect_to(host, port)
-```
+<details>
+<summary>1. 为什么 `stock:{1001}` 与 `price:{1001}` 能做 MGET？</summary>
 
-### ASK 重定向
+两者的 hash tag 都是 `1001`，因此映射到同一槽；Cluster 的多键命令要求所有键同槽。
 
-```bash
-# 槽位迁移中可能出现 ASK 重定向
-GET user:1001
-# ASK 5200 127.0.0.1:7001
+</details>
 
-# 客户端先发送 ASKING 命令
-ASKING
-GET user:1001
-```
+<details>
+<summary>2. 客户端收到 ASK 后为什么不应永久更新槽负责人？</summary>
 
-### 集群不可用
+ASK 表示迁移中的一次临时路由，槽的稳定所有权尚未完成切换。客户端只应 `ASKING` 后重试当前命令。
 
-```bash
-# 槽位未全覆盖导致集群不可用
-# cluster-require-full-coverage yes
+</details>
 
-# 设置为 no 可允许部分槽位不可用
-CONFIG SET cluster-require-full-coverage no
-```
+<details>
+<summary>3. 新增一个空主节点后，容量为什么没有立刻增加？</summary>
 
-## 小结
+空节点尚未负责任何槽，请求不会路由给它。必须迁移槽并根据键大小与热度验证负载变化。
 
-| 特性         | 说明                    |
-| ------------ | ----------------------- |
-| **数据分片** | 16384 个槽位自动分配    |
-| **高可用**   | 主从复制 + 自动故障转移 |
-| **节点通信** | Gossip 协议             |
-| **一致性**   | 最终一致性              |
+</details>
 
-| 部署要求     | 说明                |
-| ------------ | ------------------- |
-| **最少节点** | 3 主 3 从（6 节点） |
-| **槽位覆盖** | 所有槽位需有主节点  |
-| **选主条件** | 超过半数主节点在线  |
+## 本篇总结
 
-| 命令                 | 说明         |
-| -------------------- | ------------ |
-| **CLUSTER INFO**     | 查看集群信息 |
-| **CLUSTER NODES**    | 查看节点列表 |
-| **CLUSTER SLOTS**    | 查看槽位分配 |
-| **CLUSTER FAILOVER** | 手动故障转移 |
+Redis Cluster 用槽把键路由到多个主节点，hash tag 只为必要的同槽操作服务。客户端通过 MOVED/ASK 适应稳定拓扑和迁移状态；扩缩容要迁槽并按真实负载验收。异步复制、热键和跨槽限制仍是业务必须承担的边界。
+
+## 下一篇衔接
+
+至此数据模型、客户端、缓存、持久化、原子操作、锁、消息、复制和分片已经连通。最后一篇把它们收进生产控制面：SLO、内存、延迟、ACL、备份恢复、变更和故障运行手册。
+
+## 资料来源
+
+- [Redis Cluster specification](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/)
+- [Scale with Redis Cluster](https://redis.io/docs/latest/operate/oss_and_stack/management/scaling/)
+- [redis-py clustering](https://redis.readthedocs.io/en/stable/clustering.html)

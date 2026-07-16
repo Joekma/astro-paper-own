@@ -2,9 +2,9 @@
 title: YAML 文件是什么？
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-11T00:00:00.000+08:00
+modDatetime: 2026-07-17T00:00:00.000+08:00
 slug: yaml-tutorial-basics
-description: 'YAML语法入门教程，介绍YAML的基本语法、数据结构和实际应用'
+description: "从表示模型、缩进、标量、锚点和安全加载理解 YAML 1.2 配置文件。"
 tags:
   - YAML
   - 后端
@@ -16,288 +16,205 @@ seriesOrder: 32
 language: zh-CN
 ---
 
-> YAML（Yet Another Markup Language）是一种人类可读的数据序列化格式，常用于配置文件。
+## 前置知识与学习目标
 
-## 基本语法
+你需要理解 Python 字典、列表、字符串和配置文件。本文给报表流水线编写最终配置，只回答：YAML 文本如何变成映射、序列和标量，哪些写法会造成歧义或安全问题？
 
-| 规则 | 说明 |
-|------|------|
-| **大小写敏感** | `Name` 和 `name` 是不同的 |
-| **缩进表示层级** | 使用空格缩进，不允许 Tab |
-| **# 注释** | `#` 到行尾为注释内容 |
-| **列表使用 `-`** | 连词线开头表示列表项 |
+学完后，你应该能够：
 
-> **注意**：缩进时只允许使用空格，相同层级的元素左侧必须对齐。
+1. 把 YAML 内容归类为 mapping、sequence 和 scalar。
+2. 正确使用缩进、块/流式集合、引号与多行标量。
+3. 解释锚点和别名复用的是节点，不是模板语言。
+4. 用安全加载、Schema 校验和版本约束控制解析边界。
 
-![YAML 文件通过缩进层级、键值对、对象、数组、标量、锚点、多文档和配置场景表达结构化数据](./images/python-yaml-syntax-use-cases-figure-01.png)
+## 真实场景与核心问题
 
-## 数据结构
+报表服务需要描述输入、导出器、重试和邮件收件人。YAML 适合人读写，但“看起来像字符串”的值可能被解析器解析成布尔、数字或日期；缩进错误还可能改变整棵数据结构。
 
-YAML 支持三种数据结构：
+## 核心模型：三种节点
 
-| 类型 | 说明 | 示例 |
-|------|------|------|
-| **对象** | 键值对集合 | `{name: "张三"}` |
-| **数组** | 有序列表 | `["a", "b", "c"]` |
-| **纯量** | 单一不可分值 | `123`, `true` |
+YAML 1.2 的常用数据结构可归纳为：
 
-## 对象
+| 节点     | Python 常见结果                 | YAML 示例     |
+| -------- | ------------------------------- | ------------- |
+| mapping  | `dict`                          | `name: daily` |
+| sequence | `list`                          | `- csv`       |
+| scalar   | `str`、`int`、`bool`、`None` 等 | `retries: 3`  |
 
-### 基本写法
+缩进决定块结构，不能用 Tab 代替结构缩进。冒号分隔键值，短横线引入序列项；同层元素必须对齐。
 
-<!-- snippet: id=yaml-tutorial-basics-01 mode=display python=3.12-3.14 deps=stdlib -->
+<!-- figure-anchor:s32-f01 -->
+
+<!-- figure-ref:s32-f01 -->
+
+![把 YAML 文本缩进映射为 mapping、sequence、scalar 树，并标出引号控制字符串意图。](./images/s32-f01-yaml-node-tree-scalar-boundaries.png)
+
 ```yaml
-name: 张三
-age: 25
+version: 1
+report:
+  name: daily-sales
+  source: data/orders.csv
+  exporters:
+    - type: csv
+      destination: out/report.csv
+    - type: jsonl
+      destination: out/report.jsonl
+  retry:
+    attempts: 3
+    backoff_seconds: [1, 2, 4]
 ```
 
-**转换为 JSON**：
+对应概念 Shape：
 
-<!-- snippet: id=yaml-tutorial-basics-02 mode=display python=3.12-3.14 deps=stdlib -->
-```json
-{
-  "name": "张三",
-  "age": 25
-}
+```text
+mapping
+└─ report: mapping
+   ├─ name: scalar
+   ├─ exporters: sequence[mapping]
+   └─ retry: mapping
 ```
 
-### 行内写法
+## 标量：能省引号，不代表应该省
 
-<!-- snippet: id=yaml-tutorial-basics-03 mode=display python=3.12-3.14 deps=stdlib -->
+YAML 提供普通、单引号和双引号标量。双引号处理转义，单引号主要通过重复单引号表示字面单引号。对可能被解析成其他类型或含特殊字符的值，显式引号更稳妥：
+
 ```yaml
-person: {name: 张三, age: 25}
+enabled: true
+literal_true: "true"
+port: 8080
+port_text: "08080"
+empty_value: null
+empty_text: ""
+schedule: "08:00"
 ```
 
-## 数组
+YAML 1.1 与 1.2、不同库采用的 Schema 对隐式类型解析可能不同。例如某些旧解析器把 `yes`/`no` 当布尔。跨工具配置应使用目标工具支持的明确子集，并对关键字符串加引号。
 
-### 基本写法
+## 多行文本与换行语义
 
-<!-- snippet: id=yaml-tutorial-basics-04 mode=display python=3.12-3.14 deps=stdlib -->
 ```yaml
-fruits:
-  - 苹果
-  - 香蕉
-  - 橙子
+literal: |
+  line one
+  line two
+
+folded: >
+  this is folded
+  into one line
 ```
 
-**转换为 JSON**：
+`|` 保留行结构，`>` 通常折叠普通换行为保留空格的连续文本；尾部换行还受 chomping 标记 `-`/`+` 影响。证书、脚本和 Markdown 等对换行敏感的内容应写测试，不能仅凭视觉判断。
 
-<!-- snippet: id=yaml-tutorial-basics-05 mode=display python=3.12-3.14 deps=stdlib -->
-```json
-{
-  "fruits": ["苹果", "香蕉", "橙子"]
-}
-```
+## 锚点、别名与合并边界
 
-### 行内写法
+锚点 `&name` 标记节点，别名 `*name` 引用之前的锚点：
 
-<!-- snippet: id=yaml-tutorial-basics-06 mode=display python=3.12-3.14 deps=stdlib -->
+<!-- figure-anchor:s32-f02 -->
+
+<!-- figure-ref:s32-f02 -->
+
+![说明 &defaults 标记节点、*defaults 引用已出现节点，以及别名不是字符串宏。](./images/s32-f02-yaml-anchor-alias-identity.png)
+
 ```yaml
-fruits: [苹果, 香蕉, 橙子]
+defaults: &defaults
+  retries: 3
+  timeout_seconds: 10
+
+daily:
+  policy: *defaults
 ```
 
-### 嵌套数组
+别名表示节点复用；解析后的对象是否共享身份以及修改传播行为取决于库的数据模型。不要把别名当字符串宏。
 
-<!-- snippet: id=yaml-tutorial-basics-07 mode=display python=3.12-3.14 deps=stdlib -->
-```yaml
--
-  - 苹果
-  - 香蕉
--
-  - 橙子
-  - 葡萄
+常见 `<<` 合并键不是 YAML 1.2 核心规范中的通用模板机制，工具支持不一。跨平台配置优先显式字段或在应用层实现可测试的合并规则。
+
+## Python 加载：解析后仍需 Schema 校验
+
+Python 标准库不含 YAML 解析器。下面使用第三方 PyYAML；`safe_load` 限制为标准 YAML 标签，避免任意 Python 对象构造，但它不会替你验证业务字段。
+
+<!-- snippet: id=python-intermediate-32-01 mode=display python=3.12-3.14 deps=pyyaml -->
+
+```python
+from collections.abc import Mapping
+from pathlib import Path
+
+import yaml
+
+
+def load_config(path: Path) -> dict[str, object]:
+    if path.stat().st_size > 1_000_000:
+        raise ValueError("configuration file is too large")
+
+    with path.open("r", encoding="utf-8") as file:
+        data = yaml.safe_load(file)
+
+    if not isinstance(data, Mapping):
+        raise ValueError("top-level YAML node must be a mapping")
+    if data.get("version") != 1:
+        raise ValueError("unsupported configuration version")
+    if not isinstance(data.get("report"), Mapping):
+        raise ValueError("report must be a mapping")
+    return dict(data)
 ```
 
-## 复合结构
+验证层至少应检查：顶层类型、必需键、未知键策略、枚举、范围、路径、列表长度和版本号。解析成功只说明语法可读，不说明配置对业务有效。
 
-对象和数组可以嵌套使用：
+## 多文档与工具边界
 
-<!-- snippet: id=yaml-tutorial-basics-08 mode=display python=3.12-3.14 deps=stdlib -->
-```yaml
-languages:
-  - Ruby
-  - Python
-  - JavaScript
+`---` 可开始文档，`...` 可结束文档。一个文件含多个文档时，加载 API 可能只接受单文档或返回迭代器；必须选择与工具契约一致的 API。Kubernetes 等工具对 YAML 还施加自己的 Schema 和对象规则，这些规则不属于 YAML 语法本身。
 
-websites:
-  Ruby: ruby-lang.org
-  Python: python.org
-  JavaScript: developer.mozilla.org
-```
+## 常见误区与适用边界
 
-**转换为 JSON**：
+### YAML 是带注释的 JSON
 
-<!-- snippet: id=yaml-tutorial-basics-09 mode=display python=3.12-3.14 deps=stdlib -->
-```json
-{
-  "languages": ["Ruby", "Python", "JavaScript"],
-  "websites": {
-    "Ruby": "ruby-lang.org",
-    "Python": "python.org",
-    "JavaScript": "developer.mozilla.org"
-  }
-}
-```
+YAML 1.2 以兼容 JSON 为目标，但还包含锚点、标签、多行标量和更复杂的解析规则；不同实现也存在差异。
 
-## 纯量（标量）
+### `safe_load` 后数据一定安全可用
 
-### 字符串
+它主要限制危险类型构造。资源消耗、超大别名图、业务字段、路径和下游命令仍需限制和验证。
 
-<!-- snippet: id=yaml-tutorial-basics-10 mode=display python=3.12-3.14 deps=stdlib -->
-```yaml
-name: 张三
-message: "你好\n世界"  # 双引号支持转义
-content: |
-  多行文本
-  保留换行
-```
+### 锚点适合大规模继承模板
 
-### 布尔值
+复杂别名和合并会让最终值难以追踪，并可能缺乏跨工具兼容。配置生成、显式默认值或应用层合并更可测试。
 
-<!-- snippet: id=yaml-tutorial-basics-11 mode=display python=3.12-3.14 deps=stdlib -->
-```yaml
-is_active: true
-is_deleted: false
-```
+### YAML 适合所有数据交换
 
-### 数值
+机器到机器高频协议通常更重视解析一致性、Schema 和性能；JSON、Protobuf 等可能更合适。YAML 的优势主要是人类维护的配置和文档。
 
-<!-- snippet: id=yaml-tutorial-basics-12 mode=display python=3.12-3.14 deps=stdlib -->
-```yaml
-count: 25
-price: 19.99
-negative: -10
-scientific: 1.5e10
-```
+## 本篇自检
 
-### 空值
+<details>
+<summary>1. YAML 的三种核心节点是什么？</summary>
 
-<!-- snippet: id=yaml-tutorial-basics-13 mode=display python=3.12-3.14 deps=stdlib -->
-```yaml
-empty: null
-also_empty: ~
-```
+映射（mapping）、序列（sequence）和标量（scalar）。
 
-### 日期时间
+</details>
 
-<!-- snippet: id=yaml-tutorial-basics-14 mode=display python=3.12-3.14 deps=stdlib -->
-```yaml
-created_at: 2024-01-01
-created_time: 2024-01-01T10:30:00
-```
+<details>
+<summary>2. 为什么关键字符串有时应显式加引号？</summary>
 
-## 特殊语法
+不同 YAML 版本、Schema 和解析器可能把普通标量隐式解析成布尔、数字、日期或 null；引号能明确字符串意图。
 
-### 锚点与别名
+</details>
 
-复用相同的值：
+<details>
+<summary>3. `safe_load` 为什么不能替代业务 Schema 校验？</summary>
 
-<!-- snippet: id=yaml-tutorial-basics-15 mode=display python=3.12-3.14 deps=stdlib -->
-```yaml
-defaults:
-  host: &default_host "localhost"
-  port: &default_port 8080
+它限制可构造的标签类型，但不知道应用所需键、范围、枚举、未知字段和跨字段不变量。
 
-development:
-  host: *default_host
-  port: *default_port
-```
+</details>
 
-### 多文档
+## 本篇总结
 
-使用 `---` 分隔多个文档：
+YAML 用缩进和少量符号表示 mapping、sequence 与 scalar。可靠使用需要明确标量类型、限制锚点复杂度、采用安全解析器，并在解析后执行独立业务 Schema 校验。
 
-<!-- snippet: id=yaml-tutorial-basics-16 mode=display python=3.12-3.14 deps=stdlib -->
-```yaml
----
-title: 文档1
-content: 内容1
----
-title: 文档2
-content: 内容2
-```
+## 下一篇衔接
 
-## 实际应用
+本篇是 Python 中级 17–32 的收束。下一阶段可进入 Python 高级系列：并发、网络、描述符和自定义协议会继续使用本系列建立的对象边界、流接口、资源管理和可验证示例方法。
 
-### Docker Compose 配置
+## 资料来源与版本基线
 
-<!-- snippet: id=yaml-tutorial-basics-17 mode=display python=3.12-3.14 deps=stdlib -->
-```yaml
-version: '3.8'
+- [YAML 1.2.2 Specification](https://yaml.org/spec/1.2.2/)
+- [YAML 1.2.2 Vocabulary](https://yaml.org/spec/1.2.2/ext/glossary/)
+- [PyYAML Documentation](https://pyyaml.org/wiki/PyYAMLDocumentation)
 
-services:
-  web:
-    image: nginx
-    ports:
-      - "80:80"
-    environment:
-      - NODE_ENV=production
-    volumes:
-      - ./html:/usr/share/nginx/html
-
-  db:
-    image: mysql:8.0
-    environment:
-      MYSQL_ROOT_PASSWORD: secret
-    volumes:
-      - db_data:/var/lib/mysql
-
-volumes:
-  db_data:
-```
-
-### GitHub Actions
-
-<!-- snippet: id=yaml-tutorial-basics-18 mode=display python=3.12-3.14 deps=stdlib -->
-```yaml
-name: CI
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-      - run: python -m pip install -r requirements.txt
-      - run: pytest
-```
-
-### Kubernetes 配置
-
-<!-- snippet: id=yaml-tutorial-basics-19 mode=display python=3.12-3.14 deps=stdlib -->
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: my-app
-  labels:
-    app: my-app
-spec:
-  containers:
-    - name: app
-      image: my-app:latest
-      ports:
-        - containerPort: 8080
-      resources:
-        limits:
-          memory: "128Mi"
-          cpu: "500m"
-```
-
-## 小结
-
-- **YAML** 是一种人类友好的数据格式
-- **缩进** 表示层级关系，使用空格
-- **对象** 使用键值对，`key: value`
-- **数组** 使用 `-` 前缀
-- **纯量** 包括字符串、数字、布尔值等
-- **广泛应用**：配置文件、CI/CD、容器编排等
+版本基线：YAML 1.2.2；Python 3.12–3.14；Python 示例依赖 PyYAML，业务配置应同时锁定解析器版本与 Schema。

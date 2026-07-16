@@ -4,9 +4,9 @@ series: selenium
 seriesOrder: 3
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
-modDatetime: 2026-05-09T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: selenium-locators-operations
-description: '详细介绍Selenium中的各种元素定位策略，以及如何对元素进行点击、输入、读取等操作。'
+description: "详细介绍Selenium中的各种元素定位策略，以及如何对元素进行点击、输入、读取等操作。"
 tags:
   - Selenium
   - RPA
@@ -16,21 +16,42 @@ draft: false
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
+
+能够启动浏览器并打开开发者工具，了解 HTML 标签、属性和基本 CSS 选择器。
+
+读完后，你应该能够：
+
+- 把定位器视为页面与自动化代码之间的契约；
+- 区分 find_element、find_elements 与 WebElement 的返回和失败行为；
+- 按稳定性选择 data-testid、ID、CSS 或 XPath；
+- 用重定位和显式等待处理 DOM 重绘后的过期引用；
+
+全系列沿用同一个案例：在测试环境自动化 Acme 采购门户。用户登录后搜索采购单 PO-2026-0715，在明细页导出 CSV；测试使用 data-testid 作为稳定定位契约，并把失败截图、日志和下载文件写入独立运行目录。
+
+**本篇边界：**本篇完整解释定位策略与元素引用，不展开等待实现和 JavaScript 兜底；二者分别在第 4、12 篇处理。
+
+## 真实场景与核心问题
 
 元素定位是 Selenium 自动化测试的核心。找到正确的元素后，我们才能对其进行各种操作。本教程将详细介绍各种定位策略和元素操作方法。
 
-![Selenium 定位器与 WebElement 操作关系图](./images/selenium-locator-webelement-operations-figure-01.png)
+<!-- figure-anchor:s03-a01 -->
+
+<!-- figure-managed:s03-f01:start -->
+
+![按业务契约、结构契约与展示偶然性比较定位器稳定性](./images/s03-f01-locator-contract-stack.png)
+
+<!-- figure-managed:s03-f01:end -->
 
 ### 定位器优先级
 
-| 优先级 | 定位方式 | 速度 | 稳定性 | 推荐场景 |
-|--------|----------|------|--------|----------|
-| 1 | ID | 最快 | 高 | 有唯一 ID 的元素 |
-| 2 | Name | 快 | 中 | 表单字段 |
-| 3 | CSS Selector | 快 | 高 | 复杂选择 |
-| 4 | XPath | 较慢 | 中 | 复杂层级 |
-| 5 | Link Text | 中 | 高 | 链接 |
+| 优先级 | 定位方式     | 速度 | 稳定性 | 推荐场景         |
+| ------ | ------------ | ---- | ------ | ---------------- |
+| 1      | ID           | 最快 | 高     | 有唯一 ID 的元素 |
+| 2      | Name         | 快   | 中     | 表单字段         |
+| 3      | CSS Selector | 快   | 高     | 复杂选择         |
+| 4      | XPath        | 较慢 | 中     | 复杂层级         |
+| 5      | Link Text    | 中   | 高     | 链接             |
 
 ## 定位策略
 
@@ -181,10 +202,10 @@ for element in elements:
 ```python
 def scrape_product_list():
     driver.get("https://example.com/products")
-    
+
     # 找到所有产品
     products = driver.find_elements(By.CLASS_NAME, "product-item")
-    
+
     results = []
     for product in products:
         result = {
@@ -193,13 +214,19 @@ def scrape_product_list():
             "link": product.find_element(By.TAG_NAME, "a").get_attribute("href")
         }
         results.append(result)
-    
+
     return results
 ```
 
 ## 元素操作
 
-### 点击操作
+<!-- figure-anchor:s03-a02 -->
+
+<!-- figure-managed:s03-f02:start -->
+
+![展示 Locator 查找、WebElement 返回、DOM 重绘、stale 与重新定位的状态变化](./images/s03-f02-locator-to-webelement-state.png)
+
+<!-- figure-managed:s03-f02:end -->### 点击操作
 
 ```python
 from selenium import webdriver
@@ -276,23 +303,6 @@ is_enabled = element.is_enabled()          # 是否启用
 is_selected = element.is_selected()        # 是否选中（复选框/单选框）
 ```
 
-### 滚动操作
-
-```python
-# 滚动到元素
-element = driver.find_element(By.ID, "footer")
-driver.execute_script("arguments[0].scrollIntoView();", element)
-
-# 滚动到顶部
-driver.execute_script("window.scrollTo(0, 0);")
-
-# 滚动到底部
-driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-
-# 滚动到指定位置
-driver.execute_script("window.scrollTo(0, 500);")
-```
-
 ## ActionChains 高级操作
 
 ### 鼠标操作
@@ -337,20 +347,20 @@ ActionChains(driver) \
 ```python
 def login(username, password):
     driver.get("https://example.com/login")
-    
+
     # 输入用户名
     driver.find_element(By.ID, "username").send_keys(username)
-    
+
     # 输入密码
     driver.find_element(By.ID, "password").send_keys(password)
-    
+
     # 点击登录按钮
     driver.find_element(By.ID, "login-btn").click()
-    
+
     # 等待登录成功
     wait = WebDriverWait(driver, 10)
     wait.until(EC.url_contains("/dashboard"))
-    
+
     return driver.current_url
 ```
 
@@ -359,20 +369,20 @@ def login(username, password):
 ```python
 def search(query):
     driver.get("https://example.com")
-    
+
     # 找到搜索框
     search_box = driver.find_element(By.NAME, "q")
-    
+
     # 输入搜索词
     search_box.send_keys(query)
-    
+
     # 按回车搜索
     search_box.send_keys(Keys.RETURN)
-    
+
     # 等待结果加载
     wait = WebDriverWait(driver, 10)
     wait.until(EC.presence_of_element_located((By.CLASS_NAME, "search-results")))
-    
+
     # 获取结果数量
     results = driver.find_elements(By.CLASS_NAME, "result-item")
     return len(results)
@@ -383,20 +393,20 @@ def search(query):
 ```python
 def fill_registration_form(data):
     driver.get("https://example.com/register")
-    
+
     # 填写文本字段
     driver.find_element(By.NAME, "username").send_keys(data["username"])
     driver.find_element(By.NAME, "email").send_keys(data["email"])
     driver.find_element(By.NAME, "password").send_keys(data["password"])
     driver.find_element(By.NAME, "confirm_password").send_keys(data["password"])
-    
+
     # 填写文本域
     driver.find_element(By.NAME, "bio").send_keys(data.get("bio", ""))
-    
+
     # 点击复选框
     if data.get("agree_terms"):
         driver.find_element(By.ID, "agree-terms").click()
-    
+
     # 提交
     driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
 ```
@@ -494,3 +504,48 @@ element = driver.find_element(By.CSS_SELECTOR, "ul.menu li:first-child")
 driver.execute_script("arguments[0].scrollIntoView(true);", element)
 element.click()
 ```
+
+## 常见误区与适用边界
+
+- 定位器越短不一定越稳定；稳定性取决于它是否绑定业务语义和受控属性。
+- find_elements 找不到目标时返回空列表，而 find_element 抛出 NoSuchElementException。
+- 缓存 WebElement 不能减少所有成本；DOM 更新后重定位往往更可靠。
+
+## 本篇自检
+
+<details>
+<summary>1. 为什么 nth-child 通常不是好的长期定位器？</summary>
+
+它依赖展示顺序；插入一个兄弟节点就会改变目标。优先使用稳定的受控属性或可访问名称。
+
+</details>
+
+<details>
+<summary>2. 一个列表允许为空时应使用哪个查找方法？</summary>
+
+使用 find_elements 并显式判断长度，因为空结果是合法状态而不是定位异常。
+
+</details>
+
+<details>
+<summary>3. 出现 StaleElementReferenceException 应怎样修复？</summary>
+
+确认页面状态完成后使用原定位器重新查找，不要对同一旧引用盲目重试。
+
+</details>
+
+## 本篇总结
+
+定位器描述查找规则，WebElement 是某一时刻的远程引用。稳定自动化依赖可维护的定位契约和在 DOM 变化后重新取得引用。
+
+## 下一篇衔接
+
+下一篇解决“找到了但时机不对”的问题，把页面状态转换为可观察的显式等待条件。
+
+## 资料来源与版本基线
+
+本文以 Selenium 4 与 Python 3.10+ 为基线；具体版本与浏览器支持应以发布时的官方说明为准。
+
+- [Locator strategies](https://www.selenium.dev/documentation/webdriver/elements/locators/)
+- [Finding web elements](https://www.selenium.dev/documentation/webdriver/elements/finders/)
+- [Tips on working with locators](https://www.selenium.dev/documentation/test_practices/encouraged/locators/)

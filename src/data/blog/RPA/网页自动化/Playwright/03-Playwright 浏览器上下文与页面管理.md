@@ -1,12 +1,12 @@
 ---
-title: Playwright 浏览器上下文与页面管理
+title: Playwright 浏览器上下文与页面管理：隔离状态与事件
 series: playwright
 seriesOrder: 3
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
-modDatetime: 2026-05-09T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: playwright-context-page-management
-description: '深入介绍Playwright的浏览器上下文管理、多页面操作、窗口管理、以及如何实现浏览器状态的持久化和隔离。'
+description: "掌握 BrowserContext 的隔离边界、认证状态复用、多页面事件与 iframe 定位，并建立清晰的资源生命周期。"
 tags:
   - Playwright
   - RPA
@@ -16,757 +16,155 @@ draft: false
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
 
-在 Playwright 中，浏览器上下文（BrowserContext）和页面（Page）是两个核心概念。理解它们的关系和管理方法对于构建稳定、高效的自动化脚本至关重要。
+你应已完成环境冒烟测试，并理解对象层级。学完本篇后，你能够：
 
-![Playwright 浏览器上下文与页面隔离关系图](./images/playwright-context-page-management-figure-01.png)
+- 用独立 `BrowserContext` 模拟不同账号，而不启动多个浏览器进程；
+- 正确保存与加载认证状态，识别其中的敏感信息；
+- 在触发动作前注册新页面、弹窗和下载等事件等待；
+- 区分 `Page`、`FrameLocator` 与对话框。
 
-### 核心概念图
+## 真实场景：审核员与管理员同时操作
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                     Browser Instance                             │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌──────────────────┐    ┌──────────────────┐                  │
-│  │  Context 1       │    │  Context 2       │                  │
-│  │  (用户 A 会话)    │    │  (用户 B 会话)    │                  │
-│  │                  │    │                  │                  │
-│  │  ┌──────────┐   │    │  ┌──────────┐   │                  │
-│  │  │ Page 1.1  │   │    │  │ Page 2.1 │   │                  │
-│  │  │ 标签页 1  │   │    │  │ 标签页 1 │   │                  │
-│  │  └──────────┘   │    │  └──────────┘   │                  │
-│  │  ┌──────────┐   │    │  ┌──────────┐   │                  │
-│  │  │ Page 1.2  │   │    │  │ Page 2.2 │   │                  │
-│  │  │ 标签页 2  │   │    │  │ 标签页 2 │   │                  │
-│  │  └──────────┘   │    │  └──────────┘   │                  │
-│  │                  │    │                  │                  │
-│  │  独立 Cookie     │    │  独立 Cookie     │                  │
-│  │  独立 Storage    │    │  独立 Storage    │                  │
-│  └──────────────────┘    └──────────────────┘                  │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
+订单后台中，审核员提交订单，管理员在另一会话批准。两个角色必须共享同一测试进程，却不能共享 Cookie 或 localStorage。一个 `Browser` 下创建两个上下文正好表达这个边界。
 
-## 浏览器上下文详解
+<!-- figure:s03-f01 -->
 
-### 什么是浏览器上下文
-
-浏览器上下文是一个独立的浏览器执行环境，类似于浏览器中的"隐私窗口"或"访客模式"。每个上下文都有自己独立的：
-
-- Cookie 和 Session Storage
-- Local Storage
-- 缓存
-- 代理设置
-- 权限配置
-- 地理位置
-
-### 创建浏览器上下文
+![看清同一 Browser 下两个账号上下文的状态隔离](./images/final/s03-f01-context-isolation-map.png)
 
 ```python
 from playwright.sync_api import sync_playwright
 
-def context_creation_examples():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        
-        # 基础创建
-        context = browser.new_context()
-        
-        # 带配置创建
-        context = browser.new_context(
-            # 视口大小
-            viewport={"width": 1920, "height": 1080},
-            # 用户代理
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            # 语言
-            locale="zh-CN",
-            # 时区
-            timezone_id="Asia/Shanghai",
-            # 设备比例
-            device_scale_factor=2,
-            # 是否自动下载
-            accept_downloads=True,
-            # 权限列表
-            permissions=["geolocation", "notifications"],
-            # 颜色方案
-            color_scheme="dark"  # "light" | "dark" | "no-preference"
-        )
-        
-        # 使用预定义设备
-        context = browser.new_context(**p.devices["iPhone 13"])
-        
-        # 使用预定义设备但自定义配置
-        context = browser.new_context(
-            **p.devices["iPhone 13"],
-            viewport={"width": 390, "height": 844},  # iPhone 14 Pro
-            permissions=["geolocation"]
-        )
-        
-        browser.close()
+with sync_playwright() as playwright:
+    browser = playwright.chromium.launch()
+    reviewer = browser.new_context(locale="zh-CN")
+    admin = browser.new_context(locale="zh-CN")
+
+    reviewer_page = reviewer.new_page()
+    admin_page = admin.new_page()
+    # 两个页面的 Cookie、Storage 与权限相互隔离。
+
+    reviewer.close()
+    admin.close()
+    browser.close()
 ```
 
-### 上下文配置选项
+每个测试从新上下文开始，比“执行清理脚本后复用上下文”可靠，因为 visited links、Service Worker 或漏删的存储状态不一定能彻底恢复。
 
-#### 地理位置配置
+## 认证状态：保存、加载与安全边界
+
+登录完成后保存状态：
 
 ```python
-def geolocation_example():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        
-        # 设置地理位置
-        context = browser.new_context(
-            geolocation={"latitude": 39.9042, "longitude": 116.4074},
-            permissions=["geolocation"]
-        )
-        
-        page = context.new_page()
-        page.goto("https://www.google.com/maps")
-        
-        # 验证位置
-        page.wait_for_selector("text=北京")
-        
-        browser.close()
+page.goto("https://app.example.test/login")
+page.get_by_label("邮箱").fill("reviewer@example.test")
+page.get_by_label("密码").fill("<from-secret-store>")
+page.get_by_role("button", name="登录").click()
+page.wait_for_url("**/orders")
+context.storage_state(path="playwright/.auth/reviewer.json")
 ```
 
-#### 权限管理
+新建上下文时加载，而不是在已创建的上下文上“恢复”：
 
 ```python
-def permissions_example():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        
-        # 授予特定权限
-        context = browser.new_context(
-            permissions=["geolocation", "notifications", "camera", "microphone"]
-        )
-        
-        page = context.new_page()
-        page.goto("https://permission.site")
-        
-        # 撤销权限
-        context.grant_permissions([], source_origin="https://permission.site")
-        
-        # 清除所有权限
-        context.clear_permissions()
-        
-        browser.close()
+context = browser.new_context(
+    storage_state="playwright/.auth/reviewer.json",
+    locale="zh-CN",
+)
 ```
 
-### 上下文状态持久化
+状态文件可能包含能冒充账号的 Cookie 或请求头，必须放入 `.gitignore`，只使用权限最小化的测试账号，并设置过期与轮换策略。`storage_state` 覆盖 Cookie、localStorage 和可选 IndexedDB；`sessionStorage` 需要单独处理，不要误认为会自动持久化。
 
-#### 保存和加载状态
+## 页面、弹窗与事件时序
+
+一个上下文可包含多个 `Page`。每个页面都可以直接交互，不需要人工式“切换焦点”。关键是先建立事件等待，再执行触发动作，否则快速事件可能已经发生。
 
 ```python
-def save_load_state():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        
-        # 第一次：创建上下文并登录
-        context = browser.new_context()
-        page = context.new_page()
-        
-        page.goto("https://example.com/login")
-        page.fill("#username", "testuser")
-        page.fill("#password", "password123")
-        page.click("button[type='submit']")
-        page.wait_for_url("**/dashboard")
-        
-        # 保存状态到文件
-        storage = context.storage_state()
-        with open("auth_state.json", "w") as f:
-            f.write(storage)
-        
-        browser.close()
-        
-        # ========================================
-        
-        # 第二次：加载已保存的状态
-        browser = p.chromium.launch()
-        context = browser.new_context()
-        
-        # 加载保存的状态
-        context.storage_state(path="auth_state.json")
-        
-        page = context.new_page()
-        page.goto("https://example.com/dashboard")
-        
-        # 已登录状态，无需再次登录
-        print(page.title())
-        
-        browser.close()
+with context.expect_page() as page_info:
+    reviewer_page.get_by_role("link", name="打开订单详情").click()
+
+detail_page = page_info.value
+detail_page.wait_for_load_state("domcontentloaded")
+print(detail_page.url)
 ```
 
-#### 保存特定域名的状态
+若只关心当前页触发的弹窗，可使用 `page.expect_popup()`。未知来源的新页可监听 `context.on("page", handler)`，但事件回调会分叉控制流，业务步骤优先使用 `expect_*` 形式。
+
+<!-- figure:s03-f02 -->
+
+![掌握新页面事件必须先订阅再点击的时间顺序](./images/final/s03-f02-popup-event-order.png)
+
+## iframe 与对话框不是新页面
+
+iframe 属于当前页面的 frame 树，优先用 `frame_locator()` 保持定位器的重试能力：
 
 ```python
-def save_specific_origin():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context = browser.new_context()
-        
-        page = context.new_page()
-        
-        # 登录多个网站
-        page.goto("https://site1.com/login")
-        # ... 登录 site1
-        
-        page.goto("https://site2.com/login")
-        # ... 登录 site2
-        
-        # 只保存 site1 的状态
-        storage = context.storage_state(
-            path="site1_auth.json",
-            origin="https://site1.com"
-        )
-        
-        browser.close()
+payment = page.frame_locator("iframe[title='付款信息']")
+payment.get_by_label("卡号").fill("4242 4242 4242 4242")
 ```
 
-### 上下文隔离实战
+JavaScript `alert`、`confirm` 和 `prompt` 是对话框事件，不是 `Page`。明确注册处理器：
 
 ```python
-def isolated_contexts():
-    """模拟多个用户同时操作"""
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        
-        # 创建两个隔离的上下文（两个用户）
-        user1_context = browser.new_context()
-        user2_context = browser.new_context()
-        
-        # 用户1：登录
-        user1_page = user1_context.new_page()
-        user1_page.goto("https://example.com/login")
-        user1_page.fill("#username", "user1")
-        user1_page.fill("#password", "password1")
-        user1_page.click("button[type='submit']")
-        
-        # 用户2：登录
-        user2_page = user2_context.new_page()
-        user2_page.goto("https://example.com/login")
-        user2_page.fill("#username", "user2")
-        user2_page.fill("#password", "password2")
-        user2_page.click("button[type='submit']")
-        
-        # 验证：两个用户在不同会话中
-        print(f"User1: {user1_page.url}")
-        print(f"User2: {user2_page.url}")
-        
-        # 两个页面的 cookie 是完全隔离的
-        assert user1_context.cookies() != user2_context.cookies()
-        
-        # 清理
-        user1_context.close()
-        user2_context.close()
-        browser.close()
+page.once("dialog", lambda dialog: dialog.accept("approved"))
+page.get_by_role("button", name="确认审批").click()
 ```
 
-## 页面管理详解
+如果监听了 `dialog` 却既不接受也不拒绝，触发动作会等待对话框关闭而卡住。
 
-### 创建新页面
+## 资源生命周期与失败边界
+
+推荐顺序：创建 `Browser`，为每个账号/测试创建上下文，在上下文中创建页面，最后先关闭上下文再关闭浏览器。任务失败时也必须清理：
 
 ```python
-def page_creation_examples():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context = browser.new_context()
-        
-        # 从上下文创建新页面
-        page = context.new_page()
-        
-        # 使用 about:blank
-        page = context.new_page()
-        page.goto("about:blank")
-        
-        # 创建多个页面
-        pages = []
-        for i in range(3):
-            pages.append(context.new_page())
-        
-        browser.close()
+browser = playwright.chromium.launch()
+context = browser.new_context()
+try:
+    page = context.new_page()
+    page.set_content("<h1>订单后台</h1>")
+    # 执行业务步骤
+finally:
+    context.close()
+    browser.close()
 ```
 
-### 页面导航
+在 pytest 中优先使用插件提供的 `page` fixture，让测试函数结束时自动回收上下文。不要在模块级变量中保存 `Page`。
 
-#### 基本导航
+## 常见误区与适用边界
 
-```python
-def navigation_examples():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        # 基本导航
-        page.goto("https://example.com")
-        
-        # 等待页面加载完成
-        page.goto("https://example.com", wait_until="load")
-        
-        # 等待网络空闲
-        page.goto("https://example.com", wait_until="networkidle")
-        
-        # 带超时
-        page.goto("https://example.com", timeout=30000)
-        
-        # 等待特定元素
-        page.goto("https://example.com")
-        page.wait_for_selector("#content")
-        
-        # 后退
-        page.go_back()
-        
-        # 前进
-        page.go_forward()
-        
-        # 刷新
-        page.reload()
-        
-        browser.close()
-```
+1. **`browser.new_page()` 等同显式上下文。** 它会隐式创建上下文，简单脚本可用，但复杂流程难以管理状态边界。
+2. **在旧上下文调用 `storage_state(path=...)` 就能加载。** 该方法保存当前状态；加载应发生在 `browser.new_context(storage_state=...)`。
+3. **新标签页必须 `bring_to_front()` 才能操作。** Playwright 页面无需前台焦点即可工作。
+4. **iframe 可用 `page.get_by_*` 直接跨越。** 定位不会自动穿过 frame 边界，应使用 `frame_locator()`。
+5. **所有账号共用一份认证状态。** 权限边界被抹平后，测试无法证明角色隔离。
 
-#### 导航等待选项
+## 自检题
 
-| 等待条件 | 说明 |
-|---------|------|
-| `"load"` | 默认，等待 load 事件 |
-| `"domcontentloaded"` | 等待 DOMContentLoaded 事件 |
-| `"networkidle"` | 等待网络空闲 500ms |
-| `"commit"` | 等待资源响应 |
+1. 多角色场景为什么应创建多个上下文而不是多个页面？
+2. 为什么 `expect_page()` 必须包住触发点击？
+3. 认证状态文件为何不能提交到私有仓库？
 
-```python
-def navigation_with_conditions():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        # 等待 DOM 加载（更快）
-        page.goto("https://example.com", wait_until="domcontentloaded")
-        
-        # 等待网络完全空闲（更慢但更稳定）
-        page.goto("https://example.com", wait_until="networkidle")
-        
-        # 带超时和重试
-        try:
-            page.goto("https://example.com", timeout=10000)
-        except TimeoutError:
-            print("页面加载超时")
-        
-        browser.close()
-```
+<details>
+<summary>查看答案</summary>
 
-### 多标签页管理
+1. 页面共享所属上下文的 Cookie 与 Storage；多个上下文才能表达独立账号。
+2. 先订阅事件才能避免新页面在订阅前快速创建而丢失。
+3. 私有仓库仍可能被更多人、CI 或日志访问；状态文件可能直接提供账号会话能力。
 
-#### 创建新标签页
+</details>
 
-```python
-def multi_tab_examples():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page1 = browser.new_page()
-        
-        # 在新标签页打开链接
-        page1.goto("https://example.com")
-        page1.click("a[target='_blank']")
-        
-        # 等待新标签页出现
-        page2 = browser.contexts[0].pages[-1]
-        
-        # 或者手动创建新标签
-        page2 = browser.contexts[0].new_page()
-        page2.goto("https://example.org")
-        
-        # 获取所有页面
-        all_pages = browser.contexts[0].pages
-        print(f"共有 {len(all_pages)} 个标签页")
-        
-        # 切换页面
-        page1.bring_to_front()  # 将页面置顶
-        
-        browser.close()
-```
+## 本篇总结
 
-#### 等待新标签页
+上下文是会话与权限的隔离单元，页面是交互单元，frame 和 dialog 则有各自边界。正确的创建、事件等待和销毁顺序，是后续定位与交互稳定性的前提。
 
-```python
-def wait_for_new_tab():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        # 方法1：使用 Promise
-        with page.context.expect_page() as new_page_info:
-            page.click("a[target='_blank']")
-        
-        new_page = new_page_info.value
-        
-        # 在新页面执行操作
-        new_page.wait_for_load_state()
-        print(f"新页面标题: {new_page.title()}")
-        
-        # 关闭新页面
-        new_page.close()
-        
-        browser.close()
-```
+## 下一篇衔接
 
-#### 关闭标签页
+下一篇聚焦 `Locator`：如何把“某个 DOM 节点”改写成用户可感知、可维护且具备严格性检查的定位合同。
 
-```python
-def close_pages():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context = browser.new_context()
-        
-        # 创建多个页面
-        pages = [context.new_page() for _ in range(3)]
-        
-        # 关闭特定页面
-        pages[1].close()
-        
-        # 关闭所有页面
-        for page in context.pages:
-            page.close()
-        
-        browser.close()
-```
+## 资料来源
 
-### iframe 处理
-
-```python
-def iframe_examples():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com/iframe-page")
-        
-        # 获取 iframe
-        frame = page.frame(name="iframe-name")
-        
-        # 通过 URL 获取
-        frame = page.frame(url="https://example.com/iframe")
-        
-        # 获取所有 iframe
-        frames = page.frames
-        print(f"页面共有 {len(frames)} 个 frame")
-        
-        # 在 iframe 中操作
-        if frame:
-            frame.fill("input[name='username']", "testuser")
-            frame.click("button[type='submit']")
-        
-        # 获取嵌套 iframe
-        main_frame = page.frame(name="main")
-        if main_frame:
-            nested_frame = main_frame.frame(name="nested")
-            if nested_frame:
-                nested_frame.fill("input", "value")
-        
-        browser.close()
-```
-
-### 弹窗处理
-
-```python
-def popup_examples():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        # 监听对话框（alert, confirm, prompt）
-        page.on("dialog", lambda dialog: dialog.accept())
-        
-        # 监听新窗口/新标签页
-        with page.context.expect_page() as popup_info:
-            page.click("button.open-popup")
-        
-        popup = popup_info.value
-        popup.wait_for_load_state()
-        print(f"弹窗标题: {popup.title()}")
-        
-        # 关闭弹窗
-        popup.close()
-        
-        # 监听下载
-        page.on("download", lambda download: download.save_as("file.pdf"))
-        
-        browser.close()
-```
-
-### 页面事件监听
-
-```python
-def page_event_examples():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        # 监听页面加载完成
-        page.on("load", lambda: print("页面加载完成"))
-        
-        # 监听导航完成
-        page.on("framenavigated", lambda frame: print(f"导航到: {frame.url}"))
-        
-        # 监听请求
-        def log_request(request):
-            print(f"请求: {request.url}")
-        
-        page.on("request", log_request)
-        
-        # 监听响应
-        def log_response(response):
-            if response.status >= 400:
-                print(f"错误响应: {response.status} - {response.url}")
-        
-        page.on("response", log_response)
-        
-        # 监听控制台消息
-        def log_console(msg):
-            print(f"控制台 [{msg.type}]: {msg.text}")
-        
-        page.on("console", log_console)
-        
-        # 监听页面错误
-        def log_error(error):
-            print(f"页面错误: {error}")
-        
-        page.on("pageerror", log_error)
-        
-        # 执行操作
-        page.goto("https://example.com")
-        
-        # 移除监听器
-        page.remove_listener("request", log_request)
-        
-        browser.close()
-```
-
-### 页面元数据获取
-
-```python
-def page_metadata():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com")
-        
-        # 获取标题
-        title = page.title()
-        
-        # 获取 URL
-        url = page.url
-        
-        # 获取视口大小
-        viewport = page.viewport_size
-        
-        # 获取内容
-        html = page.content()  # 完整 HTML
-        inner_html = page.inner_html("body")  # body 的内容
-        
-        # 获取文本
-        text = page.inner_text("body")
-        
-        # 获取属性
-        link = page.get_attribute("a.link", "href")
-        
-        # 获取多个属性
-        attributes = page.evaluate("""() => {
-            const el = document.querySelector('meta[name="description"]');
-            return el ? el.attributes : null;
-        }""")
-        
-        print(f"标题: {title}")
-        print(f"URL: {url}")
-        
-        browser.close()
-```
-
-## 高级应用
-
-### 窗口管理
-
-```python
-def window_management():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        # 设置视口大小
-        page.set_viewport_size({"width": 1920, "height": 1080})
-        
-        # 获取窗口大小
-        window_size = page.evaluate("""() => ({
-            width: window.innerWidth,
-            height: window.innerHeight
-        })""")
-        
-        # 全屏
-        page.evaluate("document.body.requestFullscreen()")
-        
-        # 最小化窗口
-        page.minimize()
-        
-        # 最大化窗口
-        page.maximize()
-        
-        # 移动窗口
-        page.set_position({"x": 0, "y": 0})
-        
-        # 获取窗口位置
-        position = page.position()
-        
-        browser.close()
-```
-
-### 设备模拟
-
-```python
-def device_emulation():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        
-        # 使用预定义设备
-        devices = [
-            "iPhone 13",
-            "iPhone 13 Pro",
-            "iPad Pro 11",
-            "Pixel 5",
-            "Samsung Galaxy S20"
-        ]
-        
-        for device_name in devices:
-            context = browser.new_context(**p.devices[device_name])
-            page = context.new_page()
-            
-            page.goto("https://example.com")
-            print(f"{device_name}: {page.viewport_size}")
-            
-            context.close()
-        
-        browser.close()
-```
-
-### 视图模式切换
-
-```python
-def view_mode():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        
-        # 有头模式（显示窗口）
-        page = browser.new_page()
-        
-        # 切换到无头模式（需要重启页面）
-        page.close()
-        
-        # 无头模式（不显示窗口，速度更快）
-        context = browser.new_context()
-        page = context.new_page()
-        
-        # 截图验证
-        page.goto("https://example.com")
-        page.screenshot(path="example.png")
-        
-        browser.close()
-```
-
-## 最佳实践
-
-### 资源管理
-
-```python
-# 推荐：使用上下文管理器自动清理
-def recommended_pattern():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context = browser.new_context()
-        page = context.new_page()
-        
-        page.goto("https://example.com")
-        # ... 执行操作
-        
-        # 自动清理，不需要手动 close
-```
-
-```python
-# 注意：显式关闭所有资源
-def explicit_cleanup():
-    try:
-        browser = p.chromium.launch()
-        context = browser.new_context()
-        page = context.new_page()
-        
-        page.goto("https://example.com")
-        # ... 执行操作
-        
-    finally:
-        # 确保资源被释放
-        page.close()
-        context.close()
-        browser.close()
-```
-
-### 错误处理
-
-```python
-def error_handling():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context = browser.new_context()
-        page = context.new_page()
-        
-        try:
-            # 尝试导航到页面
-            response = page.goto("https://example.com")
-            
-            # 检查响应状态
-            if response.status != 200:
-                print(f"页面状态码: {response.status}")
-            
-            # 等待内容加载
-            page.wait_for_selector("#content", timeout=5000)
-            
-        except TimeoutError:
-            print("操作超时")
-            
-        except Exception as e:
-            print(f"发生错误: {e}")
-            
-        finally:
-            # 清理资源
-            page.close()
-            context.close()
-            browser.close()
-```
-
-### 并行执行
-
-```python
-from concurrent.futures import ThreadPoolExecutor
-
-def parallel_execution():
-    def run_test(url):
-        with sync_playwright() as p:
-            browser = p.chromium.launch()
-            page = browser.new_page()
-            page.goto(url)
-            title = page.title()
-            browser.close()
-            return title
-    
-    urls = [
-        "https://example.com",
-        "https://example.org",
-        "https://example.net"
-    ]
-    
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        results = list(executor.map(run_test, urls))
-    
-    print(results)
-```
-
+- [Playwright Python：Isolation](https://playwright.dev/python/docs/browser-contexts)
+- [Playwright Python：Authentication](https://playwright.dev/python/docs/auth)
+- [Playwright Python：Pages](https://playwright.dev/python/docs/pages)
+- [Playwright Python：Frames](https://playwright.dev/python/docs/frames)

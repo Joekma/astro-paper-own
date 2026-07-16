@@ -1,431 +1,267 @@
 ---
-title: Milvus 入门指南：核心概念与架构
+title: Milvus 入门指南：从数据模型到检索架构
 series: "Milvus"
 seriesOrder: 1
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
-modDatetime: 2026-05-09T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: milvus-getting-started
-description: "详细介绍Milvus向量数据库的核心概念、架构组件和应用场景，帮助读者快速入门。"
+description: "用一个多租户 FAQ 检索例子，理解 Milvus 的 Collection、Schema、Segment、索引、向量 Shape，以及写入和搜索请求在分布式架构中的流转方式。"
 tags:
   - Milvus
   - 向量数据库
-  - AI
-  - 机器学习
+  - 向量检索
+  - RAG
 draft: false
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
 
-Milvus 是 LF AI & Data Foundation 旗下的开源向量数据库，专为处理海量向量数据设计，支持十亿级别的向量检索。作为云原生且分布式的向量数据库，Milvus 广泛应用于语义搜索、推荐系统、图像检索、自然语言处理等场景。
+阅读前只需了解 Python 列表和“模型把文本转换成数字”这一事实，不要求有分布式系统经验。
 
-![Milvus 将数据转成向量后写入 Collection 和 Partition，通过 IVF 或 HNSW 索引支持相似度检索并服务 RAG 应用](./images/milvus-core-architecture-vector-search-figure-01.png)
+学完本篇，你应该能够：
 
-### 为什么选择 Milvus？
+1. 解释向量数据库解决的问题，以及它不负责什么。
+2. 区分 Collection、Schema、Entity、Partition、Segment 和 Index。
+3. 根据向量 Shape 与模型训练方式选择距离度量。
+4. 说清一次写入和一次搜索在 Milvus 各层之间如何流转。
+5. 用 Milvus Lite 完成可复现的最小写入与检索实验。
 
-| 特性         | 说明                                  |
-| ------------ | ------------------------------------- |
-| **高性能**   | 支持十亿级向量检索，毫秒级查询延迟    |
-| **可扩展**   | 原生支持分布式水平扩展                |
-| **多索引**   | 支持 IVF、HNSW、DiskANN 等多种索引    |
-| **多语言**   | 提供 Python、Java、Go、RESTful 等 SDK |
-| **云原生**   | 支持 Kubernetes 部署                  |
-| **开源免费** | Apache 2.0 许可证                     |
+## 从一个真实问题切入
 
-### 向量数据库 vs 传统数据库
+假设我们要为 SaaS 产品构建 FAQ 检索。每条文档切片都包含固定的数据契约：
 
+| 字段        | 示例                       | 作用                     |
+| ----------- | -------------------------- | ------------------------ |
+| `id`        | `101`                      | 稳定主键                 |
+| `vector`    | `[0.92, 0.11, 0.31, 0.08]` | 文本的 4 维演示向量      |
+| `text`      | `"如何重置密码"`           | 返回给应用的原文         |
+| `category`  | `"account"`                | 业务过滤字段             |
+| `tenant_id` | `"acme"`                   | 租户边界，防止跨租户召回 |
+
+真实 Embedding 常有数百到数千维；这里使用 4 维，只为让 Shape 和距离计算可见。业务请求“ACME 租户怎样修改登录密码”会先变成查询向量，再在 `tenant_id == "acme"` 的候选中寻找近邻。
+
+关系型数据库擅长精确条件、连接和事务；向量数据库擅长“表达不同但语义接近”的近邻检索。生产系统通常同时需要两者，而不是二选一。
+
+## 核心数据模型
+
+<!-- s01-f01:start -->
+
+![区分 Collection、Partition、Segment、Shard，并看见 FAQ Entity 的固定 Shape](./images/s01-f01-milvus-data-model-shape.png)
+
+<!-- s01-f01:end -->
+
+### Collection 与 Schema
+
+Collection 是数据和索引配置的顶层容器，类似一张带向量列的表。Schema 定义字段名、类型、主键、向量维度和是否允许动态字段。
+
+同一向量字段的维度必须固定。若 Collection 声明 `dim=4`，写入 3 维或 5 维向量都应视为数据契约错误，而不是由数据库自动补齐。
+
+### Entity、Partition 与 Segment
+
+- **Entity**：一条逻辑记录，例如一条 FAQ 切片。
+- **Partition**：用户可见的逻辑分区，可缩小加载或搜索范围；不应为每个小租户机械创建一个分区。
+- **Segment**：Milvus 内部的物理数据单元。新数据进入 growing segment，达到条件后成为 sealed segment，并可构建索引。
+- **Shard**：写入通道的水平切分，主要影响写入并行度，不等同于 Partition。
+
+关键边界是：Partition 属于业务数据组织，Segment 和 Shard 属于存储与执行组织。把三者都理解成“分表”会导致错误的容量设计。
+
+## 向量 Shape、距离与索引
+
+<!-- s01-f03:start -->
+
+![把固定 Shape、模型语义、距离选择与 FLAT/HNSW/IVF 的权衡串成决策链](./images/s01-f03-vector-metric-index-tradeoff.png)
+
+<!-- s01-f03:end -->
+
+### Shape 是第一条运行时契约
+
+一次批量写入可表示为矩阵：
+
+```text
+vectors.shape = (batch_size, dimension)
+示例：3 条 FAQ × 4 维向量 = (3, 4)
+
+query_vectors.shape = (query_count, dimension)
+示例：1 个问题 × 4 维向量 = (1, 4)
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                 向量数据库 vs 传统数据库                        │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌──────────────────────┐    ┌──────────────────────────┐   │
-│  │    传统数据库        │    │    向量数据库           │   │
-│  ├──────────────────────┤    ├──────────────────────────┤   │
-│  │ 存储结构化数据        │    │ 存储向量数据           │   │
-│  │ 精确匹配            │    │ 近似最近邻（ANN）搜索   │   │
-│  │ SQL 查询            │    │ 向量相似度搜索         │   │
-│  │ 索引：B+树、哈希     │    │ 索引：HNSW、IVF、FAISS │   │
-│  └─────────────────────┘    └──────────────────────────┘   │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
+
+Embedding 模型、文档向量和查询向量必须属于同一向量空间。仅仅维度相同并不够：换模型后即使仍是 768 维，旧向量与新查询也可能不可比较。
+
+### 距离度量由模型语义决定
+
+| 度量     | 直觉                   | 常见前提                  |
+| -------- | ---------------------- | ------------------------- |
+| `COSINE` | 比较方向，弱化长度影响 | 文本 Embedding 的常见选择 |
+| `IP`     | 内积越大越相似         | 模型训练目标明确使用内积  |
+| `L2`     | 欧氏距离越小越接近     | 空间距离本身有意义        |
+
+不要根据“哪个指标跑分高”盲选。先查看 Embedding 模型文档，再用自己的查询集验证 Recall@K、延迟和业务命中率。
+
+### 索引是召回、延迟与资源的交换
+
+- `FLAT` 逐个比较，精确但数据量大时慢，适合作为召回基线。
+- `HNSW` 用图导航逼近近邻，低延迟但占用更多内存，构建也更重。
+- `IVF_FLAT` 先定位若干聚类桶再搜索，可用 `nprobe` 调整召回与延迟。
+
+索引参数没有脱离数据规模、过滤选择性和延迟目标的“最佳值”。正确做法是保留一小份 FLAT 基线，对候选参数做同一数据集、同一查询集的对照实验。
+
+## 架构与调用链
+
+<!-- s01-f02:start -->
+
+![对照看懂写入与搜索如何穿过 Milvus 四层并在 growing/sealed data 汇合](./images/s01-f02-milvus-write-search-dataflow.png)
+
+<!-- s01-f02:end -->
+
+Milvus 当前架构按职责分成四层：
+
+1. **Access Layer**：无状态 Proxy 接收 SDK/REST 请求、校验并汇总结果。
+2. **Coordinator**：维护拓扑，调度 DDL、流式服务、查询和历史数据任务。
+3. **Worker Nodes**：Streaming Node 处理 WAL、growing data 与实时查询；Query Node 搜索 sealed data；Data Node 做 compaction 与索引构建。
+4. **Storage**：etcd 保存元数据，对象存储保存日志快照和索引文件，WAL 保证写入可恢复。
+
+### 写入状态变化
+
+```text
+SDK insert
+  -> Proxy 校验 Schema 与 Shape
+  -> Streaming Node 先写 WAL
+  -> growing segment（可被实时查询）
+  -> sealed segment
+  -> Data Node 构建索引并写入对象存储
+  -> Query Node 加载新索引
 ```
 
-## 核心概念
+`insert` 返回不等于“所有副本已完成索引构建”。如果业务要求写后立刻可见，需要同时定义一致性级别、超时和重试策略。
 
-### 向量（Vector）
+### 搜索调用链
 
-向量是 Milvus 存储的基本单元，通常由 Embedding 模型生成：
+```text
+SDK search
+  -> Proxy 路由
+  -> Streaming Node 搜 growing data
+  -> Query Node 搜 sealed segments
+  -> 节点内 Top K 归并
+  -> Proxy 全局归并
+  -> 返回 id、distance 与 output_fields
+```
+
+这解释了为什么过滤条件、加载状态、segment 数量和 Top K 都会影响延迟；“向量距离计算”只是整条链中的一部分。
+
+## 最小可复现实验
+
+Milvus Lite 将数据放在本地文件中，适合学习、单元测试和原型，不代表分布式生产拓扑。
+
+```bash
+python -m pip install -U pymilvus
+```
 
 ```python
-# 向量示例：图像或文本的数学表示
-vector = [0.123, 0.456, 0.789, ...]  # 128维、256维、768维、1536维...
+from pymilvus import MilvusClient
 
-# 常见向量维度
-image_vectors = 512     # ResNet 生成的向量
-text_vectors = 768      # BERT 生成的向量
-sentence_vectors = 1536  # GPT 生成的向量
-```
+COLLECTION = "faq_chunks"
+client = MilvusClient("milvus_demo.db")
 
-### 集合（Collection）
+if client.has_collection(collection_name=COLLECTION):
+    client.drop_collection(collection_name=COLLECTION)
 
-Collection 类似于关系型数据库中的表：
-
-```python
-from pymilvus import connections, Collection
-
-# 连接到 Milvus
-connections.connect(host='localhost', port='19530')
-
-# 创建集合
-collection = Collection('my_collection')
-
-# 获取集合信息
-print(f"集合名称: {collection.name}")
-print(f"向量维度: {collection.dimension}")
-print(f"数据量: {collection.num_entities}")
-```
-
-### 分区（Partition）
-
-Partition 是集合的逻辑分区，提高查询效率：
-
-```python
-# 创建分区
-collection.create_partition("partition_name")
-
-# 查询特定分区
-collection.query(
-    expr="partition_tag in ['partition_name']",
-    output_fields=["vector_field"]
+client.create_collection(
+    collection_name=COLLECTION,
+    dimension=4,
+    metric_type="COSINE",
 )
-```
 
-### Shard
-
-Shard 将数据水平分片，提高写入吞吐量：
-
-```python
-# Milvus 自动管理分片
-# 通常 Shard 数 = 2 * CPU 核心数
-```
-
-## 系统架构
-
-### 整体架构
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Milvus 系统架构                           │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │                   应用层                               │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐           │  │
-│  │  │ Python  │  │   Java  │  │   Go    │           │  │
-│  │  │   SDK   │  │   SDK   │  │   SDK   │           │  │
-│  │  └──────────┘  └──────────┘  └──────────┘           │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                            │                               │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │                  协调服务层 (Coordination)            │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐           │  │
-│  │  │  Root    │  │  Index   │  │   Query  │           │  │
-│  │  │  Coord  │  │  Coord   │  │   Coord  │           │  │
-│  │  └──────────┘  └──────────┘  └──────────┘           │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                            │                               │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │                    执行节点层 (Workers)               │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐           │  │
-│  │  │  Data   │  │  Index   │  │  Query   │           │  │
-│  │  │  Node   │  │  Node   │  │   Node   │           │  │
-│  │  └──────────┘  └──────────┐  └──────────┘           │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                            │                               │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │                    存储层 (Storage)                   │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐           │  │
-│  │  │ MinIO/  │  │  RocksDB │  │  etcd   │           │  │
-│  │  │ S3      │  │          │  │          │           │  │
-│  │  └──────────┘  └──────────┘  └──────────┘           │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### 组件职责
-
-| 组件            | 职责                            |
-| --------------- | ------------------------------- |
-| **Root Coord**  | 元数据管理、ID 生成、时间戳分配 |
-| **Index Coord** | 索引管理、调度                  |
-| **Query Coord** | 查询调度、负载均衡              |
-| **Data Coord**  | 数据管理、压缩                  |
-| **Data Node**   | 数据写入、持久化                |
-| **Query Node**  | 向量检索                        |
-| **Index Node**  | 索引构建                        |
-
-## 索引类型
-
-### 索引类型对比
-
-| 索引类型    | 适用场景   | 优点     | 缺点       |
-| ----------- | ---------- | -------- | ---------- |
-| **FLAT**    | 小数据量   | 精确搜索 | 慢         |
-| **IVF**     | 中等数据   | 快速     | 精度损失   |
-| **HNSW**    | 大规模数据 | 极快     | 内存占用高 |
-| **DiskANN** | 超大规模   | 可扩展   | 需要 SSD   |
-| **ANNOY**   | 内存受限   | 内存友好 | 查询较慢   |
-
-### IVF 索引
-
-```python
-# IVF (Inverted File) 索引
-# 将向量空间划分为多个聚类
-index_params = {
-    "metric_type": "L2",      # 距离度量
-    "index_type": "IVF_FLAT",
-    "params": {"nlist": 128}
-}
-
-# 创建索引
-collection.create_index(
-    field_name="vector_field",
-    index_params=index_params
-)
-```
-
-### HNSW 索引
-
-```python
-# HNSW (Hierarchical Navigable Small World) 索引
-# 基于图的近似最近邻搜索
-index_params = {
-    "metric_type": "IP",      # 内积
-    "index_type": "HNSW",
-    "params": {
-        "M": 16,              # 每层连接数
-        "efConstruction": 200  # 搜索宽度
-    }
-}
-```
-
-## 距离度量
-
-### 度量类型
-
-| 度量        | 说明       | 适用场景   |
-| ----------- | ---------- | ---------- |
-| **L2**      | 欧氏距离   | 图像、音频 |
-| **IP**      | 内积       | 归一化向量 |
-| **HAMMING** | 汉明距离   | 二值向量   |
-| **JACCARD** | 杰卡德距离 | 集合相似度 |
-
-```python
-# L2 距离（欧氏距离）
-# d = √(Σ(aᵢ - bᵢ)²)
-
-# IP 距离（内积）
-# d = Σ(aᵢ × bᵢ)
-
-# 选择度量类型
-index_params = {
-    "metric_type": "IP",  # 或 "L2"
-    "index_type": "HNSW",
-    "params": {"M": 16, "efConstruction": 200}
-}
-```
-
-## 应用场景
-
-### 语义搜索
-
-```python
-# 语义搜索示例：NLP 应用
-def semantic_search(query_text, collection_name):
-    # 1. 将查询文本转换为向量
-    query_vector = embed_model.encode([query_text])
-
-    # 2. 在 Milvus 中搜索
-    search_params = {"metric_type": "IP", "params": {"ef": 100}}
-
-    results = collection.search(
-        data=[query_vector],
-        anns_field="text_vector",
-        param=search_params,
-        limit=10
-    )
-
-    return results
-```
-
-### 图像检索
-
-```python
-# 图像检索示例
-def image_search(query_image_path):
-    # 1. 提取图像特征向量
-    image_vector = image_model.extract_features(query_image_path)
-
-    # 2. 搜索相似图像
-    results = collection.search(
-        data=[image_vector],
-        anns_field="image_vector",
-        param={"metric_type": "L2", "params": {}},
-        limit=20
-    )
-
-    return results
-```
-
-### 推荐系统
-
-```python
-# 推荐系统应用
-def recommend_items(user_vector, n=10):
-    # 基于用户向量查找相似商品
-    results = collection.search(
-        data=[user_vector],
-        anns_field="item_vector",
-        param={"metric_type": "IP", "params": {"ef": 128}},
-        limit=n
-    )
-
-    return [item.id for item in results[0]]
-```
-
-## 快速开始
-
-### Python SDK 基本使用
-
-```python
-from pymilvus import connections, Collection, CollectionSchema, FieldSchema, DataType
-
-# 1. 连接 Milvus
-connections.connect(host='localhost', port='19530', alias='default')
-
-# 2. 定义集合 schema
-fields = [
-    FieldSchema(name="id", dtype=DataType.INT64, is_primary=True),
-    FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=128)
+rows = [
+    {
+        "id": 101,
+        "vector": [0.92, 0.11, 0.31, 0.08],
+        "text": "如何重置密码",
+        "category": "account",
+        "tenant_id": "acme",
+    },
+    {
+        "id": 102,
+        "vector": [0.88, 0.14, 0.29, 0.10],
+        "text": "修改登录凭据",
+        "category": "account",
+        "tenant_id": "acme",
+    },
+    {
+        "id": 201,
+        "vector": [0.10, 0.90, 0.18, 0.20],
+        "text": "查看发票",
+        "category": "billing",
+        "tenant_id": "other",
+    },
 ]
 
-schema = CollectionSchema(fields=fields, description="示例集合")
+insert_result = client.insert(collection_name=COLLECTION, data=rows)
+assert insert_result["insert_count"] == 3
 
-# 3. 创建集合
-collection = Collection("demo_collection", schema=schema)
-
-# 4. 插入数据
-import numpy as np
-
-vectors = np.random.rand(1000, 128).astype(np.float32)
-ids = list(range(1000))
-
-collection.insert([ids, vectors])
-
-# 5. 创建索引
-index_params = {
-    "index_type": "IVF_FLAT",
-    "metric_type": "L2",
-    "params": {"nlist": 128}
-}
-
-collection.create_index("vector", index_params)
-
-# 6. 搜索
-search_params = {"metric_type": "L2", "params": {"nprobe": 10}}
-
-results = collection.search(
-    data=[vectors[0]],
-    anns_field="vector",
-    param=search_params,
-    limit=5
+result = client.search(
+    collection_name=COLLECTION,
+    data=[[0.90, 0.12, 0.30, 0.09]],
+    filter='tenant_id == "acme"',
+    limit=2,
+    output_fields=["text", "category", "tenant_id"],
 )
 
-print(f"搜索结果: {results}")
-
-# 7. 清理
-collection.drop()
-connections.disconnect("default")
+assert len(result) == 1                 # 一个查询向量
+assert len(result[0]) == 2              # Top 2
+assert all(hit["entity"]["tenant_id"] == "acme" for hit in result[0])
+print(result[0])
 ```
 
-## 与 LLM 集成
+输入 Shape 是 `(1, 4)`，输出 Shape 是 `list[query][hit]`。如果写入向量不是 4 维、过滤字段类型不一致、Collection 不存在或服务不可达，示例应失败并暴露问题；不要用空结果吞掉这些异常。
 
-### RAG 应用
+## 常见误区与适用边界
 
-```python
-# RAG (Retrieval-Augmented Generation) 示例
-from langchain.embeddings import OpenAIEmbeddings
-from pymilvus import Milvus
+### 误区 1：向量数据库会生成 Embedding
 
-# 1. 文档向量化
-documents = load_documents("path/to/docs")
-embeddings = OpenAIEmbeddings()
+Milvus 负责存储、索引和检索。Embedding 模型、分块策略、去重、重排和答案生成仍由应用负责。
 
-vectors = embeddings.embed_documents(documents)
+### 误区 2：距离分数可以跨模型比较
 
-# 2. 存入 Milvus
-milvus = Milvus()
-milvus.insert_vectors("documents", vectors, documents)
+分数只在同一模型、同一归一化方式和同一度量下有意义。换模型后需要重建向量，并重新校准阈值。
 
-# 3. 检索相关文档
-query_vector = embeddings.embed_query("如何配置 Milvus")
-results = milvus.search("documents", query_vector, top_k=5)
+### 误区 3：Partition 越多越快
 
-# 4. 生成回答
-context = "\n".join(results)
-response = llm.generate(f"基于以下上下文回答: {context}\n\n问题: {query}")
-```
+过多 Partition 会增加元数据和调度成本。多租户通常先评估标量字段过滤；只有明确的加载隔离或生命周期边界才考虑 Partition。
 
-## 性能优化
+### 什么时候不适用
 
-### 最佳实践
+- 只有几千条记录且无需近邻检索：进程内库或现有数据库扩展可能更简单。
+- 核心需求是强事务、复杂 Join 或精确聚合：关系型数据库仍是主系统。
+- 没有离线评测集：先建立相关性基线，否则无法判断索引调优是否真的有效。
 
-```python
-# 1. 合理选择向量维度
-# 128-512 维通常足够，太高增加存储和计算负担
+## 自检题
 
-# 2. 选择合适的索引
-# 小数据 (<1M): FLAT 或 IVF_FLAT
-# 中数据 (1M-10M): IVF 或 HNSW
-# 大数据 (>10M): HNSW 或 DiskANN
+1. Collection、Partition、Segment 分别解决什么问题？
+2. 为什么“都是 768 维”仍不能保证两组向量可以比较？
+3. 一次搜索为何可能同时访问 Streaming Node 和 Query Node？
 
-# 3. 批量插入提高性能
-batch_size = 1000
-for i in range(0, len(vectors), batch_size):
-    batch = vectors[i:i+batch_size]
-    collection.insert(batch)
+<details>
+<summary>查看答案</summary>
 
-# 4. 预先加载集合
-collection.load()
+1. Collection 定义顶层数据契约；Partition 是用户可见的逻辑范围；Segment 是 Milvus 内部的物理执行与存储单元。
+2. 维度只是 Shape；不同模型或不同归一化方式会定义不同向量空间和分数语义。
+3. 新写入的 growing data 由 Streaming Node 服务，sealed data 由 Query Node 搜索，最终再归并 Top K。
 
-# 5. 使用合适的搜索参数
-search_params = {
-    "metric_type": "L2",
-    "params": {
-        "ef": 128,      # HNSW 搜索参数
-        "nprobe": 16     # IVF 搜索参数
-    }
-}
-```
+</details>
 
-## 监控和维护
+## 本篇总结
 
-### 监控指标
+Milvus 的核心不是“把数组存起来”，而是用 Schema 固定数据契约，用 Segment 和索引管理数据状态，再通过分离的访问、协调、执行与存储层完成可扩展检索。调优前先固定 Embedding、Shape、度量、过滤条件和评测集。
 
-```python
-# 查看集合统计信息
-stats = collection.num_entities
-print(f"数据量: {stats}")
+## 下一篇衔接
 
-# 查看索引信息
-index_info = collection.index()
-print(f"索引类型: {index_info}")
+下一篇把这个模型落到部署：如何在 Lite、Standalone 和 Distributed 之间选择，如何估算资源，以及怎样建立安全、监控、备份和故障边界。
 
-# 检查健康状态
-from pymilvus import utility
-is_connected = utility活的_connection("default")
-print(f"连接状态: {is_connected}")
-```
+## 资料来源
+
+- [Milvus Architecture Overview](https://milvus.io/docs/architecture_overview.md)
+- [Milvus Quickstart](https://milvus.io/docs/quickstart.md)
+- [Create Collection](https://milvus.io/docs/create-collection.md)
+- [Milvus 文档首页](https://milvus.io/docs/)

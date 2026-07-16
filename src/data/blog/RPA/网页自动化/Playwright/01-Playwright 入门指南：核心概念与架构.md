@@ -1,12 +1,12 @@
 ---
-title: Playwright 入门指南：核心概念与架构
+title: Playwright 入门指南：从浏览器对象模型理解网页自动化
 series: playwright
 seriesOrder: 1
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
-modDatetime: 2026-05-09T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: playwright-getting-started
-description: 'Playwright入门指南，详细介绍核心概念、架构组件、支持的浏览器和开发环境配置。'
+description: "从浏览器对象模型、隔离边界和最小脚本出发，建立 Playwright 网页自动化的正确心智模型。"
 tags:
   - Playwright
   - RPA
@@ -16,333 +16,126 @@ draft: false
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
 
-Playwright 是由 Microsoft 开发的一款强大的端到端测试和网页自动化框架。它支持所有现代浏览器的自动化操作，包括 Chromium（Chrome/Edge）、Firefox 和 WebKit（Safari）。与其他自动化工具相比，Playwright 提供了更现代的 API、更好的稳定性和更丰富的功能集。
+你需要会运行 Python 脚本，并知道 URL、DOM 和 HTTP 请求分别是什么。本系列统一使用 **Python 同步 API**；只有讨论并发边界时才引入异步 API。
 
-![Playwright 核心架构层级图](./images/playwright-core-architecture-figure-01.png)
+学完本篇，你应该能够：
 
-### 为什么选择 Playwright？
+- 解释 Playwright、浏览器进程、`BrowserContext`、`Page` 与 `Locator` 的职责；
+- 判断 Playwright 适合端到端测试、动态采集还是业务流程自动化；
+- 运行一个资源可正确释放、结果可验证的最小脚本。
 
-| 特性 | 说明 |
-|------|------|
-| **跨浏览器支持** | 一次编写，多浏览器运行 |
-| **自动等待机制** | 智能等待元素就绪，减少不稳定的测试 |
-| **并行执行** | 支持跨浏览器、跨标签页的并行测试 |
-| **强大的定位能力** | 支持多种选择器策略 |
-| **网络拦截** | 可以模拟和拦截网络请求 |
-| **移动端模拟** | 支持 iOS 和 Android 模拟器 |
-| **无头模式** | 支持无头和有头模式运行 |
+贯穿全系列的场景是一套虚构的订单后台：`https://app.example.test`。示例域名不可访问时，代码会使用 `page.set_content()` 构造等价的本地页面。
 
-## 核心概念
+## 从一个真实问题切入
 
-### Playwright 架构概览
+假设运营每天要登录订单后台，筛选“待审核”订单并导出报表。脚本不仅要“点到按钮”，还必须回答四个问题：操作发生在哪个用户会话？页面重新渲染后是否仍能找到目标？何时算操作成功？失败时留下了什么证据？
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                         Playwright                               │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │                    API Layer                             │    │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────┐ │    │
-│  │  │ Browser  │  │ Context  │  │  Page    │  │ Element │ │    │
-│  │  │  Runner  │  │  Manager │  │  Actions │  │ Handler │ │    │
-│  │  └──────────┘  └──────────┘  └──────────┘  └─────────┘ │    │
-│  └─────────────────────────────────────────────────────────┘    │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │              Browser Driver Layer                        │    │
-│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐        │    │
-│  │  │ Chromium   │  │  Firefox   │  │  WebKit    │        │    │
-│  │  │  (Chrome)  │  │            │  │  (Safari)  │        │    │
-│  │  └────────────┘  └────────────┘  └────────────┘        │    │
-│  └─────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────┘
-```
+Playwright 的价值不是把鼠标动作录成宏，而是用可编程、可等待、可隔离的浏览器对象描述这套过程。
 
-### 核心对象层级
+## 核心机制：对象层级与职责
 
-Playwright 的核心对象按照层级组织：
+<!-- figure:s01-f01 -->
+
+![理解从 Python 调用到浏览器对象和验证结果的层级与生命周期](./images/final/s01-f01-runtime-object-model.png)
+
+一次典型执行的调用链是：
 
 ```text
-Browser（浏览器实例）
-├── Context（浏览器上下文）
-│   ├── Page（页面）
-│   │   ├── Frame（框架）
-│   │   └── Locator（定位器）
-│   ├── APIRequest（API 请求）
-│   └── StorageState（存储状态）
-└── BrowserType（浏览器类型）
+Python 脚本
+  -> Playwright 驱动与浏览器协议
+    -> Browser（浏览器进程）
+      -> BrowserContext（隔离会话）
+        -> Page（标签页或弹窗）
+          -> Locator（可重复求值的元素查询）
+            -> Action / Expect（操作与验证）
 ```
 
-### Browser（浏览器）
+| 对象             | 管理什么                             | 典型生命周期           | 失败时先检查         |
+| ---------------- | ------------------------------------ | ---------------------- | -------------------- |
+| `Playwright`     | 浏览器类型与驱动连接                 | 整个脚本               | 安装与进程启动       |
+| `Browser`        | 一个浏览器进程                       | 一批任务               | 崩溃、版本与资源     |
+| `BrowserContext` | Cookie、localStorage、权限等隔离状态 | 一个测试或一个业务账号 | 状态泄漏与凭据       |
+| `Page`           | 一个标签页或弹窗                     | 一个页面流程           | 导航、弹窗与页面错误 |
+| `Locator`        | 每次操作时重新查找元素的规则         | 某个语义目标           | 唯一性与可操作性     |
 
-Browser 是 Playwright 的顶级对象，代表一个独立的浏览器实例。可以同时运行多个浏览器实例，每个实例相互隔离。
+`BrowserContext` 类似轻量的无痕配置文件，但它不是新的浏览器进程。多个上下文可以共享一个 `Browser`，同时保持 Cookie、localStorage 等状态隔离。`Locator` 也不是提前缓存的 DOM 节点；页面重渲染后，它会在下一次操作时重新定位。
 
-**主要方法：**
-- `launch()` - 启动浏览器
-- `newContext()` - 创建新的浏览器上下文
-- `close()` - 关闭浏览器
+## 最小可复现示例
 
-### Context（浏览器上下文）
-
-BrowserContext 是一个隔离的执行环境，类似于浏览器中的"隐私模式"。每个上下文都有独立的 Cookie、Storage、代理设置等。
-
-**使用场景：**
-- 模拟不同的用户会话
-- 并行运行多个测试
-- 隔离有副作用的操作
-
-### Page（页面）
-
-Page 代表一个标签页或弹窗，是与网页交互的主要入口。可以执行 JavaScript、操作 DOM、监听事件等。
-
-**核心功能：**
-- 页面导航：`goto()`, `back()`, `forward()`, `reload()`
-- 元素操作：`click()`, `fill()`, `select()`
-- 内容获取：`innerText()`, `innerHTML()`, `title()`
-- 等待操作：`waitForSelector()`, `waitForNavigation()`
-
-## 支持的浏览器
-
-### 浏览器对比
-
-| 浏览器 | 渲染引擎 | 特点 | 使用场景 |
-|--------|----------|------|----------|
-| **Chromium** | Blink | 最稳定，支持所有特性 | 首选，推荐用于生产环境 |
-| **Firefox** | Gecko | 良好的标准兼容性 | 跨浏览器测试 |
-| **WebKit** | WebKit | Safari 模拟 | macOS/iOS 测试 |
-
-### 选择浏览器的建议
-
-1. **日常开发和调试** - 使用 Chromium，无头模式运行
-2. **跨浏览器测试** - 使用所有三种浏览器
-3. **CI/CD 集成** - 使用 Chromium，无头模式
-4. **移动端测试** - 使用 Chromium + 设备模拟
-
-## 开发环境配置
-
-### Python 环境要求
-
-```bash
-# Python 3.7 或更高版本
-python --version
-```
-
-### 安装 Playwright
-
-```bash
-# 使用 pip 安装
-pip install playwright
-
-# 安装浏览器驱动
-playwright install
-
-# 或者安装指定浏览器
-playwright install chromium
-playwright install firefox
-playwright install webkit
-```
-
-### 验证安装
+下面的例子不依赖外网。输入是一段本地 HTML；关键中间状态是按钮点击后 `status` 文本变化；输出是终端中的 `ready`。
 
 ```python
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import expect, sync_playwright
 
-def test_playwright_install():
-    with sync_playwright() as p:
-        # 启动 Chromium 浏览器
-        browser = p.chromium.launch()
-        
-        # 创建新页面
-        page = browser.new_page()
-        
-        # 访问示例网站
-        page.goto("https://example.com")
-        
-        # 获取页面标题
-        title = page.title()
-        print(f"页面标题: {title}")
-        
-        # 关闭浏览器
-        browser.close()
-        
-        print("Playwright 安装成功！🎉")
+HTML = """
+<button aria-label="审核订单" onclick="status.textContent='ready'">审核</button>
+<p id="status">pending</p>
+"""
 
-if __name__ == "__main__":
-    test_playwright_install()
-```
+with sync_playwright() as playwright:
+    browser = playwright.chromium.launch()
+    context = browser.new_context(locale="zh-CN")
+    page = context.new_page()
+    page.set_content(HTML)
 
-### 第一个脚本
+    page.get_by_role("button", name="审核订单").click()
+    status = page.locator("#status")
+    expect(status).to_have_text("ready")
+    print(status.text_content())
 
-创建一个简单的自动化脚本：
-
-```python
-from playwright.sync_api import sync_playwright
-
-def main():
-    with sync_playwright() as p:
-        # 启动浏览器
-        browser = p.chromium.launch(headless=False)  # 显示浏览器窗口
-        
-        # 创建新上下文
-        context = browser.new_context()
-        
-        # 创建新页面
-        page = context.new_page()
-        
-        # 访问 GitHub
-        page.goto("https://github.com")
-        
-        # 获取页面标题
-        print(f"当前页面标题: {page.title()}")
-        
-        # 截图保存
-        page.screenshot(path="github_homepage.png")
-        
-        # 关闭浏览器
-        browser.close()
-        print("脚本执行完成！")
-
-if __name__ == "__main__":
-    main()
-```
-
-## 同步与异步 API
-
-Playwright 同时提供同步和异步两种 API：
-
-### 同步 API（推荐入门）
-
-```python
-from playwright.sync_api import sync_playwright
-
-with sync_playwright() as p:
-    browser = p.chromium.launch()
-    page = browser.new_page()
-    page.goto("https://example.com")
+    context.close()
     browser.close()
 ```
 
-### 异步 API（适合高并发）
+运行前需要安装 Python 包和与该版本配套的浏览器二进制；具体步骤放在第 2 篇。`expect(...).to_have_text()` 会在超时预算内重试，比读取文本后立即 `assert` 更能表达“页面最终进入目标状态”。
 
-```python
-import asyncio
-from playwright.async_api import async_playwright
+## 同步 API 与异步 API 的边界
 
-async def main():
-    async with async_playwright() as p:
-        browser = await p.chromium.launch()
-        page = await browser.new_page()
-        await page.goto("https://example.com")
-        await browser.close()
+同步 API 适合顺序业务流程和大多数 pytest 测试，调用结果直接返回。异步 API 适合单进程内调度多个独立 I/O 流程，但每个调用都必须 `await`。两套 API 不应在同一个调用链中混用。
 
-asyncio.run(main())
-```
+“异步”不会让一个页面上的点击更快，也不会替代上下文隔离。并发数量还受 CPU、内存、目标站点容量和合规规则约束。第 6 篇会专门说明等待与并发。
 
-### 选择建议
+## 什么时候适用，什么时候不适用
 
-- **同步 API** - 简单脚本、测试入门、顺序执行的任务
-- **异步 API** - 大规模爬虫、需要并发操作、性能敏感的应用
+适用：真实浏览器端到端测试、依赖 JavaScript 渲染的页面采集、需要下载/上传/弹窗/网络模拟的 RPA。
 
-## 常见使用场景
+不适用：仅调用稳定 HTTP API 时优先使用 HTTP 客户端；桌面原生控件自动化应使用对应平台工具；高并发压测应使用专门的负载测试工具，Playwright 更适合少量真实浏览器的体验测量。
 
-### 1. 网页自动化测试
+## 常见误区
 
-```python
-def test_login_flow():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        # 访问登录页面
-        page.goto("https://example.com/login")
-        
-        # 填写表单
-        page.fill("#username", "testuser")
-        page.fill("#password", "password123")
-        
-        # 点击登录按钮
-        page.click("button[type='submit']")
-        
-        # 验证登录成功
-        assert page.url.endswith("/dashboard")
-        
-        browser.close()
-```
+1. **把 `sleep` 当同步机制。** 固定等待既慢又不可靠，应等待可观察状态。
+2. **跨测试复用同一上下文。** 这会造成 Cookie 和页面状态泄漏。
+3. **把 `Locator` 当元素快照。** 它是查询计划；若要读取当下值，应显式调用读取方法。
+4. **只执行动作，不验证结果。** “没有抛异常”不等于业务成功。
+5. **认为无头模式行为永远等同人工浏览。** 字体、GPU、权限和视口差异仍可能改变结果。
 
-### 2. 网页爬虫
+## 自检题
 
-```python
-def scrape_dynamic_content():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        # 等待内容加载
-        page.goto("https://example.com/products")
-        page.wait_for_selector(".product-item")
-        
-        # 提取数据
-        products = page.query_selector_all(".product-item")
-        for product in products:
-            name = product.query_selector(".product-name").inner_text()
-            price = product.query_selector(".product-price").inner_text()
-            print(f"{name}: {price}")
-        
-        browser.close()
-```
+1. 为什么多个测试可以共享一个 `Browser`，却通常不应共享一个 `BrowserContext`？
+2. 页面重渲染后，`Locator` 为什么通常比缓存的 DOM 句柄可靠？
+3. 一个只需调用 JSON API 的任务，为什么不应默认启动浏览器？
 
-### 3. 截图和 PDF 生成
+<details>
+<summary>查看答案</summary>
 
-```python
-def capture_page():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        # 生成截图
-        page.goto("https://example.com")
-        page.screenshot(path="fullpage.png", full_page=True)
-        
-        # 生成 PDF
-        page.pdf(path="page.pdf")
-        
-        browser.close()
-```
+1. 浏览器进程复用节省启动成本，而上下文承载 Cookie、Storage 和权限；独立上下文能避免状态串扰。
+2. `Locator` 在每次动作前重新解析目标，能跟随 DOM 更新；缓存句柄可能已脱离文档。
+3. 浏览器成本更高、失败面更大；稳定 API 用 HTTP 客户端更直接、可观测且易重试。
 
-## 最佳实践
+</details>
 
-### 1. 使用上下文隔离
+## 本篇总结
 
-```python
-# 好的做法：每个测试使用独立上下文
-def test_isolated():
-    with sync_playwright() as p:
-        context = p.chromium.new_context()
-        page = context.new_page()
-        # 执行测试...
-        context.close()
+Playwright 的核心不是“模拟点击”，而是用 `Browser -> BrowserContext -> Page -> Locator -> Action/Expect` 建立可隔离、可等待、可验证的浏览器流程。后续所有能力都建立在这条对象链上。
 
-# 避免：在测试间共享上下文
-```
+## 下一篇衔接
 
-### 2. 合理使用等待
+下一篇把这套心智模型落到可复现环境：为什么 Python 包、浏览器二进制与系统依赖必须作为一个版本合同管理。
 
-```python
-# 推荐：使用自动等待
-page.click("button#submit")
+## 资料来源
 
-# 谨慎：使用显式等待
-page.wait_for_selector("div.loaded", state="visible", timeout=5000)
-```
-
-### 3. 清理资源
-
-```python
-# 使用上下文管理器自动清理
-with sync_playwright() as p:
-    browser = p.chromium.launch()
-    # ... 执行操作
-# 自动关闭浏览器
-```
-
+- [Playwright Python：Installation](https://playwright.dev/python/docs/intro)
+- [Playwright Python：Isolation](https://playwright.dev/python/docs/browser-contexts)
+- [Playwright Python：Locators](https://playwright.dev/python/docs/locators)

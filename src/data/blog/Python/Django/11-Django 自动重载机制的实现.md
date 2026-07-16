@@ -1,8 +1,8 @@
 ---
-title: Django 自动重载机制的实现
+title: Django 自动重载机制：监视进程与服务进程
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-11T00:00:00.000+08:00
+modDatetime: 2026-07-17T00:00:00.000+08:00
 slug: django-autoreload-mechanism
 featured: false
 draft: false
@@ -11,105 +11,87 @@ seriesOrder: 11
 tags:
   - Python
   - Django
-  - 自动重载
-description: "深入讲解Django自动重载机制的实现原理和工作方式。"
+  - 源码分析
+description: "解释 runserver 自动重载的父子进程、文件监视、退出重启、异常保留与重复副作用边界。"
 ---
 
-## 两个进程
+## 前置知识与学习目标
 
-关于重载的实现方式在`django/utils/autoreload.py`中，重启的设置在`python_reloader`函数中：
+你需要知道进程、线程、模块导入和 Django 启动。读完后应能：
 
-![Django 自动重载通过父进程监控文件变化、设置 RUN_MAIN、启动子进程运行开发服务器，并在代码变更后重启子进程](./images/django-auto-reload-process-monitor-figure-01.png)
+1. 区分监视进程与真正服务请求的子进程。
+2. 解释文件变化如何触发退出、重启和应用重新初始化。
+3. 诊断“启动代码执行两次”、导入异常和无法监视的文件。
 
-<!-- snippet: id=django-autoreload-mechanism-01 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-def restart_with_reloader():
-    while True:
-        args = [sys.executable] + ['-W%s' % o for o in sys.warnoptions] + sys.argv
-        if sys.platform == "win32":
-            args = ['"%s"' % arg for arg in args]
-        new_environ = os.environ.copy()
-        new_environ["RUN_MAIN"] = 'true'
-        exit_code = os.spawnve(os.P_WAIT, sys.executable, args, new_environ)
-        if exit_code != 3:
-            return exit_code
+## 直觉：重载是重建运行时，不是热修改对象
 
-def python_reloader(main_func, args, kwargs):
-    if os.environ.get("RUN_MAIN") == "true":
-        thread.start_new_thread(main_func, args, kwargs)
-        try:
-            reloader_thread()
-        except KeyboardInterrupt:
-            pass
-    else:
-        try:
-            exit_code = restart_with_reloader()
-            if exit_code < 0:
-                os.kill(os.getpid(), -exit_code)
-            else:
-                sys.exit(exit_code)
-        except KeyboardInterrupt:
-            pass
+<!-- figure:s11-f01:start -->
+
+![runserver 监视进程检测文件变化，结束服务子进程并以新 PID 重新导入应用](./images/s11-f01-autoreload-parent-child.png)
+
+<!-- figure:s11-f01:end -->
+
+保存 `catalog/views.py` 后，Django 不会在旧进程中逐个替换函数。autoreload 观察相关 Python/模板/翻译文件，检测变化后结束服务进程并创建一个干净进程，重新导入 settings、apps、models 和 URLconf。这样比在活跃对象图上打补丁更可预测。
+
+```text
+Monitor process -> start child -> child serves requests
+       ^                            |
+       |---- file changed / exit ---|
 ```
 
-`python_reloader`会判断是否设置了`RUN_MAIN`为True。开始时，是没有这个环境变量的，因此程序走`else`代码块。而在`restart_with_reloader`中，就设置了这个环境变量`new_environ["RUN_MAIN"] = 'true'`。
+## 监视器与触发路径
 
-精彩的部分到了，在新的环境变量中，用`os.spawnve`启动新子进程，而这个子进程运行的正是当前的命令（`python manage.py runserver`），现在`RUN_MAIN`为True了，执行`thread.start_new_thread(main_func, args, kwargs)`，也就是启动了一个server。
+Django 可使用基于文件时间戳的 `StatReloader`；安装并可用时也可使用 Watchman 相关实现。实际监视集合来自已加载模块和显式观察的文件。语法错误发生时，autoreload 会保留错误文件以便后续修改能再次触发重载。
 
-如果子进程不退出，就一直停在`os.spawnve`这一步；如果子进程退出，而退出码不是3，`while`就被终结了；如果是3，继续循环，重新创建子进程。
+环境标志用于区分外层监视流程和内层服务流程，因此顶层模块代码可能在启动链的不同阶段出现多次。不要依赖“导入一次”完成发邮件、创建任务或不可幂等写入。
 
-在此可以得出，django的autoreload机制中，主进程其实也没做什么事，就是监控子进程的运行，如果子进程退出码是3，继续创建子进程。但目前为止，似乎还缺少文件监听的部分，这部分应该就在`reloader_thread()`中。
+## 可观察实验
 
-## 文件监控与子进程重启
+<!-- snippet: id=django-autoreload-observe mode=project python=3.12-3.14 deps=stdlib file=catalog/apps.py -->
 
-<!-- snippet: id=django-autoreload-mechanism-02 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
-def reloader_thread():
-    ensure_echo_on()
-    if USE_INOTIFY:
-        fn = inotify_code_changed
-    else:
-        fn = code_changed
-    while RUN_RELOADER:
-        change = fn()
-        if change == FILE_MODIFIED:
-            sys.exit(3)  # force reload
-        elif change == I18N_MODIFIED:
-            reset_translations()
-        time.sleep(1)
+import os
+from django.apps import AppConfig
+
+
+class CatalogConfig(AppConfig):
+    name = "catalog"
+
+    def ready(self):
+        print("catalog ready", os.getpid())
 ```
 
-在`ensure_echo_on()`中，先判断是否成功导入`termios`模块，这个模块是unix平台的控制通信端口的，具体怎么控制不怎么懂，这个win上是没有的。经过跟踪`USE_INOTIFY`这个值是为`False`，因此判断是否文件是否修改是`code_changed`函数。
+启动 `python manage.py runserver`，记录 PID；修改 `views.py` 后再记录。你会看到服务进程 PID 变化并重新执行 `ready()`。这个打印只用于实验，生产初始化应使用日志且保持幂等。加 `--noreload` 可判断异常是否与重载有关。
 
-<!-- snippet: id=django-autoreload-mechanism-03 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-def code_changed():
-    global _mtimes, _win
-    for filename in gen_filenames():
-        stat = os.stat(filename)
-        mtime = stat.st_mtime
-        if _win:
-            mtime -= stat.st_ctime
-        if filename not in _mtimes:
-            _mtimes[filename] = mtime
-            continue
-        if mtime != _mtimes[filename]:
-            _mtimes = {}
-            try:
-                del _error_files[_error_files.index(filename)]
-            except ValueError:
-                pass
-            return I18N_MODIFIED if filename.endswith('.mo') else FILE_MODIFIED
-    return False
-```
+## 常见故障与边界
 
-这样就清楚了，根据每个文件的最后修改时间来判断文件是否被修改，如果修改，`code_changed()`返回True。上一层函数就执行`sys.exit(3)`退出子进程。然后主进程监控到子进程的退出码为3，就会重新建立新的子进程。监听文件修改的线程每1秒钟执行一次。
+- 启动副作用重复：把任务启动、数据库写入移出模块顶层和 `ready()`，使用独立 worker 或显式管理命令。
+- 新文件不触发：确认它已被导入或被观察，检查编辑器的原子替换行为和文件系统事件支持。
+- 语法错误后循环：直接读取第一个 traceback，修复导入错误，不要用吞异常维持假运行。
+- 线程未退出：开发重载不是线程生命周期管理器，后台线程应有停止协议；更好的做法是独立进程。
+- 生产禁止依赖 autoreload；应用服务器使用受控优雅重启与健康检查。
 
-## 总结
+## 最小行为测试
 
-使用环境变量巧妙的建立两个进程：
+修改一个视图并确认新响应出现；制造语法错误，确认错误可见且修复后恢复；用 PID 证明是进程重建；加 `--noreload` 对照；确认没有重复创建任务或写入数据库。
 
-- **主进程**：负责监控子进程和创建新的进程
-- **子进程**：用来执行命令，子进程中创建子线程来监控文件的修改，如果有修改，退出子进程
+## 自检题
 
-不知为何不能把监控文件的放在主进程中做呢，每个子进程都要再创建这个监控，多累啊，主进程不能控制子进程退出吗？
+1. 自动重载为什么优先重启进程而不是替换函数对象？
+2. `ready()` 为什么必须幂等且避免数据库查询？
+3. `--noreload` 对诊断有什么价值？
+
+<details><summary>答案</summary>
+
+1. 模块间对象、注册表和引用关系复杂，干净重建更可预测。2. 它可能在命令、测试和重启中多次执行，且启动阶段数据库状态未必可用。3. 它能隔离问题是否由父子进程或文件监视引起。
+
+</details>
+
+## 本篇总结与下一篇
+
+autoreload 的本质是“监视变化并重建服务进程”。下一篇进入每次重建都会执行的 `Apps.populate()`，观察应用、模型和 `ready()` 的三阶段注册。
+
+## 资料来源
+
+- [Django runserver](https://docs.djangoproject.com/en/6.0/ref/django-admin/#runserver)
+- [django.utils.autoreload 源码](https://github.com/django/django/blob/stable/6.0.x/django/utils/autoreload.py)

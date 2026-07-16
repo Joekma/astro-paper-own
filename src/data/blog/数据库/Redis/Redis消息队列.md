@@ -1,334 +1,212 @@
 ---
-title: Redis消息队列
+title: Redis 消息模型：List、Pub/Sub 与 Streams 可靠消费
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: redis-message-queue
 featured: false
 draft: false
 tags:
   - Redis
-  - 数据库
   - 消息队列
-description: "Redis消息队列实现，包括List队列和Pub/Sub发布订阅"
+  - Streams
+  - Pub/Sub
+description: 按投递语义比较 List、Pub/Sub 与 Streams，用订单事件解释消费组、PEL、ACK、重投、裁剪和幂等处理。
 series: Redis
-seriesOrder: 8
+seriesOrder: 7
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
 
-Redis 提供了多种实现消息队列的方式，包括基于 List 的队列和基于 Pub/Sub 的发布订阅模式。
+你应理解 List、Sorted Set、TTL、Lua 与幂等请求 ID。本文不把“放入 Redis 的列表”自动等同于可靠消息系统。
 
-![Redis 消息队列可由 List 阻塞队列、Pub/Sub 广播、带 ACK 的可靠队列和基于 ZSet 的延时队列组成](./images/redis-message-queue-patterns-figure-01.png)
+读完后，你应该能够：
 
-## 基于 List 的消息队列
+- 根据是否需要广播、历史、ACK、重投和消费组选择 List、Pub/Sub 或 Streams；
+- 解释 Streams 的 entry ID、consumer group、PEL、`XACK` 和 `XAUTOCLAIM`；
+- 实现至少一次投递下的幂等消费者，并规划裁剪和死信处理；
+- 识别单 Stream 吞吐、异步复制和内存保留的边界。
 
-### 生产者消费者模式
+## 真实场景：消息“发出”之后发生了什么
 
-```python
-import redis
+订单 9001 创建后，`shop-api` 要触发库存、通知和分析。若消费者在处理到一半时崩溃，系统需要知道消息是否仍可找到、由谁处理、是否已经确认，以及重试会不会重复扣库存。
 
-r = redis.Redis()
+因此先定义投递语义：
 
-# 生产者：左推入队列
-def produce(queue_name, message):
-    r.lpush(queue_name, message)
+- **at-most-once**：最多处理一次，故障时允许丢失；
+- **at-least-once**：不轻易丢失，但可能重复，消费者必须幂等；
+- **exactly-once effect**：通常需要消息系统与业务存储共同设计，不能由一次 `XACK` 自动获得。
 
-# 消费者：右弹出队列
-def consume(queue_name):
-    return r.rpop(queue_name)
+## 三种模型的选择
 
-# 阻塞式消费
-def blocking_consume(queue_name, timeout=0):
-    return r.brpop(queue_name, timeout)
-```
+<!-- figure-anchor:r07-a01 -->
 
-### 命令对照
+<!-- figure-managed:r07-f01:start -->
 
-| 操作         | 命令        | 说明        |
-| ------------ | ----------- | ----------- |
-| **入队**     | LPUSH/RPUSH | 从左/右插入 |
-| **出队**     | LPOP/RPOP   | 从左/右弹出 |
-| **阻塞出队** | BRPOP/BLPOP | 阻塞等待    |
-| **队列长度** | LLEN        | 查看长度    |
+![undefined](./images/r07-f01-message-semantics-comparison.png)
 
-### 示例
+<!-- figure-managed:r07-f01:end -->
+
+| 模型            | 历史保留     | 广播                | ACK/待处理           | 典型语义             | 适合场景                  |
+| --------------- | ------------ | ------------------- | -------------------- | -------------------- | ------------------------- |
+| List + 阻塞弹出 | 弹出后不保留 | 否                  | 需自行设计处理中列表 | 取决于协议           | 简单、低成本工作队列      |
+| Pub/Sub         | 不保留       | 是                  | 无                   | at-most-once         | 在线通知、可丢事件        |
+| Streams         | 可保留并裁剪 | 多 group 可独立读取 | PEL、ACK、claim      | 常见为 at-least-once | 需要追踪和重投的任务/事件 |
+
+Pub/Sub 订阅者断线期间的消息不会补发。List 使用 `BLPOP` 后进程崩溃会丢失已弹出的元素；可用 `BLMOVE` 把任务原子移到 processing List，再由确认逻辑删除，但超时回收、消费者归属和历史查询都要自行实现。
+
+Streams 把这些状态变成服务器端概念，通常是可靠任务的优先起点。
+
+## Streams 的对象与状态变化
+
+<!-- figure-anchor:r07-a02 -->
+
+<!-- figure-managed:r07-f02:start -->
+
+![undefined](./images/r07-f02-stream-pel-ack-lifecycle.png)
+
+<!-- figure-managed:r07-f02:end -->
 
 ```bash
-# 插入消息
-LPUSH queue task1
-LPUSH queue task2
-LPUSH queue task3
-
-# 弹出消息
-RPOP queue  # task1
-RPOP queue  # task2
-
-# 阻塞等待
-BRPOP queue 0  # 0 表示无限等待
+XGROUP CREATE orders:{1001} inventory 0 MKSTREAM
+XADD orders:{1001} MAXLEN ~ 100000 * \
+  event_id evt-9001 type order.created order_id 9001 quantity 1
+XREADGROUP GROUP inventory worker-1 COUNT 10 BLOCK 2000 \
+  STREAMS orders:{1001} >
+XACK orders:{1001} inventory 1710000000000-0
 ```
 
-### Python 实现
+- Stream entry ID 形如 `milliseconds-sequence`，`*` 让 Redis 生成 ID。
+- group 记录“下一个尚未分发的新消息”。
+- `>` 表示读取从未投递给该 group 的新消息。
+- 消息投递给 consumer 后进入 PEL（Pending Entries List）。
+- `XACK` 只从该 group 的 PEL 移除引用，不必然删除 Stream 中的 entry。
+
+一条 Stream 可有多个 group：库存组和通知组都能独立看到每个事件；同一 group 内多个 worker 分担消息。消费组不是 Kafka 分区，一条 Stream key 不会因为消费者增多就自动跨 Redis 分片。
+
+## redis-py 最小消费者
 
 ```python
-import redis
-import json
+from __future__ import annotations
 
-class MessageQueue:
-    def __init__(self, redis_client, queue_name):
-        self.r = redis_client
-        self.queue_name = queue_name
+import socket
 
-    def enqueue(self, message):
-        if isinstance(message, dict):
-            message = json.dumps(message)
-        self.r.lpush(self.queue_name, message)
+def ensure_group(r, stream: str, group: str) -> None:
+    try:
+        r.xgroup_create(stream, group, id="0", mkstream=True)
+    except Exception as exc:
+        if "BUSYGROUP" not in str(exc):
+            raise
 
-    def dequeue(self, blocking=False, timeout=0):
-        if blocking:
-            result = self.r.brpop(self.queue_name, timeout)
-            if result:
-                _, message = result
-            else:
-                return None
-        else:
-            message = self.r.rpop(self.queue_name)
-
-        if message and isinstance(message, bytes):
-            message = message.decode()
-
-        try:
-            return json.loads(message)
-        except:
-            return message
-
-    def size(self):
-        return self.r.llen(self.queue_name)
+def consume_once(r, stream: str, group: str, handle) -> int:
+    consumer = socket.gethostname()
+    batches = r.xreadgroup(
+        groupname=group,
+        consumername=consumer,
+        streams={stream: ">"},
+        count=10,
+        block=2000,
+    )
+    processed = 0
+    for _, entries in batches:
+        for message_id, fields in entries:
+            handle(fields)  # 必须以 event_id 实现幂等
+            acknowledged = r.xack(stream, group, message_id)
+            if acknowledged != 1:
+                raise RuntimeError(f"unexpected ACK result: {acknowledged}")
+            processed += 1
+    return processed
 ```
 
-## 基于 Pub/Sub 的消息队列
+输入是 Stream、group 和业务处理函数；输出是本批已成功处理并 ACK 的数量。只有业务副作用确认成功后才能 ACK。若 `handle` 成功而 `XACK` 超时，消息可能再次投递，所以业务处理必须以 `event_id` 做唯一约束或条件更新。
 
-### 发布订阅模式
+不要用字符串匹配异常作为最终 group 初始化方案；生产代码应捕获 redis-py 的具体响应异常并检查错误码。这里保留短代码以突出消费状态机。
 
-```python
-import redis
+## 崩溃恢复、重投与死信
 
-r = redis.Redis()
+<!-- figure-anchor:r07-a03 -->
 
-# 发布者
-def publish(channel, message):
-    r.publish(channel, message)
+<!-- figure-managed:r07-f03:start -->
 
-# 订阅者
-def subscribe(channel):
-    pubsub = r.pubsub()
-    pubsub.subscribe(channel)
+![undefined](./images/r07-f03-claim-retry-dead-letter.png)
 
-    for message in pubsub.listen():
-        if message['type'] == 'message':
-            print(f"收到: {message['data']}")
+<!-- figure-managed:r07-f03:end -->
 
-# 发布消息
-publish('news', '今日新闻')
+消费者崩溃后，消息留在 PEL。恢复流程：
 
-# 订阅频道
-subscribe('news')
-```
+1. 用 `XPENDING` 观察数量、消费者和空闲时间。
+2. 超过业务可接受处理时长的消息，使用 `XAUTOCLAIM` 转移给健康消费者。
+3. 增加投递计数；在退避后重试。
+4. 超过上限时写入死信 Stream，并 ACK 原 group 消息。
+5. 告警并保留可审计的失败原因。
 
-### 模式订阅
+`min-idle-time` 必须大于正常任务高分位耗时，否则健康消费者尚未完成时消息就被抢走。重投解决“无人继续处理”，不解决副作用幂等。
 
-```python
-# 订阅多个频道
-pubsub.subscribe('news', 'sports', 'tech')
+Redis 8.2 增加 `XACKDEL`、`XDELEX` 等多消费组引用控制；Redis 8.6 增加 Streams 幂等消息处理能力。使用前要确认服务器和客户端版本，不能把新版命令写进 7.x 的通用路径。
 
-# 模式匹配订阅
-pubsub.psubscribe('news.*', 'sports.*')
+## 延时消息与顺序边界
 
-# 退订
-pubsub.unsubscribe('news')
-pubsub.punsubscribe('news.*')
-```
+Sorted Set 可用执行时间戳作 score，消费者通过 Lua 原子领取到期任务，再写入工作 Stream。它需要轮询、争抢、重试和时间源治理；延时精度与轮询间隔相关。
 
-### Pub/Sub 命令
+同一 Stream 的 entry ID 有顺序，但同一 group 的多个消费者并发处理会让完成顺序变化。若同一订单必须顺序执行，可以按实体选择多个 Stream key 或在业务侧用版本号拒绝乱序；不要假设 group 自动保持完成顺序。
 
-| 命令             | 说明     |
-| ---------------- | -------- |
-| **PUBLISH**      | 发布消息 |
-| **SUBSCRIBE**    | 订阅频道 |
-| **PSUBSCRIBE**   | 模式订阅 |
-| **UNSUBSCRIBE**  | 退订频道 |
-| **PUNSUBSCRIBE** | 退订模式 |
+## 保留、容量与故障语义
 
-## 消息队列对比
+Stream 默认持续增长。`MAXLEN ~ N` 是近似裁剪，效率较高但不保证精确 N。保留策略应同时考虑：最大积压、最慢 group 的恢复窗口、审计需求和 Redis 内存预算。
 
-| 特性           | List 队列 | Pub/Sub   |
-| -------------- | --------- | --------- |
-| **消息持久化** | ✅ 支持   | ❌ 不支持 |
-| **消息确认**   | ✅ 支持   | ❌ 不支持 |
-| **消息堆积**   | ✅ 支持   | ❌ 不支持 |
-| **模式匹配**   | ❌ 不支持 | ✅ 支持   |
-| **多消费者**   | ❌ 不支持 | ✅ 支持   |
-| **离线消息**   | ❌ 不支持 | ❌ 不支持 |
+Streams 与其他 Redis 数据一样依赖持久化和异步复制。主节点确认后立即故障仍可能丢失尚未持久化/复制的消息。需要更强耐久性、大规模分区、长期历史或跨地域日志时，应评估专用消息/日志平台。
 
-## 实战：实现可靠队列
+## 最小验收指标
 
-### 消息确认机制
+- 生产速率、消费速率和 lag；
+- 每个 group 的 PEL 数量与最老消息空闲时间；
+- 处理成功率、重试次数、死信数量；
+- 端到端延迟，而不只是 `XADD` 延迟；
+- Stream 长度、内存、裁剪量和故障恢复时间。
 
-```python
-import redis
-import json
-import time
+## 常见误区与适用边界
 
-class ReliableQueue:
-    def __init__(self, redis_client, queue_name, processing_name=None):
-        self.r = redis_client
-        self.queue_name = queue_name
-        self.processing_name = processing_name or f'{queue_name}:processing'
+- Pub/Sub 不保存离线消息，不能承担必须送达的任务。
+- `XREADGROUP` 返回消息不等于处理完成，必须在副作用成功后 `XACK`。
+- ACK 不等于 exactly-once；ACK 超时或消费者崩溃都会产生重复窗口。
+- 消费者数量增加不等于单 Stream 自动分片。
+- 不设裁剪和死信策略会把可靠性问题转成内存问题。
 
-    def enqueue(self, message, ttl=3600):
-        if isinstance(message, dict):
-            message = json.dumps(message)
+## 本篇自检
 
-        data = {
-            'message': message,
-            'enqueued_at': time.time()
-        }
-        self.r.lpush(self.queue_name, json.dumps(data))
+<details>
+<summary>1. 为什么通知在线 WebSocket 客户端可以用 Pub/Sub，而扣库存不适合？</summary>
 
-    def dequeue(self, timeout=0):
-        result = self.r.brpoplpush(
-            self.queue_name,
-            self.processing_name,
-            timeout
-        )
+在线通知允许断线期间丢失；扣库存需要追踪、重试和幂等。Pub/Sub 是 at-most-once，没有历史和 ACK。
 
-        if result:
-            return json.loads(result)
+</details>
 
-        return None
+<details>
+<summary>2. 消息进入 PEL 表示什么？</summary>
 
-    def acknowledge(self, message):
-        self.r.lrem(self.processing_name, 1, json.dumps(message))
+表示它已投递给某个 consumer，但该 group 尚未 ACK。它可能正在处理、处理失败或消费者已崩溃。
 
-    def retry(self, message, delay=60):
-        self.r.lrem(self.processing_name, 1, json.dumps(message))
-        time.sleep(delay)
-        self.enqueue(message['message'])
+</details>
 
-    def size(self):
-        return self.r.llen(self.queue_name)
+<details>
+<summary>3. 为什么 `XACK` 超时后不能假设消息未确认？</summary>
 
-    def processing_size(self):
-        return self.r.llen(self.processing_name)
-```
+服务端可能已经执行 ACK，只是响应丢失；反之也可能未执行。业务副作用和确认都要容忍重复观察，并通过幂等状态判断。
 
-### 使用示例
+</details>
 
-```python
-# 创建可靠队列
-queue = ReliableQueue(r, 'task_queue')
+## 本篇总结
 
-# 生产者
-queue.enqueue({'task_id': 1, 'data': 'task data'})
-queue.enqueue({'task_id': 2, 'data': 'task data 2'})
+消息选型先看投递语义：Pub/Sub 面向可丢广播，List 适合简单队列，Streams 用历史、消费组、PEL、ACK 和 claim 支撑可追踪的至少一次处理。可靠消费的终点仍是业务幂等、保留策略和故障演练。
 
-# 消费者
-while True:
-    message = queue.dequeue(timeout=5)
+## 下一篇衔接
 
-    if message:
-        try:
-            task_id = message['message']['task_id']
-            print(f'处理任务: {task_id}')
+消息和缓存都依赖单节点可用性。下一篇解释主节点如何用 replication ID、offset 和 backlog 同步副本，以及 Sentinel 如何检测故障并让客户端发现新主节点。
 
-            # 模拟处理
-            process_task(task_id)
+## 资料来源
 
-            # 确认完成
-            queue.acknowledge(message)
-
-        except Exception as e:
-            print(f'处理失败: {e}')
-            # 重新入队
-            queue.retry(message, delay=10)
-```
-
-## 延时队列
-
-### 基于 Sorted Set
-
-```python
-import redis
-import json
-import time
-
-class DelayQueue:
-    def __init__(self, redis_client, queue_name):
-        self.r = redis_client
-        self.queue_name = queue_name
-        self.zset_name = f'{queue_name}:delay'
-
-    def enqueue(self, message, delay_seconds):
-        if isinstance(message, dict):
-            message = json.dumps(message)
-
-        execute_time = time.time() + delay_seconds
-        self.r.zadd(self.zset_name, {message: execute_time})
-
-    def dequeue(self):
-        now = time.time()
-
-        results = self.r.zrangebyscore(
-            self.zset_name,
-            0,
-            now,
-            start=0,
-            num=1
-        )
-
-        if results:
-            message = results[0]
-            self.r.zrem(self.zset_name, message)
-
-            if isinstance(message, bytes):
-                message = message.decode()
-
-            try:
-                return json.loads(message)
-            except:
-                return message
-
-        return None
-
-    def size(self):
-        return self.r.zcard(self.zset_name)
-```
-
-### 使用示例
-
-```python
-delay_queue = DelayQueue(r, 'delay_task')
-
-# 发送延时消息（5秒后执行）
-delay_queue.enqueue({'task': 'send_email', 'to': 'user@example.com'}, delay_seconds=5)
-
-# 消费者轮询
-while True:
-    message = delay_queue.dequeue()
-
-    if message:
-        print(f'执行任务: {message}')
-        execute_task(message)
-
-    time.sleep(1)
-```
-
-## 小结
-
-| 方案           | 适用场景           | 特点           |
-| -------------- | ------------------ | -------------- |
-| **List 队列**  | 任务队列、定时任务 | 持久化、可靠   |
-| **Pub/Sub**    | 实时消息、广播     | 低延迟、多订阅 |
-| **Sorted Set** | 延时队列、定时任务 | 精确延时       |
-| **可靠队列**   | 关键任务处理       | 消息确认、重试 |
+- [Redis Streams](https://redis.io/docs/latest/develop/data-types/streams/)
+- [Redis Pub/Sub](https://redis.io/docs/latest/develop/pubsub/)
+- [Redis streaming use case](https://redis.io/docs/latest/develop/use-cases/streaming/)
+- [Redis job queue with redis-py](https://redis.io/docs/latest/develop/use-cases/job-queue/redis-py/)

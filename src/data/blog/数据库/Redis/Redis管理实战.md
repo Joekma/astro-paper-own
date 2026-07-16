@@ -1,315 +1,214 @@
 ---
-title: Redis管理实战
+title: Redis 生产运维：SLO、内存、延迟、安全与恢复闭环
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: redis-management
 featured: false
 draft: false
 tags:
   - Redis
-  - 数据库
   - 运维
-description: "Redis管理运维实战经验，包含配置优化、监控和安全"
+  - 可观测性
+  - ACL
+description: 建立 Redis 生产运维控制面，用 SLO、驱动指标和护栏连接内存、延迟、连接、持久化、复制、安全、备份与变更流程。
 series: Redis
-seriesOrder: 6
+seriesOrder: 10
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
 
-Redis 管理涉及配置优化、运维监控、安全设置等方面，是保证 Redis 高效稳定运行的关键。
+本文是系列收束篇。你应理解前九篇的键、TTL、客户端、缓存、持久化、原子操作、锁、Streams、复制和 Cluster 边界。
 
-![Redis 运维控制面围绕配置、内存、持久化、安全、备份恢复、监控告警和性能调优形成闭环](./images/redis-operations-control-plane-figure-01.png)
+读完后，你应该能够：
 
-## 核心配置
+- 用少量结果 KPI、驱动指标和护栏定义 Redis 服务健康，而不是堆叠仪表盘；
+- 从内存、延迟、连接、持久化和复制证据定位风险；
+- 用 ACL、网络隔离和 TLS 建立最小权限，而不是只设置一个全局密码；
+- 执行有回滚、可验证的变更与恢复演练，并写出最小运行手册。
 
-### 内存配置
+## 真实场景：命中率 98%，用户仍然超时
 
-```bash
-# 最大内存
-maxmemory 2gb
-maxmemory-policy allkeys-lru
+`shop-api` 的缓存命中率看起来很好，但商品接口 p99 突然升高。Redis CPU 不高，团队准备扩大连接池。进一步检查发现 AOF 重写叠加大键删除，连接池等待和数据库回源又放大了尾延迟。
 
-# 内存淘汰策略
-# noeviction - 不淘汰
-# allkeys-lru - 所有key最近最少使用
-# volatile-lru - 设置过期key最近最少使用
-# allkeys-random - 所有key随机淘汰
-# volatile-random - 设置过期key随机淘汰
-# volatile-ttl - 设置过期key优先淘汰TTL短的
-```
+运维不能从一个漂亮指标直接跳到调参。需要先定义用户结果，再用可操作的驱动指标定位，并用正确性、下游压力和成本作护栏。
 
-### 网络配置
+## 运维 KPI 框架
 
-```bash
-# 绑定地址
-bind 0.0.0.0
+<!-- figure-anchor:r10-a01 -->
 
-# 端口
-port 6379
+<!-- figure-managed:r10-f01:start -->
 
-# 超时设置
-timeout 300
-tcp-keepalive 60
-```
+![undefined](./images/r10-f01-operations-kpi-tree.png)
 
-### RDB 配置
+<!-- figure-managed:r10-f01:end -->
 
-```bash
-# 快照策略
-save 900 1      # 900秒内有1个key变化
-save 300 10     # 300秒内有10个key变化
-save 60 10000   # 60秒内有10000个key变化
+建议保留 3 个结果指标：
 
-# 禁用 RDB
-save ""
+| 结果 KPI | 定义                                       | 决策用途                             |
+| -------- | ------------------------------------------ | ------------------------------------ |
+| 可用性   | 成功完成的业务 Redis 操作 / 合法操作总数   | 是否发布、故障切流、容量扩展         |
+| 尾延迟   | 按命令类别和业务拆分的 p95/p99 端到端耗时  | 定位用户超时和排队，不被均值掩盖     |
+| 可恢复性 | 最近一次恢复演练的 RPO、RTO 与不变量通过率 | 判断备份、复制和运行手册是否真的可用 |
 
-# 压缩
-rdbcompression yes
-```
+驱动指标包括池等待、连接错误、缓存回源、`used_memory`、RSS、淘汰、过期、大键、慢日志、fork、AOF/RDB 状态、复制 offset 差、PEL 积压和槽位负载。
 
-### AOF 配置
+护栏包括业务错误率、陈旧数据/重复处理、权威数据库 QPS、网络与磁盘成本。不要用统一静态阈值替代基线：阈值应来自容量上限、SLO、峰值负载和演练结果。
+
+## 证据采集顺序
+
+<!-- figure-anchor:r10-a02 -->
+
+<!-- figure-managed:r10-f02:start -->
+
+![undefined](./images/r10-f02-evidence-collection-stack.png)
+
+<!-- figure-managed:r10-f02:end -->
+
+先确认影响范围和时间线，再按层收集：
 
 ```bash
-# 开启 AOF
-appendonly yes
-appendfilename "appendonly.aof"
-
-# 同步策略
-# always - 每次写入同步
-# everysec - 每秒同步（推荐）
-# no - 由系统决定
-appendfsync everysec
-
-# 重写配置
-auto-aof-rewrite-percentage 100
-auto-aof-rewrite-min-size 64mb
+redis-cli PING
+redis-cli INFO server
+redis-cli INFO clients
+redis-cli INFO memory
+redis-cli INFO stats
+redis-cli INFO persistence
+redis-cli INFO replication
+redis-cli SLOWLOG GET 20
+redis-cli LATENCY LATEST
+redis-cli LATENCY DOCTOR
+redis-cli MEMORY STATS
 ```
 
-## 运维命令
+`MONITOR` 会输出所有命令并显著增加开销与敏感信息风险，不应作为生产常规观测。`KEYS *` 会扫描整个键空间；盘点使用带 `COUNT` 的 `SCAN`，并控制频率。
 
-### 服务器信息
+## 内存：数据、开销和碎片必须一起看
 
-```bash
-# 查看服务器信息
-INFO
+`used_memory` 是 Redis 分配器统计，进程 RSS 还受碎片、COW 和操作系统影响。常用比值：
 
-# 查看特定信息
-INFO memory
-INFO clients
-INFO stats
-INFO replication
-
-# 查看配置
-CONFIG GET *
-CONFIG GET maxmemory
+```text
+fragmentation ratio ≈ used_memory_rss / used_memory
 ```
 
-### 客户端管理
+比值升高可能来自碎片，也可能只是数据集很小时的固定开销；不能看到一个比值就重启。结合 `used_memory_peak`、`mem_fragmentation_bytes`、分配器字段、写入/删除模式和操作系统 RSS 判断。
 
-```bash
-# 查看客户端
-CLIENT LIST
-CLIENT LIST type=normal
+容量预算至少包含：数据、键/对象开销、复制 backlog、客户端缓冲、AOF/复制缓冲、fork/COW 峰值和安全余量。配置 `maxmemory` 时不能把机器全部内存交给数据集。
 
-# 杀掉客户端
-CLIENT KILL ip:port
+大键识别可在低峰使用 `redis-cli --bigkeys` 的渐进扫描；LFU 策略下可辅助使用 `--hotkeys`。扫描本身也有成本，结果要与业务访问指标交叉验证。
 
-# 设置客户端名称
-CLIENT SETNAME my-client
-CLIENT GETNAME
+## 延迟：找事件，不只找慢命令
+
+Redis 延迟可能来自慢命令、大响应、Lua、fork、COW、AOF fsync、磁盘抖动、CPU 抢占、网络 RTT 或客户端池等待。`SLOWLOG` 记录服务端执行时间，不包含网络和客户端排队，因此端到端慢而 SLOWLOG 为空并不矛盾。
+
+<!-- figure-anchor:r10-a03 -->
+
+<!-- figure-managed:r10-f03:start -->
+
+![undefined](./images/r10-f03-controlled-change-loop.png)
+
+<!-- figure-managed:r10-f03:end -->
+
+排障最小闭环：
+
+1. 用应用 trace 确定慢的是连接获取、网络还是命令。
+2. 对齐 `LATENCY` 事件、SLOWLOG、持久化和系统指标时间线。
+3. 找到一个可控变量，在预生产复现实验。
+4. 一次只改一个参数，比较 p99 与正确性护栏。
+5. 无改善或护栏变差就回滚。
+
+## 客户端与背压
+
+监控 `connected_clients`、`blocked_clients`、`rejected_connections`、输入/输出缓冲和应用池等待。连接数接近 `maxclients` 只是容量信号；简单扩大上限可能耗尽文件描述符或放大故障并发。
+
+超时应分层且总预算递减：连接超时 < Redis 命令预算 < 上游 HTTP 预算。重试需要指数退避、随机抖动、次数上限和幂等条件。Redis 故障时还要限制数据库回源，避免缓存雪崩把权威源拖垮。
+
+## 安全：网络边界 + TLS + ACL
+
+Redis 不应暴露到公网。生产至少组合：私有网络/防火墙、TLS、ACL 最小权限、凭据轮换和审计。
+
+以下是 ACL 文件示意，不要把占位 secret 原样使用：
+
+```conf
+user default off
+user shop-api reset on >SECRET_FROM_VAULT \
+  ~product:* ~stock:* ~orders:* \
+  +get +mget +set +del +expire +pttl \
+  +xadd +xreadgroup +xack +xpending
 ```
 
-### 数据库操作
+应用账户不应拥有 `CONFIG`、`ACL`、`FLUSHALL`、`DEBUG` 等管理命令。ACL 规则是累加应用的，变更用户前要了解 `reset` 语义并在测试环境验证。命令重命名不是 ACL 的替代品。
 
-```bash
-# 切换数据库
-SELECT 0
+## 备份、恢复与变更门禁
 
-# 清空当前数据库
-FLUSHDB
+前文已解释 RDB/AOF、复制和 Cluster，本篇只保留运维责任：
 
-# 清空所有数据库
-FLUSHALL
+- 备份跨独立故障域保存，包含数据、配置、ACL、版本和校验和；
+- 定期从只读副本恢复到隔离环境，验证 RPO、RTO 和业务不变量；
+- 变更前记录基线、影响范围、回滚条件和负责人；
+- 滚动操作先验证副本健康、复制积压和容量余量；
+- 变更后比较 KPI 和护栏，不以“命令返回 OK”作为完成标准。
 
-# 查看 key 数量
-DBSIZE
+配置在线修改与文件状态可能不同。使用版本化配置和自动化部署；若确需 `CONFIG SET`，明确是否 `CONFIG REWRITE`、配置文件是否可写，以及重启后的真实值。
+
+## 示例运行手册：内存快速上升
+
+```text
+触发：used_memory 在 10 分钟内持续上升，预测 30 分钟内触达容量门槛。
+确认：业务错误率、evicted_keys、写入 QPS、RSS、复制/AOF 状态。
+定位：按命名空间抽样 SCAN；检查 bigkeys、TTL 覆盖、客户端输出缓冲。
+止损：限制异常写入方；必要时按预案扩容/迁槽；保护数据库回源。
+禁止：直接 FLUSHALL、生产 KEYS *、无证据重启、同时修改多项内存参数。
+恢复：指标回到基线并持续一个观察窗口；验证关键业务不变量。
+复盘：记录根因、检测缺口、容量模型与自动化修复项。
 ```
 
-### 性能监控
+运行手册中的阈值必须替换为本系统数据，且每季度或重大版本变更后演练。
 
-```bash
-# 实时统计
-MONITOR
+## 常见误区与适用边界
 
-# 慢查询日志
-SLOWLOG GET 10
-SLOWLOG LEN
-SLOWLOG RESET
+- 命中率高不代表用户延迟和数据正确性好。
+- SLOWLOG 空不代表 Redis 路径不慢，它不含网络和客户端排队。
+- 增大 `maxclients`、`maxmemory` 或超时不是无条件优化。
+- `requirepass` 只围绕 default 用户，不能替代 ACL 最小权限。
+- 没有恢复演练的备份只是“存在的文件”，不是已验证恢复能力。
 
-# 设置慢查询阈值
-CONFIG SET slowlog-log-slower-than 1000
-```
+## 本篇自检
 
-## 备份与恢复
+<details>
+<summary>1. 为什么结果 KPI 不直接使用 connected_clients？</summary>
 
-### RDB 备份
+连接数是驱动/容量指标，升降本身不代表用户价值。可用性、尾延迟和可恢复性才直接影响服务决策。
 
-```bash
-# 手动备份
-BGSAVE
+</details>
 
-# 检查后台保存状态
-LASTSAVE
+<details>
+<summary>2. 应用 p99 很高但 SLOWLOG 为空，下一步看什么？</summary>
 
-# 复制备份文件
-cp dump.rdb /backup/
-```
+看客户端池等待、网络 RTT、连接建立、响应体积，并对齐 LATENCY、持久化和系统调度事件；SLOWLOG 只统计服务端命令执行阶段。
 
-### AOF 恢复
+</details>
 
-```bash
-# 开启 AOF
-CONFIG SET appendonly yes
+<details>
+<summary>3. 为什么备份恢复后还要验证 TTL？</summary>
 
-# 修复 AOF 文件
-redis-check-aof --fix appendonly.aof
-```
+键存在不代表业务状态正确。TTL 异常可能让旧数据长期保留，或让大量键同时过期并触发回源雪崩。
 
-### 数据迁移
+</details>
 
-```bash
-# 使用 SCAN 迁移
-redis-cli --scan | redis-cli -pipe < data.txt
+## 本篇总结
 
-# 使用 MIGRATE（Redis 3.0+）
-MIGRATE 192.168.1.100 6379 "" 0 5000 KEYS key1 key2
-```
+Redis 生产运维是一个证据闭环：用可用性、尾延迟和可恢复性定义结果，以内存、连接、持久化、复制和积压解释变化，再用业务正确性与下游压力约束优化。ACL、备份恢复和有回滚的变更流程与性能指标同等重要。
 
-## 安全配置
+## 下一篇衔接
 
-### 密码认证
+系列到此完成，没有下一篇概念文章。建议把 `shop-api` 示例落到隔离测试环境，建立基准负载，依次演练缓存失效、AOF 重写、消费者崩溃、主节点故障和 Cluster 迁槽，并把实际阈值回填到运行手册。
 
-```bash
-# 设置密码
-CONFIG SET requirepass "your_password"
+## 资料来源
 
-# 认证
-AUTH your_password
-
-# 永久设置（在配置文件中）
-requirepass your_password
-```
-
-### 命令重命名
-
-```bash
-# 重命名危险命令
-CONFIG SET rename-command FLUSHDB "FLUSHDB_mypass"
-CONFIG SET rename-command FLUSHALL "FLUSHALL_mypass"
-CONFIG SET rename-command CONFIG "CONFIG_mypass"
-```
-
-### IP 白名单
-
-```bash
-# 绑定特定 IP
-bind 127.0.0.1 192.168.1.100
-
-# 保护模式
-protected-mode yes
-```
-
-## 性能优化
-
-### 内存优化
-
-```bash
-# 使用ziplist
-hash-max-ziplist-entries 512
-hash-max-ziplist-value 64
-
-# 使用intset
-set-max-intset-entries 512
-
-# 使用quicklist
-list-max-ziplist-size -2
-```
-
-### 连接优化
-
-```bash
-# 最大连接数
-maxclients 10000
-
-# TCP 积压
-tcp-backlog 511
-
-# 客户端超时
-timeout 300
-```
-
-### 持久化优化
-
-```bash
-# 后台保存子进程优先级
-replica-read-only yes
-
-# 关闭 BGSAVE 时允许写入
-stop-writes-on-bgsave-error yes
-```
-
-## 监控告警
-
-### 关键指标
-
-| 指标              | 说明       | 告警阈值         |
-| ----------------- | ---------- | ---------------- |
-| used_memory       | 已使用内存 | > maxmemory 80%  |
-| connected_clients | 连接数     | > maxclients 80% |
-| blocked_clients   | 阻塞客户端 | > 0              |
-| evicted_keys      | 淘汰key数  | > 0              |
-| replication_lag   | 复制延迟   | > 5秒            |
-
-### Python 监控脚本
-
-```python
-import redis
-import time
-
-def monitor_redis(host='localhost', port=6379):
-    r = redis.Redis(host=host, port=port)
-
-    while True:
-        info = r.info()
-
-        metrics = {
-            'used_memory': info['used_memory_human'],
-            'connected_clients': info['connected_clients'],
-            'blocked_clients': info['blocked_clients'],
-            'evicted_keys': info['evicted_keys'],
-            'instantaneous_ops_per_sec': info['instantaneous_ops_per_sec'],
-            'keyspace_hits': info['keyspace_hits'],
-            'keyspace_misses': info['keyspace_misses']
-        }
-
-        hit_rate = info['keyspace_hits'] / (info['keyspace_hits'] + info['keyspace_misses']) * 100
-
-        print(f"时间: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"内存: {metrics['used_memory']}")
-        print(f"命中率: {hit_rate:.2f}%")
-        print("-" * 50)
-
-        time.sleep(60)
-```
-
-## 小结
-
-| 类别       | 关键配置            |
-| ---------- | ------------------- |
-| **内存**   | maxmemory、淘汰策略 |
-| **持久化** | RDB 快照、AOF 日志  |
-| **安全**   | 密码、IP 白名单     |
-| **性能**   | 连接数、慢查询      |
-| **监控**   | 内存、命中率、延迟  |
+- [Redis administration](https://redis.io/docs/latest/operate/oss_and_stack/management/admin/)
+- [Redis ACL](https://redis.io/docs/latest/operate/oss_and_stack/management/security/acl/)
+- [TLS](https://redis.io/docs/latest/operate/oss_and_stack/management/security/encryption/)
+- [Redis latency monitoring](https://redis.io/docs/latest/operate/oss_and_stack/management/optimization/latency-monitor/)
+- [Redis memory optimization](https://redis.io/docs/latest/operate/oss_and_stack/management/optimization/memory-optimization/)

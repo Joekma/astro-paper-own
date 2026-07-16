@@ -4,9 +4,9 @@ series: selenium
 seriesOrder: 12
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
-modDatetime: 2026-05-09T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: selenium-javascript-execution
-description: '详细介绍Selenium中JavaScript执行的高级技巧，包括DOM操作、性能优化、自定义滚动等。'
+description: "详细介绍Selenium中JavaScript执行的高级技巧，包括DOM操作、性能优化、自定义滚动等。"
 tags:
   - Selenium
   - RPA
@@ -16,11 +16,32 @@ draft: false
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
+
+掌握 WebDriver 标准交互、等待、窗口与 frame 上下文，并能阅读基本 JavaScript。
+
+读完后，你应该能够：
+
+- 解释 execute_script 的参数序列化、返回值和当前上下文；
+- 正确实现 execute_async_script 的回调与脚本超时；
+- 区分只读诊断、用户等价操作和改变应用内部状态的风险；
+- 在使用 JavaScript 前记录标准 API 不足的原因和验证方法；
+
+全系列沿用同一个案例：在测试环境自动化 Acme 采购门户。用户登录后搜索采购单 PO-2026-0715，在明细页导出 CSV；测试使用 data-testid 作为稳定定位契约，并把失败截图、日志和下载文件写入独立运行目录。
+
+**本篇边界：**JavaScript 执行是逃生舱而不是首选交互层。它在当前窗口/frame 中运行，可能绕过可见性、可访问性和真实用户事件链。
+
+## 真实场景与核心问题
 
 JavaScript 执行是 Selenium 中最强大的功能之一。通过 `execute_script` 和 `execute_async_script` 方法，我们可以直接与页面 DOM 交互，执行复杂操作，实现 Selenium API 无法完成的任务。
 
-![Selenium JavaScript 执行同步异步边界图](./images/selenium-javascript-execution-boundary-figure-01.png)
+<!-- figure-anchor:s12-a01 -->
+
+<!-- figure-managed:s12-f01:start -->
+
+![按标准 WebDriver、只读诊断、等价兜底和高风险修改划分 JavaScript 使用边界](./images/s12-f01-javascript-boundary.png)
+
+<!-- figure-managed:s12-f01:end -->
 
 ### JavaScript 执行能力
 
@@ -248,7 +269,13 @@ is_in_viewport = driver.execute_script("""
 
 ## 动态内容处理
 
-### 懒加载图片
+<!-- figure-anchor:s12-a02 -->
+
+<!-- figure-managed:s12-f02:start -->
+
+![比较 execute_script 与 execute_async_script 的参数、回调、序列化结果和超时边界](./images/s12-f02-script-sync-async-call.png)
+
+<!-- figure-managed:s12-f02:end -->### 懒加载图片
 
 ```python
 def lazy_load_all_images(driver):
@@ -268,22 +295,22 @@ def lazy_load_all_images(driver):
 def infinite_scroll(driver, max_scrolls=10, delay=2):
     """无限滚动"""
     import time
-    
+
     last_height = 0
-    
+
     for _ in range(max_scrolls):
         # 滚动到底部
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        
+
         time.sleep(delay)
-        
+
         # 检查高度变化
         new_height = driver.execute_script("return document.body.scrollHeight;")
-        
+
         if new_height == last_height:
             # 没有新内容加载
             break
-        
+
         last_height = new_height
 ```
 
@@ -294,25 +321,25 @@ def wait_for_dynamic_content(driver, selector, timeout=10):
     """等待动态内容加载"""
     import time
     start = time.time()
-    
+
     while time.time() - start < timeout:
         # 检查元素是否存在
         exists = driver.execute_script("""
             return document.querySelector(arguments[0]) !== null;
         """, selector)
-        
+
         if exists:
             # 检查元素是否可见
             is_visible = driver.execute_script("""
                 var el = document.querySelector(arguments[0]);
                 return el && el.offsetHeight > 0 && el.offsetWidth > 0;
             """, selector)
-            
+
             if is_visible:
                 return True
-        
+
         time.sleep(0.5)
-    
+
     return False
 ```
 
@@ -354,7 +381,7 @@ driver.execute_script("""
 driver.execute_script("""
     var blockedTypes = ['image', 'stylesheet', 'font'];
     var originalFetch = window.fetch;
-    
+
     // 拦截请求（根据需要调整）
     // 注意：这会影响实际功能，使用时需谨慎
 """)
@@ -367,13 +394,13 @@ driver.execute_script("""
 driver.execute_script("""
     var container = document.getElementById('container');
     var fragment = document.createDocumentFragment();
-    
+
     for (var i = 0; i < 1000; i++) {
         var div = document.createElement('div');
         div.textContent = 'Item ' + i;
         fragment.appendChild(div);
     }
-    
+
     container.appendChild(fragment);
 """)
 ```
@@ -406,42 +433,42 @@ def javascript_drag_drop(driver, source, target):
     driver.execute_script("""
         var source = arguments[0];
         var target = arguments[1];
-        
+
         var dataTransfer = {
             dropEffect: 'move',
             files: [],
             items: {},
             types: []
         };
-        
+
         var dragStartEvent = new DragEvent('dragstart', {
             bubbles: true,
             cancelable: true,
             dataTransfer: dataTransfer
         });
         source.dispatchEvent(dragStartEvent);
-        
+
         var dragEnterEvent = new DragEvent('dragenter', {
             bubbles: true,
             cancelable: true,
             dataTransfer: dataTransfer
         });
         target.dispatchEvent(dragEnterEvent);
-        
+
         var dragOverEvent = new DragEvent('dragover', {
             bubbles: true,
             cancelable: true,
             dataTransfer: dataTransfer
         });
         target.dispatchEvent(dragOverEvent);
-        
+
         var dropEvent = new DragEvent('drop', {
             bubbles: true,
             cancelable: true,
             dataTransfer: dataTransfer
         });
         target.dispatchEvent(dropEvent);
-        
+
         var dragEndEvent = new DragEvent('dragend', {
             bubbles: true,
             cancelable: true,
@@ -461,11 +488,11 @@ def paste_from_clipboard(driver, element, text):
     driver.execute_script("""
         var element = arguments[0];
         var text = arguments[1];
-        
+
         // 使用 Clipboard API
         navigator.clipboard.writeText(text).then(function() {
             element.focus();
-            
+
             var pasteEvent = new ClipboardEvent('paste', {
                 bubbles: true,
                 cancelable: true,
@@ -487,10 +514,10 @@ def highlight_element(driver, element):
         var element = arguments[0];
         var originalOutline = element.style.outline;
         var originalBackground = element.style.backgroundColor;
-        
+
         element.style.outline = '3px solid red';
         element.style.backgroundColor = 'yellow';
-        
+
         setTimeout(function() {
             element.style.outline = originalOutline;
             element.style.backgroundColor = originalBackground;
@@ -519,50 +546,51 @@ driver.execute_script("""
 """, input_element)
 ```
 
-## 常见问题解决
+## JavaScript 使用决策记录
 
-### 问题 1：隐藏元素操作
+每个 JavaScript 兜底至少记录四项：标准 WebDriver API 为什么不足、脚本读取或修改什么、返回值如何验证、页面升级后由哪个测试发现失效。对不可信文本只通过 arguments 传参，不要拼接进脚本源码。
 
-```python
-# 移除隐藏属性
-driver.execute_script("""
-    var element = arguments[0];
-    element.style.display = 'block';
-""", element)
+## 常见误区与适用边界
 
-# 然后操作
-element.click()
-```
+- 用 JavaScript click 成功不代表真实用户可点击；它可能绕过遮挡和可访问性问题。
+- 直接修改 DOM 只改变当前页面内存，未必触发框架状态或服务端业务。
+- execute_async_script 必须调用 Selenium 提供的回调，否则直到脚本超时。
 
-### 问题 2：日期选择器
+## 本篇自检
 
-```python
-# 直接设置日期输入框的值
-driver.execute_script("""
-    var input = arguments[0];
-    var nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype, 'value'
-    ).set;
-    nativeInputValueSetter.call(input, '2024-12-25');
-    var inputEvent = new Event('input', { bubbles: true });
-    input.dispatchEvent(inputEvent);
-    var changeEvent = new Event('change', { bubbles: true });
-    input.dispatchEvent(changeEvent);
-""", date_input)
-```
+<details>
+<summary>1. 什么时候 JavaScript 滚动是合理兜底？</summary>
 
-### 问题 3：上传隐藏 input
+标准元素移动仍被固定导航遮挡且已验证页面设计时，可小范围滚动并保留原因；优先使用 Actions 或原生交互。
 
-```python
-# 显示隐藏的上传 input
-driver.execute_script("""
-    var input = arguments[0];
-    input.style.display = 'block';
-    input.style.visibility = 'visible';
-    input.style.opacity = '1';
-    input.style.position = 'fixed';
-""", file_input)
+</details>
 
-# 上传文件
-file_input.send_keys("/path/to/file.png")
-```
+<details>
+<summary>2. 为什么设置 input.value 后应用可能仍不知道？</summary>
+
+React/Vue 等框架可能维护独立状态并依赖特定事件；直接改 DOM 绕过了正常输入链。
+
+</details>
+
+<details>
+<summary>3. 执行第三方字符串脚本有什么风险？</summary>
+
+它在页面权限上下文运行，可能读取敏感数据或改变业务状态；脚本应固定、审查、最小化并禁止拼接不可信输入。
+
+</details>
+
+## 本篇总结
+
+JavaScript 能扩展观察与诊断能力，但也能绕过 WebDriver 的用户语义。使用时应最小化、固定脚本、限制输入并验证业务结果。
+
+## 下一篇衔接
+
+最后一篇把测试放入 CI/CD 与 Grid，处理浏览器矩阵、容量、隔离、制品和失败门禁。
+
+## 资料来源与版本基线
+
+本文以 Selenium 4 与 Python 3.10+ 为基线；具体版本与浏览器支持应以发布时的官方说明为准。
+
+- [WebDriver JavaScript API](https://www.selenium.dev/selenium/docs/api/py/webdriver_remote/selenium.webdriver.remote.webdriver.html)
+- [Actions API](https://www.selenium.dev/documentation/webdriver/actions_api/)
+- [Understanding common errors](https://www.selenium.dev/documentation/webdriver/troubleshooting/errors/)

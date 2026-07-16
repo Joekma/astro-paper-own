@@ -1,186 +1,208 @@
 ---
-title: Redis持久化机制：RDB和AOF
+title: Redis 持久化：RDB、AOF、恢复目标与演练
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-04-22T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: redis-persistence
 featured: false
 draft: false
 tags:
   - Redis
-  - 数据库
   - 持久化
   - RDB
   - AOF
-description: "Redis持久化机制，RDB和AOF详解"
+  - 灾难恢复
+description: 用 RPO、RTO 和运行时延迟比较 RDB、AOF 与混合持久化，理解 fork/COW、多文件 AOF，并完成可验证的备份恢复演练。
 series: Redis
-seriesOrder: 5
+seriesOrder: 4
 language: zh-CN
 ---
 
-> Redis 持久化是保证数据安全的关键机制，RDB 和 AOF 是两种主要的持久化方式，各有优缺点。
+## 前置知识与学习目标
 
-![Redis 内存数据可以通过 RDB 快照和 AOF 追加日志落盘，重写与混合持久化共同服务重启恢复](./images/redis-rdb-aof-recovery-figure-01.png)
+你应理解 Redis 的键、写命令、TTL，并知道缓存数据与权威业务数据的区别。本文以 Redis Open Source 7.2+ 的多文件 AOF 为基线。
 
-## 持久化概述
+读完后，你应该能够：
 
-### 两种方式对比
+- 用 RPO、RTO 和运行时延迟定义持久化目标，而不是争论“RDB 还是 AOF 更好”；
+- 解释 RDB 的 `fork`/写时复制和 AOF 的追加、`fsync`、重写流程；
+- 识别持久化与复制、备份的不同责任；
+- 从备份副本启动隔离实例，并验证数据、TTL 和恢复耗时。
 
-| 特性           | RDB          | AOF        |
-| -------------- | ------------ | ---------- |
-| **原理**       | 定时快照     | 记录写命令 |
-| **文件大小**   | 小           | 大         |
-| **恢复速度**   | 快           | 慢         |
-| **数据完整性** | 可能丢失数据 | 取决于策略 |
-| **性能影响**   | 较低         | 略高       |
+## 真实场景：能重启，不等于能恢复业务
 
-## RDB 持久化
+`shop-api` 的商品详情缓存可以从数据库重建，但库存键若暂时承担预扣状态，丢失 30 秒可能造成超卖。团队提出“打开 AOF 就安全了”，却没有回答：最多允许丢多少数据？多久必须恢复？备份是否能在另一台机器读取？
 
-### 配置
+持久化方案必须从目标反推：
 
-```bash
+- **RPO（恢复点目标）**：故障后最多能接受丢失多长时间的数据。
+- **RTO（恢复时间目标）**：从故障到业务恢复最多允许多久。
+- **运行时预算**：`fork`、磁盘写入和重写能给在线 p99 延迟带来多大影响。
+
+## RDB：某个时刻的数据快照
+
+<!-- figure-anchor:r04-a01 -->
+
+<!-- figure-managed:r04-f01:start -->
+
+![undefined](./images/r04-f01-rdb-fork-cow-timeline.png)
+
+<!-- figure-managed:r04-f01:end -->
+
+`BGSAVE` 的典型流程：主进程 `fork` 子进程；子进程遍历当时的内存视图并写临时 RDB；完成后原子替换目标文件。父子进程起初共享物理内存页，之后父进程写入的页面触发写时复制（COW）。
+
+RDB 文件紧凑、便于异地备份和快速加载，但故障时会丢失最后一次成功快照之后的写入。大数据集上的 `fork` 延迟和高写入期间的 COW 额外内存，必须纳入容量与尾延迟测试。
+
+```conf
 save 900 1
 save 300 10
 save 60 10000
 dbfilename dump.rdb
-dir /var/lib/redis
+dir /data
 rdbcompression yes
 rdbchecksum yes
 stop-writes-on-bgsave-error yes
 ```
 
-### 手动触发
+`SAVE` 会同步阻塞服务器，通常只用于明确的离线维护；在线实例使用 `BGSAVE`，并观察 `rdb_bgsave_in_progress`、`rdb_last_bgsave_status` 和 `latest_fork_usec`。
 
-```bash
-SAVE
-BGSAVE
+## AOF：记录改变数据集的写操作
 
-redis-cli SAVE
-redis-cli BGSAVE
-```
+<!-- figure-anchor:r04-a02 -->
 
-### 工作原理
+<!-- figure-managed:r04-f02:start -->
 
-```
-定时触发 → 子进程生成RDB文件 → 替换旧文件
-```
+![undefined](./images/r04-f02-aof-write-rewrite-path.png)
 
-1. 父进程 fork 子进程
-2. 子进程遍历内存数据
-3. 写入临时 RDB 文件
-4. 替换旧 RDB 文件
+<!-- figure-managed:r04-f02:end -->
 
-### 优缺点
+写命令执行后进入 AOF 缓冲区，再按策略刷入持久存储：
 
-- **优点**：恢复快、文件紧凑
-- **缺点**：可能丢失最后一次快照后的数据
+| `appendfsync` | 故障窗口        | 运行代价 | 适用说明                             |
+| ------------- | --------------- | -------- | ------------------------------------ |
+| `always`      | 尽量缩到每批写  | 最高     | 仍需验证存储和虚拟化层是否兑现耐久性 |
+| `everysec`    | 通常约 1 秒量级 | 常用折中 | Redis 官方建议且常作为默认选择       |
+| `no`          | 由操作系统决定  | 较低     | RPO 不确定，不适合重要状态           |
 
-## AOF 持久化
-
-### 配置
-
-```bash
+```conf
 appendonly yes
-appendfilename "appendonly.aof"
+appenddirname "appendonlydir"
 appendfsync everysec
-dir /var/lib/redis
 auto-aof-rewrite-percentage 100
 auto-aof-rewrite-min-size 64mb
-aof-load-truncated yes
 aof-use-rdb-preamble yes
 ```
 
-### 同步策略
+Redis 7 起，AOF 目录通常包含 base 文件、一个或多个 incremental 文件以及 manifest。重写会生成更紧凑的新 base，并在切换时维护增量写入。运维脚本不能再假定只有一个固定路径的 `appendonly.aof`。
 
-| 策略         | 说明         | 安全性 | 性能 |
-| ------------ | ------------ | ------ | ---- |
-| **always**   | 每次写都同步 | 最高   | 最低 |
-| **everysec** | 每秒同步     | 中等   | 较高 |
-| **no**       | 操作系统决定 | 最低   | 最高 |
+AOF 重写不是删除“旧日志行”那么简单，而是根据当前数据集生成能重建相同状态的最短表示。它会消耗 CPU、内存和磁盘带宽；写入密集时要观察重写缓冲、磁盘延迟与尾延迟。
 
-### 工作流程
+## 混合持久化与启动选择
 
-```
-写命令 → AOF缓冲区 → 同步到AOF文件 → 重写（可选）
-```
+启用 `aof-use-rdb-preamble yes` 后，AOF base 可使用 RDB 格式，后接增量 AOF，兼顾加载速度与增量耐久性。若 RDB 与 AOF 都启用，重启时 Redis 使用更完整的 AOF 路径恢复数据；RDB 仍适合作为可移动的时间点备份。
 
-### AOF 重写
+持久化不是复制：持久化帮助单个数据集跨进程/主机重启，复制提供副本和可用性。复制也不是备份：错误删除会被复制，空数据集重启在特定配置下也可能传播到副本。历史备份必须独立保存并定期恢复验证。
 
-```bash
-BGREWRITEAOF
+## 从目标选择方案
 
-redis-cli BGREWRITEAOF
-```
+| 数据角色      | 典型目标                             | 建议起点                                              | 必须验证                         |
+| ------------- | ------------------------------------ | ----------------------------------------------------- | -------------------------------- |
+| 可重建缓存    | RPO 可为全部丢失，RTO 受回源能力约束 | 可关闭持久化或保留稀疏 RDB                            | 冷启动会不会压垮数据库           |
+| 会话/限流状态 | 可接受短窗口丢失                     | AOF `everysec` + 副本                                 | 丢 1 秒的业务后果和时钟窗口      |
+| 重要业务状态  | 很低 RPO、明确审计                   | RDB + AOF + 副本 + 外部备份，或改用更合适的权威数据库 | Redis 故障语义是否满足一致性要求 |
+| 灾难恢复      | 多个历史恢复点                       | 周期 RDB、加密异地复制                                | 恢复时间、权限、校验和、TTL      |
 
-```bash
-auto-aof-rewrite-percentage 100
-auto-aof-rewrite-min-size 64mb
-```
+不要仅根据“性能优先/安全优先”套固定参数。目标还受数据集大小、写入比例、磁盘尾延迟、内存余量和恢复环境影响。
 
-## 混合持久化
+## 最小恢复演练
 
-### 配置
+<!-- figure-anchor:r04-a03 -->
 
-```bash
-aof-use-rdb-preamble yes
-```
+<!-- figure-managed:r04-f03:start -->
 
-### 原理
+![undefined](./images/r04-f03-isolated-recovery-drill.png)
 
-```
-重写时：RDB格式 + AOF增量 → 混合文件
-恢复时：先加载RDB，再执行AOF
-```
+<!-- figure-managed:r04-f03:end -->
 
-### 优势
-
-- 快速恢复（RDB 部分）
-- 完整数据（AOF 部分）
-- 文件较小
-
-## 恢复与备份
-
-### 数据恢复
+以下流程必须在隔离目录和非生产端口执行：
 
 ```bash
-# 停止 Redis
-systemctl stop redis
+# 1. 请求生成并确认快照
+redis-cli BGSAVE
+redis-cli INFO persistence
 
-# 恢复 RDB
-cp /backup/dump.rdb /var/lib/redis/
+# 2. 复制已完成的 RDB 到带时间戳的外部目录
+install -m 600 /data/dump.rdb /backup/redis/dump-20260715T220000.rdb
+redis-check-rdb /backup/redis/dump-20260715T220000.rdb
 
-# 启动 Redis
-systemctl start redis
+# 3. 在隔离端口启动恢复实例
+mkdir -p /tmp/redis-restore
+cp /backup/redis/dump-20260715T220000.rdb /tmp/redis-restore/dump.rdb
+redis-server --port 6380 --bind 127.0.0.1 --dir /tmp/redis-restore \
+  --dbfilename dump.rdb --appendonly no --daemonize yes
+
+# 4. 验证业务不变量
+redis-cli -p 6380 TYPE product:{1001}
+redis-cli -p 6380 GET stock:{1001}
+redis-cli -p 6380 TTL product:{1001}
+
+# 5. 结束隔离实例
+redis-cli -p 6380 SHUTDOWN NOSAVE
 ```
 
-### 备份脚本
+输入是只读备份副本；输出不只是“进程启动成功”，还包括关键键类型、数值范围、TTL 合理性、样本数量与恢复耗时。AOF 修复前必须先复制原文件，再运行 `redis-check-aof` 并审查被截断内容。
 
-```bash
-#!/bin/bash
-BACKUP_DIR=/backup/redis
-DATE=$(date +%Y%m%d_%H%M%S)
+## 失败边界与观测
 
-mkdir -p $BACKUP_DIR
+重点观察 `INFO persistence` 中的保存/重写状态、最后成功时间、COW 大小，以及操作系统磁盘延迟、可用空间和进程 RSS。典型失败包括：
 
-cp /var/lib/redis/dump.rdb $BACKUP_DIR/dump_$DATE.rdb
-cp /var/lib/redis/appendonly.aof $BACKUP_DIR/appendonly_$DATE.aof
+- 磁盘满导致 AOF/RDB 失败；
+- `fork` 因内存不足失败或造成延迟尖峰；
+- 只备份数据文件，忘记配置、ACL、AOF manifest 或加密密钥；
+- 备份存在但从未恢复，直到事故才发现版本、权限或文件损坏；
+- 恢复后 TTL 大量同时到期，引发数据库回源雪崩。
 
-find $BACKUP_DIR -name "*.rdb" -mtime +7 -delete
-find $BACKUP_DIR -name "*.aof" -mtime +7 -delete
-```
+## 常见误区与适用边界
 
-## 最佳实践
+- AOF `everysec` 不是零数据丢失承诺；存储层、崩溃时机和复制窗口都影响结果。
+- RDB 子进程写盘不等于对在线延迟“零影响”；`fork` 和 COW 会使用资源。
+- 副本不是历史备份，逻辑错误和删除会传播。
+- 文件可复制不代表业务可恢复；必须验证数据不变量和 RTO。
+- Redis 若承载不可重建的强一致核心账务，应先评估是否选错了权威存储。
 
-| 场景         | 推荐策略           |
-| ------------ | ------------------ |
-| 数据安全优先 | AOF always + RDB   |
-| 性能优先     | AOF everysec + RDB |
-| 大数据量     | 混合持久化         |
-| 纯缓存       | 关闭持久化         |
+## 本篇自检
 
-## 小结
+<details>
+<summary>1. RDB 每 5 分钟生成一次时，RPO 一定是 5 分钟吗？</summary>
 
-- **RDB**：定时快照，适合备份、迁移
-- **AOF**：记录命令，数据更完整
-- **混合持久化**：结合两者优点
-- **策略选择**：根据数据安全需求选择
+不一定。生成可能失败或延迟，备份也可能尚未复制到独立故障域。RPO 要以最后一个可验证恢复点为准。
+
+</details>
+
+<details>
+<summary>2. 为什么 AOF 重写期间要关注内存和磁盘，而不只看文件大小？</summary>
+
+重写需要生成新 base 并承接期间的增量写入，会占用 CPU、内存缓冲和磁盘带宽，可能推高在线尾延迟。
+
+</details>
+
+<details>
+<summary>3. “恢复实例能启动”为什么不等于演练通过？</summary>
+
+还要验证关键键、类型、数值、TTL、样本规模和恢复耗时满足业务目标，并确认配置与权限也能恢复。
+
+</details>
+
+## 本篇总结
+
+RDB、AOF 和混合持久化分别改变恢复点、恢复速度与运行成本。正确选择从 RPO/RTO 和故障域开始，以 `fork`、COW、fsync 和重写的可观测证据结束，并通过隔离恢复演练证明备份可用。
+
+## 下一篇衔接
+
+持久化回答“重启后有什么”，下一篇回答“在线并发时多条操作如何组成一个不可插入或带条件的状态变化”：Pipeline、MULTI/EXEC、WATCH 与 Lua 各自解决什么。
+
+## 资料来源
+
+- [Redis persistence](https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/)
+- [Redis administration](https://redis.io/docs/latest/operate/oss_and_stack/management/admin/)
+- [Redis configuration](https://redis.io/docs/latest/operate/oss_and_stack/management/config/)

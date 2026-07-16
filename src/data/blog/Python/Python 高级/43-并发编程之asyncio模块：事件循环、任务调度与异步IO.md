@@ -1,12 +1,12 @@
 ---
-title: 并发编程之asyncio模块：事件循环、任务调度与异步IO
+title: 并发编程之asyncio：事件循环、结构化并发与异步IO
 series: python
-seriesOrder: 55
+seriesOrder: 43
 language: zh-CN
 author: Joekma
 pubDatetime: 2026-07-01T00:00:00.000+08:00
 slug: python-asyncio-module-guide
-modDatetime: 2026-07-11T00:00:00.000+08:00
+modDatetime: 2026-07-17T00:00:00.000+08:00
 featured: false
 draft: false
 tags:
@@ -14,984 +14,161 @@ tags:
   - 并发编程
   - 异步编程
   - asyncio
-  - 协程
-description: "系统讲解Python asyncio模块，涵盖事件循环、协程、Task、TaskGroup、超时取消、同步原语、队列、异步网络和阻塞代码处理。"
+description: 从订单查询编排理解协程、Task、事件循环、TaskGroup、超时取消、并发控制、阻塞代码隔离与可观测性。
 ---
 
-# 并发编程之asyncio模块：事件循环、任务调度与异步IO
+# 并发编程之asyncio：事件循环、结构化并发与异步IO
 
-## 引言
+## 前置知识与学习目标
 
-前面几篇文章已经分别讲过多进程、多线程、Greenlet、Gevent 和网络 IO 模型。
+你应使用 Python 3.11+，并理解第 35 篇的协作式调度、第 36 篇的 I/O 就绪和支付篇的幂等查询。本篇解决：**怎样用标准库把一批订单查询组织成有并发上限、可超时、可取消且不泄漏任务的异步作用域？**
 
-如果把它们放到同一张图里，可以这样理解：
+学完后你应能区分协程对象、Task 与 Future，描述事件循环中的状态迁移，使用 `TaskGroup` 和 `Semaphore`，并正确隔离阻塞代码。
 
-| 技术            | 调度者            | 适合场景                | 典型特点                                     |
-| --------------- | ----------------- | ----------------------- | -------------------------------------------- |
-| 多进程          | 操作系统          | CPU 密集、进程隔离      | 可用多核，进程间通信成本较高                 |
-| 多线程          | 操作系统          | 阻塞 IO、共享内存任务   | 共享进程资源，但要处理锁和竞态               |
-| Greenlet/Gevent | 应用程序/猴子补丁 | 大量网络 IO             | 通过协作切换提升单线程并发能力               |
-| asyncio         | Python 事件循环   | 高并发 IO、异步网络服务 | 基于 `async/await`，显式写出让出执行权的位置 |
+## 直觉：`await` 是可见的让出点
 
-`asyncio` 的目标不是让 Python 的 CPU 计算自动变快，而是让一个线程在大量 IO 等待之间高效切换：一个任务等待网络、磁盘、定时器或子进程结果时，事件循环可以去运行其他任务。
+调用 `async def` 函数只创建协程对象，并不会立刻执行函数体。协程被 `await`、包装为 Task 或交给 `asyncio.run()` 后才由事件循环推进。
 
-一句话记住：
+一个 Task 的简化状态：
 
-> `asyncio` 适合高并发 IO 和结构化网络代码；CPU 密集任务仍然优先考虑多进程，或者交给会释放 GIL 的扩展库。
+<!-- figure:s43-f01 -->
 
-![Python asyncio 中协程对象、Task、事件循环、ready 队列、await 挂起恢复、同步原语和异步 IO 的调度机制图](./images/python-asyncio-event-loop-figure-01.png)
+![coroutine object、Task、ready 队列、event loop、RUNNING、await、WAITING、I/O 完成、DONE、FAILED、CANCELLED](./images/final/s43-f01-asyncio-task-state-loop.png)
 
-## asyncio 解决的核心问题
-
-同步代码里，一个请求没返回，当前线程就停在原地：
-
-<!-- snippet: id=python-asyncio-module-guide-01 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import time
-
-def download(name: str, delay: float) -> str:
-    time.sleep(delay)
-    return f"{name} done"
-
-def main():
-    print(download("a", 2))
-    print(download("b", 1))
-    print(download("c", 1))
-
-main()
-```
-
-这段代码总耗时约 4 秒。这里的 `time.sleep()` 可以替换成真实网络请求、数据库查询、文件读写或远程 API 调用，本质都是：程序在等待外部资源。
-
-`asyncio` 的思路是：当任务遇到可以等待的地方，用 `await` 主动把控制权交还给事件循环。
-
-<!-- snippet: id=python-asyncio-module-guide-02 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-
-async def download(name: str, delay: float) -> str:
-    await asyncio.sleep(delay)
-    return f"{name} done"
-
-async def main():
-    results = await asyncio.gather(
-        download("a", 2),
-        download("b", 1),
-        download("c", 1),
-    )
-    print(results)
-
-asyncio.run(main())
-```
-
-这段代码总耗时约 2 秒，因为三个协程被并发调度了。注意这里的并发不是三条 Python 字节码同时运行，而是在单个线程中遇到 `await` 时协作切换。
-
-## 基础语法
-
-### async 和 await
-
-`async def` 定义协程函数，`await` 等待一个 awaitable 对象完成。
-
-<!-- snippet: id=python-asyncio-module-guide-08 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-
-async def step(name: str, delay: float):
-    print(f"{name}: start")
-    await asyncio.sleep(delay)
-    print(f"{name}: end")
-    return name
-
-async def main():
-    result = await step("A", 1)
-    print(result)
-
-asyncio.run(main())
-```
-
-`await` 不是简单的“阻塞等待”。当协程执行到 `await asyncio.sleep(1)` 时，当前任务暂停，事件循环可以去运行其他就绪任务。
-
-### 串行与并发
-
-串行写法：
-
-<!-- snippet: id=python-asyncio-module-guide-09 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-import time
-
-async def query(name: str, delay: float):
-    await asyncio.sleep(delay)
-    return f"{name}: {delay}s"
-
-async def main():
-    start = time.perf_counter()
-
-    a = await query("a", 1)
-    b = await query("b", 1)
-    c = await query("c", 1)
-
-    print(a, b, c)
-    print(f"cost: {time.perf_counter() - start:.2f}s")
-
-asyncio.run(main())
-```
-
-耗时约 3 秒。
-
-并发写法：
-
-<!-- snippet: id=python-asyncio-module-guide-10 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-import time
-
-async def query(name: str, delay: float):
-    await asyncio.sleep(delay)
-    return f"{name}: {delay}s"
-
-async def main():
-    start = time.perf_counter()
-
-    results = await asyncio.gather(
-        query("a", 1),
-        query("b", 1),
-        query("c", 1),
-    )
-
-    print(results)
-    print(f"cost: {time.perf_counter() - start:.2f}s")
-
-asyncio.run(main())
-```
-
-耗时约 1 秒。区别不在 `async def`，而在是否把多个 awaitable 同时交给事件循环。
-
-## 任务调度
-
-### create_task：显式启动任务
-
-当你希望一个协程立刻开始运行，并在后面某个时刻等待结果，可以使用 `create_task()`。
-
-<!-- snippet: id=python-asyncio-module-guide-11 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-import time
-
-async def say_after(delay: float, text: str):
-    await asyncio.sleep(delay)
-    print(text)
-
-async def main():
-    print(f"started at {time.strftime('%X')}")
-
-    task1 = asyncio.create_task(say_after(1, "hello"))
-    task2 = asyncio.create_task(say_after(2, "world"))
-
-    await task1
-    await task2
-
-    print(f"finished at {time.strftime('%X')}")
-
-asyncio.run(main())
-```
-
-`task1` 和 `task2` 创建后就会被调度，而不是等到 `await task1` 时才开始。
-
-### gather：等待一组任务
-
-`asyncio.gather()` 最适合“同时发起一批任务，并按输入顺序拿到结果”的场景。
-
-<!-- snippet: id=python-asyncio-module-guide-12 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-
-async def fetch_user(user_id: int):
-    await asyncio.sleep(0.2)
-    return {"id": user_id, "name": f"user-{user_id}"}
-
-async def main():
-    users = await asyncio.gather(
-        fetch_user(1),
-        fetch_user(2),
-        fetch_user(3),
-    )
-    print(users)
-
-asyncio.run(main())
-```
-
-`gather()` 返回结果列表，顺序与传入 awaitable 的顺序一致，而不是按完成时间排序。
-
-如果其中一个任务抛出异常，默认会把异常传播给等待 `gather()` 的地方。`return_exceptions=True` 会把异常对象也放进结果列表，这适合“批量任务尽量都跑完，再统一统计成功失败”的场景。
-
-<!-- snippet: id=python-asyncio-module-guide-13 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-
-async def job(i: int):
-    await asyncio.sleep(0.1)
-    if i == 2:
-        raise ValueError("bad job")
-    return i * 10
-
-async def main():
-    results = await asyncio.gather(
-        job(1),
-        job(2),
-        job(3),
-        return_exceptions=True,
-    )
-
-    for result in results:
-        if isinstance(result, Exception):
-            print("failed:", repr(result))
-        else:
-            print("ok:", result)
-
-asyncio.run(main())
-```
-
-不要为了省事到处使用 `return_exceptions=True`，否则异常很容易被吞掉。它应该用于明确需要“部分成功”的批处理。
-
-### as_completed：谁先完成先处理谁
-
-如果希望任务完成一个就处理一个，而不是等待全部完成再拿列表，可以使用 `asyncio.as_completed()`。
-
-<!-- snippet: id=python-asyncio-module-guide-14 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-import random
-
-async def fetch(name: str):
-    delay = random.uniform(0.1, 1.0)
-    await asyncio.sleep(delay)
-    return name, delay
-
-async def main():
-    tasks = [
-        asyncio.create_task(fetch("a")),
-        asyncio.create_task(fetch("b")),
-        asyncio.create_task(fetch("c")),
-    ]
-
-    for done in asyncio.as_completed(tasks):
-        name, delay = await done
-        print(f"{name} finished in {delay:.2f}s")
-
-asyncio.run(main())
-```
-
-这种写法适合下载、批量 RPC、并发检查等场景：结果先回来就先落库、先展示、先进入下一步。
-
-### TaskGroup：结构化并发
-
-Python 3.11 引入了 `asyncio.TaskGroup`。它把一组相关任务放进同一个作用域里，退出 `async with` 时会等待所有任务完成。如果其中一个任务失败，同组任务会被取消，异常会以异常组的形式向外传播。
-
-<!-- snippet: id=python-asyncio-module-guide-15 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-
-async def load_profile(user_id: int):
-    await asyncio.sleep(0.2)
-    return {"user_id": user_id}
-
-async def load_orders(user_id: int):
-    await asyncio.sleep(0.3)
-    return ["order-1", "order-2"]
-
-async def main():
-    async with asyncio.TaskGroup() as tg:
-        profile_task = tg.create_task(load_profile(1))
-        orders_task = tg.create_task(load_orders(1))
-
-    profile = profile_task.result()
-    orders = orders_task.result()
-    print(profile, orders)
-
-asyncio.run(main())
-```
-
-和散落的 `create_task()` 相比，`TaskGroup` 更适合“这些任务属于同一个业务操作，要一起成功或一起失败”的场景。
-
-## 超时、取消与异常
-
-### wait_for：给单个 awaitable 加超时
-
-`asyncio.wait_for()` 会等待一个 awaitable 完成，如果超过指定时间，会取消该 awaitable 并抛出 `TimeoutError`。
-
-<!-- snippet: id=python-asyncio-module-guide-16 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-
-async def slow_query():
-    await asyncio.sleep(3)
-    return "data"
-
-async def main():
-    try:
-        result = await asyncio.wait_for(slow_query(), timeout=1)
-        print(result)
-    except TimeoutError:
-        print("query timeout")
-
-asyncio.run(main())
-```
-
-### asyncio.timeout：给一段异步代码加超时
-
-Python 3.11 起可以使用 `asyncio.timeout()`。它是异步上下文管理器，更适合包住一段结构化代码。
-
-<!-- snippet: id=python-asyncio-module-guide-17 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-
-async def call_api():
-    await asyncio.sleep(0.8)
-    return "api"
-
-async def call_db():
-    await asyncio.sleep(0.8)
-    return "db"
-
-async def main():
-    try:
-        async with asyncio.timeout(1):
-            api_result = await call_api()
-            db_result = await call_db()
-            print(api_result, db_result)
-    except TimeoutError:
-        print("whole operation timeout")
-
-asyncio.run(main())
-```
-
-这里的超时覆盖整个 `async with` 块，而不是单独覆盖某一个 awaitable。
-
-### 取消任务
-
-取消是 asyncio 中非常重要的控制流。调用 `task.cancel()` 后，任务会在下一次有机会运行时抛出 `asyncio.CancelledError`。
-
-<!-- snippet: id=python-asyncio-module-guide-18 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-
-async def worker():
-    try:
-        while True:
-            print("working...")
-            await asyncio.sleep(1)
-    except asyncio.CancelledError:
-        print("cleanup before cancel")
-        raise
-
-async def main():
-    task = asyncio.create_task(worker())
-    await asyncio.sleep(2.5)
-
-    task.cancel()
-
-    try:
-        await task
-    except asyncio.CancelledError:
-        print("task cancelled")
-
-asyncio.run(main())
-```
-
-如果捕获 `CancelledError` 做清理，清理完成后通常要重新 `raise`。`TaskGroup`、`asyncio.timeout()` 等结构化并发能力内部也依赖取消机制。如果随意吞掉取消异常，程序可能出现无法退出、超时失效或任务泄漏。
-
-## 并发控制
-
-并发不是越大越好。网络对端、数据库连接池、本机文件句柄、CPU 和内存都有上限。asyncio 提供了几类常用同步原语。
-
-### Semaphore：限制同时执行数量
-
-比如有 1000 个 URL，但最多同时请求 20 个。
-
-<!-- snippet: id=python-asyncio-module-guide-19 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-import random
-
-async def fetch(url: str, sem: asyncio.Semaphore):
-    async with sem:
-        delay = random.uniform(0.1, 0.5)
-        await asyncio.sleep(delay)
-        print(f"fetched {url} in {delay:.2f}s")
-        return url
-
-async def main():
-    sem = asyncio.Semaphore(20)
-    urls = [f"https://example.com/{i}" for i in range(100)]
-
-    results = await asyncio.gather(*(fetch(url, sem) for url in urls))
-    print(f"total: {len(results)}")
-
-asyncio.run(main())
-```
-
-`async with sem` 会自动 acquire/release，比手写 `try/finally` 更不容易漏释放。
-
-### Lock：保护共享状态
-
-asyncio 是单线程协作式调度，但只要在读写共享状态之间存在 `await`，就可能产生竞态。
-
-<!-- snippet: id=python-asyncio-module-guide-20 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-
-class Counter:
-    def __init__(self):
-        self.value = 0
-        self.lock = asyncio.Lock()
-
-    async def incr(self):
-        async with self.lock:
-            current = self.value
-            await asyncio.sleep(0)
-            self.value = current + 1
-
-async def main():
-    counter = Counter()
-    await asyncio.gather(*(counter.incr() for _ in range(1000)))
-    print(counter.value)
-
-asyncio.run(main())
-```
-
-`await asyncio.sleep(0)` 常用于主动让出控制权。在真实业务里，它可能是数据库、缓存、HTTP 请求等 await 点。
-
-### Event：通知多个任务
-
-`asyncio.Event` 适合一个任务发布信号，多个任务等待信号。
-
-<!-- snippet: id=python-asyncio-module-guide-21 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-
-async def worker(name: str, ready: asyncio.Event):
-    print(f"{name} waiting")
-    await ready.wait()
-    print(f"{name} start")
-
-async def main():
-    ready = asyncio.Event()
-
-    tasks = [
-        asyncio.create_task(worker("a", ready)),
-        asyncio.create_task(worker("b", ready)),
-    ]
-
-    await asyncio.sleep(1)
-    ready.set()
-
-    await asyncio.gather(*tasks)
-
-asyncio.run(main())
-```
-
-### Queue：生产者消费者
-
-`asyncio.Queue` 是异步任务之间传递数据的常用工具。它天然适合爬虫、日志处理、消息消费、批量任务流水线。
-
-<!-- snippet: id=python-asyncio-module-guide-22 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-import random
-
-async def producer(queue: asyncio.Queue[str]):
-    for i in range(10):
-        item = f"url-{i}"
-        await queue.put(item)
-        print("produce", item)
-        await asyncio.sleep(0.1)
-
-    for _ in range(3):
-        await queue.put("STOP")
-
-async def consumer(name: str, queue: asyncio.Queue[str]):
-    while True:
-        item = await queue.get()
-        try:
-            if item == "STOP":
-                return
-
-            await asyncio.sleep(random.uniform(0.1, 0.5))
-            print(f"{name} handled {item}")
-        finally:
-            queue.task_done()
-
-async def main():
-    queue: asyncio.Queue[str] = asyncio.Queue(maxsize=5)
-
-    consumers = [
-        asyncio.create_task(consumer("worker-1", queue)),
-        asyncio.create_task(consumer("worker-2", queue)),
-        asyncio.create_task(consumer("worker-3", queue)),
-    ]
-
-    await producer(queue)
-    await queue.join()
-    await asyncio.gather(*consumers)
-
-asyncio.run(main())
-```
-
-`maxsize` 可以提供背压：消费者处理不过来时，生产者会在 `await queue.put()` 处等待，避免无限堆积内存。
-
-## 阻塞代码处理
-
-### 不要在协程里直接调用阻塞函数
-
-下面这段代码看似是 asyncio，但 `time.sleep()` 会阻塞整个事件循环：
-
-<!-- snippet: id=python-asyncio-module-guide-23 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-import time
-
-async def bad():
-    time.sleep(2)
-    return "done"
-
-async def ticker():
-    for i in range(5):
-        print("tick", i)
-        await asyncio.sleep(0.5)
-
-async def main():
-    await asyncio.gather(bad(), ticker())
-
-asyncio.run(main())
-```
-
-`ticker()` 本来应该每 0.5 秒输出一次，但事件循环会先被 `time.sleep(2)` 卡住。
-
-### to_thread：把阻塞 IO 放到线程里
-
-如果必须调用同步阻塞函数，可以用 `asyncio.to_thread()` 放到线程里执行。
-
-<!-- snippet: id=python-asyncio-module-guide-24 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-import time
-
-def blocking_io(name: str):
-    time.sleep(2)
-    return f"{name} done"
-
-async def ticker():
-    for i in range(5):
-        print("tick", i)
-        await asyncio.sleep(0.5)
-
-async def main():
-    result, _ = await asyncio.gather(
-        asyncio.to_thread(blocking_io, "file-read"),
-        ticker(),
-    )
-    print(result)
-
-asyncio.run(main())
-```
-
-`to_thread()` 主要用于阻塞 IO。由于 CPython 有 GIL，普通 Python CPU 密集计算放到线程里通常不能获得真正并行，CPU 密集任务更适合 `multiprocessing` 或 `ProcessPoolExecutor`。
-
-### run_in_executor：自定义执行器
-
-如果需要复用线程池或进程池，可以使用事件循环的 `run_in_executor()`。
-
-<!-- snippet: id=python-asyncio-module-guide-25 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-import concurrent.futures
-import hashlib
-
-def cpu_heavy(data: bytes) -> str:
-    for _ in range(200_000):
-        data = hashlib.sha256(data).digest()
-    return data.hex()
-
-async def main():
-    loop = asyncio.get_running_loop()
-
-    with concurrent.futures.ProcessPoolExecutor() as pool:
-        result = await loop.run_in_executor(pool, cpu_heavy, b"hello")
-        print(result[:20])
-
-asyncio.run(main())
-```
-
-这个例子把 CPU 密集计算放进进程池，asyncio 只负责等待执行结果，不负责让计算本身变快。
-
-## 异步网络实战
-
-### TCP Echo Server
-
-asyncio 标准库内置了 streams API，可以快速编写 TCP 服务。
-
-<!-- snippet: id=python-asyncio-module-guide-26 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-
-async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-    addr = writer.get_extra_info("peername")
-    print(f"client connected: {addr}")
-
-    try:
-        while data := await reader.readline():
-            message = data.decode().rstrip()
-            print(f"received: {message}")
-
-            writer.write(f"echo: {message}\n".encode())
-            await writer.drain()
-    finally:
-        writer.close()
-        await writer.wait_closed()
-        print(f"client closed: {addr}")
-
-async def main():
-    server = await asyncio.start_server(handle_client, "127.0.0.1", 8888)
-
-    addrs = ", ".join(str(sock.getsockname()) for sock in server.sockets)
-    print(f"serving on {addrs}")
-
-    async with server:
-        await server.serve_forever()
-
-asyncio.run(main())
-```
-
-可以用 `telnet 127.0.0.1 8888` 或 `nc 127.0.0.1 8888` 测试。
-
-### TCP Client
-
-<!-- snippet: id=python-asyncio-module-guide-27 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-
-async def main():
-    reader, writer = await asyncio.open_connection("127.0.0.1", 8888)
-
-    writer.write(b"hello asyncio\n")
-    await writer.drain()
-
-    data = await reader.readline()
-    print(data.decode().rstrip())
-
-    writer.close()
-    await writer.wait_closed()
-
-asyncio.run(main())
-```
-
-`writer.write()` 只是把数据写入缓冲区，`await writer.drain()` 才会在缓冲区压力较大时等待底层发送。
-
-### 简化版并发下载任务池
-
-标准库没有高级异步 HTTP 客户端。实际项目中常见选择是 `aiohttp`、`httpx` 等第三方库。这里为了突出 asyncio 调度模型，用 `asyncio.sleep()` 模拟网络耗时，用任务池控制并发。
-
-<!-- snippet: id=python-asyncio-module-guide-28 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-import random
-
-async def download(url: str) -> str:
-    delay = random.uniform(0.2, 1.0)
-    await asyncio.sleep(delay)
-
-    if random.random() < 0.2:
-        raise RuntimeError(f"download failed: {url}")
-
-    return f"{url} body, cost={delay:.2f}s"
-
-async def worker(name: str, queue: asyncio.Queue[str], results: list[str]):
-    while True:
-        url = await queue.get()
-        try:
-            if url == "STOP":
-                return
-
-            try:
-                body = await asyncio.wait_for(download(url), timeout=1.5)
-            except Exception as exc:
-                print(f"{name} failed {url}: {exc!r}")
-            else:
-                results.append(body)
-                print(f"{name} ok {url}")
-        finally:
-            queue.task_done()
-
-async def main():
-    urls = [f"https://example.com/page/{i}" for i in range(30)]
-    queue: asyncio.Queue[str] = asyncio.Queue(maxsize=10)
-    results: list[str] = []
-
-    workers = [
-        asyncio.create_task(worker(f"worker-{i}", queue, results))
-        for i in range(5)
-    ]
-
-    for url in urls:
-        await queue.put(url)
-
-    for _ in workers:
-        await queue.put("STOP")
-
-    await queue.join()
-    await asyncio.gather(*workers)
-
-    print(f"success: {len(results)}")
-
-asyncio.run(main())
-```
-
-这个例子把几个重要实践放在一起：
-
-- `Queue(maxsize=10)` 限制待处理任务堆积。
-- 5 个 worker 限制并发数量。
-- `wait_for()` 给单个下载加超时。
-- 单个 URL 失败不会影响整个批次。
-- `queue.task_done()` 放在 `finally` 中，保证 `queue.join()` 不会永久等待。
-
-## 常见误区
-
-### 误区一：忘记 await
-
-<!-- snippet: id=python-asyncio-module-guide-29 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-async def get_data():
-    return {"ok": True}
-
-async def main():
-    data = get_data()  # 错误：这里只是协程对象
-    print(data)
-```
-
-正确写法：
-
-<!-- snippet: id=python-asyncio-module-guide-30 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-async def main():
-    data = await get_data()
-    print(data)
-```
-
-如果忘记 await，通常会看到 `RuntimeWarning: coroutine was never awaited`。
-
-### 误区二：在协程里调用 time.sleep
-
-<!-- snippet: id=python-asyncio-module-guide-31 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-async def bad():
-    time.sleep(1)  # 阻塞整个事件循环
-```
-
-正确写法：
-
-<!-- snippet: id=python-asyncio-module-guide-32 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-async def good():
-    await asyncio.sleep(1)
-```
-
-如果必须调用同步阻塞函数，用 `await asyncio.to_thread(func, *args)`。
-
-### 误区三：无边界创建任务
-
-<!-- snippet: id=python-asyncio-module-guide-33 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-tasks = [asyncio.create_task(fetch(url)) for url in million_urls]
-await asyncio.gather(*tasks)
-```
-
-这会瞬间创建大量任务，带来内存压力、连接压力和对端限流。更好的写法是用 `Semaphore` 或 `Queue` 控制并发。
-
-### 误区四：在已有事件循环里调用 asyncio.run
-
-`asyncio.run()` 不能在同一线程已有事件循环运行时调用。比如在某些 Web 框架、Jupyter、异步测试框架内部，通常应该直接 `await`，或者使用框架提供的生命周期入口。
-
-<!-- snippet: id=python-asyncio-module-guide-34 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-async def handler():
-    # 错误：当前线程可能已经有事件循环
-    asyncio.run(do_something())
-```
-
-正确思路：
-
-<!-- snippet: id=python-asyncio-module-guide-35 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-async def handler():
-    await do_something()
-```
-
-### 误区五：吞掉取消异常
-
-<!-- snippet: id=python-asyncio-module-guide-36 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-async def bad_worker():
-    try:
-        await asyncio.sleep(10)
-    except asyncio.CancelledError:
-        print("cancelled but ignored")
-```
-
-通常应该清理后重新抛出：
-
-<!-- snippet: id=python-asyncio-module-guide-37 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-async def good_worker():
-    try:
-        await asyncio.sleep(10)
-    except asyncio.CancelledError:
-        print("cleanup")
-        raise
-```
-
-取消不是普通错误，它是 asyncio 的协作退出机制。
-
-### 误区六：以为 asyncio 会自动使用多核
-
-asyncio 的默认模型是单线程事件循环。它能提高 IO 并发吞吐，但不会让普通 Python CPU 计算自动跑满多核。
-
-<!-- snippet: id=python-asyncio-module-guide-38 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-async def cpu_task():
-    total = 0
-    for i in range(100_000_000):
-        total += i
-    return total
-```
-
-这种任务即使写成 `async def`，只要内部没有 `await`，就会一直占用事件循环。CPU 密集型任务应该考虑：
-
-- `multiprocessing`
-- `concurrent.futures.ProcessPoolExecutor`
-- C 扩展、NumPy 等会释放 GIL 的计算库
-- 任务队列或独立计算服务
-
-## 调试建议
-
-### 开启 debug 模式
-
-开发阶段可以开启 asyncio debug 模式，帮助发现慢回调、未等待协程等问题。
-
-<!-- snippet: id=python-asyncio-module-guide-39 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-
-async def main():
-    await asyncio.sleep(0.1)
-
-asyncio.run(main(), debug=True)
-```
-
-也可以通过环境变量开启：
-
-<!-- snippet: id=python-asyncio-module-guide-40 mode=display python=3.12-3.14 deps=stdlib -->
-```bash
-PYTHONASYNCIODEBUG=1 python app.py
-```
-
-### 给任务命名
-
-任务多了之后，名字很重要。
-
-<!-- snippet: id=python-asyncio-module-guide-41 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-
-async def worker(user_id: int):
-    await asyncio.sleep(1)
-    return user_id
-
-async def main():
-    task = asyncio.create_task(worker(1001), name="load-user-1001")
-    print(task.get_name())
-    await task
-
-asyncio.run(main())
-```
-
-日志、错误栈、任务排查都会更清楚。
-
-### 打印当前任务
-
-<!-- snippet: id=python-asyncio-module-guide-42 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-
-async def main():
-    current = asyncio.current_task()
-    print(current)
-
-    tasks = asyncio.all_tasks()
-    print(f"task count: {len(tasks)}")
-
-asyncio.run(main())
-```
-
-这类 API 适合调试和监控，不建议在业务逻辑中过度依赖。
-
-## 实战选择建议
-
-| 场景                       | 推荐方式                                   |
-| -------------------------- | ------------------------------------------ |
-| 批量 HTTP/RPC 请求         | `asyncio.gather()` + `Semaphore`           |
-| 谁先返回先处理谁           | `asyncio.as_completed()`                   |
-| 一组任务必须一起成功或失败 | `asyncio.TaskGroup`                        |
-| 后台轻量任务               | `create_task()` + 保存引用 + done callback |
-| 生产者消费者流水线         | `asyncio.Queue`                            |
-| 单个操作超时               | `asyncio.wait_for()`                       |
-| 一段异步流程超时           | `asyncio.timeout()`                        |
-| 调用同步阻塞 IO            | `asyncio.to_thread()`                      |
-| CPU 密集计算               | 多进程或进程池                             |
-| TCP 服务                   | `asyncio.start_server()`                   |
-
-## 与线程、进程的关系
-
-asyncio、线程、进程不是互斥关系，而是不同层次的工具：
-
-- asyncio 管理高并发 IO，让少量线程处理大量连接。
-- 线程适合包住同步阻塞 IO，或者与旧库兼容。
-- 进程适合 CPU 密集计算和强隔离任务。
-
-一个真实服务里常常会组合使用：
-
-<!-- snippet: id=python-asyncio-module-guide-43 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
-主进程
-  ├── asyncio 事件循环处理网络连接
-  ├── ThreadPoolExecutor 包装少量同步 IO SDK
-  └── ProcessPoolExecutor 处理 CPU 密集任务
+CREATED → READY → RUNNING → WAITING(await I/O/timer)
+                    ↑             ↓
+                    └──── READY ──┘
+                 → DONE / FAILED / CANCELLED
 ```
 
-关键是不要把所有问题都塞进 asyncio。它擅长等待，不擅长计算。
+事件循环从 ready 队列取 Task 运行到下一个 `await`。等待的 Future 完成后，Task 的继续执行回调重新进入 ready 队列。单个事件循环通常在一个线程中运行；任何没有让出的长计算或阻塞调用都会拖住全部 Task。
 
-## 总结
+## 核心对象与职责
 
-`asyncio` 的核心是协作式调度：
+| 对象             | 职责                                     | 常见误解             |
+| ---------------- | ---------------------------------------- | -------------------- |
+| coroutine object | 保存可暂停函数的执行描述                 | 创建后会自动运行     |
+| `Task`           | 在事件循环中调度协程并保存结果/异常      | 不保存引用也没关系   |
+| `Future`         | 表示未来完成的低层结果                   | 应用层应大量手工创建 |
+| event loop       | 调度 ready 回调并接收 I/O/计时器完成通知 | 自动让 CPU 代码并行  |
 
-1. `async def` 定义协程函数，调用后得到协程对象。
-2. `await` 表示等待一个 awaitable，并把控制权交还给事件循环。
-3. `asyncio.run()` 是现代 asyncio 程序的顶层入口。
-4. `create_task()` 可以让协程并发运行，但要保存任务引用。
-5. `gather()` 适合批量等待，`as_completed()` 适合完成一个处理一个。
-6. `TaskGroup` 适合结构化并发，让相关任务在同一作用域内管理。
-7. 超时和取消是正常控制流，不能随便吞掉 `CancelledError`。
-8. `Semaphore`、`Lock`、`Event`、`Queue` 是控制并发和组织任务流水线的基础工具。
-9. 阻塞 IO 用 `to_thread()` 或 executor 隔离，CPU 密集任务优先用多进程。
-10. asyncio 最适合高并发 IO，不是让 Python CPU 计算自动变快。
+`asyncio.run(main())` 是普通程序的顶层入口，负责创建并关闭事件循环。不要在已经运行的事件循环内部再次调用它。
 
-学会 asyncio 后，再看 FastAPI、aiohttp、httpx、asyncpg、Playwright、爬虫并发、异步任务调度等框架，就会发现它们背后的基本模型都是：事件循环调度任务，任务在 await 点主动让出执行权。
+## 最小结构化并发示例
 
-## 参考资料
+<!-- figure:s43-f02 -->
 
-- [asyncio 官方文档](https://docs.python.org/3/library/asyncio.html)
-- [Runners：asyncio.run 与 Runner](https://docs.python.org/3/library/asyncio-runner.html)
+![父作用域、TaskGroup、Task O-100、Task O-101、Task O-102、异常、取消兄弟任务、finally 清理、ExceptionGroup](./images/final/s43-f02-taskgroup-cancellation-tree.png)
+
+输入是一组订单 ID；每个查询有单任务超时，`Semaphore` 限制在途请求，`TaskGroup` 保证子任务不会逃出作用域。输出按订单 ID 排序，避免把完成顺序误当身份。
+
+```python
+# behavior-test: run; requires-python>=3.11
+import asyncio
+
+
+async def fetch_status(order_id: str, limit: asyncio.Semaphore) -> tuple[str, str]:
+    async with limit:
+        async with asyncio.timeout(0.5):
+            await asyncio.sleep(0.01)  # 替换为真正的异步 HTTP 客户端
+            return order_id, "PAID"
+
+
+async def run_batch(order_ids: list[str]) -> list[tuple[str, str]]:
+    limit = asyncio.Semaphore(10)
+    tasks: dict[str, asyncio.Task[tuple[str, str]]] = {}
+    async with asyncio.TaskGroup() as group:
+        for order_id in order_ids:
+            tasks[order_id] = group.create_task(
+                fetch_status(order_id, limit),
+                name=f"query:{order_id}",
+            )
+    return sorted(task.result() for task in tasks.values())
+
+
+if __name__ == "__main__":
+    assert asyncio.run(run_batch(["O-100", "O-101", "O-102"])) == [
+        ("O-100", "PAID"),
+        ("O-101", "PAID"),
+        ("O-102", "PAID"),
+    ]
+```
+
+如果任一子任务抛出未处理异常，`TaskGroup` 会取消仍在运行的兄弟任务，等待它们结束，再以异常组离开作用域。这种“父作用域拥有子任务”的结构比散落的 `create_task()` 更容易推理。
+
+## 超时、取消与清理
+
+超时通常通过取消当前 Task 实现。取消是正常控制流：
+
+```python
+async def persist_once() -> None:
+    resource = await acquire_resource()
+    try:
+        await use_resource(resource)
+    finally:
+        await release_resource(resource)
+```
+
+若捕获 `asyncio.CancelledError` 只为清理，清理后应继续抛出，除非你明确把取消转换为领域结果并理解结构化并发的影响。`shield()` 不能让工作脱离生命周期，它只改变外层取消的传播方式，应少用且保留任务引用。
+
+支付写事务不能因为客户端取消就处于“可能提交、可能未提交”的模糊状态。应让数据库事务自身原子化，并通过幂等键和后续查询恢复，而不是试图用无限 `shield` 保证网络请求。
+
+## 队列、背压与并发上限
+
+`Semaphore` 限制同时执行数，`asyncio.Queue(maxsize=N)` 限制待处理积压。两者含义不同：前者保护连接池/对端配额，后者把生产速度反馈给生产者。
+
+队列消费者必须定义：任务身份、成功/失败结果通道、`task_done()` 配对、停止哨兵或关闭条件。不要无界 `create_task()`；Task 本身、请求体和连接都会占内存。
+
+## 阻塞代码与CPU工作
+
+- 短期兼容阻塞 I/O：`await asyncio.to_thread(func, ...)`，并设置底层超时；线程中的函数不会因外层 Task 取消而被强制终止。
+- 需要自定义执行器：`loop.run_in_executor(...)`，明确线程池生命周期。
+- CPU 密集：优先进程池或外部工作服务；把长计算放入线程只会把阻塞位置移动掉。
+
+异步库必须贯穿调用链。若底层客户端仍是阻塞的，在 `async def` 中直接调用它会冻结事件循环。
+
+## 可观测性与失败边界
+
+生产指标至少包括在途 Task 数、队列长度、事件循环延迟、超时率、取消率、对端错误分类和连接池等待时间。给 Task 命名并传播 `order_no`/请求 ID，但日志不记录支付密钥和完整敏感报文。
+
+调试时可开启 asyncio debug 模式，查找未等待协程、耗时回调和错误线程调用。Task 的异常必须在结构化作用域或显式结果收集点被观察，不能创建后遗忘。
+
+## 常见误区与适用边界
+
+1. **`await` 等于并发。** 连续 `await` 仍是串行；要在受控作用域内先创建多个 Task。
+2. **使用 `time.sleep`。** 它阻塞事件循环；协程内用 `await asyncio.sleep`。
+3. **取消等于底层操作停止。** 线程、数据库和远端请求可能继续，需要幂等与查询恢复。
+4. **`gather` 与 `TaskGroup` 完全等价。** 它们的异常和兄弟任务生命周期语义不同；相关子任务优先结构化作用域。
+
+`asyncio` 适合大量 I/O 等待且依赖支持异步接口的系统。简单脚本、阻塞库占主导或 CPU 计算为主时，线程/进程可能更清楚。
+
+## 自检题
+
+1. 调用 `fetch_status("O-100", limit)` 后为什么还没有发请求？
+2. 一个 Task 在 `to_thread` 外层被取消，线程函数一定停止吗？
+3. `Semaphore(10)` 与 `Queue(maxsize=10)` 分别限制什么？
+
+<details>
+<summary>展开答案</summary>
+
+1. 调用异步函数只创建协程对象，要被 await 或调度成 Task 才执行。
+2. 不一定；取消的是等待它的 Task，运行中的普通线程无法被 asyncio 安全强制终止。
+3. Semaphore 限制同时进入临界 I/O 的数量；Queue 限制尚未消费的积压数量并产生背压。
+
+</details>
+
+## 本篇总结
+
+`asyncio` 的核心是显式让出与任务所有权。可靠程序把 Task 放进结构化作用域，用超时和取消表达生命周期，用并发上限和有界队列表达资源边界，再用幂等状态机恢复无法强制停止的外部操作。
+
+## 下一篇衔接
+
+本篇完成了 Python 高级系列的订单处理闭环。继续实践时，可把第 36 篇的帧协议改成 `asyncio` Streams，并把第 40–42 篇的支付查询适配器放入同一个受限 `TaskGroup`，验证超时、重复和对账恢复。
+
+## 资料来源
+
+- [Python `asyncio` 文档](https://docs.python.org/3/library/asyncio.html)
 - [Coroutines and Tasks](https://docs.python.org/3/library/asyncio-task.html)
 - [Synchronization Primitives](https://docs.python.org/3/library/asyncio-sync.html)
-- [Queues](https://docs.python.org/3/library/asyncio-queue.html)
-- [Streams](https://docs.python.org/3/library/asyncio-stream.html)
+- [Developing with asyncio](https://docs.python.org/3/library/asyncio-dev.html)

@@ -4,743 +4,204 @@ series: ui-automation
 seriesOrder: 3
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
-modDatetime: 2026-05-09T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: ui-automation-element-finding
-description: '详细介绍UI Automation中各种元素定位策略，包括属性查找、层级查找、条件组合等高级技巧。'
+description: "用作用域、条件、等待和诊断信息构建可维护的 UI Automation 元素定位器。"
 tags:
   - UI Automation
   - RPA
-  - 元素定位
-  - 查找元素
+  - 桌面自动化
+  - Windows
 draft: false
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
 
-元素定位是 UI Automation 的核心技能。本教程将详细介绍各种查找策略和技巧，帮助你准确定位 UI 元素。
+你已经能运行 UIA 冒烟程序，并能用 Inspect 观察属性。本篇只解决：**如何在动态自动化树中稳定找到唯一目标元素？**
 
-![UI Automation 元素查找管线与缓存图](./images/uia-element-search-pipeline-figure-01.png)
+读完后，你应能设计“根节点 + `TreeScope` + `Condition` + 等待策略”，解释为什么定位失败，并避免把本地化标题或完整树路径当作永久 ID。本篇不执行控件动作。
 
-### 查找方法对比
+## 贯穿场景：定位记事本编辑区
 
-| 方法 | 说明 | 适用场景 |
-|------|------|----------|
-| **FindFirst** | 查找第一个匹配元素 | 单个元素 |
-| **FindAll** | 查找所有匹配元素 | 列表、表格 |
-| **TreeWalker** | 遍历 UI 树 | 复杂层级 |
-| **CacheRequest** | 缓存查找 | 性能优化 |
+<!-- figure:s03-f01 -->
 
-## 基本查找方法
+![看清从桌面到唯一编辑区的分阶段定位与诊断分支](./images/s03-f01-uia-locator-contract-pipeline.png)
 
-### FindFirst
+输入是启动记事本后得到的 PID，输出是唯一、可用的编辑区元素。中间状态依次是：桌面根 → 目标进程窗口 → 窗口子树中的 `Document`/`Edit` 元素。
 
-查找第一个匹配的元素：
+先按 PID 锁定窗口，再在窗口内部搜索，远比从桌面递归搜索所有 `Edit` 稳定。**作用域通常比条件数量更能决定性能和唯一性。**
+
+## 定位器的四个组成部分
+
+### 根节点
+
+根节点决定搜索边界。优先级通常是：当前对话框或容器 → 应用窗口 → 桌面。除定位顶层窗口外，不要从 `AutomationElement.RootElement` 搜索整个 `Descendants`。
+
+### TreeScope
+
+常用值是：
+
+- `Children`：只查直接子元素，适合顶层窗口；
+- `Descendants`：查所有后代，适合已缩小范围的窗口或面板；
+- `Subtree`：包含根元素自身及其后代。
+
+不要依赖枚举的数字值，也不要把视觉上的“附近”理解为树中的直接父子关系。
+
+### Condition
+
+稳定性一般从高到低为：
+
+1. 目标进程范围内稳定且唯一的 `AutomationId`；
+2. `AutomationId + ControlType`；
+3. 稳定语义属性与明确容器的组合；
+4. 本地化 `Name`；
+5. 兄弟序号或完整树路径。
+
+`Name` 可能随语言、数据和状态变化；序号会被插入的新控件打乱。二者可以作为诊断信息，不应成为默认唯一依据。
+
+### 等待与后置检查
+
+UI 是异步的。定位函数必须有截止时间、轮询间隔、最后一次观察结果，并在超时后返回可诊断错误。无限重试会把真正的结构变化伪装成“运行很慢”。
+
+## 最小可复用实现
+
+下面先按 PID 找顶层窗口，再在其后代中寻找编辑区。不同版本记事本可能暴露为 `Document` 或 `Edit`，因此把实际条件保留在调用端，先用 Inspect 确认。
 
 ```csharp
+using System;
+using System.Diagnostics;
+using System.Threading;
 using System.Windows.Automation;
 
-// 获取桌面
-AutomationElement desktop = AutomationElement.RootElement;
-
-// 基本查找
-AutomationElement button = desktop.FindFirst(
-    TreeScope.Children,
-    new PropertyCondition(
-        AutomationElement.NameProperty, 
-        "确定"
-    )
-);
-
-// 查找多个属性
-AutomationElement searchBox = desktop.FindFirst(
-    TreeScope.Descendants,
-    new AndCondition(
-        new PropertyCondition(
-            AutomationElement.ControlTypeProperty, 
-            ControlType.Edit
-        ),
-        new PropertyCondition(
-            AutomationElement.AutomationIdProperty, 
-            "searchBox"
-        )
-    )
-);
-```
-
-### FindAll
-
-查找所有匹配的元素：
-
-```csharp
-// 获取所有按钮
-AutomationElementCollection allButtons = desktop.FindAll(
-    TreeScope.Descendants,
-    new PropertyCondition(
-        AutomationElement.ControlTypeProperty, 
-        ControlType.Button
-    )
-);
-
-Console.WriteLine($"找到 {allButtons.Count} 个按钮");
-
-// 遍历所有按钮
-foreach (AutomationElement button in allButtons)
+public static class UiaFinder
 {
-    Console.WriteLine($"按钮名称: {button.Current.Name}");
-}
-```
-
-## 条件查找
-
-### PropertyCondition
-
-使用属性进行查找：
-
-```csharp
-// 按名称查找
-var byName = new PropertyCondition(
-    AutomationElement.NameProperty, 
-    "提交"
-);
-
-// 按 AutomationId 查找
-var byId = new PropertyCondition(
-    AutomationElement.AutomationIdProperty, 
-    "btnSubmit"
-);
-
-// 按控件类型查找
-var byType = new PropertyCondition(
-    AutomationElement.ControlTypeProperty, 
-    ControlType.Button
-);
-
-// 按类名查找
-var byClassName = new PropertyCondition(
-    AutomationElement.ClassNameProperty, 
-    "Button"
-);
-```
-
-### AndCondition
-
-组合多个条件（AND）：
-
-```csharp
-// 必须同时满足所有条件
-var andCondition = new AndCondition(
-    new PropertyCondition(
-        AutomationElement.ControlTypeProperty, 
-        ControlType.Button
-    ),
-    new PropertyCondition(
-        AutomationElement.NameProperty, 
-        "确定"
-    ),
-    new PropertyCondition(
-        AutomationElement.IsEnabledProperty, 
-        true
-    )
-);
-
-AutomationElement element = desktop.FindFirst(
-    TreeScope.Descendants, 
-    andCondition
-);
-```
-
-### OrCondition
-
-组合多个条件（OR）：
-
-```csharp
-// 满足任一条件即可
-var orCondition = new OrCondition(
-    new PropertyCondition(
-        AutomationElement.NameProperty, 
-        "确定"
-    ),
-    new PropertyCondition(
-        AutomationElement.NameProperty, 
-        "OK"
-    ),
-    new PropertyCondition(
-        AutomationElement.AutomationIdProperty, 
-        "btnOK"
-    )
-);
-```
-
-### NotCondition
-
-取反条件：
-
-```csharp
-// 查找未禁用的元素
-var notDisabled = new NotCondition(
-    new PropertyCondition(
-        AutomationElement.IsEnabledProperty, 
-        false
-    )
-);
-
-// 查找非按钮元素
-var notButton = new NotCondition(
-    new PropertyCondition(
-        AutomationElement.ControlTypeProperty, 
-        ControlType.Button
-    )
-);
-```
-
-### 复杂条件组合
-
-```csharp
-// 查找启用的按钮（排除特定 ID）
-var complexCondition = new AndCondition(
-    new PropertyCondition(
-        AutomationElement.ControlTypeProperty, 
-        ControlType.Button
-    ),
-    new PropertyCondition(
-        AutomationElement.IsEnabledProperty, 
-        true
-    ),
-    new NotCondition(
-        new PropertyCondition(
-            AutomationElement.AutomationIdProperty, 
-            "btnDisabled"
-        )
-    )
-);
-```
-
-## TreeScope 查找范围
-
-### 层级说明
-
-```text
-Root (Desktop)
-└── Children (直接子窗口)
-    ├── Window1
-    │   ├── Children (直接子控件)
-    │   │   ├── Button
-    │   │   └── Edit
-    │   └── Descendants (所有后代)
-    │       ├── Panel
-    │       │   ├── Button
-    │       │   └── Edit
-    │       └── Toolbar
-    │           └── Button
-    └── Window2
-```
-
-### 使用示例
-
-```csharp
-AutomationElement root = AutomationElement.RootElement;
-
-// 只在直接子元素中查找
-var directChildren = root.FindFirst(
-    TreeScope.Children,
-    new PropertyCondition(
-        AutomationElement.ControlTypeProperty, 
-        ControlType.Window
-    )
-);
-
-// 在所有后代中查找
-var allDescendants = root.FindAll(
-    TreeScope.Descendants,
-    new PropertyCondition(
-        AutomationElement.ControlTypeProperty, 
-        ControlType.Button
-    )
-);
-
-// 在子树中查找（包括自身）
-var subtree = root.FindAll(
-    TreeScope.Subtree,
-    condition
-);
-```
-
-## 常用查找模式
-
-### 查找窗口
-
-```csharp
-// 通过窗口标题
-public AutomationElement FindWindowByTitle(string title)
-{
-    AutomationElement desktop = AutomationElement.RootElement;
-    
-    return desktop.FindFirst(
-        TreeScope.Children,
-        new PropertyCondition(
-            AutomationElement.NameProperty, 
-            title
-        )
-    );
-}
-
-// 通过进程 ID
-public AutomationElement FindWindowByProcess(int processId)
-{
-    AutomationElement desktop = AutomationElement.RootElement;
-    
-    return desktop.FindFirst(
-        TreeScope.Children,
-        new PropertyCondition(
-            AutomationElement.ProcessIdProperty, 
-            processId
-        )
-    );
-}
-
-// 通过类名
-public AutomationElement FindWindowByClassName(string className)
-{
-    AutomationElement desktop = AutomationElement.RootElement;
-    
-    return desktop.FindFirst(
-        TreeScope.Children,
-        new PropertyCondition(
-            AutomationElement.ClassNameProperty, 
-            className
-        )
-    );
-}
-```
-
-### 查找按钮
-
-```csharp
-// 查找所有按钮
-public AutomationElementCollection FindAllButtons(AutomationElement root)
-{
-    return root.FindAll(
-        TreeScope.Descendants,
-        new PropertyCondition(
-            AutomationElement.ControlTypeProperty, 
-            ControlType.Button
-        )
-    );
-}
-
-// 查找特定按钮
-public AutomationElement FindButtonByName(
-    AutomationElement root, 
-    string name)
-{
-    return root.FindFirst(
-        TreeScope.Descendants,
-        new AndCondition(
-            new PropertyCondition(
-                AutomationElement.ControlTypeProperty, 
-                ControlType.Button
-            ),
-            new PropertyCondition(
-                AutomationElement.NameProperty, 
-                name
-            )
-        )
-    );
-}
-
-// 查找第一个可用按钮
-public AutomationElement FindFirstEnabledButton(AutomationElement root)
-{
-    var condition = new AndCondition(
-        new PropertyCondition(
-            AutomationElement.ControlTypeProperty, 
-            ControlType.Button
-        ),
-        new PropertyCondition(
-            AutomationElement.IsEnabledProperty, 
-            true
-        )
-    );
-    
-    return root.FindFirst(TreeScope.Descendants, condition);
-}
-```
-
-### 查找文本框
-
-```csharp
-// 查找所有文本框
-public AutomationElementCollection FindAllTextBoxes(AutomationElement root)
-{
-    return root.FindAll(
-        TreeScope.Descendants,
-        new PropertyCondition(
-            AutomationElement.ControlTypeProperty, 
-            ControlType.Edit
-        )
-    );
-}
-
-// 通过 AutomationId 查找
-public AutomationElement FindTextBoxById(
-    AutomationElement root, 
-    string automationId)
-{
-    return root.FindFirst(
-        TreeScope.Descendants,
-        new AndCondition(
-            new PropertyCondition(
-                AutomationElement.ControlTypeProperty, 
-                ControlType.Edit
-            ),
-            new PropertyCondition(
-                AutomationElement.AutomationIdProperty, 
-                automationId
-            )
-        )
-    );
-}
-```
-
-### 查找列表项
-
-```csharp
-// 查找列表中的所有项
-public AutomationElementCollection FindListItems(AutomationElement list)
-{
-    return list.FindAll(
-        TreeScope.Children,
-        new PropertyCondition(
-            AutomationElement.ControlTypeProperty, 
-            ControlType.ListItem
-        )
-    );
-}
-
-// 查找特定列表项
-public AutomationElement FindListItemByName(
-    AutomationElement list, 
-    string itemName)
-{
-    return list.FindFirst(
-        TreeScope.Children,
-        new AndCondition(
-            new PropertyCondition(
-                AutomationElement.ControlTypeProperty, 
-                ControlType.ListItem
-            ),
-            new PropertyCondition(
-                AutomationElement.NameProperty, 
-                itemName
-            )
-        )
-    );
-}
-```
-
-## TreeWalker 遍历
-
-TreeWalker 用于更灵活的 UI 树遍历：
-
-### 基本用法
-
-```csharp
-// 创建 TreeWalker
-TreeWalker walker = new TreeWalker(
-    new PropertyCondition(
-        AutomationElement.ControlTypeProperty, 
-        ControlType.Window
-    )
-);
-
-// 从根开始遍历
-AutomationElement node = walker.GetRootElement();
-while (node != null)
-{
-    Console.WriteLine($"窗口: {node.Current.Name}");
-    node = walker.GetNextSibling(node);
-}
-```
-
-### 常用遍历方法
-
-```csharp
-// 获取第一个子元素
-AutomationElement firstChild = TreeWalker.RawViewWalker.GetFirstChild(root);
-
-// 获取最后一个子元素
-AutomationElement lastChild = TreeWalker.RawViewWalker.GetLastChild(root);
-
-// 获取下一个兄弟元素
-AutomationElement nextSibling = TreeWalker.RawViewWalker.GetNextSibling(element);
-
-// 获取上一个兄弟元素
-AutomationElement prevSibling = TreeWalker.RawViewWalker.GetPreviousSibling(element);
-
-// 获取父元素
-AutomationElement parent = TreeWalker.RawViewWalker.GetParent(element);
-```
-
-### 遍历控件组
-
-```csharp
-// 遍历所有可见按钮
-TreeWalker buttonWalker = new TreeWalker(
-    new AndCondition(
-        new PropertyCondition(
-            AutomationElement.ControlTypeProperty, 
-            ControlType.Button
-        ),
-        new PropertyCondition(
-            AutomationElement.IsOffscreenProperty, 
-            false
-        )
-    )
-);
-
-AutomationElement element = buttonWalker.GetRootElement();
-while (element != null)
-{
-    Console.WriteLine($"按钮: {element.Current.Name}");
-    element = buttonWalker.GetNextSibling(element);
-}
-```
-
-## 缓存查找
-
-### CacheRequest
-
-使用 CacheRequest 缓存属性，提高查找性能：
-
-```csharp
-// 创建缓存请求
-CacheRequest cacheRequest = new CacheRequest();
-
-// 添加需要缓存的属性
-cacheRequest.Add(AutomationElement.NameProperty);
-cacheRequest.Add(AutomationElement.AutomationIdProperty);
-cacheRequest.Add(AutomationElement.IsEnabledProperty);
-cacheRequest.Add(AutomationElement.ControlTypeProperty);
-
-// 设置缓存范围
-cacheRequest.TreeScope = TreeScope.Children | TreeScope.Properties;
-
-// 激活并使用
-using (cacheRequest.Activate())
-{
-    AutomationElementCollection buttons = desktop.FindAll(
-        TreeScope.Children,
-        new PropertyCondition(
-            AutomationElement.ControlTypeProperty, 
-            ControlType.Button
-        )
-    );
-    
-    // 遍历结果（使用缓存）
-    foreach (AutomationElement button in buttons)
+    public static AutomationElement WaitForUniqueEditor(
+        int processId,
+        Condition editorCondition,
+        TimeSpan timeout,
+        string description)
     {
-        // 从缓存获取属性（无需额外请求）
-        string name = button.Cached.Name;
-        string id = button.Cached.AutomationId;
-        
-        Console.WriteLine($"{id}: {name}");
-    }
-}
-```
+        Stopwatch clock = Stopwatch.StartNew();
+        Exception lastError = null;
+        int lastCandidateCount = 0;
 
-## 实用工具类
-
-### ElementFinder 封装
-
-```csharp
-public static class ElementFinder
-{
-    /// <summary>
-    /// 查找单个元素
-    /// </summary>
-    public static AutomationElement FindElement(
-        AutomationElement root,
-        TreeScope scope,
-        string name,
-        ControlType? controlType = null)
-    {
-        Condition condition = CreateCondition(name, controlType);
-        
-        return root?.FindFirst(scope, condition);
-    }
-
-    /// <summary>
-    /// 查找所有匹配元素
-    /// </summary>
-    public static AutomationElementCollection FindElements(
-        AutomationElement root,
-        TreeScope scope,
-        ControlType controlType)
-    {
-        var condition = new PropertyCondition(
-            AutomationElement.ControlTypeProperty, 
-            controlType
-        );
-        
-        return root?.FindAll(scope, condition) 
-            ?? new AutomationElementCollection();
-    }
-
-    /// <summary>
-    /// 查找第一个启用的按钮
-    /// </summary>
-    public static AutomationElement FindEnabledButton(
-        AutomationElement root)
-    {
-        var condition = new AndCondition(
-            new PropertyCondition(
-                AutomationElement.ControlTypeProperty, 
-                ControlType.Button
-            ),
-            new PropertyCondition(
-                AutomationElement.IsEnabledProperty, 
-                true
-            )
-        );
-        
-        return root?.FindFirst(TreeScope.Descendants, condition);
-    }
-
-    private static Condition CreateCondition(
-        string name, 
-        ControlType? controlType)
-    {
-        if (controlType.HasValue)
+        while (clock.Elapsed < timeout)
         {
-            return new AndCondition(
-                new PropertyCondition(
-                    AutomationElement.NameProperty, 
-                    name
-                ),
-                new PropertyCondition(
-                    AutomationElement.ControlTypeProperty, 
-                    controlType.Value
-                )
-            );
+            try
+            {
+                AutomationElement window = FindWindowByProcessId(processId);
+                if (window != null)
+                {
+                    AutomationElementCollection candidates =
+                        window.FindAll(
+                            TreeScope.Descendants,
+                            editorCondition);
+
+                    lastCandidateCount = candidates.Count;
+                    if (candidates.Count == 1 &&
+                        candidates[0].Current.IsEnabled)
+                    {
+                        return candidates[0];
+                    }
+                }
+            }
+            catch (ElementNotAvailableException ex)
+            {
+                // 树发生变化；下一轮从 PID 重新取得窗口。
+                lastError = ex;
+            }
+
+            Thread.Sleep(100);
         }
-        
-        return new PropertyCondition(
-            AutomationElement.NameProperty, 
-            name
-        );
+
+        throw new TimeoutException(
+            string.Format(
+                "Timed out locating {0}. Last candidate count: {1}. Last error: {2}",
+                description,
+                lastCandidateCount,
+                lastError == null ? "none" : lastError.Message));
     }
-}
-```
 
-### 使用示例
-
-```csharp
-// 使用工具类
-AutomationElement desktop = AutomationElement.RootElement;
-
-// 查找按钮
-var button = ElementFinder.FindElement(
-    desktop,
-    TreeScope.Descendants,
-    "确定",
-    ControlType.Button
-);
-
-// 查找所有按钮
-var allButtons = ElementFinder.FindElements(
-    desktop,
-    TreeScope.Descendants,
-    ControlType.Button
-);
-
-// 查找启用的按钮
-var enabledButton = ElementFinder.FindEnabledButton(desktop);
-```
-
-## 最佳实践
-
-### 查找策略
-
-```csharp
-// ✅ 推荐：使用 AutomationId（最稳定）
-var byId = new PropertyCondition(
-    AutomationElement.AutomationIdProperty, 
-    "submitButton"
-);
-
-// ✅ 推荐：使用控件类型 + 名称
-var byTypeAndName = new AndCondition(
-    new PropertyCondition(
-        AutomationElement.ControlTypeProperty, 
-        ControlType.Button
-    ),
-    new PropertyCondition(
-        AutomationElement.NameProperty, 
-        "提交"
-    )
-);
-
-// ⚠️ 谨慎：仅使用名称（可能不唯一）
-var byNameOnly = new PropertyCondition(
-    AutomationElement.NameProperty, 
-    "确定"
-);
-
-// ❌ 避免：使用类名（Win32 内部实现）
-var byClassName = new PropertyCondition(
-    AutomationElement.ClassNameProperty, 
-    "Button"
-);
-```
-
-### 性能优化
-
-```csharp
-// ✅ 推荐：使用缓存
-using (cacheRequest.Activate())
-{
-    var elements = root.FindAll(scope, condition);
-}
-
-// ✅ 推荐：限制查找范围
-var directChildren = root.FindFirst(
-    TreeScope.Children,  // 而不是 Descendants
-    condition
-);
-
-// ✅ 推荐：先定位容器再查找子元素
-var container = FindWindow(root, "MainWindow");
-var buttons = container.FindAll(
-    TreeScope.Descendants,
-    condition
-);
-```
-
-### 错误处理
-
-```csharp
-try
-{
-    var element = root.FindFirst(
-        TreeScope.Descendants,
-        condition
-    );
-    
-    if (element == null)
+    public static AutomationElement FindWindowByProcessId(int processId)
     {
-        Console.WriteLine("未找到元素");
-        return;
+        return AutomationElement.RootElement.FindFirst(
+            TreeScope.Children,
+            new AndCondition(
+                new PropertyCondition(
+                    AutomationElement.ProcessIdProperty, processId),
+                new PropertyCondition(
+                    AutomationElement.ControlTypeProperty, ControlType.Window)));
     }
-    
-    // 操作元素
-}
-catch (ElementNotAvailableException)
-{
-    Console.WriteLine("元素不可用，可能已被关闭");
-}
-catch (InvalidOperationException)
-{
-    Console.WriteLine("操作无效");
 }
 ```
+
+调用端提供 PID 与编辑区条件；每轮查询都会重新取得窗口，不会把旧窗口封闭在重试闭包中：
+
+```csharp
+Condition editorCondition = new OrCondition(
+    new PropertyCondition(
+        AutomationElement.ControlTypeProperty, ControlType.Document),
+    new PropertyCondition(
+        AutomationElement.ControlTypeProperty, ControlType.Edit));
+
+AutomationElement editor = UiaFinder.WaitForUniqueEditor(
+    notepad.Id,
+    editorCondition,
+    TimeSpan.FromSeconds(5),
+    "Notepad editor");
+```
+
+输入是 `notepad.Id` 与 `editorCondition`；成功输出是唯一且启用的元素；超时异常包含阶段名称、最后候选数和最后一次元素失效错误。窗口或编辑区被重建时，下一轮会从 PID 重新建立查询边界。
+
+## 唯一性检查与失败诊断
+
+上线前不要只用 `FindFirst` 掩盖重复匹配。上面的实现使用 `FindAll`，只有候选数恰好为 `1` 且元素启用时才返回；`0` 表示尚未出现或条件不匹配，大于 `1` 表示定位合同不唯一。
+
+诊断日志至少记录查询根的名称和进程 ID、范围、条件、候选数量，以及每个候选的 `Name`、`AutomationId`、`ControlType` 和 `IsOffscreen`。不要记录用户正在输入的敏感文本。
+
+大量读取属性时，可用 `CacheRequest` 在一次跨进程调用中缓存所需属性；缓存值是快照，只用于同一查询阶段，不能替代实时状态读取。
+
+## 动态树与虚拟化边界
+
+<!-- figure:s03-f02 -->
+
+![理解元素失效后必须回到稳定根重新定位，而非重试旧对象](./images/s03-f02-uia-stale-reacquire-loop.png)
+
+- 页面切换可能销毁旧元素，捕获 `ElementNotAvailableException` 后应从稳定根重新定位；
+- 虚拟列表可能只创建可见项，需要先滚动或使用 `VirtualizedItemPattern`；
+- 弹窗可能位于原窗口之外，应回到桌面按 PID 或窗口关系重新定位；
+- `IsOffscreen=false` 不等于可点击，还要检查启用状态、遮挡和目标 Pattern。
+
+## 常见误区
+
+- 从桌面 `Descendants` 搜索所有元素，既慢又容易跨应用误匹配；
+- 看到一个候选就认为定位器唯一；
+- 用固定 `Sleep` 代替带截止时间的状态轮询；
+- 把元素对象放入全局缓存，页面更新后继续操作；
+- 为提高“成功率”不断追加易变属性，结果定位器更脆弱。
+
+## 自检题
+
+1. 为什么“先按 PID 找窗口”通常比“桌面全树查编辑框”更好？
+2. `FindFirst` 返回结果能否证明条件唯一？
+3. 元素失效后应该重试原对象，还是从稳定根重新定位？
+
+<details>
+<summary>查看答案</summary>
+
+1. PID 先建立应用边界，减少跨进程调用、误匹配和搜索量。
+2. 不能；它只返回第一个候选，上线前应使用 `FindAll` 验证候选数量。
+3. 从稳定根重新定位。旧对象代表已经变化的树快照，继续重试不会恢复它。
+
+</details>
+
+## 本篇总结与下一篇
+
+稳健定位器不是一个字符串，而是明确的根、范围、条件、等待和诊断合同。下一篇将接收这个唯一元素，查询它实际支持的 Pattern，执行动作并用后置状态证明结果。
+
+## 资料来源
+
+- [UI Automation Tree Overview](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-treeoverview)
+- [Caching UI Automation Properties and Control Patterns](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-cachingforclients)
+- [UI Automation Properties Overview](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-propertiesoverview)

@@ -1,12 +1,12 @@
 ---
-title: Playwright 等待策略与异步处理
+title: Playwright 等待策略：用可观察状态消除竞态
 series: playwright
 seriesOrder: 6
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
-modDatetime: 2026-05-09T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: playwright-waiting-strategies
-description: '深入讲解Playwright的等待机制，包括自动等待、显式等待、网络等待等，以及如何处理异步操作和动态内容。'
+description: "区分动作自动等待、Web-first 断言、事件等待与业务等待，建立可诊断的超时预算和异步并发边界。"
 tags:
   - Playwright
   - RPA
@@ -16,734 +16,155 @@ draft: false
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
 
-在网页自动化中，等待是一个核心概念。网页是动态的，元素的加载、网络请求、表单提交等都是异步的。如果不恰当地处理这些异步操作，脚本可能会因为找不到元素或时机不对而失败。Playwright 提供了智能的自动等待机制，同时也支持灵活的显式等待策略。
+你应理解 Locator 的可操作性检查。完成本篇后，你能够：
 
-![Playwright 等待策略与异步处理时间轴](./images/playwright-waiting-async-timeline-figure-01.png)
+- 区分动作自动等待、断言重试、事件等待和自定义业务等待；
+- 用“触发动作前订阅事件”消除快速响应竞态；
+- 为步骤、断言和整体流程设置分层超时；
+- 判断同步 API、异步 API 与并发控制的边界。
 
-### 等待问题场景
+## 固定等待为什么会让脚本又慢又不稳定
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                        时间线                                │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  T1: 页面开始加载                                            │
-│  T2: HTML 解析完成 (DOMContentLoaded)                        │
-│  T3: 图片/样式表加载完成 (Load)                              │
-│  T4: JavaScript 执行完成                                     │
-│  T5: AJAX 请求完成                                           │
-│  T6: 动画效果完成                                            │
-│  T7: 用户交互完成                                            │
-│                                                              │
-│  ❌ 过早操作 → 元素不存在                                    │
-│  ✅ 时机恰当 → 操作成功                                      │
-│  ❌ 过晚等待 → 浪费时间                                      │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
-```
+订单提交可能 80 毫秒完成，也可能因为队列拥塞耗时 4 秒。`time.sleep(2)` 在第一种情况浪费时间，在第二种情况提前结束。正确等待的对象不是时间，而是业务可观察状态：成功提示、目标 URL、特定响应或状态字段。
 
-## 自动等待机制
+<!-- figure:s06-f01 -->
 
-### Playwright 的智能等待
+![理解订阅响应、触发动作、收到响应、等待 UI、断言成功的因果时序](./images/final/s06-f01-event-before-action-timeline.png)
 
-Playwright 的 Locator API 内置了自动等待机制：
+## 四层等待模型
+
+| 层级     | 解决的问题                     | 首选方式                                                     |
+| -------- | ------------------------------ | ------------------------------------------------------------ |
+| 动作等待 | 元素现在能否安全操作           | `locator.click()` / `fill()` 内置等待                        |
+| 结果等待 | 页面最终是否达到预期           | `expect(locator/page)` Web-first 断言                        |
+| 事件等待 | 某动作是否触发响应、弹窗、下载 | `expect_response()` / `expect_popup()` / `expect_download()` |
+| 业务等待 | 多个信号或后台状态何时完成     | `expect.poll`（测试插件能力）或有界轮询                      |
+
+不要在每层重复等待同一信号。例如按钮 `click()` 前通常无需再等待它可见；点击后应等待“审核成功”而不是再次等待按钮。
+
+## 事件必须先订阅，再触发
 
 ```python
-from playwright.sync_api import sync_playwright
+with page.expect_response(
+    lambda response: response.url.endswith("/api/orders/0042/approve")
+    and response.request.method == "POST"
+) as response_info:
+    page.get_by_role("button", name="确认审核").click()
 
-def auto_wait_demo():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com")
-        
-        # Playwright 自动等待元素可操作后执行
-        page.click("#dynamic-button")
-        
-        # 自动等待包括：
-        # 1. 元素可见
-        # 2. 元素可用（启用状态）
-        # 3. 元素稳定（不在动画中）
-        # 4. 元素可点击（没有遮挡）
-        
-        # 如果元素不存在，会自动等待
-        page.fill("#lazy-input", "value")
-        
-        browser.close()
+response = response_info.value
+assert response.ok, f"status={response.status}"
 ```
 
-### 自动等待检查项
+`expect_response()` 的上下文先注册监听，内部点击再触发请求，退出时取得结果。先点击再 `wait_for_response` 会留下竞态窗口；响应足够快时监听永远等不到。
 
-当执行操作时，Playwright 会自动检查：
-
-| 检查项 | 说明 | 默认行为 |
-|--------|------|----------|
-| **可见性** | 元素是否可见 | 可见 |
-| **可点击** | 元素是否可点击 | 可点击 |
-| **启用状态** | 元素是否启用 | 启用 |
-| **稳定状态** | 元素是否在动画 | 稳定 |
-| **附加状态** | 元素是否在 DOM | 附加 |
+对于 UI 最终状态，继续使用重试断言：
 
 ```python
-def auto_wait_checks():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com")
-        
-        # 默认会自动检查所有条件
-        page.click("#button")
-        
-        # 强制执行（跳过某些检查）
-        page.click("#disabled-button", force=True)
-        
-        # 只等待可见性
-        page.click("#button", force=False, no_wait_after=False)
-        
-        browser.close()
+from playwright.sync_api import expect
+
+expect(page.get_by_role("status")).to_have_text("审核成功", timeout=10_000)
 ```
 
-## 显式等待策略
+接口成功不一定意味着 UI 已渲染，UI 成功也不应掩盖异常 HTTP 状态。高风险流程可同时验证两类信号。
 
-### 等待元素出现
+<!-- figure:s06-f02 -->
+
+![理解断言、步骤和整体流程的嵌套超时预算](./images/final/s06-f02-timeout-budget-layers.png)
+
+## 导航与 `networkidle` 的边界
+
+`page.goto()` 会等待所选加载状态，但现代应用常在加载事件之后继续请求数据。不要把 `networkidle` 当“页面可用”的通用定义：长轮询、分析脚本和 WebSocket 可能让网络永不空闲，而业务控件早已可用。
 
 ```python
-def wait_for_element():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com")
-        
-        # 等待元素可见
-        page.wait_for_selector("#content", state="visible")
-        
-        # 等待元素隐藏
-        page.wait_for_selector(".loading", state="hidden")
-        
-        # 等待元素添加到 DOM
-        page.wait_for_selector("#lazy-element", state="attached")
-        
-        # 等待元素从 DOM 移除
-        page.wait_for_selector(".modal", state="detached")
-        
-        # 等待指定时间
-        page.wait_for_timeout(2000)  # 2 秒
-        
-        browser.close()
+page.goto("https://app.example.test/orders", wait_until="domcontentloaded")
+expect(page.get_by_role("heading", name="订单列表")).to_be_visible()
 ```
 
-### 等待状态选项
+页面可用性的定义应由业务合同给出，例如标题可见、关键请求成功和表格行出现。
 
-| 状态 | 说明 | 使用场景 |
-|------|------|----------|
-| `"visible"` | 元素可见且有非空边界 | 默认，最常用 |
-| `"hidden"` | 元素不可见或不在 DOM | 等待加载完成 |
-| `"attached"` | 元素存在于 DOM | 等待动态添加 |
-| `"detached"` | 元素从 DOM 移除 | 等待弹窗关闭 |
+## 超时预算，而不是一个巨大默认值
 
-### 带超时的等待
+建议分三层：单个断言 5–10 秒、单个高风险步骤 15–30 秒、完整业务流程有独立总预算。过大的统一超时会让错误很晚才暴露，过小则把正常尾延迟当失败。
 
 ```python
-def wait_with_timeout():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com")
-        
-        # 设置超时时间（毫秒）
+page.set_default_timeout(8_000)
+page.set_default_navigation_timeout(15_000)
+expect(page.get_by_role("status")).to_have_text(
+    "审核成功",
+    timeout=12_000,
+)
+```
+
+超时发生时记录：等待的信号、已耗时、当前 URL、关键 Locator 状态、最近响应以及截图/trace。重试应针对可分类的瞬时失败，并有次数上限；定位错误和权限错误重试多少次都不会变好。
+
+## 异步 API 与并发控制
+
+异步 API 的意义是让同一事件循环调度多个独立 I/O 任务：
+
+```python
+import asyncio
+from playwright.async_api import async_playwright
+
+async def inspect(browser, url: str, semaphore: asyncio.Semaphore) -> str:
+    async with semaphore:
+        context = await browser.new_context()
         try:
-            page.wait_for_selector(
-                "#maybe-never-appear",
-                state="visible",
-                timeout=5000  # 5 秒超时
-            )
-        except TimeoutError:
-            print("元素未在 5 秒内出现")
-        
-        # 全局超时配置
-        page.set_default_timeout(30000)  # 30 秒
-        
-        # 使用超时常量
-        from playwright.sync_api import timeout
-        page.wait_for_selector(
-            "#element",
-            timeout=timeout(5000)
-        )
-        
-        browser.close()
-```
-
-### 自定义等待条件
-
-```python
-def custom_wait_conditions():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com")
-        
-        # 等待函数返回 True
-        page.wait_for_function("""() => {
-            return document.querySelector('.count').textContent === '10';
-        }""")
-        
-        # 带参数的条件
-        page.wait_for_function(
-            "count => document.querySelectorAll('.item').length >= count",
-            arg=5
-        )
-        
-        # 等待 JavaScript 变量
-        page.wait_for_function("""() => window.apiDataLoaded === true""")
-        
-        # 等待元素包含特定文本
-        page.wait_for_function(
-            "selector => document.querySelector(selector)?.textContent?.includes('Success')",
-            arg="#status"
-        )
-        
-        browser.close()
-```
-
-## 网络等待策略
-
-### 等待网络请求
-
-```python
-def wait_for_network():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com")
-        
-        # 等待网络空闲（推荐）
-        page.wait_for_load_state("networkidle")
-        
-        # 等待 DOM 内容加载
-        page.wait_for_load_state("domcontentloaded")
-        
-        # 等待完整页面加载
-        page.wait_for_load_state("load")
-        
-        # 等待提交请求完成
-        with page.expect_request("**/api/submit") as request_info:
-            page.click("#submit-btn")
-        request = request_info.value
-        
-        # 等待多个请求
-        async def handle_request(request):
-            if "api/data" in request.url:
-                return request.response()
-        
-        # 等待特定响应
-        response = page.wait_for_response("**/api/**")
-        print(f"状态码: {response.status}")
-        
-        browser.close()
-```
-
-### 等待选项详解
-
-```python
-def load_state_options():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        # 'commit' - 初始响应收到即完成
-        page.goto("https://example.com", wait_until="commit")
-        
-        # 'domcontentloaded' - DOMContentLoaded 事件
-        page.goto("https://example.com", wait_until="domcontentloaded")
-        
-        # 'load' - 页面 load 事件（默认）
-        page.goto("https://example.com", wait_until="load")
-        
-        # 'networkidle' - 500ms 无网络活动
-        page.goto("https://example.com", wait_until="networkidle")
-        
-        browser.close()
-```
-
-## 导航等待
-
-### 基本导航等待
-
-```python
-def navigation_wait():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        # 导航并等待加载完成
-        page.goto("https://example.com")
-        page.wait_for_load_state()
-        
-        # 点击链接并等待新页面
-        page.click("a[href='/about']")
-        page.wait_for_load_state()
-        
-        # 等待 URL 变化
-        page.click("a[href='/contact']")
-        page.wait_for_url("**/contact")
-        
-        # 等待 URL 匹配模式
-        page.wait_for_url(re.compile(r".*/(about|contact)"))
-        
-        # 等待导航完成
-        page.goto("https://example.com")
-        
-        # 手动等待导航
-        response = page.goto("https://example.com/form")
-        print(f"响应状态: {response.status}")
-        
-        browser.close()
-```
-
-### 等待时机
-
-```python
-def navigation_timing():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        # 方法1：使用上下文管理器
-        with page.expect_navigation():
-            page.click("#submit-btn")
-        
-        # 方法2：先点击后等待
-        page.click("#submit-btn")
-        page.wait_for_load_state()
-        
-        # 方法3：等待 URL 变化
-        page.click("#submit-btn")
-        page.wait_for_url("**/result")
-        
-        # 方法4：使用 Promise
-        page.click("#submit-btn")
-        page.wait_for_function("() => window.location.href.includes('/result')")
-        
-        browser.close()
-```
-
-## 异步操作处理
-
-### 异步 API 使用
-
-```python
-import asyncio
-from playwright.async_api import async_playwright
-
-async def async_operations():
-    async with async_playwright() as p:
-        browser = await p.chromium.launch()
-        page = await browser.new_page()
-        
-        await page.goto("https://example.com")
-        
-        # 异步点击
-        await page.click("#button")
-        
-        # 异步填充
-        await page.fill("input[name='username']", "user")
-        
-        # 并行操作
-        async with asyncio.TaskGroup() as tg:
-            tg.create_task(page.fill("input[name='a']", "value1"))
-            tg.create_task(page.fill("input[name='b']", "value2"))
-        
-        await browser.close()
-
-# 运行异步函数
-asyncio.run(async_operations())
-```
-
-### 批量异步操作
-
-```python
-import asyncio
-from playwright.async_api import async_playwright
-
-async def batch_async_operations():
-    async with async_playwright() as p:
-        browser = await p.chromium.launch()
-        
-        # 创建多个上下文
-        contexts = []
-        for i in range(5):
-            ctx = await browser.new_context()
-            contexts.append(ctx)
-        
-        # 并行打开页面
-        async def scrape_page(context, url):
             page = await context.new_page()
-            await page.goto(url)
-            title = await page.title()
-            await page.close()
-            await context.close()
-            return title
-        
-        urls = [
-            "https://example.com",
-            "https://example.org",
-            "https://example.net",
-            "https://example.edu",
-            "https://example.gov"
-        ]
-        
-        # 并行执行所有任务
-        results = await asyncio.gather(
-            *[scrape_page(ctx, url) 
-              for ctx, url in zip(contexts, urls)]
-        )
-        
-        print(results)
-        
-        await browser.close()
-```
-
-### 同步和异步转换
-
-```python
-# 同步代码包装
-from playwright.sync_api import sync_playwright
-
-def sync_wrapper():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        page.goto("https://example.com")
-        # 同步操作...
-        browser.close()
-
-# 在异步代码中调用同步代码
-async def mixed_async():
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, sync_wrapper)
-```
-
-## 条件等待
-
-### 根据条件等待
-
-```python
-def conditional_wait():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com")
-        
-        # 等待某个条件为真
-        page.wait_for_function("""() => {
-            const count = document.querySelectorAll('.item').length;
-            return count >= 10;
-        }""")
-        
-        # 等待元素文本变化
-        page.wait_for_function(
-            """() => {
-                const status = document.querySelector('#status');
-                return status && status.textContent === 'Completed';
-            }"""
-        )
-        
-        # 等待元素属性变化
-        page.wait_for_function(
-            """() => {
-                const btn = document.querySelector('#submit');
-                return btn && btn.disabled === false;
-            }"""
-        )
-        
-        # 轮询自定义条件
-        def check_condition():
-            return page.evaluate(
-                "() => document.querySelector('.success') !== null"
-            )
-        
-        import time
-        timeout = 10
-        start = time.time()
-        while time.time() - start < timeout:
-            if check_condition():
-                break
-            time.sleep(0.5)
-        
-        browser.close()
-```
-
-### 使用断言等待
-
-```python
-def assertion_wait():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com")
-        
-        # 断言会自动等待
-        from playwright.sync_api import expect
-        
-        # 等待并断言元素可见
-        expect(page.locator("#success")).to_be_visible()
-        
-        # 等待并断言元素包含文本
-        expect(page.locator("#message")).to_contain_text("Welcome")
-        
-        # 等待并断言元素启用
-        expect(page.locator("#submit")).to_be_enabled()
-        
-        # 等待并断言元素有值
-        expect(page.locator("#username")).to_have_value("testuser")
-        
-        # 等待并断言元素可点击
-        expect(page.locator("#action")).to_be_enabled()
-        
-        browser.close()
-```
-
-## 高级等待策略
-
-### 等待分页加载
-
-```python
-def wait_pagination():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com/list")
-        
-        # 点击下一页
-        page.click(".pagination .next")
-        
-        # 等待列表重新加载
-        page.wait_for_selector(".loading", state="hidden")
-        page.wait_for_selector(".item")
-        
-        # 验证新内容加载
-        first_item = page.locator(".item").first
-        new_text = first_item.locator(".title").inner_text()
-        
-        browser.close()
-```
-
-### 等待动态内容
-
-```python
-def wait_dynamic_content():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com")
-        
-        # 等待 AJAX 加载的内容
-        page.wait_for_selector(".ajax-content[data-loaded='true']")
-        
-        # 等待懒加载图片
-        images = page.locator("img.lazy")
-        for i in range(images.count()):
-            page.wait_for_load_state("networkidle")
-        
-        # 等待 WebSocket 消息
-        page.evaluate("""() => {
-            window.ws = new WebSocket('wss://example.com/ws');
-            window.ws.onmessage = (e) => {
-                window.wsData = JSON.parse(e.data);
-            };
-        }""")
-        page.wait_for_function("() => window.wsData !== undefined")
-        
-        browser.close()
-```
-
-### 等待动画完成
-
-```python
-def wait_animations():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com")
-        
-        # 点击触发动画
-        page.click("#animate-btn")
-        
-        # 等待 CSS 动画完成
-        page.wait_for_function("""() => {
-            const el = document.querySelector('.animating-element');
-            const style = window.getComputedStyle(el);
-            return style.animationPlayState === 'paused' || 
-                   style.animationName === 'none';
-        }""")
-        
-        # 等待元素停止移动
-        page.wait_for_function("""() => {
-            const el = document.querySelector('.moving-element');
-            const rect = el.getBoundingClientRect();
-            return rect.left >= 0 && rect.top >= 0;
-        }""")
-        
-        # 固定等待动画完成
-        page.click("#animate-btn")
-        page.wait_for_timeout(1000)  # 假设动画持续 1 秒
-        
-        browser.close()
-```
-
-## 错误处理和重试
-
-### 超时处理
-
-```python
-def timeout_handling():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.set_default_timeout(30000)
-        
-        try:
-            # 可能超时的操作
-            page.click("#maybe-never-appear", timeout=5000)
-            
-        except TimeoutError:
-            # 处理超时
-            print("操作超时，执行备用逻辑")
-            page.click("#fallback-button")
-            
-        except Exception as e:
-            print(f"其他错误: {e}")
-            
+            await page.goto(url, wait_until="domcontentloaded")
+            return await page.title()
         finally:
-            browser.close()
+            await context.close()
+
+async def main() -> None:
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch()
+        semaphore = asyncio.Semaphore(3)
+        titles = await asyncio.gather(
+            *(inspect(browser, url, semaphore) for url in ["https://example.com"] * 3)
+        )
+        print(titles)
+        await browser.close()
+
+asyncio.run(main())
 ```
 
-### 重试机制
+这里的 Shape 是 `3 个 URL -> 最多 3 个并发 context -> 3 个标题字符串`。并发上限必须考虑内存、站点服务能力、账号限流和合规要求。不要在线程中共享同步 API 对象，也不要在异步函数里调用同步 Playwright。
 
-```python
-def retry_mechanism():
-    from playwright.sync_api import sync_playwright
-    
-    def retry_operation(func, max_attempts=3, delay=1):
-        """通用重试装饰器"""
-        for attempt in range(max_attempts):
-            try:
-                return func()
-            except Exception as e:
-                if attempt == max_attempts - 1:
-                    raise
-                print(f"尝试 {attempt + 1} 失败: {e}, 重试中...")
-                import time
-                time.sleep(delay)
-    
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        def click_with_retry():
-            page.wait_for_selector("#dynamic-btn", timeout=5000)
-            page.click("#dynamic-btn")
-        
-        retry_operation(click_with_retry)
-        
-        browser.close()
-```
+## 常见误区与不适用边界
 
-### 优雅降级
+1. **遇到偶发失败就加 `sleep`。** 应识别真实完成信号。
+2. **`networkidle` 等于业务完成。** 网络安静与界面可用不是同一合同。
+3. **所有超时都设为 120 秒。** 这会掩盖错误位置和性能退化。
+4. **请求失败统一重试。** 401、参数错误、定位错误通常不可重试。
+5. **异步等于无限并发。** 浏览器资源与目标系统都需要背压。
 
-```python
-def graceful_degradation():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com")
-        
-        # 尝试主要方式
-        try:
-            page.wait_for_selector("#modern-ui", timeout=3000)
-            page.click("#modern-ui .action-btn")
-        except TimeoutError:
-            # 降级到备用方式
-            try:
-                page.wait_for_selector("#legacy-ui", timeout=3000)
-                page.click("#legacy-ui .btn")
-            except TimeoutError:
-                # 最终降级方案
-                page.execute_javascript("window.legacyAction()")
-        
-        browser.close()
-```
+## 自检题
 
-## 最佳实践
+1. 为什么要用 `with page.expect_response(): click()` 而不是先 click？
+2. 页面有持续 WebSocket 时，为什么 `networkidle` 可能永远不满足？
+3. 一个 401 响应适合自动重试吗？
 
-### 选择正确的等待方式
+<details>
+<summary>查看答案</summary>
 
-```python
-def best_practices():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
-        
-        page.goto("https://example.com")
-        
-        # ✅ 推荐：使用自动等待
-        page.click("#button")
-        
-        # ✅ 推荐：使用适当的 load 状态
-        page.goto("https://example.com", wait_until="domcontentloaded")
-        
-        # ✅ 推荐：等待特定元素
-        page.wait_for_selector("#content-loaded")
-        
-        # ⚠️ 谨慎：固定等待（可能浪费时间）
-        page.wait_for_timeout(2000)
-        
-        # ❌ 避免：嵌套等待
-        page.wait_for_timeout(500)
-        page.wait_for_selector("#btn1")
-        page.wait_for_timeout(500)
-        page.click("#btn1")
-        page.wait_for_timeout(500)
-        
-        browser.close()
-```
+1. 先订阅能消除快速响应发生在监听之前的竞态。
+2. 持续连接或请求使“网络空闲”无法代表业务完成。
+3. 通常不适合；应刷新认证或终止并报告权限问题，而不是盲目重试。
 
-### 优化等待时间
+</details>
 
-```python
-def optimize_wait_time():
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        
-        # 根据场景调整超时
-        # 快速操作：短超时
-        page = browser.new_page()
-        page.set_default_timeout(5000)  # 5 秒
-        
-        # 复杂页面：长超时
-        page.goto("https://heavy-site.com")
-        page.set_default_timeout(30000)  # 30 秒
-        
-        # 条件判断：可变超时
-        if page.locator(".quick-content").count() > 0:
-            page.wait_for_selector("#quick-btn", timeout=2000)
-        else:
-            page.wait_for_selector("#full-content", timeout=10000)
-        
-        browser.close()
-```
+## 本篇总结
+
+稳定等待来自对完成信号的精确定义：动作等待保证可操作，断言等待最终状态，事件等待捕获因果关系，超时预算保证失败可诊断。
+
+## 下一篇衔接
+
+下一篇把等待结果组织成自动化测试：如何设计 Web-first 断言、fixture、失败证据和最小回归集。
+
+## 资料来源
+
+- [Playwright Python：Auto-waiting](https://playwright.dev/python/docs/actionability)
+- [Playwright Python：Navigations](https://playwright.dev/python/docs/navigations)
+- [Playwright Python：Network](https://playwright.dev/python/docs/network)

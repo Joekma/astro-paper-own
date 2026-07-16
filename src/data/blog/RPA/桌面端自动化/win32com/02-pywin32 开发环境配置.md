@@ -4,544 +4,174 @@ series: pywin32
 seriesOrder: 2
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
-modDatetime: 2026-05-09T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: pywin32-installation
-description: '详细介绍 pywin32 库的安装、环境配置、常用 Win32 API 模块和 COM 自动化使用方法。'
+description: "用虚拟环境、安装自检、依赖锁定和最小测试骨架建立可复现的 pywin32 开发环境。"
 tags:
   - pywin32
-  - Win32 API
   - RPA
-  - 安装配置
-  - Python
+  - 桌面自动化
+  - Windows
 draft: false
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
 
-pywin32 是 Python 操作 Windows 的核心库，提供了对 Windows API 和 COM 组件的完整访问能力。本教程将详细介绍 pywin32 的安装、配置和基本使用方法。
+本篇依赖第 1 篇的模块和句柄边界，只回答：**如何确认 pywin32 安装正确，并让环境问题可以复现和分流？**
 
-![pywin32 开发环境配置与模块族图](./images/pywin32-development-setup-map-figure-01.png)
+完成后你应能创建隔离环境、验证 GUI/进程/COM 模块、固定依赖并运行最小测试。贯穿项目仍是记事本自动化，但本篇不发送任何窗口消息。
 
-### pywin32 模块一览
+## 支持矩阵先于安装命令
 
-| 模块 | 功能 |
-|------|------|
-| **win32api** | Windows API 函数 |
-| **win32gui** | GUI 和窗口操作 |
-| **win32con** | Windows 常量 |
-| **win32process** | 进程和线程 |
-| **win32service** | Windows 服务 |
-| **win32com.client** | COM 客户端 |
-| **win32file** | 文件系统 |
-| **win32net** | 网络操作 |
-| **win32security** | 安全和权限 |
-| **win32evtlog** | 事件日志 |
+开始前记录四项信息：Windows 版本、Python 版本、解释器位数、是否处于虚拟环境。Python 与 pywin32 wheel 必须兼容；只有 COM 服务器或进程内组件通常才要求与目标位数严格匹配。
 
-## 安装
-
-### 基本安装
-
-```bash
-# 使用 pip 安装
-pip install pywin32
-
-# 指定版本
-pip install pywin32==306
-
-# 升级
-pip install --upgrade pywin32
-```
-
-### 安装后配置
-
-安装完成后需要运行脚本注册 COM 组件：
-
-```bash
-# 运行 postinstall 脚本
-python Scripts/pywin32_postinstall.py -install
-```
-
-### 验证安装
-
-```python
-# 测试所有模块
-import win32api
-import win32gui
-import win32con
-import win32process
-import win32com.client
-
-print("✅ 所有模块导入成功")
-
-# 获取版本信息
-print(f"win32api: {win32api.__file__}")
-```
-
-## 基本模块使用
-
-### win32api
-
-基础 Windows API 函数：
-
-```python
-import win32api
-import win32con
-
-# 获取系统信息
-print(f"计算机名: {win32api.GetComputerName()}")
-print(f"用户域名: {win32api.GetUserName()}")
-print(f"系统目录: {win32api.GetSystemDirectory()}")
-print(f"Windows目录: {win32api.GetWindowsDirectory()}")
-
-# 获取环境变量
-path = win32api.GetEnvironmentVariable("PATH")
-print(f"PATH变量: {path[:100]}...")
-
-# 设置环境变量
-win32api.SetEnvironmentVariable("MY_VAR", "my_value")
-
-# 获取模块句柄
-h_module = win32api.GetModuleHandle("kernel32.dll")
-print(f"kernel32.dll 句柄: {h_module}")
-
-# 加载 DLL
-h_kernel = win32api.LoadLibrary("kernel32.dll")
-print(f"加载 kernel32.dll: {h_kernel}")
-win32api.FreeLibrary(h_kernel)
-```
-
-### win32gui
-
-GUI 和窗口操作：
-
-```python
-import win32gui
-import win32con
-
-# 获取窗口信息
-desktop = win32gui.GetDesktopWindow()
-print(f"桌面窗口: {desktop}")
-
-# 活动窗口
-foreground = win32gui.GetForegroundWindow()
-print(f"前台窗口: {foreground}")
-
-# 鼠标位置
-x, y = win32gui.GetCursorPos()
-print(f"鼠标位置: ({x}, {y})")
-
-# 获取窗口信息
-title = win32gui.GetWindowText(foreground)
-class_name = win32gui.GetClassName(foreground)
-rect = win32gui.GetWindowRect(foreground)
-
-print(f"标题: {title}")
-print(f"类名: {class_name}")
-print(f"位置: {rect}")
-
-# 窗口操作
-# ShowWindow(hwnd, SW_SHOW) - 显示
-# ShowWindow(hwnd, SW_HIDE) - 隐藏
-# ShowWindow(hwnd, SW_MINIMIZE) - 最小化
-# ShowWindow(hwnd, SW_MAXIMIZE) - 最大化
-# ShowWindow(hwnd, SW_RESTORE) - 还原
-```
-
-### win32con
-
-Windows 常量定义：
-
-```python
-import win32con
-
-# 常用常量
-print(f"WM_CLOSE: {win32con.WM_CLOSE}")
-print(f"WM_KEYDOWN: {win32con.WM_KEYDOWN}")
-print(f"WM_KEYUP: {win32con.WM_KEYUP}")
-print(f"WM_CHAR: {win32con.WM_CHAR}")
-
-print(f"\n虚拟键码:")
-print(f"VK_RETURN: {win32con.VK_RETURN}")
-print(f"VK_ESCAPE: {win32con.VK_ESCAPE}")
-print(f"VK_SPACE: {win32con.VK_SPACE}")
-
-print(f"\n窗口样式:")
-print(f"SW_SHOW: {win32con.SW_SHOW}")
-print(f"SW_HIDE: {win32con.SW_HIDE}")
-print(f"SW_MINIMIZE: {win32con.SW_MINIMIZE}")
-print(f"SW_MAXIMIZE: {win32con.SW_MAXIMIZE}")
-
-print(f"\n鼠标事件:")
-print(f"WM_LBUTTONDOWN: {win32con.WM_LBUTTONDOWN}")
-print(f"WM_LBUTTONUP: {win32con.WM_LBUTTONUP}")
-print(f"WM_RBUTTONDOWN: {win32con.WM_RBUTTONDOWN}")
-```
-
-## 项目结构
-
-### 推荐目录结构
-
-```text
-pywin32-project/
-├── src/
-│   ├── __init__.py
-│   ├── window_manager.py     # 窗口操作
-│   ├── process_manager.py    # 进程管理
-│   ├── system_helper.py     # 系统工具
-│   └── constants.py         # 常量定义
-├── tests/
-│   ├── test_window.py
-│   └── test_process.py
-├── utils/
-│   ├── screenshot.py       # 截图工具
-│   └── logger.py           # 日志工具
-├── requirements.txt
-└── main.py
-```
-
-### requirements.txt
-
-```text
-pywin32==306
-Pillow>=9.0.0
-psutil>=5.9.0
-```
-
-## 工具库推荐
-
-### Pillow - 图像处理
-
-```python
-# 安装
-pip install Pillow
-
-# 使用
-from PIL import Image, ImageGrab
-
-# 截图
-screenshot = ImageGrab.grab()
-screenshot.save("screenshot.png")
-
-# 图像处理
-img = Image.open("screenshot.png")
-img.show()
-img.resize((800, 600)).save("resized.png")
-```
-
-### psutil - 系统监控
-
-```python
-# 安装
-pip install psutil
-
-# 使用
-import psutil
-
-# CPU 信息
-print(f"CPU使用率: {psutil.cpu_percent()}%")
-
-# 内存信息
-mem = psutil.virtual_memory()
-print(f"总内存: {mem.total / 1024**3:.2f} GB")
-print(f"已用内存: {mem.used / 1024**3:.2f} GB")
-
-# 进程列表
-for proc in psutil.process_iter(['pid', 'name', 'cpu_percent']):
-    print(proc.info)
-```
-
-### pyperclip - 剪贴板
-
-```python
-# 安装
-pip install pyperclip
-
-# 使用
-import pyperclip
-
-# 复制到剪贴板
-pyperclip.copy("Hello, pywin32!")
-
-# 从剪贴板粘贴
-text = pyperclip.paste()
-print(f"剪贴板内容: {text}")
-```
-
-## 开发工具
-
-### IDE 配置
-
-#### PyCharm 配置
-
-1. **安装 Python Windows 调试器**
-   - File → Settings → Project → Python Interpreter
-   - 安装 pywin32
-
-2. **配置运行环境**
-   - Run → Edit Configurations
-   - 选择 Python 类型
-   - 确保使用正确的 Python 环境
-
-#### VS Code 配置
-
-```json
-{
-    "python.analysis.typeCheckingMode": "basic",
-    "python.linting.enabled": true,
-    "python.linting.pylintEnabled": false,
-    "python.linting.flake8Enabled": true
-}
-```
-
-### 调试技巧
-
-```python
-import win32gui
-import win32con
-
-# 窗口枚举调试
-def debug_windows(hwnd, _):
-    try:
-        if win32gui.IsWindowVisible(hwnd):
-            title = win32gui.GetWindowText(hwnd)
-            class_name = win32gui.GetClassName(hwnd)
-            if title:
-                print(f"HWND: {hwnd:08x} | Class: {class_name:30s} | Title: {title[:50]}")
-    except:
-        pass
-    return True
-
-print("="*100)
-print("所有可见窗口:")
-print("="*100)
-win32gui.EnumWindows(debug_windows, None)
-```
-
-## PyWin32 和 COM
-
-### COM 客户端
-
-```python
-import win32com.client
-
-# 创建 COM 对象
-shell = win32com.client.Dispatch("Shell.Application")
-
-# 调用方法
-windows = shell.Windows()
-print(f"打开的窗口数: {windows.Count}")
-
-# Word COM
-word = win32com.client.Dispatch("Word.Application")
-word.Visible = True
-
-# Excel COM
-excel = win32com.client.Dispatch("Excel.Application")
-excel.Visible = True
-
-# 释放
-del word
-del excel
-```
-
-### 常用 COM 对象
-
-| 对象 | CLSID | 说明 |
-|------|-------|------|
-| **Shell.Application** | {13738590-3414-11D2-8B3D-08002BCHTQ89} | Shell 对象 |
-| **WScript.Shell** | {72C24DD5-D70A-438B-8A42-98424B88EFB8} | WSH Shell |
-| **ScriptControl** | {0E59F1D5-1FBE-11D0-8FF2-00A0C91F42E0D} | 脚本控制 |
-
-```python
-# Shell.Application
-import win32com.client
-
-shell = win32com.client.Dispatch("Shell.Application")
-
-# 打开文件夹
-shell.Open("C:\\Users")
-
-# 获取系统文件夹
-system_folder = shell.NameSpace(win32con.CSIDL_SYSTEM)
-print(f"系统文件夹: {system_folder.Title}")
-
-# WScript.Shell
-wsh = win32com.client.Dispatch("WScript.Shell")
-
-# 创建快捷方式
-desktop = wsh.SpecialFolders("Desktop")
-shortcut = wsh.CreateShortcut(desktop + "\\Notepad.lnk")
-shortcut.TargetPath = r"C:\Windows\System32\notepad.exe"
-shortcut.Save()
-```
-
-## 测试框架集成
-
-### pytest 集成
-
-```python
-# pytest_win32.py
-import pytest
-import win32gui
-import win32process
-
-@pytest.fixture
-def notepad_process():
-    """启动记事本进程"""
-    process_info = win32process.CreateProcess(
-        r"C:\Windows\System32\notepad.exe",
-        "",
-        None,
-        None,
-        0,
-        win32process.CREATE_NEW_CONSOLE,
-        None,
-        None,
-        win32process.STARTUPINFO()
-    )
-    
-    yield process_info
-    
-    # 清理
-    hwnd = win32gui.FindWindow(None, "无标题 - 记事本")
-    if hwnd:
-        win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
-
-def test_notepad_window_opens(notepad_process):
-    """测试记事本窗口打开"""
-    h_process, h_thread, pid, tid = notepad_process
-    
-    # 等待窗口出现
-    import time
-    time.sleep(0.5)
-    
-    hwnd = win32gui.FindWindow(None, "无标题 - 记事本")
-    assert hwnd != 0, "窗口未找到"
-
-def test_notepad_has_edit_area(notepad_process):
-    """测试记事本有编辑区"""
-    hwnd = win32gui.FindWindow(None, "无标题 - 记事本")
-    edit_hwnd = win32gui.FindWindowEx(hwnd, 0, "Edit", None)
-    assert edit_hwnd != 0, "编辑区未找到"
-```
-
-## 常见问题
-
-### 问题 1：ImportError
-
-```python
-# 错误: ImportError: No module named 'win32api'
-
-# 解决：
-# 1. 重新安装 pywin32
-pip uninstall pywin32
-pip install pywin32
-
-# 2. 运行 postinstall
-python Scripts/pywin32_postinstall.py -install
-
-# 3. 检查 Python 版本兼容性
+```powershell
 python --version
+python -c "import platform, struct; print(platform.platform()); print(struct.calcsize('P') * 8)"
+python -c "import sys; print(sys.executable); print(sys.prefix != sys.base_prefix)"
 ```
 
-### 问题 2：权限不足
+这些输出是故障报告的一部分，不要只说“安装了最新版”。
+
+## 唯一安装主路径
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install pywin32 pytest
+python -m pip check
+python -m pip freeze > requirements.lock.txt
+```
+
+`requirements.lock.txt` 精确记录当前解释器和平台解析出的版本，不代表可以直接复制到任意 Python 版本或 CPU 架构。提交时还应记录前文的支持矩阵；重建后运行 `pip check`，确认依赖元数据没有冲突。
+
+普通虚拟环境内不要运行 `pywin32_postinstall`。pywin32 官方只把它用于全局安装中的 COM 对象、服务等注册场景；若项目确实需要全局注册，应在隔离的部署步骤中执行 `python -m pywin32_postinstall -install`，记录解释器路径、权限和回滚方式。
+
+## 分层自检
+
+<!-- figure-anchor:s02-a01 -->
+
+<!-- figure:s02-f01:start -->
+
+![从解释器到目标行为逐层验证 pywin32 环境](./images/s02-f01-environment-evidence-ladder.png)
+
+<!-- figure:s02-f01:end -->
+
+先验证解释器确实来自 `.venv`，再分别加载模块：
+
+```powershell
+python -c "import sys; print(sys.executable)"
+python -m pip show pywin32
+python -c "import win32api; print(win32api.GetVersionEx()[0])"
+python -c "import win32gui, win32process, win32file; print('win32 modules: ok')"
+python -c "import win32com.client; print('COM client: ok')"
+```
+
+最后运行一个无副作用探测：
 
 ```python
-# 错误：访问被拒绝
+import win32gui
 
-# 解决：
-# 1. 以管理员身份运行
-# 2. 使用正确的访问权限
-h_process = win32api.OpenProcess(
-    win32con.PROCESS_ALL_ACCESS,  # 可能需要降低权限
-    False,
-    process_id
-)
+
+def main() -> int:
+    desktop = win32gui.GetDesktopWindow()
+    if not win32gui.IsWindow(desktop):
+        raise RuntimeError("Desktop HWND is unavailable")
+    print(f"desktop hwnd={desktop}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
 ```
 
-### 问题 3：进程已退出
+成功标准是进程退出码为 0、输出一个有效 HWND。该测试只证明 pywin32 到 User32 的最小通路，不证明记事本定位器已经正确。
+
+## 项目骨架与依赖边界
+
+```text
+notepad-rpa/
+├─ pyproject.toml
+├─ requirements.lock.txt
+├─ src/notepad_rpa/
+│  ├─ __init__.py
+│  ├─ windows.py
+│  ├─ processes.py
+│  └─ workflow.py
+└─ tests/
+   ├─ test_environment.py
+   └─ test_window_selection.py
+```
+
+把纯逻辑与系统调用分开：窗口候选排序、超时计算和状态转换可以做单元测试；真正调用 Win32 API 的部分用少量 Windows 集成测试覆盖。这样 CI 没有交互桌面时仍能验证大部分逻辑。
+
+最小环境测试：
 
 ```python
-# 检查进程是否还在运行
-import psutil
+import win32gui
 
-def is_process_running(pid):
-    """检查进程是否在运行"""
-    try:
-        process = psutil.Process(pid)
-        return process.is_running()
-    except psutil.NoSuchProcess:
-        return False
+
+def test_desktop_handle_is_valid() -> None:
+    hwnd = win32gui.GetDesktopWindow()
+    assert hwnd != 0
+    assert win32gui.IsWindow(hwnd)
 ```
 
-## 最佳实践
+## 安装失败分流
 
-### 模块化组织
+<!-- figure-anchor:s02-a02 -->
 
-```python
-# constants.py
-import win32con
+<!-- figure:s02-f02:start -->
 
-# 窗口相关常量
-SW = {
-    'HIDE': win32con.SW_HIDE,
-    'SHOW': win32con.SW_SHOW,
-    'MINIMIZE': win32con.SW_MINIMIZE,
-    'MAXIMIZE': win32con.SW_MAXIMIZE,
-    'RESTORE': win32con.SW_RESTORE,
-}
+![将 pywin32 安装与运行故障分流到不同根因](./images/s02-f02-install-failure-routing.png)
 
-# 虚拟键码
-VK = {
-    'ENTER': win32con.VK_RETURN,
-    'ESCAPE': win32con.VK_ESCAPE,
-    'TAB': win32con.VK_TAB,
-    'SPACE': win32con.VK_SPACE,
-}
+<!-- figure:s02-f02:end -->
 
-# mouse.py
-class MouseHelper:
-    @staticmethod
-    def click(x, y):
-        """点击指定位置"""
-        win32api.SetCursorPos((x, y))
-        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
-        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+| 现象                   | 优先检查                                      | 处理原则                               |
+| ---------------------- | --------------------------------------------- | -------------------------------------- |
+| `ModuleNotFoundError`  | `sys.executable` 与 `python -m pip --version` | 确认 pip 属于当前解释器                |
+| DLL 加载失败           | Python/OS 位数、wheel 是否兼容                | 重建干净 venv，不复制 DLL              |
+| COM 创建失败           | ProgID、目标应用安装、位数与注册              | 先区分“模块可加载”和“COM 服务器不可用” |
+| `Access is denied`     | 目标完整性级别和请求权限                      | 降低目标权限或申请最小权限             |
+| 本机成功、计划任务失败 | 用户会话、工作目录、环境变量                  | 显式记录运行身份和路径                 |
 
-# window.py
-class WindowHelper:
-    @staticmethod
-    def find_by_title(title):
-        return win32gui.FindWindow(None, title)
-    
-    @staticmethod
-    def find_by_class(class_name):
-        return win32gui.FindWindow(class_name, None)
-    
-    @staticmethod
-    def close(hwnd):
-        win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
-```
+不要用“重装 Python、管理员运行、复制 DLL”作为无差别三连。每一步都应对应一个被验证的假设。
 
-### 日志记录
+## 日志与安全基线
 
-```python
-import logging
+开发阶段至少记录 Python/pywin32 版本、解释器路径、进程 PID、目标 HWND、Win32 错误码和阶段耗时。不要记录窗口中的密码、注册表密钥内容或完整用户目录。自动化进程默认使用普通用户权限，确有需要再对单个操作提升。
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+## 常见误区与边界
 
-logger = logging.getLogger(__name__)
+- IDE 选择的解释器可能与终端不同；始终输出 `sys.executable`；
+- 锁定依赖不等于复制 `.venv`，应从清单重建；
+- pytest 通过不代表真实交互桌面可用，需要单独的 Windows 集成环境；
+- 安装 pywin32 不会自动解决 UIA Provider、UIPI 或目标程序焦点限制。
 
-def find_window(title):
-    logger.info(f"查找窗口: {title}")
-    hwnd = win32gui.FindWindow(None, title)
-    if hwnd:
-        logger.info(f"找到窗口: {hwnd}")
-    else:
-        logger.warning(f"未找到窗口: {title}")
-    return hwnd
-```
+## 自检题
+
+1. 为什么使用 `python -m pip` 而不是裸 `pip`？
+2. pywin32 模块可导入但 COM 创建失败，故障一定在安装吗？
+3. 为什么系统调用与纯逻辑要分层？
+
+<details>
+<summary>查看答案</summary>
+
+1. 它把 pip 明确绑定到当前 Python 解释器，降低装进错误环境的概率。
+2. 不一定；COM 服务器可能未安装、ProgID 错误、注册损坏或位数不匹配。
+3. 纯逻辑可在无交互桌面的 CI 中稳定测试，系统边界只需少量集成测试。
+
+</details>
+
+## 本篇总结与下一篇
+
+可复现环境包含支持矩阵、隔离安装、分层自检、依赖锁定和失败分流，而不只是一次成功的 `pip install`。下一篇将基于 PID 选择唯一顶层窗口，并处理句柄失效、消息超时和焦点边界。
+
+## 资料来源
+
+- [pywin32 README](https://github.com/mhammond/pywin32#readme)
+- [Python venv 文档](https://docs.python.org/3/library/venv.html)
+- [Python Packaging User Guide：安装包](https://packaging.python.org/en/latest/tutorials/installing-packages/)
+- [pip check](https://pip.pypa.io/en/stable/cli/pip_check/)

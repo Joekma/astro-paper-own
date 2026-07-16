@@ -1,12 +1,12 @@
 ---
-title: Qdrant Python SDK 使用指南
+title: Qdrant Python SDK：幂等写入、过滤查询与错误边界
 series: "Qdrant"
 seriesOrder: 3
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
-modDatetime: 2026-05-09T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: qdrant-python-sdk
-description: "详细介绍Qdrant Python SDK的使用方法，包括Collection操作、向量CRUD、搜索过滤等。"
+description: "基于当前 qdrant-client 的 query_points API，构建包含数据契约、Payload 索引、幂等 Upsert、scroll、批处理、异步并发和错误分类的 Python 访问层。"
 tags:
   - Qdrant
   - Python
@@ -16,550 +16,476 @@ draft: false
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
 
-Qdrant 提供了功能完整的 Python SDK，支持 Collection 管理、向量操作、搜索查询等功能。本教程将详细介绍 Python SDK 的使用方法。
+本文依赖前两篇的 Point/Payload、过滤感知 HNSW、持久化与安全边界。示例使用 `qdrant-client` 当前统一查询入口 `query_points`，不再沿用旧教程中的 `client.search`。
 
-![Qdrant SDK 使用流程从连接服务开始，依次完成 Collection 管理、向量 Upsert、Payload 写入、过滤搜索、滚动分页和批量错误处理](./images/qdrant-sdk-vector-workflow-figure-01.png)
+学完本篇，你应该能够：
 
-### 安装
+1. 把 Collection 配置写成可验证的数据契约。
+2. 用稳定 ID 和 Upsert 实现可重试写入。
+3. 正确组合 `query_points`、Filter、Payload 与返回字段。
+4. 区分相似度检索分页和全量数据遍历。
+5. 为批处理、异步并发、超时和异常建立明确边界。
+
+## 先定义接口契约
+
+<!-- s05-f01:start -->
+
+![把 DocumentInput 映射为稳定 Point ID、Vector/Payload，再映射为 SearchHit](./images/s05-f01-qdrant-sdk-contract-lifecycle.png)
+
+<!-- s05-f01:end -->
+
+多租户 FAQ 数据访问层接收：
+
+```text
+DocumentInput
+  source_id   : str       # 业务稳定键
+  vector      : list[float], shape=(4,)
+  text        : str
+  category    : str
+  tenant_id   : str
+  version     : int
+```
+
+返回搜索结果：
+
+```text
+SearchHit
+  point_id    : UUID
+  score       : float
+  text        : str
+  category    : str
+  tenant_id   : str
+  version     : int
+```
+
+数据契约先于 SDK 调用。没有契约时，维度错误、跨租户查询和并发旧版本覆盖只能在运行时偶然暴露。
+
+## 连接与配置
 
 ```bash
-# 使用 pip
-pip install qdrant-client
-
-# 使用 Poetry
-poetry add qdrant-client
-
-# 可选依赖
-pip install qdrant-client[fastembed]  # 包含向量化模型
+python -m pip install -U qdrant-client
 ```
 
-## 基本操作
-
-### 连接 Qdrant
-
 ```python
+import os
 from qdrant_client import QdrantClient
 
-# 本地连接
-client = QdrantClient("localhost", port=6333)
-
-# 远程连接
-client = QdrantClient(host="qdrant.example.com", port=6333)
-
-# 带认证连接
 client = QdrantClient(
-    url="https://qdrant.example.com",
-    api_key="your-api-key"
-)
-
-# 异步客户端
-from qdrant_client import AsyncQdrantClient
-
-async_client = AsyncQdrantClient("localhost", port=6333)
-```
-
-### Collection 管理
-
-```python
-from qdrant_client.models import VectorParams, Distance, HnswConfigDiff
-
-# 创建 Collection
-client.create_collection(
-    collection_name="my_collection",
-    vectors_config=VectorParams(
-        size=768,                    # 向量维度
-        distance=Distance.COSINE       # 距离度量
-    )
-)
-
-# 查看所有 Collection
-collections = client.get_collections()
-print(collections)
-
-# 查看 Collection 信息
-info = client.get_collection("my_collection")
-print(f"向量维度: {info.config.params.vector_size}")
-print(f"距离类型: {info.config.params.distance}")
-print(f"点数: {info.points_count}")
-
-# 删除 Collection
-client.delete_collection("my_collection")
-
-# 检查是否存在
-exists = client.collection_exists("my_collection")
-print(f"存在: {exists}")
-```
-
-## 向量操作
-
-### 插入向量
-
-```python
-from qdrant_client.models import PointStruct
-import numpy as np
-
-# 单个向量
-vector = np.random.rand(768).astype(np.float32)
-
-point = PointStruct(
-    id=1,
-    vector=vector.tolist(),
-    payload={
-        "name": "文档1",
-        "category": "tech",
-        "content": "这是文档内容"
-    }
-)
-
-client.upsert(
-    collection_name="my_collection",
-    points=[point]
-)
-
-# 批量插入
-points = []
-for i in range(1000):
-    vector = np.random.rand(768).astype(np.float32)
-    points.append(PointStruct(
-        id=i,
-        vector=vector.tolist(),
-        payload={"id": i}
-    ))
-
-client.upsert(
-    collection_name="my_collection",
-    points=points
+    url=os.environ.get("QDRANT_URL", "http://127.0.0.1:6333"),
+    api_key=os.environ.get("QDRANT_API_KEY"),
+    timeout=10.0,
 )
 ```
 
-### 查询向量
+失败边界：
+
+- `QDRANT_URL` 由部署环境提供，不在代码中硬编码生产域名。
+- API Key 从 Secret 注入，不打印、不提交。
+- 客户端超时必须小于上游请求总预算，并为重试预留时间。
+- HTTPS 证书校验失败应修复 CA/主机名，不应关闭校验。
+
+## 幂等地初始化 Collection
+
+初始化逻辑不应使用 `recreate_collection`，因为它会删除现有数据。创建前检查存在性；已存在时还要比较配置，而不是直接视为成功。
 
 ```python
-# ID 查询
-results = client.retrieve(
-    collection_name="my_collection",
-    ids=[1, 2, 3]
-)
+from qdrant_client import models
 
-for result in results:
-    print(f"ID: {result.id}")
-    print(f"Vector: {result.vector[:5]}...")  # 前5个维度
-    print(f"Payload: {result.payload}")
+COLLECTION = "faq_chunks_v1"
+VECTOR_SIZE = 4
 
-# 获取单个向量
-result = client.retrieve(
-    collection_name="my_collection",
-    ids=[1]
-)[0]
-```
-
-### 更新向量
-
-```python
-# 更新 Payload
-client.set_payload(
-    collection_name="my_collection",
-    payload={"updated_field": "新值"},
-    points=[1]
-)
-
-# 删除 Payload 字段
-client.delete_payload(
-    collection_name="my_collection",
-    keys=["temporary_field"],
-    points=[1]
-)
-```
-
-### 删除向量
-
-```python
-# 删除单个向量
-client.delete(
-    collection_name="my_collection",
-    points=[1]
-)
-
-# 批量删除
-client.delete(
-    collection_name="my_collection",
-    points=[1, 2, 3, 4, 5]
-)
-
-# 删除所有向量（保留 Collection）
-client.delete(
-    collection_name="my_collection",
-    points_selector=True  # 删除所有
-)
-```
-
-## 搜索操作
-
-### 基础搜索
-
-```python
-import numpy as np
-
-# 准备查询向量
-query_vector = np.random.rand(768).astype(np.float32).tolist()
-
-# 最近邻搜索
-results = client.search(
-    collection_name="my_collection",
-    query_vector=query_vector,
-    limit=5
-)
-
-for result in results:
-    print(f"ID: {result.id}")
-    print(f"分数: {result.score}")
-    print(f"内容: {result.payload}")
-```
-
-### 带过滤搜索
-
-```python
-from qdrant_client.models import Filter, FieldCondition, MatchValue, Range
-
-# 构建过滤条件
-search_filter = Filter(
-    must=[
-        FieldCondition(
-            key="category",
-            match=MatchValue(value="electronics")
+if not client.collection_exists(collection_name=COLLECTION):
+    client.create_collection(
+        collection_name=COLLECTION,
+        vectors_config=models.VectorParams(
+            size=VECTOR_SIZE,
+            distance=models.Distance.COSINE,
         ),
-        Range(key="price", gte=100)
-    ]
-)
+    )
 
-# 带过滤搜索
-results = client.search(
-    collection_name="products",
-    query_vector=query_vector,
-    query_filter=search_filter,
-    limit=10
-)
-
-# 复合过滤
-complex_filter = Filter(
-    must=[
-        FieldCondition(key="status", match=MatchValue(value="active"))
-    ],
-    must_not=[
-        FieldCondition(key="deleted", match=MatchValue(value=True))
-    ]
-)
+    # 在批量导入前创建高频过滤字段索引。
+    client.create_payload_index(
+        collection_name=COLLECTION,
+        field_name="tenant_id",
+        field_schema=models.PayloadSchemaType.KEYWORD,
+    )
+    client.create_payload_index(
+        collection_name=COLLECTION,
+        field_name="category",
+        field_schema=models.PayloadSchemaType.KEYWORD,
+    )
 ```
 
-### 批量搜索
+生产代码应读取 `get_collection` 结果，断言 vector size、distance 与预期一致。若不一致，停止发布并迁移到新 Collection；不要自动删除或“修复”生产数据。
+
+## 稳定 ID 与幂等 Upsert
+
+随机 ID 会让重试产生重复 Point。可用业务稳定键通过固定命名空间生成 UUID：
 
 ```python
-# 多个查询向量
-query_vectors = [
-    np.random.rand(768).astype(np.float32).tolist()
-    for _ in range(5)
+from dataclasses import dataclass
+from uuid import NAMESPACE_URL, uuid5
+
+
+@dataclass(frozen=True)
+class DocumentInput:
+    source_id: str
+    vector: list[float]
+    text: str
+    category: str
+    tenant_id: str
+    version: int
+
+
+def point_id(doc: DocumentInput) -> str:
+    key = f"faq:{doc.tenant_id}:{doc.source_id}"
+    return str(uuid5(NAMESPACE_URL, key))
+
+
+def to_point(doc: DocumentInput) -> models.PointStruct:
+    if len(doc.vector) != VECTOR_SIZE:
+        raise ValueError(
+            f"vector dimension must be {VECTOR_SIZE}, got {len(doc.vector)}"
+        )
+    if not doc.tenant_id:
+        raise ValueError("tenant_id must not be empty")
+
+    return models.PointStruct(
+        id=point_id(doc),
+        vector=doc.vector,
+        payload={
+            "source_id": doc.source_id,
+            "text": doc.text,
+            "category": doc.category,
+            "tenant_id": doc.tenant_id,
+            "version": doc.version,
+        },
+    )
+```
+
+```python
+documents = [
+    DocumentInput(
+        source_id="account/reset-password",
+        vector=[0.92, 0.11, 0.31, 0.08],
+        text="如何重置密码",
+        category="account",
+        tenant_id="acme",
+        version=1,
+    ),
+    DocumentInput(
+        source_id="account/change-credentials",
+        vector=[0.88, 0.14, 0.29, 0.10],
+        text="修改登录凭据",
+        category="account",
+        tenant_id="acme",
+        version=1,
+    ),
 ]
 
-results = client.search_batch(
-    collection_name="my_collection",
-    requests=[
-        {"vector": vec, "limit": 5, "params": {"hnsw_ef": 128}}
-        for vec in query_vectors
+client.upsert(
+    collection_name=COLLECTION,
+    points=[to_point(doc) for doc in documents],
+    wait=True,
+)
+```
+
+同一 `tenant_id + source_id` 的重试会覆盖同一 Point，因此对“至少一次投递”是幂等的。但版本并发仍需应用控制：旧任务不能覆盖新 `version`，必要时在写入前比较当前版本或使用外部事件序列保证顺序。
+
+## 使用 query_points 进行过滤检索
+
+<!-- s05-f02:start -->
+
+![理解可信租户上下文、Filter、query_points 和最小返回字段如何构成安全查询管线](./images/s05-f02-qdrant-query-filter-pipeline.png)
+
+<!-- s05-f02:end -->
+
+```python
+def search_faq(
+    query_vector: list[float],
+    *,
+    tenant_id: str,
+    category: str | None = None,
+    limit: int = 5,
+) -> list[models.ScoredPoint]:
+    if len(query_vector) != VECTOR_SIZE:
+        raise ValueError("query vector has an invalid dimension")
+    if not 1 <= limit <= 50:
+        raise ValueError("limit must be between 1 and 50")
+
+    must = [
+        models.FieldCondition(
+            key="tenant_id",
+            match=models.MatchValue(value=tenant_id),
+        )
     ]
-)
-```
+    if category is not None:
+        must.append(
+            models.FieldCondition(
+                key="category",
+                match=models.MatchValue(value=category),
+            )
+        )
 
-## 分页和滚动
-
-### 分页搜索
-
-```python
-# 第一页
-page1 = client.search(
-    collection_name="my_collection",
-    query_vector=query_vector,
-    limit=10,
-    offset=0
-)
-
-# 第二页
-page2 = client.search(
-    collection_name="my_collection",
-    query_vector=query_vector,
-    limit=10,
-    offset=10
-)
-
-# 带分数阈值的搜索
-filtered_results = client.search(
-    collection_name="my_collection",
-    query_vector=query_vector,
-    query_filter=Filter(
-        must=[
-            ScoreThreshold(scores_threshold=0.8)
-        ]
+    response = client.query_points(
+        collection_name=COLLECTION,
+        query=query_vector,
+        query_filter=models.Filter(must=must),
+        with_payload=["text", "category", "tenant_id", "version"],
+        with_vectors=False,
+        limit=limit,
     )
-)
+    return response.points
 ```
 
-### 滚动获取所有结果
+```python
+hits = search_faq(
+    [0.90, 0.12, 0.30, 0.09],
+    tenant_id="acme",
+    category="account",
+    limit=2,
+)
+
+assert all(hit.payload["tenant_id"] == "acme" for hit in hits)
+for hit in hits:
+    print(hit.id, hit.score, hit.payload["text"])
+```
+
+`with_vectors=False` 避免返回大向量；`with_payload` 只选业务需要字段。租户条件必须由服务端可信上下文注入，不能直接相信客户端提交的任意 `tenant_id`。
+
+## Query 分页与 Scroll 不是一回事
+
+相似度检索的结果随查询向量、索引状态和并发写入变化。大 `offset` 还会增加计算，因此不适合“遍历整个 Collection”。
+
+全量导出、迁移或离线检查应使用 `scroll`：
 
 ```python
-all_results = []
-offset = 0
-batch_size = 100
+next_offset = None
 
 while True:
-    batch = client.search(
-        collection_name="my_collection",
-        query_vector=query_vector,
-        limit=batch_size,
-        offset=offset
+    points, next_offset = client.scroll(
+        collection_name=COLLECTION,
+        scroll_filter=models.Filter(
+            must=[
+                models.FieldCondition(
+                    key="tenant_id",
+                    match=models.MatchValue(value="acme"),
+                )
+            ]
+        ),
+        limit=100,
+        offset=next_offset,
+        with_payload=True,
+        with_vectors=False,
     )
 
-    if not batch:
+    for point in points:
+        process(point)
+
+    if next_offset is None:
         break
-
-    all_results.extend(batch)
-    offset += batch_size
-
-    if len(batch) < batch_size:
-        break
-
-print(f"共获取 {len(all_results)} 条结果")
 ```
 
-## 聚合操作
+输入 `offset` 是服务端返回的游标，不是客户端自增页码。导出期间若有并发写入，要定义快照语义或接受弱一致遍历，不能假设得到事务快照。
 
-### 分组查询
+## 更新、删除与生命周期
 
 ```python
-from qdrant_client.models import QueryGroups
-
-# 按字段分组
-groups = client.query_groups(
-    collection_name="products",
-    query_vector=query_vector,
-    group_by="category",
-    limit=5,
-    group_size=3
+# 只更新 Payload，不重新发送向量。
+client.set_payload(
+    collection_name=COLLECTION,
+    payload={"category": "security"},
+    points=[point_id(documents[0])],
+    wait=True,
 )
 
-for group in groups.groups:
-    print(f"分组: {group.group_id}")
-    print(f"点数: {len(group.hits)}")
-    for hit in group.hits:
-        print(f"  - {hit.id}: {hit.score}")
-```
-
-### 范围查询
-
-```python
-# 获取范围内向量
-nearby = client.search_nearest_examples(
-    collection_name="my_collection",
-    positive=[1],  # 正例向量
-    negative=[2],   # 负例向量
-    limit=10
+# 按稳定 ID 删除。
+client.delete(
+    collection_name=COLLECTION,
+    points_selector=models.PointIdsList(
+        points=[point_id(documents[0])]
+    ),
+    wait=True,
 )
 ```
 
-## 索引管理
+批量按 Filter 删除前先用相同 Filter 做 count/scroll 抽样，记录预计影响数，并设置人工或自动上限。不要把空 Filter 当作“删除全部”的便捷接口。
 
-### 创建索引
+## 批处理与可恢复写入
 
-```python
-from qdrant_client.models import PayloadIndexParams, PayloadSchemaType
+<!-- s05-f03:start -->
 
-# 创建 Payload 索引
-client.create_payload_index(
-    collection_name="my_collection",
-    field_name="category",
-    field_schema=PayloadSchemaType.KEYWORD
-)
+![看懂稳定 ID、批次 checkpoint、错误分类和有限重试如何实现中断续传](./images/s05-f03-qdrant-batch-retry-checkpoint.png)
 
-# 创建数值索引
-client.create_payload_index(
-    collection_name="my_collection",
-    field_name="price",
-    field_schema=PayloadSchemaType.FLOAT
-)
+<!-- s05-f03:end -->
 
-# 创建全文索引
-client.create_payload_index(
-    collection_name="my_collection",
-    field_name="content",
-    field_schema=PayloadSchemaType.TEXT
-)
-```
-
-### 重建索引
+批次不是越大越好。它受请求体、网络、服务端内存、单批失败成本和上游超时共同约束。
 
 ```python
-# 重建 Collection 索引
-client.recreate_collection(
-    collection_name="my_collection",
-    vectors_config=VectorParams(size=768, distance=Distance.COSINE),
-    hnsw_config=HnswConfigDiff(m=32, ef_construct=256)
-)
+from collections.abc import Iterable, Iterator
+from typing import TypeVar
 
-# 优化索引
-client.optimize(
-    collection_name="my_collection",
-    optimizer_config=OptimizersConfigDiff(
-        index_threshold_kb=1024,
-        memmap_threshold_kb=20000,
-        hnsw_ef_construct=256
+T = TypeVar("T")
+
+
+def batched(items: Iterable[T], size: int) -> Iterator[list[T]]:
+    if size <= 0:
+        raise ValueError("batch size must be positive")
+    batch: list[T] = []
+    for item in items:
+        batch.append(item)
+        if len(batch) == size:
+            yield batch
+            batch = []
+    if batch:
+        yield batch
+
+
+for batch_no, batch in enumerate(batched(documents, 256), start=1):
+    client.upsert(
+        collection_name=COLLECTION,
+        points=[to_point(doc) for doc in batch],
+        wait=True,
     )
-)
+    save_checkpoint(batch_no)
 ```
 
-## LangChain 集成
+每批成功后再保存 checkpoint。中断后从最后一个成功批次继续；稳定 ID 使重复提交安全。记录 Point 数、字节数、耗时和失败类别，才能找到合理批次。
 
-### 向量存储
+### 错误分类与重试
+
+| 类别                     | 是否重试 | 处理                         |
+| ------------------------ | -------- | ---------------------------- |
+| 维度错误、非法 Filter    | 否       | 修数据或代码，进入死信队列   |
+| 认证/权限失败            | 否       | 停止并修复凭据               |
+| 超时、连接重置、短暂 5xx | 有上限   | 指数退避 + 抖动 + 总时间预算 |
+| Collection 配置不一致    | 否       | 停止发布，走迁移             |
+| 429/过载                 | 有上限   | 尊重服务端信号并降低并发     |
+
+不要捕获裸 `Exception` 后继续下一批。至少记录 batch id、尝试次数、异常类型和稳定 Point ID，且不得记录密钥或敏感正文。
+
+## 异步并发的正确上限
 
 ```python
-from langchain.vectorstores import Qdrant
-from langchain.embeddings import OpenAIEmbeddings
+import asyncio
+from qdrant_client import AsyncQdrantClient
 
-# 初始化
-embeddings = OpenAIEmbeddings()
-
-vectorstore = Qdrant.from_documents(
-    documents=texts,
-    embedding=embeddings,
-    url="http://localhost:6333",
-    collection_name="documents",
-    vector_params={"size": 1536, "distance": "Cosine"}
+async_client = AsyncQdrantClient(
+    url=os.environ.get("QDRANT_URL", "http://127.0.0.1:6333"),
+    api_key=os.environ.get("QDRANT_API_KEY"),
+    timeout=10.0,
 )
 
-# 相似度搜索
-docs = vectorstore.similarity_search("query text", k=5)
 
-# 带过滤的搜索
-docs = vectorstore.similarity_search_with_score(
-    "query",
-    k=5,
-    filter={"category": "tech"}
-)
-```
+async def query_many(vectors: list[list[float]]) -> list[list[models.ScoredPoint]]:
+    semaphore = asyncio.Semaphore(8)
 
-## 错误处理
-
-```python
-try:
-    client.create_collection(
-        collection_name="test",
-        vectors_config=VectorParams(size=768, distance=Distance.COSINE)
-except Exception as e:
-    print(f"错误: {e}")
-
-# 处理冲突
-from qdrant_client.models import Distance
-
-try:
-    client.create_collection(...)
-except ResponseHandlingException:
-    # Collection 已存在
-    pass
-```
-
-## 性能优化
-
-### 批量操作
-
-```python
-import numpy as np
-
-def batch_upsert(vectors, payloads, batch_size=1000):
-    """批量插入优化"""
-    for i in range(0, len(vectors), batch_size):
-        batch = [
-            PointStruct(
-                id=i + j,
-                vector=vec.tolist(),
-                payload=payload
+    async def one(vector: list[float]) -> list[models.ScoredPoint]:
+        async with semaphore:
+            response = await async_client.query_points(
+                collection_name=COLLECTION,
+                query=vector,
+                query_filter=models.Filter(
+                    must=[
+                        models.FieldCondition(
+                            key="tenant_id",
+                            match=models.MatchValue(value="acme"),
+                        )
+                    ]
+                ),
+                limit=5,
             )
-            for j, (vec, payload) in enumerate(vectors[i:i+batch_size])
+            return response.points
 
-        client.upsert(
-            collection_name="my_collection",
-            points=batch,
-            wait=True
-        )
-
-# 使用
-batch_upsert(all_vectors, all_payloads)
+    return await asyncio.gather(*(one(vector) for vector in vectors))
 ```
 
-### 并发操作
+并发上限必须由 P99、错误率和服务端资源压测决定。`asyncio.gather` 不加信号量会把客户端队列直接变成服务端突发流量。
+
+## 最小行为测试
+
+下面的测试不依赖 Qdrant 服务，先验证最容易出错的稳定 ID、Shape 与分批逻辑：
 
 ```python
-from concurrent.futures import ThreadPoolExecutor
+def test_contract_helpers() -> None:
+    doc = DocumentInput(
+        source_id="account/reset-password",
+        vector=[1.0, 0.0, 0.0, 0.0],
+        text="reset",
+        category="account",
+        tenant_id="acme",
+        version=1,
+    )
 
-def search_batch(queries):
-    """并发搜索"""
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        futures = [
-            executor.submit(client.search, "my_collection", vec, 10)
-            for vec in queries
-        ]
-        return [f.result() for f in concurrent.futures.as_completed(futures)]
+    assert point_id(doc) == point_id(doc)
+    assert [len(batch) for batch in batched(range(5), 2)] == [2, 2, 1]
+
+    bad = DocumentInput(
+        source_id="bad",
+        vector=[1.0, 0.0],
+        text="bad",
+        category="test",
+        tenant_id="acme",
+        version=1,
+    )
+    try:
+        to_point(bad)
+    except ValueError as error:
+        assert "dimension" in str(error)
+    else:
+        raise AssertionError("invalid dimension must fail")
 ```
 
-## 完整示例
+集成测试再使用 `QdrantClient(":memory:")` 或临时容器，覆盖 create → index → upsert → query → scroll → delete。生产 smoke test 使用真实 TLS 与只读/读写凭据分别验证权限边界。
 
-```python
-from qdrant_client import QdrantClient
-from qdrant_client.models import (
-    VectorParams, Distance, PointStruct, Filter,
-    FieldCondition, MatchValue
-)
-import numpy as np
+## 常见误区与适用边界
 
-class QdrantManager:
-    def __init__(self, host="localhost", port=6333):
-        self.client = QdrantClient(host, port=port)
+### 误区 1：`recreate_collection` 适合初始化
 
-    def setup_collection(self, name, dim):
-        """创建 Collection"""
-        self.client.recreate_collection(
-            collection_name=name,
-            vectors_config=VectorParams(size=dim, distance=Distance.COSINE)
-        print(f"Created collection: {name}")
+它是破坏性重建，不是幂等建表。初始化必须检查存在性与配置，迁移应使用版本化 Collection 和 alias。
 
-    def add_documents(self, collection, documents):
-        """批量添加文档"""
-        points = [
-            PointStruct(
-                id=i,
-                vector=np.random.rand(768).tolist(),
-                payload={"content": doc}
-            )
-            for i, doc in enumerate(documents)
-        ]
+### 误区 2：分页就是不断增大 query offset
 
-        self.client.upsert(
-            collection_name=collection,
-            points=points
-        )
-        print(f"Added {len(documents)} documents")
+相似度 Top K 与全量遍历是两种任务。导出和扫描使用 scroll；面向用户的“加载更多”要明确结果稳定性和最大深度。
 
-    def search_similar(self, collection, query, top_k=5):
-        """搜索相似文档"""
-        query_vector = np.random.rand(768).tolist()
+### 误区 3：捕获异常后重试就能可靠
 
-        return self.client.search(
-            collection_name=collection,
-            query_vector=query_vector,
-            limit=top_k
-        )
+数据契约、认证和配置错误不会被重试修复。只有明确的短暂故障才应在总预算内重试。
 
-# 使用
-manager = QdrantManager()
-manager.setup_collection("docs", 768)
-manager.add_documents("docs", ["文档1", "文档2", "文档3"])
-results = manager.search_similar("docs", "query")
-```
+### 什么时候不适用
+
+若只需要一次性离线近邻计算，直接使用数组库或本地索引更轻。若需要跨记录事务或事实主存，把 Qdrant 视为可重建检索投影，并由事务数据库和事件流程维护来源事实。
+
+## 自检题
+
+1. 为什么稳定 ID 是可恢复批量 Upsert 的前提？
+2. `query_points` 与 `scroll` 分别解决什么问题？
+3. 哪三类错误不应自动重试？
+
+<details>
+<summary>查看答案</summary>
+
+1. 相同业务记录重试会覆盖同一 Point，不会重复插入；checkpoint 也可以安全回退一个批次。
+2. `query_points` 按相似度和过滤条件取候选；`scroll` 按游标遍历 Point，适合导出、迁移和检查。
+3. 数据契约/非法请求、认证权限、Collection 配置不一致等确定性错误。
+
+</details>
+
+## 本篇总结
+
+可靠的 Qdrant SDK 层由五个边界组成：版本化 Collection 契约、稳定 Point ID、服务端强制租户 Filter、可恢复批次，以及分类后的有限重试。API 调用很短，真正的工程价值来自这些可验证约束。
+
+## 下一步衔接
+
+Qdrant 基础系列到此完成。下一步应把示例连接真实 Embedding 与离线评测集，加入 Recall@K、nDCG、P99、空结果率和跨租户负向用例，再用新 Collection + alias 演练模型升级。
+
+## 资料来源
+
+- [Qdrant Python Client](https://python-client.qdrant.tech/)
+- [Qdrant Local Quickstart](https://qdrant.tech/documentation/quick-start/)
+- [Qdrant Search](https://qdrant.tech/documentation/search/search/)
+- [Qdrant Points](https://qdrant.tech/documentation/concepts/points/)
+- [Qdrant Payload](https://qdrant.tech/documentation/concepts/payload/)
+- [Qdrant Production Checklist](https://qdrant.tech/documentation/production-checklist/)

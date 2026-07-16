@@ -2,347 +2,261 @@
 title: Flask 知识整合 SQLAlchemy Utils、Flask Migrate 与应用工厂模式
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-11T00:00:00.000+08:00
+modDatetime: 2026-07-17T00:00:00.000+08:00
 slug: flask-11-integration
-description: '整合 Flask 核心知识点，包括 SQLAlchemy-Utils 的 ChoiceType 使用、scoped_session 线程安全会话管理、Flask-SQLAlchemy 和 Flask-Migrate 数据库操作，以及 Flask 应用工厂模式的完整示例'
+description: "用应用工厂整合 Flask-SQLAlchemy、Flask-Migrate 与可选 SQLAlchemy-Utils，建立配置、模型和迁移的单向初始化顺序。"
 tags:
   - Python
   - Flask
   - SQLAlchemy
-  - 数据库
+  - Flask-Migrate
   - 应用工厂
-category: Flask
 series: flask
 seriesOrder: 6
 draft: false
 language: zh-CN
 ---
 
-## SQLAlchemy-Utils
+## 前置知识与学习目标
 
-由于sqlalchemy中没有提供choice方法，所以借助SQLAlchemy-Utils组件提供的choice方法。
+你应理解蓝图、应用上下文、连接池与事务。本篇只解决：**如何让配置、扩展、模型和迁移按可重复顺序组装，而不是依赖导入副作用？**
 
-![Flask 应用工厂、扩展初始化、scoped session、ChoiceType 模型与 Flask Migrate 数据库迁移关系图](./images/flask-sqlalchemy-migrate-factory-figure-01.png)
+完成后你能够：
 
-<!-- snippet: id=flask-11-integration-01 mode=compile python=3.12-3.14 deps=SQLAlchemy==2.0.51 -->
-```python
-import datetime
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, UniqueConstraint, Index
-from sqlalchemy.orm import relationship
-from sqlalchemy_utils import ChoiceType
+1. 写出无全局应用绑定的 `db`、`migrate` 扩展对象。
+2. 解释配置必须先于 `init_app`，模型导入必须先于迁移比较。
+3. 区分 `create_all` 与版本化迁移。
+4. 在应用上下文内验证数据库，并为迁移建立审阅与回滚边界。
 
-Base = declarative_base()
+## TaskBoard 的初始化拓扑
 
-class Xuan(Base):
-    __tablename__ = 'xuan'
-    types_choices = (
-        (1, '欧美'),
-        (2, '日韩'),
-        (3, '老男孩'),
-    )
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(64))
-    types = Column(ChoiceType(types_choices, Integer()))
+<!-- figure-anchor:s06-f01 -->
 
-    __table_args__ = {
-        'mysql_engine': 'Innodb',
-        'mysql_charset': 'utf8',
-    }
+<!-- figure:s06-f01:start -->
 
-engine = create_engine(
-    "mysql+pymysql://root:123@127.0.0.1:3306/ttt2?charset=utf8",
-    max_overflow=0,  # 超过连接池大小外最多创建的连接
-    pool_size=5,  # 连接池大小
-    pool_timeout=30,  # 池中没有线程最多等待的时间，否则报错
-    pool_recycle=-1  # 多久之后对线程池中的线程进行一次连接的回收（重置）
-)
+![create_app 如何按配置、db.init_app、模型导入、migrate、蓝图和 CLI 的顺序创建应用](./images/s06-f01-factory-initialization.png)
 
-Base.metadata.create_all(engine)
+<!-- figure:s06-f01:end -->
 
-# 查询
-result_list = session.query(Xuan).all()
-for item in result_list:
-    print(item.types.code, item.types.value)
+推荐目录：
+
+```text
+taskboard/
+├── __init__.py
+├── extensions.py
+├── models.py
+├── tasks/
+│   └── views.py
+└── commands.py
+migrations/
+tests/
 ```
 
-## scoped_session
+扩展对象可以全局存在，但不能在导入时绑定某个具体应用。
 
-<!-- snippet: id=flask-11-integration-02 mode=compile python=3.12-3.14 deps=SQLAlchemy==2.0.51 -->
 ```python
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session
-
-engine = create_engine(
-    "mysql+pymysql://root:123@47.93.4.198:3306/ttt?charset=utf8",
-    max_overflow=0,  # 超过连接池大小外最多创建的连接
-    pool_size=5,  # 连接池大小
-    pool_timeout=30,  # 池中没有线程最多等待的时间，否则报错
-    pool_recycle=-1  # 多久之后对线程池中的线程进行一次连接的回收（重置）
-)
-
-SessionFactory = sessionmaker(bind=engine)
-
-# 方式一：由于无法提供线程共享功能，所有在开发时要注意，在每个线程中自己创建session。
-from sqlalchemy.orm.session import Session
-session = SessionFactory()
-# 操作
-session.close()
-
-# 方式二：支持线程安全，为每个线程创建一个session
-# threading.Local
-# 唯一标识
-from greenlet import getcurrent as get_ident
-session = scoped_session(SessionFactory, get_ident)
-# session.add
-# 操作
-session.remove()
-```
-
-## Flask-SQLAlchemy和Flask-Migrate组件
-
-### Flask-SQLAlchemy
-
-把Flask和SQLAlchemy结合在一起，粘合剂。
-
-在`__init__.py`文件中：
-
-1. 引入Flask-SQLAlchemy中的SQLAlchemy，实例化了一个SQLAlchemy对象
-2. 注册Flask-SQLAlchemy：
-   - **方式一**：在函数里面`SQLAlchemy(app)`（如果想在其他地方使用这种方式就不好使了）
-   - **方式二**：在全局
-     - 实例化：`db = SQLAlchemy()`
-     - 在函数里面`db.init_app(app)`（调用init_app方法把app放进去）
-
-3. 导入models的类
-4. 导入的类中继承了`db.model`，其实本质上还是继承了Base类
-5. manage.py创建数据库表，可以通过命令来创建。借助Flask-Migrate组件来完成
-
-### Flask-Migrate
-
-**旧方式**（被毙掉了）：在manage.py里面导入db，以后执行`db.create_all()`创建表，以后执行`drop_all()`删除表。这样不好，可以和Flask-Migrate结合起来用。
-
-**新方式**：Flask-Migrate
-
-1. 安装组件：`python -m pip install Flask-Migrate`
-2. 导入：
-
-<!-- snippet: id=flask-11-integration-03 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
+# taskboard/extensions.py
 from flask_migrate import Migrate
-from app import db, app
-```
-
-3. 创建实例：`migrate = Migrate(app, db)`
-4. 使用 Flask-Migrate 自动注册的 `flask db` 命令
-5. 执行命令：
-
-<!-- snippet: id=flask-11-integration-04 mode=display python=3.12-3.14 deps=stdlib -->
-```bash
-flask --app app db init  # 只执行第一次
-flask --app app db migrate
-flask --app app db upgrade
-```
-
-在执行命令之前，得先连接数据库，他才会知道把表放在哪里。
-
-## 详说注册SQLAlchemy的两种方式
-
-### 方式一
-
-<!-- snippet: id=flask-11-integration-05 mode=compile python=3.12-3.14 deps=Flask-SQLAlchemy==3.1.1,Flask==3.1.3 -->
-```python
 from flask_sqlalchemy import SQLAlchemy
-from flask import Flask
+from sqlalchemy.orm import DeclarativeBase
 
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = \
-    "mysql://root:12345@localhost/test"
-db = SQLAlchemy(app)
-```
+class Base(DeclarativeBase):
+    pass
 
-### 方式二
-
-<!-- snippet: id=flask-11-integration-06 mode=compile python=3.12-3.14 deps=Flask-SQLAlchemy==3.1.1 -->
-```python
-from flask_sqlalchemy import SQLAlchemy
-
-db = SQLAlchemy()
-
-def create_app():
-    app = Flask(__name__)
-    db.init_app(app)
-    return app
-```
-
-## 操作数据库
-
-通过上面注册了SQLAlchemy，就直接可以从db.session了。
-
-### 方式一
-
-<!-- snippet: id=flask-11-integration-07 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-db.session  # 会自动创建一个session
-db.session.add()
-db.session.query(models.User.id, models.User.name).all()
-db.session.commit()
-db.session.remove()
-```
-
-### 方式二
-
-<!-- snippet: id=flask-11-integration-08 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-from app import models
-models.User.query
-```
-
-## Flask中所有用到过的组件
-
-### 连接数据库的两种操作
-
-#### 要么DBUtils
-
-用于执行原生SQL的，用自己的util里面的sqlhelper来完成。
-
-#### 要么SQLAlchemy
-
-遵循他自己的语法来链接：
-
-**方式一**：`SQLAlchemy(app)`这种方式有局限性，如果我在其他地方也得用到呢？可以把它写到全局。
-
-**方式二**：
-
-<!-- snippet: id=flask-11-integration-09 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 实例化一下
-db = SQLAlchemy()
-
-# 注册
-# 在settings里面配置一下数据库链接方式
-SQLALCHEMY_DATABASE_URI = "mysql+pymysql://root:123@47.93.4.198:3306/s6?charset=utf8"
-SQLALCHEMY_POOL_SIZE = 2
-SQLALCHEMY_POOL_TIMEOUT = 30
-SQLALCHEMY_POOL_RECYCLE = -1
-
-# Flask-SQLAlchemy
-db.init_app(app)
-```
-
-### Flask-Session
-
-用于把session保存在其他地方。
-
-### Flask CLI
-
-Flask 内置命令行系统，用于注册自定义命令和运行 `flask db` 等扩展命令。
-
-### Flask-Migrate
-
-数据库迁移。
-
-### Flask-SQLAlchemy
-
-将Flask和SQLAlchemy很好的结合在一起。
-
-**本质**：每次操作数据库就会自动创建一个session连接，完了自动关闭。
-
-### Blinker
-
-信号。
-
-### Wtforms
-
-Form组件。
-
-### 用到的组件和版本
-
-<!-- snippet: id=flask-11-integration-10 mode=display python=3.12-3.14 deps=stdlib -->
-```bash
-pip3 freeze  # 获取环境中所有安装的模块
-```
-
-## 完整示例：Flask应用工厂模式
-
-<!-- snippet: id=flask-11-integration-11 mode=compile python=3.12-3.14 deps=Flask-SQLAlchemy==3.1.1,Flask-Session==0.8.0,Flask==3.1.3 -->
-```python
-# app/__init__.py
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_session import Session
-
-db = SQLAlchemy()
+db = SQLAlchemy(model_class=Base)
 migrate = Migrate()
+```
 
-def create_app(config_name='development'):
+## 模型是迁移的输入
+
+```python
+# taskboard/models.py
+from datetime import datetime
+from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy.orm import Mapped, mapped_column
+from .extensions import db
+
+class Task(db.Model):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(200))
+    done: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+    )
+```
+
+模型 metadata 是自动生成迁移差异的依据。若模型模块从未导入，Alembic 看不到表定义，就可能生成空迁移。
+
+## 工厂的单向初始化顺序
+
+<!-- figure-anchor:s06-f02 -->
+
+<!-- figure:s06-f02:start -->
+
+![配置、Engine、metadata 与 Alembic 比较之间的依赖关系](./images/s06-f02-extension-order.png)
+
+<!-- figure:s06-f02:end -->
+
+```python
+# taskboard/__init__.py
+from flask import Flask
+from .extensions import db, migrate
+
+def create_app(test_config=None):
     app = Flask(__name__)
+    app.config.from_mapping(
+        SQLALCHEMY_DATABASE_URI="sqlite:///taskboard.db",
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    )
+    app.config.from_prefixed_env(prefix="TASKBOARD")
+    if test_config:
+        app.config.from_mapping(test_config)
 
-    # 根据配置加载配置
-    from config import config
-    app.config.from_object(config[config_name])
-
-    # 初始化扩展
     db.init_app(app)
-    migrate.init_app(app, db)
-    Session(app)
 
-    # 注册蓝图
-    from .views import bp
-    app.register_blueprint(bp)
+    from . import models
+    migrate.init_app(app, db)
+
+    from .tasks.views import tasks_bp
+    app.register_blueprint(tasks_bp, url_prefix="/tasks")
+
+    from .commands import register_commands
+    register_commands(app)
 
     return app
-
-# manage.py
-from app import create_app, db
-
-app = create_app()
-
-if __name__ == '__main__':
-    app.run()
 ```
 
-## 命令行操作
+顺序的因果关系：
 
-<!-- snippet: id=flask-11-integration-12 mode=display python=3.12-3.14 deps=stdlib -->
+1. 配置决定数据库 URI 和 Engine 参数。
+2. `db.init_app` 根据配置创建引擎注册。
+3. 导入模型填充 metadata。
+4. `migrate.init_app` 绑定应用与 metadata。
+5. 蓝图和 CLI 使用已初始化扩展。
+
+Flask-SQLAlchemy 3.x 在 `init_app` 时读取配置，之后修改 URI 不会重新创建 Engine。
+
+## 迁移不是 `create_all`
+
+<!-- figure-anchor:s06-f03 -->
+
+<!-- figure:s06-f03:start -->
+
+![模型变更如何经过 migrate、人工审阅、upgrade、验证与 rollback/forward fix](./images/s06-f03-migration-lifecycle.png)
+
+<!-- figure:s06-f03:end -->
+
 ```bash
-# 初始化数据库迁移
-flask --app manage:app db init
-
-# 创建迁移脚本
-flask --app manage:app db migrate
-
-# 执行迁移
-flask --app manage:app db upgrade
-
-# 回滚
-flask --app manage:app db downgrade
+flask --app taskboard:create_app db init
+flask --app taskboard:create_app db migrate -m "create task table"
+flask --app taskboard:create_app db upgrade
+flask --app taskboard:create_app db current
 ```
 
-## 常见问题
+- `db.create_all()` 只创建缺失表，不会把已有表升级到新模型。
+- `db migrate` 根据 metadata 与数据库状态生成候选脚本。
+- 生成脚本必须人工审阅；重命名字段常被识别成“删除旧列 + 新增列”，可能丢数据。
+- `db upgrade` 执行版本迁移；生产前要有备份、锁影响评估和回滚/前滚方案。
 
-### 1. 数据库连接超时
+## SQLAlchemy-Utils 的边界
 
-<!-- snippet: id=flask-11-integration-13 mode=compile python=3.12-3.14 deps=stdlib -->
+SQLAlchemy-Utils 提供 `EmailType`、`PasswordType`、数据库存在性辅助等扩展能力，但它不是 Flask 初始化必需层。引入自定义类型前要回答：
+
+1. 数据库实际列类型是什么？
+2. Alembic 能否稳定渲染与回滚？
+3. 序列化、校验和数据迁移由哪一层负责？
+4. 未来移除依赖是否可行？
+
+例如邮箱规范化通常还涉及业务规则，不能因为使用 `EmailType` 就跳过表单验证和唯一约束。
+
+## 应用上下文中的最小验证
+
 ```python
-SQLALCHEMY_POOL_TIMEOUT = 30
-SQLALCHEMY_POOL_RECYCLE = -1  # 设为-1则不回收连接
+from sqlalchemy import select
+
+def test_factory_uses_isolated_database(tmp_path):
+    db_file = tmp_path / "test.db"
+    app = create_app(
+        {
+            "TESTING": True,
+            "SQLALCHEMY_DATABASE_URI": f"sqlite:///{db_file}",
+        }
+    )
+
+    with app.app_context():
+        db.create_all()
+        task = Task(title="验证应用工厂")
+        db.session.add(task)
+        db.session.commit()
+
+        saved = db.session.scalar(
+            select(Task).where(Task.title == "验证应用工厂")
+        )
+        assert saved is not None
 ```
 
-### 2. 连接池大小
+输入是测试专用数据库 URI；中间状态是当前应用上下文和 ORM Session；输出是可查询记录。测试结束应删除临时数据库或回滚事务，不能连接开发/生产库。
 
-<!-- snippet: id=flask-11-integration-14 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-SQLALCHEMY_POOL_SIZE = 5
-SQLALCHEMY_MAX_OVERFLOW = 10  # 超过池大小的最大连接数
-```
+## 迁移验收清单
 
-### 3. 调试模式
+<!-- figure-anchor:s06-f04 -->
 
-<!-- snippet: id=flask-11-integration-15 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-SQLALCHEMY_ECHO = True  # 打印SQL语句
-```
+<!-- figure:s06-f04:start -->
+
+![一次迁移必须通过数据丢失、锁、兼容、回填和恢复五道审阅门](./images/s06-f04-migration-review-gates.png)
+
+<!-- figure:s06-f04:end -->
+
+每次迁移至少检查：
+
+- upgrade 与 downgrade 是否符合预期。
+- 是否出现意外 drop、nullable 变化或默认值变化。
+- 大表 DDL 是否会长时间锁表。
+- 新旧应用版本能否在滚动发布期间共存。
+- 数据回填是否幂等、可观测、可暂停。
+- 空数据库从头 upgrade 与生产快照 upgrade 都能成功。
+
+对于不可逆数据转换，downgrade 不应伪装可逆；应明确恢复依赖备份或前滚修复。
+
+## 常见误区与适用边界
+
+- **在模型模块创建 `Flask()`**：导致循环导入和多实例测试困难。
+- **`SQLAlchemy(app)` 与工厂混用**：扩展提前绑定具体应用。
+- **先 `init_app` 后改 URI**：引擎仍使用旧配置。
+- **用 `create_all` 替代迁移**：已有表不会自动演化。
+- **未经审阅直接执行 autogenerate**：自动比较不知道业务重命名与数据语义。
+- **把 ORM Session 跨线程传递**：Session 不是通用线程安全容器。
+- **在请求中运行迁移**：迁移属于受控运维流程。
+
+## 自检题
+
+1. 为什么扩展对象可以全局定义，应用对象却放在工厂中创建？
+2. 模型导入晚于迁移初始化可能造成什么结果？
+3. `db.create_all` 为什么不能替代 `flask db upgrade`？
+
+<details>
+<summary>答案</summary>
+
+1. 未绑定的扩展对象只保存通用声明，可通过 `init_app` 服务多个应用实例；具体应用含环境配置和运行状态。
+2. Alembic metadata 不完整，自动迁移可能为空或遗漏表。
+3. `create_all` 只创建不存在的表，不维护版本历史，也不修改已有结构。
+
+</details>
+
+## 本篇总结
+
+应用工厂把初始化变成可重复的单向过程：先配置，再初始化扩展，再加载模型、迁移、蓝图和命令。迁移脚本是需要审阅和演练的生产变更，不是自动生成后直接执行的附属文件。
+
+## 下一篇衔接
+
+应用骨架稳定后，输入校验成为下一条边界。下一篇从 WTForms 的 `process -> validate -> errors` 调用链解释自定义 Form、字段与验证器。
+
+## 资料来源
+
+- [Flask 官方文档：Application Factories](https://flask.palletsprojects.com/en/stable/patterns/appfactories/)
+- [Flask-SQLAlchemy 官方文档：Configuration](https://flask-sqlalchemy.palletsprojects.com/en/stable/config/)
+- [Flask-SQLAlchemy 官方文档：Quick Start](https://flask-sqlalchemy.palletsprojects.com/en/stable/quickstart/)
+- [Flask-Migrate 官方文档](https://flask-migrate.readthedocs.io/en/latest/)
+- [Alembic 官方文档：Autogenerating Migrations](https://alembic.sqlalchemy.org/en/latest/autogenerate.html)

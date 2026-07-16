@@ -4,9 +4,9 @@ series: selenium
 seriesOrder: 7
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
-modDatetime: 2026-05-09T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: selenium-pytest-integration
-description: '详细介绍如何将Selenium与pytest测试框架集成，包括fixtures、标记、参数化测试等高级特性。'
+description: "详细介绍如何将Selenium与pytest测试框架集成，包括fixtures、标记、参数化测试等高级特性。"
 tags:
   - Selenium
   - RPA
@@ -16,21 +16,42 @@ draft: false
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
+
+能编写函数和类，理解 setup/teardown，并已掌握定位、等待和上下文恢复。
+
+读完后，你应该能够：
+
+- 用 fixture 管理 WebDriver 的创建、隔离和销毁；
+- 区分 function、module、session scope 的收益与状态污染风险；
+- 用 Page Object 集中定位器与页面服务；
+- 在失败钩子中保存截图、URL、页面源码和浏览器日志；
+
+全系列沿用同一个案例：在测试环境自动化 Acme 采购门户。用户登录后搜索采购单 PO-2026-0715，在明细页导出 CSV；测试使用 data-testid 作为稳定定位契约，并把失败截图、日志和下载文件写入独立运行目录。
+
+**本篇边界：**本篇聚焦测试组织与生命周期。断言的证据设计在第 8 篇完整展开，避免测试框架与验证策略混在一起。
+
+## 真实场景与核心问题
 
 pytest 是 Python 最流行的测试框架之一，与 Selenium 结合可以构建强大的自动化测试套件。本教程将详细介绍两者的集成方法。
 
-![Selenium 与 pytest 集成生命周期图](./images/selenium-pytest-integration-lifecycle-figure-01.png)
+<!-- figure-anchor:s07-a01 -->
+
+<!-- figure-managed:s07-f01:start -->
+
+![解释 fixture setup、yield、test、teardown、quit 与失败制品收集的生命周期](./images/s07-f01-pytest-fixture-lifecycle.png)
+
+<!-- figure-managed:s07-f01:end -->
 
 ### pytest 优势
 
-| 特性 | 说明 |
-|------|------|
-| **简单易用** | 只需 `pytest test_*.py` 即可运行 |
-| **强大 fixtures** | 灵活的资源管理 |
-| **参数化测试** | 一组数据多次运行 |
-| **丰富插件** | pytest-html、pytest-xdist 等 |
-| **详细报告** | 清晰的测试结果 |
+| 特性              | 说明                             |
+| ----------------- | -------------------------------- |
+| **简单易用**      | 只需 `pytest test_*.py` 即可运行 |
+| **强大 fixtures** | 灵活的资源管理                   |
+| **参数化测试**    | 一组数据多次运行                 |
+| **丰富插件**      | pytest-html、pytest-xdist 等     |
+| **详细报告**      | 清晰的测试结果                   |
 
 ## 安装和配置
 
@@ -122,7 +143,13 @@ def filled_form(browser):
 
 ## 测试用例编写
 
-### 基础测试结构
+<!-- figure-anchor:s07-a02 -->
+
+<!-- figure-managed:s07-f02:start -->
+
+![划分测试意图、页面服务、定位器与 WebDriver 的职责边界](./images/s07-f02-page-object-responsibility.png)
+
+<!-- figure-managed:s07-f02:end -->### 基础测试结构
 
 ```python
 # tests/test_basic.py
@@ -146,7 +173,7 @@ def test_login_success(browser):
     browser.find_element(By.ID, "username").send_keys("testuser")
     browser.find_element(By.ID, "password").send_keys("password")
     browser.find_element(By.ID, "login-btn").click()
-    
+
     # 验证跳转
     wait = WebDriverWait(browser, 10)
     wait.until(EC.url_contains("/dashboard"))
@@ -160,28 +187,28 @@ def test_login_success(browser):
 class LoginPage:
     def __init__(self, driver):
         self.driver = driver
-    
+
     @property
     def username_input(self):
         return self.driver.find_element(By.ID, "username")
-    
+
     @property
     def password_input(self):
         return self.driver.find_element(By.ID, "password")
-    
+
     @property
     def submit_btn(self):
         return self.driver.find_element(By.ID, "login-btn")
-    
+
     @property
     def error_message(self):
         return self.driver.find_element(By.CLASS_NAME, "error-message")
-    
+
     def login(self, username, password):
         self.username_input.send_keys(username)
         self.password_input.send_keys(password)
         self.submit_btn.click()
-    
+
     def get_error(self):
         return self.error_message.text if self.error_message.is_displayed() else None
 
@@ -189,11 +216,11 @@ class LoginPage:
 class DashboardPage:
     def __init__(self, driver):
         self.driver = driver
-    
+
     @property
     def welcome_message(self):
         return self.driver.find_element(By.CLASS_NAME, "welcome")
-    
+
     def get_username(self):
         return self.welcome_message.text
 ```
@@ -208,24 +235,24 @@ from .pages.dashboard_page import DashboardPage
 def test_successful_login(browser):
     """测试成功登录"""
     browser.get("https://example.com/login")
-    
+
     login_page = LoginPage(browser)
     login_page.login("testuser", "password123")
-    
+
     # 等待跳转到仪表盘
     wait = WebDriverWait(browser, 10)
     wait.until(EC.url_contains("/dashboard"))
-    
+
     dashboard = DashboardPage(browser)
     assert "testuser" in dashboard.get_username()
 
 def test_login_with_invalid_credentials(browser):
     """测试无效凭据登录"""
     browser.get("https://example.com/login")
-    
+
     login_page = LoginPage(browser)
     login_page.login("invalid", "wrong")
-    
+
     # 验证错误消息
     assert "Invalid credentials" in login_page.get_error()
 ```
@@ -285,7 +312,7 @@ def test_login(browser, username, password, expected):
     browser.find_element(By.ID, "username").send_keys(username)
     browser.find_element(By.ID, "password").send_keys(password)
     browser.find_element(By.ID, "login-btn").click()
-    
+
     if expected:
         assert "/dashboard" in browser.current_url
     else:
@@ -333,48 +360,6 @@ def test_chrome_only_feature(browser):
     pass
 ```
 
-## 断言和验证
-
-### 常用断言
-
-```python
-def test_element_states(browser):
-    """元素状态断言"""
-    browser.get("https://example.com/form")
-    
-    # 检查可见性
-    assert browser.find_element(By.ID, "username").is_displayed()
-    
-    # 检查启用状态
-    assert browser.find_element(By.ID, "submit-btn").is_enabled()
-    
-    # 检查文本内容
-    assert "Welcome" in browser.find_element(By.TAG_NAME, "h1").text
-
-def test_navigation(browser):
-    """导航断言"""
-    browser.get("https://example.com")
-    
-    # 检查 URL
-    assert browser.current_url == "https://example.com/"
-    
-    # 检查标题
-    assert browser.title == "Example Domain"
-```
-
-### 自定义断言
-
-```python
-def assert_element_has_text(driver, locator, expected_text):
-    """断言元素包含特定文本"""
-    element = driver.find_element(*locator)
-    assert expected_text in element.text, f"Expected '{expected_text}' in '{element.text}'"
-
-def assert_url_contains(driver, substring):
-    """断言 URL 包含特定内容"""
-    assert substring in driver.current_url, f"URL '{driver.current_url}' does not contain '{substring}'"
-```
-
 ## 错误处理和截图
 
 ### 失败时截图
@@ -388,14 +373,14 @@ def pytest_runtest_makereport(item, call):
     """测试失败时自动截图"""
     outcome = yield
     report = outcome.get_result()
-    
+
     if report.when == "call" and report.failed:
         driver = item.funcargs.get("browser")  # 获取 driver fixture
         if driver:
             screenshot_dir = "screenshots"
             import os
             os.makedirs(screenshot_dir, exist_ok=True)
-            
+
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"{screenshot_dir}/{item.name}_{timestamp}.png"
             driver.save_screenshot(filename)
@@ -440,7 +425,7 @@ def pytest_runtest_makereport(item, call):
     """失败时截图"""
     outcome = yield
     report = outcome.get_result()
-    
+
     if report.when == "call" and report.failed:
         driver = item.funcargs.get("browser")
         if driver:
@@ -468,11 +453,11 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
     print("\n" + "="*60)
     print("测试摘要")
     print("="*60)
-    
+
     passed = len(terminalreporter.stats.get('passed', []))
     failed = len(terminalreporter.stats.get('failed', []))
     skipped = len(terminalreporter.stats.get('skipped', []))
-    
+
     print(f"通过: {passed}")
     print(f"失败: {failed}")
     print(f"跳过: {skipped}")
@@ -586,3 +571,48 @@ def test_everything(browser):
     # 这个测试太长了...
     pass
 ```
+
+## 常见误区与适用边界
+
+- session 级浏览器虽然快，但会共享 cookie、窗口和应用状态；默认应优先测试隔离。
+- Page Object 封装页面服务，不应把所有断言都藏进页面对象。
+- 只保存截图不够诊断；URL、时间、测试 ID、日志和页面源码需要同一运行标识。
+
+## 本篇自检
+
+<details>
+<summary>1. 为什么 function scope 通常更可靠？</summary>
+
+每个测试获得干净会话，减少顺序依赖和状态泄漏；代价是启动浏览器更慢。
+
+</details>
+
+<details>
+<summary>2. fixture yield 前后分别适合做什么？</summary>
+
+yield 前创建依赖并准备状态，yield 后在 finally 语义下收集或清理资源。
+
+</details>
+
+<details>
+<summary>3. Page Object 里应不应该 assert 业务结果？</summary>
+
+通常不应。页面对象提供操作和可观察状态，测试负责业务断言；可在构造时验证页面已正确加载。
+
+</details>
+
+## 本篇总结
+
+pytest 把一次浏览器脚本提升为可隔离、可选择、可并行和可诊断的测试系统；fixture 生命周期是资源边界。
+
+## 下一篇衔接
+
+下一篇专门设计断言：什么是业务事实、何时验证，以及失败时需要哪些证据。
+
+## 资料来源与版本基线
+
+本文以 Selenium 4 与 Python 3.10+ 为基线；具体版本与浏览器支持应以发布时的官方说明为准。
+
+- [pytest fixtures](https://docs.pytest.org/en/stable/how-to/fixtures.html)
+- [Page object models](https://www.selenium.dev/documentation/test_practices/encouraged/page_object_models/)
+- [Fresh browser per test](https://www.selenium.dev/documentation/test_practices/encouraged/fresh_browser_per_test/)

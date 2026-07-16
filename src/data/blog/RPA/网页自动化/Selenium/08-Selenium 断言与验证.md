@@ -4,9 +4,9 @@ series: selenium
 seriesOrder: 8
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
-modDatetime: 2026-05-09T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: selenium-assertions
-description: '详细介绍Selenium中的各种断言方法，包括元素状态、内容、属性验证，以及自定义断言的编写。'
+description: "详细介绍Selenium中的各种断言方法，包括元素状态、内容、属性验证，以及自定义断言的编写。"
 tags:
   - Selenium
   - RPA
@@ -16,11 +16,32 @@ draft: false
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
+
+会使用 pytest、显式等待与 Page Object，并能区分页面状态和业务结果。
+
+读完后，你应该能够：
+
+- 从业务不变量反推断言，而不是对每个 DOM 属性都断言；
+- 区分同步条件与最终断言，避免用等待代替验证；
+- 为失败消息附带 expected、actual 与上下文；
+- 建立断言失败到截图、日志和页面状态的证据链；
+
+全系列沿用同一个案例：在测试环境自动化 Acme 采购门户。用户登录后搜索采购单 PO-2026-0715，在明细页导出 CSV；测试使用 data-testid 作为稳定定位契约，并把失败截图、日志和下载文件写入独立运行目录。
+
+**本篇边界：**等待回答“何时观察”，断言回答“观察结果是否正确”。本篇不重复 pytest 生命周期，而是定义验证策略。
+
+## 真实场景与核心问题
 
 断言是自动化测试的核心，用于验证预期结果与实际结果是否一致。本教程将详细介绍 Selenium 中的各种断言方法。
 
-![Selenium 断言验证与失败证据链图](./images/selenium-assertion-evidence-flow-figure-01.png)
+<!-- figure-anchor:s08-a01 -->
+
+<!-- figure-managed:s08-f01:start -->
+
+![把业务不变量、观察时机、expected/actual、断言结果与失败制品串成证据链](./images/s08-f01-assertion-evidence-chain.png)
+
+<!-- figure-managed:s08-f01:end -->
 
 ### 断言类型
 
@@ -47,16 +68,16 @@ language: zh-CN
 ```python
 def test_url_assertions(browser):
     browser.get("https://example.com")
-    
+
     # 精确匹配
     assert browser.current_url == "https://example.com/"
-    
+
     # URL 包含
     assert "/products" in browser.current_url
-    
+
     # URL 以特定字符串开头
     assert browser.current_url.startswith("https://example.com")
-    
+
     # URL 匹配正则
     import re
     assert re.match(r"https://example\.com/user/\d+", browser.current_url)
@@ -67,13 +88,13 @@ def test_url_assertions(browser):
 ```python
 def test_title_assertions(browser):
     browser.get("https://example.com")
-    
+
     # 精确匹配
     assert browser.title == "Example Domain"
-    
+
     # 标题包含
     assert "Example" in browser.title
-    
+
     # 标题匹配
     assert browser.title.startswith("Example")
 ```
@@ -85,10 +106,10 @@ def test_title_assertions(browser):
 ```python
 def test_element_existence(browser):
     browser.get("https://example.com")
-    
+
     # 元素存在
     assert browser.find_element(By.ID, "content").is_enabled()
-    
+
     # 元素不存在（应该抛出异常）
     from selenium.common.exceptions import NoSuchElementException
     try:
@@ -96,7 +117,7 @@ def test_element_existence(browser):
         assert False, "应该抛出异常"
     except NoSuchElementException:
         assert True
-    
+
     # 多个元素存在
     elements = browser.find_elements(By.CLASS_NAME, "item")
     assert len(elements) > 0
@@ -107,10 +128,10 @@ def test_element_existence(browser):
 ```python
 def test_element_visibility(browser):
     browser.get("https://example.com")
-    
+
     # 元素可见
     assert browser.find_element(By.ID, "visible-element").is_displayed()
-    
+
     # 元素不可见
     hidden = browser.find_element(By.ID, "hidden-element")
     assert not hidden.is_displayed()
@@ -121,17 +142,17 @@ def test_element_visibility(browser):
 ```python
 def test_element_text(browser):
     browser.get("https://example.com")
-    
+
     # 精确文本匹配
     h1 = browser.find_element(By.TAG_NAME, "h1")
     assert h1.text == "Expected Heading"
-    
+
     # 文本包含
     assert "Expected" in h1.text
-    
+
     # 文本为空
     assert h1.text == ""
-    
+
     # 文本不为空
     assert len(h1.text) > 0
 ```
@@ -141,21 +162,21 @@ def test_element_text(browser):
 ```python
 def test_element_attributes(browser):
     browser.get("https://example.com")
-    
+
     link = browser.find_element(By.ID, "my-link")
-    
+
     # 获取属性值
     href = link.get_attribute("href")
     assert href == "https://example.com"
-    
+
     # 属性包含
     assert "example" in href
-    
+
     # 获取多个属性
     button = browser.find_element(By.ID, "submit-btn")
     button_type = button.get_attribute("type")
     button_class = button.get_attribute("class")
-    
+
     assert button_type == "submit"
     assert "primary" in button_class
 ```
@@ -165,19 +186,19 @@ def test_element_attributes(browser):
 ```python
 def test_element_state(browser):
     browser.get("https://example.com/form")
-    
+
     # 元素启用
     enabled_btn = browser.find_element(By.ID, "submit-btn")
     assert enabled_btn.is_enabled()
-    
+
     # 元素禁用
     disabled_btn = browser.find_element(By.ID, "disabled-btn")
     assert not disabled_btn.is_enabled()
-    
+
     # 复选框选中
     checkbox = browser.find_element(By.ID, "agree-checkbox")
     assert checkbox.is_selected()
-    
+
     # 复选框未选中
     unchecked = browser.find_element(By.ID, "optional-checkbox")
     assert not unchecked.is_selected()
@@ -188,14 +209,14 @@ def test_element_state(browser):
 ```python
 def test_css_properties(browser):
     browser.get("https://example.com")
-    
+
     element = browser.find_element(By.ID, "styled-element")
-    
+
     # 获取 CSS 属性
     color = element.value_of_css_property("color")
     font_size = element.value_of_css_property("font-size")
     background = element.value_of_css_property("background-color")
-    
+
     # 验证 CSS 值
     assert "rgb" in color or "#" in color  # 颜色格式
     assert "px" in font_size or "em" in font_size  # 字体大小单位
@@ -208,17 +229,17 @@ def test_css_properties(browser):
 ```python
 def test_input_fields(browser):
     browser.get("https://example.com/form")
-    
+
     username = browser.find_element(By.NAME, "username")
     email = browser.find_element(By.NAME, "email")
-    
+
     # 获取输入值
     username.send_keys("testuser")
     assert username.get_attribute("value") == "testuser"
-    
+
     # 验证默认值
     assert email.get_attribute("value") == ""
-    
+
     # 验证占位符
     placeholder = username.get_attribute("placeholder")
     assert "username" in placeholder.lower()
@@ -231,16 +252,16 @@ from selenium.webdriver.support.ui import Select
 
 def test_dropdown(browser):
     browser.get("https://example.com/form")
-    
+
     select = Select(browser.find_element(By.ID, "country"))
-    
+
     # 验证选项数量
     assert len(select.options) == 10
-    
+
     # 验证第一个选项
     first_option = select.options[0]
     assert first_option.text == "-- Select --"
-    
+
     # 验证选中项
     select.select_by_visible_text("China")
     selected = select.first_selected_option
@@ -252,24 +273,30 @@ def test_dropdown(browser):
 ```python
 def test_error_messages(browser):
     browser.get("https://example.com/form")
-    
+
     # 填写无效数据
     browser.find_element(By.NAME, "email").send_keys("invalid-email")
     browser.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
-    
+
     # 等待错误消息出现
     wait = WebDriverWait(browser, 10)
     error = wait.until(
         EC.visibility_of_element_located((By.CLASS_NAME, "error-message"))
     )
-    
+
     # 验证错误消息内容
     assert "valid email" in error.text.lower()
 ```
 
 ## 自定义断言
 
-### 创建断言辅助函数
+<!-- figure-anchor:s08-a02 -->
+
+<!-- figure-managed:s08-f02:start -->
+
+![区分等待解决何时观察，断言解决观察结果是否正确，并展示组合模式](./images/s08-f02-wait-vs-assertion.png)
+
+<!-- figure-managed:s08-f02:end -->### 创建断言辅助函数
 
 ```python
 def assert_element_text(driver, locator, expected):
@@ -300,31 +327,31 @@ def assert_element_attribute(driver, locator, attribute, expected):
 ```python
 class Assertions:
     """断言辅助类"""
-    
+
     def __init__(self, driver):
         self.driver = driver
-    
+
     def assert_title(self, expected):
         """断言页面标题"""
         assert expected in self.driver.title, \
             f"期望标题包含 '{expected}', 实际 '{self.driver.title}'"
-    
+
     def assert_url(self, expected):
         """断言 URL"""
         assert expected in self.driver.current_url, \
             f"期望 URL 包含 '{expected}', 实际 '{self.driver.current_url}'"
-    
+
     def assert_element_visible(self, locator):
         """断言元素可见"""
         element = self.driver.find_element(*locator)
         assert element.is_displayed(), f"元素 {locator} 不可见"
-    
-    def def assert_element_has_text(self, locator, expected):
+
+    def assert_element_has_text(self, locator, expected):
         """断言元素文本"""
         element = self.driver.find_element(*locator)
         assert expected in element.text, \
             f"期望文本包含 '{expected}', 实际 '{element.text}'"
-    
+
     def assert_toast_message(self, expected_text, timeout=10):
         """断言提示消息"""
         wait = WebDriverWait(self.driver, timeout)
@@ -343,23 +370,23 @@ class Assertions:
 def soft_assertions(browser):
     """收集多个断言错误"""
     errors = []
-    
+
     try:
         assert "Example" in browser.title
     except AssertionError as e:
         errors.append(f"标题断言失败: {e}")
-    
+
     try:
         element = browser.find_element(By.ID, "content")
         assert element.is_displayed()
     except AssertionError as e:
         errors.append(f"内容元素断言失败: {e}")
-    
+
     try:
         assert "https://example.com" in browser.current_url
     except AssertionError as e:
         errors.append(f"URL 断言失败: {e}")
-    
+
     # 报告所有错误
     if errors:
         error_message = "\n".join(errors)
@@ -376,17 +403,17 @@ def verify_and_continue(browser):
     def verify(condition, message):
         if not condition:
             print(f"⚠️ 警告: {message}")
-    
+
     browser.get("https://example.com")
-    
+
     # 验证（警告而非失败）
     verify("Example" in browser.title, "标题不符合预期")
-    
+
     verify(
         browser.find_element(By.ID, "header").is_displayed(),
         "头部元素不可见"
     )
-    
+
     # 继续执行其他测试步骤
     browser.find_element(By.ID, "search").send_keys("test")
 ```
@@ -398,20 +425,20 @@ def verify_and_continue(browser):
 ```python
 def verify_login(browser):
     browser.get("https://example.com/login")
-    
+
     # 填写登录表单
     browser.find_element(By.ID, "username").send_keys("testuser")
     browser.find_element(By.ID, "password").send_keys("password")
     browser.find_element(By.ID, "login-btn").click()
-    
+
     # 验证登录成功
     wait = WebDriverWait(browser, 10)
     wait.until(EC.url_contains("/dashboard"))
-    
+
     # 验证用户信息
     welcome = browser.find_element(By.CLASS_NAME, "welcome-user")
     assert "testuser" in welcome.text.lower()
-    
+
     # 验证登出按钮出现
     assert browser.find_element(By.ID, "logout-btn").is_displayed()
 ```
@@ -421,15 +448,15 @@ def verify_login(browser):
 ```python
 def verify_form_submission(browser):
     browser.get("https://example.com/form")
-    
+
     # 填写表单
     browser.find_element(By.NAME, "name").send_keys("张三")
     browser.find_element(By.NAME, "email").send_keys("zhangsan@example.com")
     browser.find_element(By.NAME, "message").send_keys("测试消息")
-    
+
     # 提交
     browser.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
-    
+
     # 验证成功消息
     success = browser.find_element(By.CLASS_NAME, "success-message")
     assert success.is_displayed()
@@ -441,20 +468,20 @@ def verify_form_submission(browser):
 ```python
 def verify_data_list(browser):
     browser.get("https://example.com/users")
-    
+
     # 等待列表加载
     wait = WebDriverWait(browser, 10)
     wait.until(EC.presence_of_element_located((By.CLASS_NAME, "user-item")))
-    
+
     # 获取所有用户
     users = browser.find_elements(By.CLASS_NAME, "user-item")
     assert len(users) > 0, "没有找到用户"
-    
+
     # 验证第一个用户信息
     first_user = users[0]
     name = first_user.find_element(By.CLASS_NAME, "user-name")
     assert len(name.text) > 0, "用户名不能为空"
-    
+
     # 验证分页信息
     pagination = browser.find_element(By.CLASS_NAME, "pagination")
     assert pagination.is_displayed()
@@ -502,3 +529,48 @@ def test_login_page_displays_username_field(browser):
 def test_user_can_login_with_valid_credentials(browser):
     pass
 ```
+
+## 常见误区与适用边界
+
+- wait.until 成功只说明条件曾为真，不一定证明最终业务不变量。
+- 软断言会继续执行，可能制造级联错误；只适合相互独立的检查。
+- 断言越多不等于覆盖越好；应优先验证用户可见结果和持久化事实。
+
+## 本篇自检
+
+<details>
+<summary>1. 登录后只断言 URL 包含 dashboard 有什么风险？</summary>
+
+重定向可能发生但身份未建立或页面报错；应组合用户标识、关键页面状态或后端可回读事实。
+
+</details>
+
+<details>
+<summary>2. 为什么断言前仍需显式等待？</summary>
+
+异步页面需要先到达稳定可观察状态；等待解决时机，断言再比较期望和实际。
+
+</details>
+
+<details>
+<summary>3. 失败消息至少包含哪些信息？</summary>
+
+业务对象、预期值、实际值、定位或状态来源，以及能关联截图与日志的运行 ID。
+
+</details>
+
+## 本篇总结
+
+高价值断言围绕业务不变量构建，并把 expected、actual 和现场证据连在一起，让失败可以被解释而非只被看见。
+
+## 下一篇衔接
+
+下一篇建立证据与文件通道：截图如何命名，下载怎样判定完成，上传为什么不操作系统文件对话框。
+
+## 资料来源与版本基线
+
+本文以 Selenium 4 与 Python 3.10+ 为基线；具体版本与浏览器支持应以发布时的官方说明为准。
+
+- [pytest assertions](https://docs.pytest.org/en/stable/how-to/assert.html)
+- [Selenium test practices](https://www.selenium.dev/documentation/test_practices/)
+- [Avoid sharing state](https://www.selenium.dev/documentation/test_practices/encouraged/avoid_sharing_state/)

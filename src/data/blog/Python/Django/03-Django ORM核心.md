@@ -1,8 +1,8 @@
 ---
-title: Django ORM核心
+title: Django ORM 核心：从模型到 QuerySet
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-11T00:00:00.000+08:00
+modDatetime: 2026-07-17T00:00:00.000+08:00
 slug: django-orm-core
 featured: false
 draft: false
@@ -12,249 +12,139 @@ tags:
   - Python
   - Django
   - ORM
-  - 数据库
-description: 'Django ORM核心详解，包括模型定义、字段类型、关系映射、增删改查操作'
+description: "以图书借阅模型讲清字段、关系、迁移、Manager、QuerySet 惰性求值与安全 CRUD。"
 ---
 
-> ORM（对象-关系-映射）让开发者无需直接写SQL，通过Python对象操作数据库。
+## 前置知识与学习目标
 
-![Django ORM 将 Model 类映射到数据库表，并通过字段、关系、CRUD、QuerySet、F 对象和 Q 对象组织数据库操作](./images/django-orm-core-model-queryset-figure-01.png)
+你需要会读基础 SQL，并完成前两篇的 URL、视图和模板。读完后应能：
 
-## ORM简介
+1. 把 `Book`、`Member`、`Loan` 的约束翻译为模型和迁移。
+2. 解释 Manager、QuerySet、SQL 与模型实例的关系，以及查询何时真正执行。
+3. 完成可预测的 CRUD，并处理不存在、多条结果、并发和删除边界。
 
-### ORM vs SQL
+本篇只负责 ORM 基础；表达式、事务与关联加载在第 4 篇，性能证据在第 23 篇。
 
-<!-- snippet: id=django-orm-core-01 mode=compile python=3.12-3.14 deps=stdlib -->
+## 直觉：模型是映射，也是约束声明
+
+<!-- figure:s03-f01:start -->
+
+![Loan 用 book_id 和 member_id 外键连接 Book 与 Member，数据库保护 ISBN 唯一和库存非负](./images/s03-f01-model-constraint-map.png)
+
+<!-- figure:s03-f01:end -->
+
+ORM 不是“无需理解 SQL”。模型描述表、列和关系，QuerySet 构造查询，数据库仍负责执行、约束和事务。Python 类型检查不能替代数据库的唯一性、外键和检查约束。
+
+<!-- snippet: id=django-orm-core-models mode=project python=3.12-3.14 deps=Django~=6.0 file=catalog/models.py -->
+
 ```python
-# 使用ORM
-class Employee(models.Model):
-    name = models.CharField(max_length=32)
-    salary = models.DecimalField(max_digits=8, decimal_places=2)
+from django.conf import settings
+from django.db import models
 
-Employee.objects.filter(name="alex")
-
-# 等价 SQL：SELECT * FROM employee WHERE name='alex';
-```
-
-## 模型定义
-
-### 常用字段
-
-| 字段 | 说明 | 参数 |
-|------|------|------|
-| `AutoField` | 自增主键 | `primary_key=True` |
-| `CharField` | 字符 | `max_length=100` |
-| `IntegerField` | 整数 | - |
-| `DateField` | 日期 | - |
-| `DateTimeField` | 日期时间 | - |
-| `TextField` | 文本 | - |
-| `BooleanField` | 布尔 | - |
-| `DecimalField` | 小数 | `max_digits`, `decimal_places` |
-| `ForeignKey` | 外键 | `to`, `on_delete` |
-| `ManyToManyField` | 多对多 | `to` |
-
-### 字段参数
-
-<!-- snippet: id=django-orm-core-02 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-class Book(models.Model):
-    title = models.CharField(max_length=100, verbose_name="书名")
-    price = models.DecimalField(max_digits=8, decimal_places=2, default=0)
-    publish = models.ForeignKey('Publish', on_delete=models.CASCADE)
-    authors = models.ManyToManyField('Author')
-    is_delete = models.BooleanField(default=False)
-```
-
-## 表关系
-
-### 一对多
-
-<!-- snippet: id=django-orm-core-03 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-class Publish(models.Model):
-    name = models.CharField(max_length=100)
 
 class Book(models.Model):
-    title = models.CharField(max_length=100)
-    publish = models.ForeignKey(Publish, on_delete=models.CASCADE)
+    title = models.CharField(max_length=200, db_index=True)
+    isbn = models.CharField(max_length=13, unique=True)
+    available_copies = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["title", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(available_copies__gte=0),
+                name="book_available_copies_gte_0",
+            )
+        ]
+
+    def __str__(self):
+        return self.title
+
+
+class Loan(models.Model):
+    member = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    book = models.ForeignKey(Book, on_delete=models.PROTECT, related_name="loans")
+    borrowed_at = models.DateTimeField(auto_now_add=True)
+    returned_at = models.DateTimeField(null=True, blank=True)
 ```
 
-在多的表中创建关联字段：
+`on_delete=PROTECT` 表示存在借阅记录时拒绝删除用户或图书；它与“下架”不是一回事，业务通常通过 `is_active=False` 保留历史。`related_name="loans"` 让反向访问统一为 `book.loans.all()`。
 
-<!-- snippet: id=django-orm-core-04 mode=display python=3.12-3.14 deps=stdlib -->
-```sql
-CREATE TABLE book (
-    id INT PRIMARY KEY,
-    title VARCHAR(100),
-    publish_id INT,
-    FOREIGN KEY (publish_id) REFERENCES publish(id)
-);
+## 迁移：状态变化要可审阅
+
+```bash
+python manage.py makemigrations catalog
+python manage.py sqlmigrate catalog 0001
+python manage.py migrate
+python manage.py check
 ```
 
-### 多对多
+`makemigrations` 根据模型状态生成迁移文件，`migrate` 按依赖应用它。先审阅 `sqlmigrate` 和迁移计划；生产中的大表加列、建索引和回填数据可能锁表或耗时，不能因为命令简短就忽略发布风险。
 
-<!-- snippet: id=django-orm-core-05 mode=compile python=3.12-3.14 deps=stdlib -->
+## Manager、QuerySet 与惰性求值
+
+<!-- figure:s03-f02:start -->
+
+![Django QuerySet 可先组合条件，直到 list 或迭代才执行 SQL 并缓存结果](./images/s03-f02-queryset-lazy-state.png)
+
+<!-- figure:s03-f02:end -->
+
+`Book.objects` 是 Manager；`filter()` 返回可继续组合的 QuerySet。构造、过滤和排序通常不立即访问数据库，迭代、`list()`、`len()`、`bool()`、序列化或需要单值的操作才触发求值。
+
+<!-- snippet: id=django-orm-core-queryset mode=project python=3.12-3.14 deps=Django~=6.0 -->
+
 ```python
-class Author(models.Model):
-    name = models.CharField(max_length=100)
-
-class Book(models.Model):
-    title = models.CharField(max_length=100)
-    authors = models.ManyToManyField(Author)
+queryset = Book.objects.filter(is_active=True).order_by("title", "id")
+print(queryset.query)       # 观察 SQL 形状，不执行结果查询
+first_page = list(queryset[:20])  # 此处执行带 LIMIT 的查询
 ```
 
-Django自动创建中间表：
+QuerySet 被求值后会缓存结果；重新调用 `.all()` 可得到新的 QuerySet。不要把长寿命 QuerySet 当实时数据容器，也不要在模板循环里无意触发关联查询。
 
-<!-- snippet: id=django-orm-core-06 mode=display python=3.12-3.14 deps=stdlib -->
-```sql
-CREATE TABLE book_authors (
-    id INT PRIMARY KEY,
-    book_id INT,
-    author_id INT
-);
-```
+## CRUD：明确返回值与失败路径
 
-### 一对一
-
-<!-- snippet: id=django-orm-core-07 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
-class User(models.Model):
-    username = models.CharField(max_length=100)
+book = Book.objects.create(title="Django Internals", isbn="9780000000001")
 
-class UserDetail(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    phone = models.CharField(max_length=20)
+book = Book.objects.get(pk=book.pk)  # 0 条抛 DoesNotExist，多条抛 MultipleObjectsReturned
+books = Book.objects.filter(title__icontains="django")  # 0 条得到空 QuerySet
+
+updated = Book.objects.filter(pk=book.pk).update(is_active=False)
+deleted_count, details = Book.objects.filter(pk=book.pk).delete()
 ```
 
-## CRUD操作
+`create()` 返回实例；`update()` 返回匹配行数且不调用模型 `save()`；`delete()` 返回删除总数和按模型统计。若业务依赖自定义 `save()`、信号或逐对象校验，批量操作的语义不同。读后改写还存在并发窗口，需在第 4 篇使用事务和行锁。
 
-### 创建
+## 常见误区与适用边界
 
-<!-- snippet: id=django-orm-core-08 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 方式1：实例化后保存
-book = Book(title="Python", price=99)
-book.save()
+- `null` 是数据库空值，`blank` 是表单验证选项；字符串字段通常用空串而非 `NULL`，除非有明确语义。
+- `get()` 不是“取第一条”；若结果不唯一会抛异常。
+- `save()` 默认可能更新多列，明确修改范围时使用 `update_fields`，但仍要考虑并发语义。
+- 迁移文件是部署历史，已共享后不要随意删除或重写。
+- QuerySet 惰性不是自动性能保证；查询数量和执行计划留到第 23 篇测量。
 
-# 方式2：create 直接创建
-Book.objects.create(title="Django", price=89)
+## 最小验证
 
-# 方式3：bulk_create 批量创建
-Book.objects.bulk_create([
-    Book(title="Go", price=79),
-    Book(title="Java", price=99),
-])
-```
+在测试数据库中运行迁移，创建一本书，验证重复 ISBN 被唯一约束拒绝、负库存被检查约束拒绝、存在 Loan 时删除 Book 被保护。用 `assertNumQueries(1)` 验证一个简单列表只执行一次主查询。
 
-### 查询
+## 自检题
 
-<!-- snippet: id=django-orm-core-09 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
-```python
-# 查询所有
-Book.objects.all()
+1. `filter()` 与 `get()` 在零结果时有什么不同？
+2. 为什么 `available_copies >= 0` 既要业务校验又要数据库约束？
+3. `queryset = Book.objects.all()` 是否立即查询数据库？
 
-# 过滤查询
-Book.objects.filter(title="Python")
+<details><summary>答案</summary>
 
-# 获取单个
-Book.objects.get(id=1)
+1. `filter()` 返回空 QuerySet，`get()` 抛 `DoesNotExist`。2. 业务校验给出友好错误，数据库约束保护所有写入路径和并发遗漏。3. 通常不会，直到发生求值操作。
 
-# 排除
-Book.objects.exclude(title="Go")
+</details>
 
-# 排序
-Book.objects.order_by("-price")  # 降序
+## 本篇总结与下一篇
 
-# 切片（分页）
-Book.objects.all()[0:10]
+模型声明结构与约束，Manager 产生 QuerySet，数据库执行最终 SQL。下一篇在不重复这些基础的前提下，使用表达式、聚合、关联加载、事务和锁实现原子借阅。
 
-# 聚合
-from django.db.models import Sum, Avg, Max, Min, Count
-Book.objects.aggregate(total=Sum("price"))
-```
+## 资料来源
 
-### 更新
-
-<!-- snippet: id=django-orm-core-10 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 单条更新
-book = Book.objects.get(id=1)
-book.price = 109
-book.save()
-
-# 批量更新
-Book.objects.filter(id=1).update(price=119)
-```
-
-### 删除
-
-<!-- snippet: id=django-orm-core-11 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 单条删除
-book = Book.objects.get(id=1)
-book.delete()
-
-# 批量删除
-Book.objects.filter(title="Go").delete()
-```
-
-## 进阶查询
-
-### 模糊查询
-
-<!-- snippet: id=django-orm-core-12 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# contains 包含
-Book.objects.filter(title__contains="Python")
-
-# icontains 不区分大小写
-Book.objects.filter(title__icontains="python")
-
-# startswith / endswith
-Book.objects.filter(title__startswith="D")
-```
-
-### 比较查询
-
-<!-- snippet: id=django-orm-core-13 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-Book.objects.filter(price__gt=50)    # 大于
-Book.objects.filter(price__gte=50)   # 大于等于
-Book.objects.filter(price__lt=100)   # 小于
-Book.objects.filter(price__lte=100)  # 小于等于
-Book.objects.filter(price__range=(50, 100))  # 范围
-```
-
-### F和Q对象
-
-<!-- snippet: id=django-orm-core-14 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
-```python
-from django.db.models import F, Q
-
-# F对象：字段比较
-Book.objects.filter(price__gt=F("original_price"))
-
-# Q对象：复杂查询
-Book.objects.filter(Q(title="Python") | Q(title="Django"))
-Book.objects.filter(Q(price__gt=50) & ~Q(title__startswith="Go"))
-```
-
-### 正向与反向查询
-
-<!-- snippet: id=django-orm-core-15 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 正向查询（已知Book，找Publish）
-book = Book.objects.get(id=1)
-book.publish.name  # 通过外键属性
-
-# 反向查询（已知Publish，找Books）
-publish = Publish.objects.get(id=1)
-publish.book_set.all()  # 通过关联模型名_set
-```
-
-## 小结
-
-- ORM通过Python对象操作数据库，无需编写SQL
-- 使用`models.Model`定义模型
-- `objects`管理器提供`filter`、`get`、`create`等方法
-- 一对多用`ForeignKey`，多对多用`ManyToManyField`
+- [Django 模型](https://docs.djangoproject.com/en/6.0/topics/db/models/)
+- [QuerySet API](https://docs.djangoproject.com/en/6.0/ref/models/querysets/)
+- [迁移](https://docs.djangoproject.com/en/6.0/topics/migrations/)

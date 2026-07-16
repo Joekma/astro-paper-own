@@ -4,9 +4,9 @@ series: ui-automation
 seriesOrder: 1
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
-modDatetime: 2026-05-09T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: ui-automation-getting-started
-description: '详细介绍Microsoft UI Automation框架的核心概念、架构组件和应用场景。'
+description: "从语义树、客户端—核心—提供程序调用链和控件模式出发，建立 Windows UI Automation 的正确心智模型。"
 tags:
   - UI Automation
   - RPA
@@ -16,511 +16,118 @@ draft: false
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
 
-UI Automation（用户界面自动化）是 Microsoft 提供的一个辅助功能框架，用于 Windows 应用程序的自动化测试、无障碍访问和自动化工具开发。UI Automation 提供了对 Windows 应用程序用户界面的编程访问，使测试工具和其他自动化工具能够与 UI 元素进行交互。
+你只需要了解 Windows 窗口、进程和异常的基本概念。本篇解决一个问题：**为什么坐标点击容易失效，而 UI Automation（UIA）能把界面变成可查询、可验证的语义结构？**
 
-![UI Automation 核心架构与自动化树图](./images/uia-core-automation-tree-architecture-figure-01.png)
+读完后，你应该能：
 
-### 为什么选择 UI Automation？
+- 解释 UIA 客户端、核心服务和提供程序的职责；
+- 区分元素、属性、控件类型和控件模式；
+- 把一个桌面任务拆成“定位—动作—验证—清理”；
+- 判断 UIA 适用与不适用的边界。
 
-| 特性 | 说明 |
-|------|------|
-| **跨语言支持** | C#、VB.NET、C++、Python 等 |
-| **原生集成** | Windows 内置，无需额外安装 |
-| **无障碍支持** | 专为辅助功能设计 |
-| **完整覆盖** | 支持所有标准 Windows 控件 |
-| **稳定可靠** | Microsoft 官方维护 |
-| **深度访问** | 可访问系统级 UI 元素 |
+本篇只建立模型，不展开定位条件和 Pattern 的具体代码；这些分别留到第 3、4 篇。
 
-### UI Automation vs 其他方案
+## 从一个不稳定脚本开始
 
-| 方案 | 优点 | 缺点 |
-|------|------|------|
-| **UI Automation** | 原生支持、功能完整 | 仅 Windows |
-| **Win32 API** | 底层控制 | 复杂、学习曲线陡峭 |
-| **Selenium** | Web 专用 | 不支持桌面应用 |
-| **AutoIt** | 简单易用 | 功能有限、脚本语言 |
+假设要自动化记事本：启动程序，找到编辑区，写入 `Hello, UIA!`，确认文本已出现，再关闭窗口。
 
-## 架构概览
+坐标脚本会说“点击 `(420, 280)`”。窗口移动、缩放比例变化、菜单展开或远程桌面分辨率变化后，这个坐标就可能指向别处。UIA 的表达是：“在目标进程的窗口子树中，找到语义为文档或编辑框的元素，调用它支持的值接口，再读取状态验证结果。”
 
-### UI Automation 架构图
+两者的关键区别不是“API 更多”，而是**坐标描述像素位置，UIA 描述界面语义和能力**。
+
+## 核心调用链
+
+<!-- figure:s01-f01 -->
+
+![理解客户端请求如何跨 UIA Core 到达 Provider 并返回元素信息](./images/s01-f01-uia-client-core-provider.png)
+
+UIA 将参与者分成三层：
+
+1. **客户端（Client）**：测试程序、屏幕阅读器或 RPA 脚本，提出查询和操作请求。
+2. **UI Automation Core**：跨进程转发请求、组织自动化树并提供查找、缓存和事件机制。
+3. **提供程序（Provider）**：由目标应用或系统代理实现，暴露元素的属性、结构和行为。
+
+调用 `FindFirst` 并不是在客户端内存里查一个静态 DOM。客户端持有的是由 UIA Core 协调访问的 `AutomationElement`，属性读取、查找和 Pattern 调用都可能跨越进程边界。界面重绘或 Provider 重建节点后，之前取得的元素可能失效。因此，后续实践始终遵循两个原则：缩小查询范围，动作后从稳定根重新取得证据。
+
+## 四个不能混用的概念
+
+| 概念                | 回答的问题                 | 记事本示例                          |
+| ------------------- | -------------------------- | ----------------------------------- |
+| `AutomationElement` | “这是树中的哪个节点？”     | 窗口、编辑区、菜单项                |
+| Property            | “这个节点现在是什么状态？” | `Name`、`AutomationId`、`IsEnabled` |
+| `ControlType`       | “它在语义上是什么控件？”   | `Window`、`Document`、`Button`      |
+| Control Pattern     | “它承诺能做什么？”         | `ValuePattern`、`InvokePattern`     |
+
+控件类型不等于控件能力。一个外观像按钮的自定义控件可能没有 `InvokePattern`；同一个元素也可能同时支持多个 Pattern。客户端必须查询实际能力，不能只按类型猜测。
+
+## 自动化树与三种视图
+
+桌面是根元素，顶层应用窗口通常是直接子元素，窗口下面再包含菜单、文档、按钮等节点。UIA 提供三种常见视图：
+
+- **Raw view**：最完整，也最嘈杂；
+- **Control view**：保留用户可感知的交互控件，通常是自动化定位的默认视角；
+- **Content view**：进一步聚焦向用户传达内容的节点。
+
+自动化树是按需构建的动态结构，不保证与屏幕像素、应用内部对象树一一对应。虚拟列表可能只暴露可见项，自定义绘制区域甚至可能只暴露一个大节点。
+
+## 把任务写成状态机
+
+<!-- figure:s01-f02 -->
+
+![把记事本自动化理解为带成功信号和失败分支的状态机](./images/s01-f02-uia-task-state-machine.png)
+
+贯穿全系列的记事本任务可以拆成五个状态：
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│                    UI Automation 架构                        │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌────────────────────────────────────────────────────┐   │
-│  │               UI Automation API                    │   │
-│  │                                                    │   │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐      │   │
-│  │  │  Client  │  │ Provider │  │  Events │      │   │
-│  │  │   API   │  │   API   │  │   API   │      │   │
-│  │  └──────────┘  └──────────┘  └──────────┘      │   │
-│  └────────────────────────────────────────────────────┘   │
-│                            │                               │
-│  ┌────────────────────────────────────────────────────┐   │
-│  │               COM Interface Layer                  │   │
-│  └────────────────────────────────────────────────────┘   │
-│                            │                               │
-│  ┌────────────────────────────────────────────────────┐   │
-│  │            UIAutomationCore.dll                     │   │
-│  └────────────────────────────────────────────────────┘   │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
+未启动 -> 进程已创建 -> 窗口可定位 -> 文本已写入并验证 -> 窗口已关闭
 ```
 
-### 核心组件
+每个箭头都需要明确输入、可观察的成功信号和失败边界。只有成功信号成立，任务才进入下一状态；API 没抛异常不等于状态迁移成功。
 
-| 组件 | 说明 |
-|------|------|
-| **AutomationElement** | 代表 UI 树中的一个节点 |
-| **AutomationPattern** | 定义控件支持的行为模式 |
-| **AutomationProperty** | 元素的属性（名称、类型等） |
-| **CacheRequest** | 缓存元素属性和模式 |
-| **TreeWalker** | 遍历 UI 树 |
-| **Condition** | 查找元素的条件 |
+| 阶段       | 输入           | 成功信号       | 典型失败                   |
+| ---------- | -------------- | -------------- | -------------------------- |
+| 启动       | 可执行文件路径 | 获得 PID       | 程序不存在、启动被策略阻止 |
+| 定位窗口   | PID、超时      | 唯一窗口元素   | 尚未创建、权限层级不同     |
+| 定位编辑区 | 窗口根、条件   | 唯一可用元素   | 树结构变化、条件不唯一     |
+| 写入并验证 | 元素、文本     | 读取值等于期望 | Pattern 不支持、元素失效   |
+| 清理       | 窗口或进程     | 进程退出       | 未保存对话框、关闭被拒绝   |
 
-## 核心概念
+这个状态机比“依次调用几个 API”更重要：它让重试、日志和测试都有可观察的落点。
 
-### AutomationElement
+## 适用边界与常见误区
 
-AutomationElement 是 UI Automation 的核心类，代表 UI 树中的一个元素：
+UIA 适合 Windows 桌面应用的可访问性树、自动化测试和语义级 RPA。以下情况要谨慎：
 
-```csharp
-using System.Windows.Automation;
-using System.Diagnostics;
+- 游戏、画布、自绘或远程画面没有暴露有意义的 UIA 节点；
+- 自动化进程与目标进程的完整性级别不同，跨权限操作会受限制；
+- 目标控件把大量数据虚拟化，屏幕外元素尚未实体化；
+- 业务需要稳定后端接口时，UI 自动化不应替代 API 或数据库集成。
 
-// 获取桌面
-AutomationElement desktop = AutomationElement.RootElement;
+常见误区是把 `Name` 当作永久 ID、缓存元素跨页面长期复用、用固定 `Sleep` 代替状态等待，以及发现 Pattern 不支持后立即退化为坐标点击。正确做法是先改进作用域和定位条件，再设计有验证的降级路径。
 
-// 获取记事本窗口
-Process notepad = Process.Start("notepad");
-Thread.Sleep(1000);
+## 自检题
 
-AutomationElement notepadWindow = desktop.FindFirst(
-    TreeScope.Children,
-    new PropertyCondition(AutomationElement.NameProperty, "无标题 - 记事本")
-);
+1. UIA 客户端为什么不直接持有目标应用的控件对象？
+2. `ControlType.Button` 是否保证元素支持 `InvokePattern`？
+3. 为什么“动作成功返回”仍不足以判定自动化成功？
 
-// 获取窗口中的元素
-AutomationElement editArea = notepadWindow.FindFirst(
-    TreeScope.Descendants,
-    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit)
-);
-```
+<details>
+<summary>查看答案</summary>
 
-### AutomationProperty
+1. 客户端通常跨进程工作，经 UIA Core 访问目标提供程序；取得的是自动化元素抽象，不是应用内部对象。
+2. 不保证。控件类型描述语义角色，Pattern 才描述实际能力，必须查询支持情况。
+3. 界面可能异步更新、动作可能被应用忽略，必须用可观察的后置状态验证业务结果。
 
-元素属性用于描述 UI 元素的特征：
+</details>
 
-```csharp
-// 获取元素的基本属性
-AutomationElement element = /* 获取的元素 */;
+## 本篇总结与下一篇
 
-// 获取属性值
-string name = element.Current.Name;
-string automationId = element.Current.AutomationId;
-ControlType controlType = element.Current.ControlType;
-bool isEnabled = element.Current.IsEnabled;
+UIA 的核心不是“代替鼠标”，而是用动态语义树表达界面，用 Pattern 表达能力，再用状态验证动作结果。下一篇将搭建唯一主路径的 C# 环境，并用检查工具与冒烟程序确认客户端真的能读到目标树。
 
-// 使用 TryGetPropertyValue（推荐）
-if (element.TryGetPropertyValue<string>(AutomationElement.NameProperty, out string elementName))
-{
-    Console.WriteLine($"元素名称: {elementName}");
-}
-```
+## 资料来源
 
-### 常用属性
-
-| 属性 | 说明 | 示例 |
-|------|------|------|
-| **NameProperty** | 元素名称 | "确定按钮" |
-| **AutomationIdProperty** | 自动化 ID | "btnSubmit" |
-| **ControlTypeProperty** | 控件类型 | Button, Edit, List |
-| **ClassNameProperty** | 类名 | "Button" |
-| **IsEnabledProperty** | 是否启用 | true |
-| **IsVisibleProperty** | 是否可见 | true |
-
-### ControlType
-
-ControlType 表示 UI 元素的类型：
-
-```csharp
-// 常见控件类型
-ControlType.Button      // 按钮
-ControlType.CheckBox   // 复选框
-ControlType.ComboBox   // 组合框
-ControlType.Edit       // 文本框
-ControlType.List        // 列表
-ControlType.Menu        // 菜单
-ControlType.RadioButton // 单选按钮
-ControlType.Tab         // 标签页
-ControlType.Table      // 表格
-ControlType.Tree       // 树形控件
-ControlType.Window      // 窗口
-```
-
-## 查找元素
-
-### 基础查找方法
-
-```csharp
-using System.Windows.Automation;
-
-// 获取根元素（桌面）
-AutomationElement root = AutomationElement.RootElement;
-
-// FindFirst：查找第一个匹配元素
-AutomationElement element = root.FindFirst(
-    TreeScope.Children,  // 查找范围
-    new PropertyCondition(AutomationElement.NameProperty, "确定")
-);
-
-// FindAll：查找所有匹配元素
-AutomationElementCollection elements = root.FindAll(
-    TreeScope.Descendants,
-    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Button)
-);
-
-Console.WriteLine($"找到 {elements.Count} 个按钮");
-```
-
-### TreeScope 查找范围
-
-```csharp
-public enum TreeScope
-{
-    None      = 0,      // 无
-    Parent    = 1,      // 父元素
-    Children  = 2,      // 直接子元素
-    Ancestors = 4,      // 祖先元素
-    Descendants = 8,    // 后代元素
-    Subtree  = 15      // 子树（Children + Descendants）
-}
-```
-
-### Condition 条件
-
-```csharp
-// 属性条件
-PropertyCondition condition = new PropertyCondition(
-    AutomationElement.NameProperty,
-    "提交"
-);
-
-// 复合条件 - And
-AndCondition andCondition = new AndCondition(
-    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Button),
-    new PropertyCondition(AutomationElement.NameProperty, "确定")
-);
-
-// 复合条件 - Or
-OrCondition orCondition = new OrCondition(
-    new PropertyCondition(AutomationElement.NameProperty, "确定"),
-    new PropertyCondition(AutomationElement.NameProperty, "取消")
-);
-
-// 非条件
-NotCondition notCondition = new NotCondition(
-    new PropertyCondition(AutomationElement.IsEnabledProperty, false)
-);
-```
-
-### 实际应用
-
-```csharp
-// 查找记事本窗口中的文本区域
-public AutomationElement FindNotepadTextArea()
-{
-    // 获取桌面
-    AutomationElement desktop = AutomationElement.RootElement;
-    
-    // 查找记事本窗口
-    AutomationElement notepadWindow = desktop.FindFirst(
-        TreeScope.Children,
-        new PropertyCondition(AutomationElement.ProcessIdProperty, 
-            Process.GetProcessesByName("notepad")[0].Id)
-    );
-    
-    if (notepadWindow == null)
-        return null;
-    
-    // 查找编辑区域
-    AutomationElement textArea = notepadWindow.FindFirst(
-        TreeScope.Descendants,
-        new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit)
-    );
-    
-    return textArea;
-}
-```
-
-## AutomationPattern
-
-AutomationPattern 定义了控件支持的行为：
-
-### 常用模式
-
-| 模式 | 说明 | 适用控件 |
-|------|------|----------|
-| **InvokePattern** | 点击操作 | Button |
-| **SelectionPattern** | 选择操作 | List, ComboBox |
-| **ValuePattern** | 值操作 | Edit, Slider |
-| **TextPattern** | 文本操作 | Edit, Document |
-| **WindowPattern** | 窗口操作 | Window |
-| **TransformPattern** | 移动/调整大小 | Window |
-| **ScrollPattern** | 滚动操作 | ScrollViewer |
-
-### Pattern 使用示例
-
-```csharp
-// InvokePattern - 点击按钮
-public void ClickButton(AutomationElement button)
-{
-    if (button == null) return;
-    
-    InvokePattern invokePattern = button.GetCurrentPattern(InvokePattern.Pattern) 
-        as InvokePattern;
-    
-    if (invokePattern != null)
-    {
-        invokePattern.Invoke();
-    }
-}
-
-// ValuePattern - 设置文本框值
-public void SetTextBoxValue(AutomationElement textBox, string value)
-{
-    if (textBox == null) return;
-    
-    ValuePattern valuePattern = textBox.GetCurrentPattern(ValuePattern.Pattern) 
-        as ValuePattern;
-    
-    if (valuePattern != null)
-    {
-        valuePattern.SetValue(value);
-    }
-}
-
-// SelectionPattern - 选择列表项
-public void SelectListItem(AutomationElement list, string itemName)
-{
-    if (list == null) return;
-    
-    SelectionPattern selectionPattern = list.GetCurrentPattern(SelectionPattern.Pattern) 
-        as SelectionPattern;
-    
-    // 获取所有选项
-    AutomationElementCollection items = list.FindAll(
-        TreeScope.Children,
-        new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem)
-    );
-    
-    foreach (AutomationElement item in items)
-    {
-        if (item.Current.Name == itemName)
-        {
-            SelectionItemPattern itemPattern = item.GetCurrentPattern(
-                SelectionItemPattern.Pattern) as SelectionItemPattern;
-            itemPattern?.Select();
-            break;
-        }
-    }
-}
-```
-
-## 事件处理
-
-### 订阅事件
-
-```csharp
-using System.Windows.Automation;
-
-// 事件处理器
-public void OnElementAdded(object sender, AutomationEventArgs e)
-{
-    AutomationElement element = sender as AutomationElement;
-    Console.WriteLine($"元素添加: {element?.Current.Name}");
-}
-
-// 订阅事件
-AutomationEventHandler addedHandler = new AutomationEventHandler(OnElementAdded);
-Automation.AddAutomationEventHandler(
-    WindowPattern.WindowOpenedEvent,
-    AutomationElement.RootElement,
-    TreeScope.Subtree,
-    addedHandler
-);
-
-// 移除事件处理
-Automation.RemoveAutomationEventHandler(
-    WindowPattern.WindowOpenedEvent,
-    AutomationElement.RootElement,
-    addedHandler
-);
-```
-
-### 常用事件
-
-| 事件 | 说明 |
-|------|------|
-| **WindowPattern.WindowOpenedEvent** | 窗口打开 |
-| **WindowPattern.WindowClosedEvent** | 窗口关闭 |
-| **InvokePattern.InvokedEvent** | 按钮点击 |
-| **SelectionPattern.SelectionChangedEvent** | 选择变化 |
-| **PropertyChangedEvent** | 属性变化 |
-| **ToolTipOpenedEvent** | 工具提示打开 |
-
-## 第一个示例程序
-
-### 完整示例：操作记事本
-
-```csharp
-using System;
-using System.Diagnostics;
-using System.Windows.Automation;
-using System.Threading;
-
-class NotepadAutomation
-{
-    static void Main()
-    {
-        // 启动记事本
-        Process notepad = Process.Start("notepad");
-        Thread.Sleep(500);
-        
-        // 获取桌面
-        AutomationElement desktop = AutomationElement.RootElement;
-        
-        // 查找记事本窗口
-        AutomationElement notepadWindow = desktop.FindFirst(
-            TreeScope.Children,
-            new PropertyCondition(
-                AutomationElement.ProcessIdProperty, 
-                notepad.Id
-            )
-        );
-        
-        if (notepadWindow == null)
-        {
-            Console.WriteLine("找不到记事本窗口");
-            return;
-        }
-        
-        Console.WriteLine($"窗口标题: {notepadWindow.Current.Name}");
-        
-        // 查找文本编辑区
-        AutomationElement textArea = notepadWindow.FindFirst(
-            TreeScope.Descendants,
-            new PropertyCondition(
-                AutomationElement.ControlTypeProperty, 
-                ControlType.Edit
-            )
-        );
-        
-        if (textArea != null)
-        {
-            // 使用 ValuePattern 输入文本
-            ValuePattern valuePattern = textArea.GetCurrentPattern(
-                ValuePattern.Pattern) as ValuePattern;
-            
-            if (valuePattern != null)
-            {
-                valuePattern.SetValue("Hello, UI Automation!");
-                Console.WriteLine("已输入文本");
-            }
-        }
-        
-        Console.WriteLine("按任意键关闭记事本...");
-        Console.ReadKey();
-        
-        // 关闭窗口
-        notepad.Kill();
-    }
-}
-```
-
-## 最佳实践
-
-### 性能优化
-
-```csharp
-// 使用 CacheRequest 缓存属性
-CacheRequest cacheRequest = new CacheRequest();
-cacheRequest.Add(AutomationElement.NameProperty);
-cacheRequest.Add(AutomationElement.AutomationIdProperty);
-cacheRequest.Add(AutomationElement.IsEnabledProperty);
-cacheRequest.TreeScope = TreeScope.Children;
-
-// 启用缓存并查找
-using (cacheRequest.Activate())
-{
-    AutomationElementCollection buttons = desktop.FindAll(
-        TreeScope.Children,
-        new PropertyCondition(
-            AutomationElement.ControlTypeProperty, 
-            ControlType.Button
-        )
-    );
-}
-```
-
-### 错误处理
-
-```csharp
-try
-{
-    AutomationElement element = desktop.FindFirst(
-        TreeScope.Children,
-        new PropertyCondition(
-            AutomationElement.NameProperty, 
-            "目标窗口"
-        )
-    );
-    
-    if (element == null)
-    {
-        Console.WriteLine("未找到目标元素");
-        return;
-    }
-    
-    // 操作元素
-}
-catch (ElementNotAvailableException)
-{
-    Console.WriteLine("元素不可用，可能已被关闭");
-}
-catch (InvalidOperationException)
-{
-    Console.WriteLine("操作无效");
-}
-```
-
-### 等待元素出现
-
-```csharp
-public AutomationElement WaitForElement(
-    AutomationElement root,
-    string elementName,
-    int timeoutSeconds = 10)
-{
-    DateTime start = DateTime.Now;
-    
-    while ((DateTime.Now - start).TotalSeconds < timeoutSeconds)
-    {
-        AutomationElement element = root.FindFirst(
-            TreeScope.Children,
-            new PropertyCondition(AutomationElement.NameProperty, elementName)
-        );
-        
-        if (element != null)
-            return element;
-        
-        Thread.Sleep(500);
-    }
-    
-    return null;
-}
-```
+- [Microsoft UI Automation 概览](https://learn.microsoft.com/en-us/windows/win32/winauto/entry-uiauto-win32)
+- [UI Automation 规范](https://learn.microsoft.com/en-us/windows/win32/winauto/ui-automation-specification)
+- [UI Automation 控件模式概览](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-controlpatternsoverview)

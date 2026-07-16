@@ -4,507 +4,182 @@ series: ui-automation
 seriesOrder: 2
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
-modDatetime: 2026-05-09T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: ui-automation-installation
-description: '详细介绍UI Automation开发环境配置，包括C#、Python等语言的集成和Visual Studio配置。'
+description: "以 .NET Framework 4.8 与 Inspect 为主路径，建立可运行、可观察、可诊断的 UI Automation 开发环境。"
 tags:
   - UI Automation
   - RPA
-  - 安装配置
-  - 开发环境
+  - 桌面自动化
+  - Windows
 draft: false
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
 
-UI Automation 是 Windows 内置的辅助功能框架，提供了统一的编程接口来访问 Windows 应用程序的用户界面。本教程将介绍如何配置开发环境来使用 UI Automation。
+本篇依赖第 1 篇的客户端、自动化树、属性和 Pattern 概念，只解决一个问题：**如何得到一个可复现且能证明“UIA 通路可用”的开发环境？**
 
-![UI Automation 开发环境与工具选型图](./images/uia-development-setup-map-figure-01.png)
+完成后你应能创建 C# 项目、安装检查工具、运行冒烟探测，并区分“环境坏了”和“目标控件没有暴露能力”。主路径固定为 Windows 10/11、Visual Studio 2022、`.NET Framework 4.8` 管理客户端 API；FlaUI、Python 包装器和测试框架属于后续选型，不在本篇并列展开。
 
-### 支持的开发环境
+## 为什么先选一条主路径
 
-| 环境 | 支持程度 | 说明 |
-|------|----------|------|
-| **Visual Studio + C#** | 完整支持 | 最佳选择 |
-| **Visual Studio + VB.NET** | 完整支持 | 语法略有不同 |
-| **Python + UIAutomationCore** | 基础支持 | 功能有限 |
-| **C++** | 完整支持 | 复杂度高 |
+UIA 同时有 COM API、`.NET Framework` 管理 API 和第三方封装。如果安装篇同时展示 C#、Python、FlaUI、NUnit 与 xUnit，读者遇到问题时无法判断故障在哪一层。主路径的目标不是“最新语法”，而是最短地验证 Windows 自带 UIA 基础设施。
 
-## C# 开发环境
+本系列后续代码统一使用 `System.Windows.Automation`，需要项目引用：
 
-### .NET Framework 配置
+- `UIAutomationClient`
+- `UIAutomationTypes`
 
-.NET Framework 4.0+ 已内置 UI Automation 支持：
+它们来自 Windows/.NET Framework 组件，不需要额外 NuGet 包。
 
-```xml
-<!-- 项目文件 (.csproj) -->
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0-windows</TargetFramework>
-    <UseWPF>true</UseWPF>
-  </PropertyGroup>
-</Project>
-```
+## 建立项目
 
-### NuGet 包
+在 Visual Studio Installer 中确认安装“**.NET 桌面开发**”工作负载，并在单个组件中保留 `.NET Framework 4.8 SDK`、`.NET Framework 4.8 Targeting Pack` 与一个 Windows 10/11 SDK。随后在 Visual Studio 中创建“控制台应用（.NET Framework）”，目标框架选择 `.NET Framework 4.8`，平台先使用 `Any CPU`。在“添加引用 → 程序集 → Framework”中勾选前述两个程序集。
 
-虽然 UI Automation 是内置的，但可以使用额外的 NuGet 包：
+环境检查按下面的证据链执行，而不是凭“安装完成”判断：
 
-```bash
-# 安装 UI Automation 相关包
-dotnet add package UIAComWrapper    # COM 包装器
-dotnet add package FlaUI.Core        # 高级封装库
-dotnet add package FlaUI.UIA3       # UIA3 实现
-```
+1. 项目属性中的目标框架确实是 `.NET Framework 4.8`；
+2. 引用列表中 `UIAutomationClient` 与 `UIAutomationTypes` 均能解析；
+3. Windows SDK 的 `bin\<version>\<platform>` 目录中能找到 `Inspect.exe`；
+4. 冒烟程序能够编译、启动并读取桌面根元素。
 
-### 基本项目结构
+目录保持足够小：
 
 ```text
-UIAutomationProject/
-├── UIAutomationProject/
-│   ├── Program.cs           # 主程序
-│   ├── Helpers/
-│   │   ├── ElementFinder.cs    # 元素查找工具
-│   │   └── PatternHelper.cs    # Pattern 助手
-│   ├── UIAutomationProject.csproj
-│   └── appsettings.json     # 配置文件
-├── Tests/
-│   └── AutomationTests.cs  # 测试代码
-└── UIAutomationProject.sln
+UiaLearning/
+├─ UiaLearning.sln
+├─ src/UiaProbe/
+│  ├─ UiaProbe.csproj
+│  └─ Program.cs
+└─ tests/UiaProbe.Tests/
 ```
 
-### Program.cs 示例
+先不要加入页面对象、重试框架或截图系统。冒烟验证通过后再扩展，才能知道新增故障来自哪一层。
+
+## 最小冒烟程序
+
+<!-- figure:s02-f01 -->
+
+![理解环境验证必须逐层通过程序集、根元素、窗口、属性和 Pattern](./images/s02-f01-uia-environment-validation-gates.png)
+
+下面的程序只读取桌面直接子元素，不做任何操作。输入是当前桌面的 UIA 根元素；输出是可访问顶层窗口的名称和进程 ID。
 
 ```csharp
 using System;
 using System.Windows.Automation;
-using System.Diagnostics;
 
-namespace UIAutomationProject
+internal static class Program
 {
-    class Program
+    [STAThread]
+    private static int Main()
     {
-        static void Main(string[] args)
+        try
         {
-            Console.WriteLine("UI Automation 演示程序");
-            
-            // 获取桌面
-            AutomationElement desktop = AutomationElement.RootElement;
-            Console.WriteLine($"桌面名称: {desktop.Current.Name}");
-            
-            // 获取所有窗口
-            AutomationElementCollection windows = desktop.FindAll(
-                TreeScope.Children,
-                new PropertyCondition(
-                    AutomationElement.ControlTypeProperty, 
-                    ControlType.Window
-                )
-            );
-            
-            Console.WriteLine($"打开的窗口数: {windows.Count}");
-        }
-    }
-}
-```
+            AutomationElementCollection windows =
+                AutomationElement.RootElement.FindAll(
+                    TreeScope.Children,
+                    new PropertyCondition(
+                        AutomationElement.ControlTypeProperty,
+                        ControlType.Window));
 
-## Visual Studio 配置
-
-### 项目设置
-
-1. **创建新项目**
-   - 选择 "Console App (.NET Framework)" 或 "Console App (.NET Core)"
-   - 选择目标框架：.NET 6.0+ 或 .NET Framework 4.7.2+
-
-2. **添加引用**
-   - 右键项目 → 添加引用
-   - 搜索 "UIAutomationClient" 和 "UIAutomationTypes"
-   - 添加对应引用
-
-### 项目文件配置
-
-```xml
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <UseWPF>true</UseWPF>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="FlaUI.Core" Version="3.0.0" />
-    <PackageReference Include="FlaUI.UIA3" Version="3.0.0" />
-    <PackageReference Include="FlaUI.ChromeDriver" Version="3.0.0" />
-  </ItemGroup>
-
-</Project>
-```
-
-## FlaUI 库
-
-FlaUI 是一个高级的 UI Automation 封装库，提供了更友好的 API：
-
-### 安装
-
-```bash
-dotnet add package FlaUI.Core
-dotnet add package FlaUI.UIA3
-```
-
-### 基本使用
-
-```csharp
-using FlaUI.Core;
-using FlaUI.Core.AutomationElements;
-using FlaUI.UIA3;
-using FlaUI.Core.Input;
-using System.Diagnostics;
-
-public class FlaUIDemo
-{
-    public static void Main()
-    {
-        // 启动应用程序
-        var app = Application.Launch("notepad.exe");
-        
-        // 创建自动化对象
-        using (var automation = new UIA3Automation())
-        {
-            // 获取主窗口
-            var mainWindow = app.GetMainWindow(automation);
-            
-            // 查找并操作文本框
-            var textArea = mainWindow.FindFirstDescendant(
-                cf => cf.ByControlType(ControlType.Edit)
-            );
-            
-            if (textArea != null)
+            Console.WriteLine(
+                "top-level windows: {0}", windows.Count);
+            foreach (AutomationElement window in windows)
             {
-                textArea.Enter("Hello from FlaUI!");
+                Console.WriteLine(
+                    "pid={0}, name={1}",
+                    window.Current.ProcessId,
+                    window.Current.Name);
             }
-            
-            // 等待用户输入
-            Console.ReadKey();
+            return 0;
         }
-        
-        app.Close();
-    }
-}
-```
-
-### FlaUI 元素查找
-
-```csharp
-// 使用自动化 ID
-var button = mainWindow.FindFirstDescendant(
-    cf => cf.ByAutomationId("btnSubmit")
-);
-
-// 使用名称
-var label = mainWindow.FindFirstDescendant(
-    cf => cf.ByName("用户名")
-);
-
-// 使用控件类型
-var editBoxes = mainWindow.FindAllDescendants(
-    cf => cf.ByControlType(ControlType.Edit)
-);
-
-// 组合条件
-var searchBox = mainWindow.FindFirstDescendant(
-    cf => cf.ByControlType(ControlType.Edit)
-        .And(cf.ByAutomationId("searchBox"))
-);
-```
-
-## Python 环境配置
-
-### pywinauto
-
-pywinauto 是一个 Python 的 Windows 自动化库：
-
-```bash
-# 安装 pywinauto
-pip install pywinauto
-
-# 安装依赖
-pip install comtypes
-```
-
-### 基本示例
-
-```python
-from pywinauto import Application, timings
-
-# 启动记事本
-app = Application(backend="win32").start("notepad.exe")
-
-# 获取主窗口
-dlg = app.window(title="无标题 - 记事本")
-
-# 操作窗口
-dlg.wait('visible')
-edit = dlg.window(class_name="Edit")
-edit.type_keys("Hello from Python!")
-
-# 关闭窗口
-dlg.close()
-```
-
-### UIAutomationClient (基础支持)
-
-```python
-from UIAutomationClient import *
-import time
-
-# 获取桌面
-desktop = CUIAutomation().GetRootElement()
-
-# 查找窗口
-condition = CreatePropertyCondition(UIA_PropertyIds.UIA_NamePropertyId, "新建文本文档.txt - 记事本")
-window = desktop.FindFirst(UIAutomationClient.TreeScope_UIA_TreeScope_Children, condition)
-
-if window:
-    print(f"找到窗口: {window.Current.Name}")
-    
-    # 查找编辑区
-    edit_condition = CreatePropertyCondition(
-        UIA_PropertyIds.UIA_ControlTypePropertyId, 
-        UIA_ControlTypeIds.UIA_EditControlTypeId
-    )
-    edit = window.FindFirst(UIAutomationClient.TreeScope_UIA_TreeScope_Descendants, edit_condition)
-    
-    if edit:
-        print(f"找到编辑区")
-```
-
-## 测试框架集成
-
-### NUnit 集成
-
-```csharp
-using NUnit.Framework;
-using System.Windows.Automation;
-
-[TestFixture]
-public class UIAutomationTests
-{
-    private Process _notepadProcess;
-    private AutomationElement _notepadWindow;
-
-    [SetUp]
-    public void Setup()
-    {
-        _notepadProcess = Process.Start("notepad.exe");
-        Thread.Sleep(500);
-        
-        _notepadWindow = AutomationElement.RootElement.FindFirst(
-            TreeScope.Children,
-            new PropertyCondition(
-                AutomationElement.ProcessIdProperty, 
-                _notepadProcess.Id
-            )
-        );
-    }
-
-    [TearDown]
-    public void TearDown()
-    {
-        if (_notepadProcess != null && !_notepadProcess.HasExited)
+        catch (Exception ex)
         {
-            _notepadProcess.Kill();
+            Console.Error.WriteLine(
+                "UIA probe failed: {0}", ex.Message);
+            return 1;
         }
     }
-
-    [Test]
-    public void NotepadWindowExists()
-    {
-        Assert.IsNotNull(_notepadWindow);
-        Assert.AreEqual("无标题 - 记事本", _notepadWindow.Current.Name);
-    }
-
-    [Test]
-    public void CanFindTextArea()
-    {
-        var textArea = _notepadWindow.FindFirst(
-            TreeScope.Descendants,
-            new PropertyCondition(
-                AutomationElement.ControlTypeProperty, 
-                ControlType.Edit
-            )
-        );
-        
-        Assert.IsNotNull(textArea);
-    }
 }
 ```
 
-### xUnit 集成
+成功标准不是“能编译”，而是：退出码为 `0`、窗口数量大于 `0`，并且能看到当前打开的普通桌面应用。不要把某个本地化窗口标题写成固定断言。
 
-```csharp
-using Xunit;
-using System.Diagnostics;
-using System.Windows.Automation;
+## 用 Inspect 建立观察基线
 
-public class UIAutomationTests : IDisposable
-{
-    private Process _process;
-    private AutomationElement _window;
+Inspect 随 Windows SDK 提供，不是独立下载；Microsoft 已将它标记为旧工具，并推荐 Accessibility Insights，但 Inspect 仍适合本系列用同一窗口查看 UIA 属性、Pattern 和树路径。启动记事本后，把 Inspect 的光标模式对准编辑区，记录：
 
-    public UIAutomationTests()
-    {
-        _process = Process.Start("notepad.exe");
-        Thread.Sleep(500);
-        
-        _window = AutomationElement.RootElement.FindFirst(
-            TreeScope.Children,
-            new PropertyCondition(
-                AutomationElement.ProcessIdProperty, 
-                _process.Id
-            )
-        );
-    }
+- `Name`、`AutomationId`、`ControlType`、`ProcessId`；
+- 元素所在的父子路径；
+- Supported Patterns；
+- 切换焦点或打开菜单后，上述值是否变化。
 
-    public void Dispose()
-    {
-        if (_process != null && !_process.HasExited)
-        {
-            _process.Kill();
-        }
-    }
+检查工具显示的是当前时刻的树，不是永久合同。记录这些信息是为了设计定位策略，而不是复制一条脆弱的完整路径。
 
-    [Fact]
-    public void Window_IsVisible()
-    {
-        Assert.True(_window.Current.IsOffscreen == false);
-    }
+## 权限、位数与会话边界
 
-    [Fact]
-    public void Can_GetWindowTitle()
-    {
-        Assert.Contains("记事本", _window.Current.Name);
-    }
-}
-```
+<!-- figure:s02-f02 -->
 
-## 调试工具
+![区分完整性级别、位数和交互会话三类独立边界](./images/s02-f02-uia-runtime-boundaries.png)
 
-### Inspect 工具
+### 完整性级别
 
-Microsoft 提供的 UI 探测工具：
+普通权限客户端通常不能完整操纵以管理员身份运行的目标。先让两者处于相同完整性级别；不要把“始终以管理员运行”当作默认修复，因为这会扩大自动化程序的权限面。
 
-1. **下载**: Windows SDK 中包含
-2. **位置**: `C:\Program Files (x86)\Windows Kits\10\bin\<version>\x64\inspect.exe`
-3. **功能**:
-   - 查看 UI 树结构
-   - 查看元素属性
-   - 查看支持的 Pattern
-   - 模拟事件
+### 32/64 位
 
-### UISpy 工具
+UIA Core 能处理多数跨位数组合，`Any CPU` 足以作为起点。只有在加载进程内组件、特定 COM 服务器或厂商驱动时，才需要固定 `x86`/`x64` 并记录原因。
 
-另一个 UI 探测工具，功能类似 Inspect。
+### 交互式桌面
 
-### 使用 Inspect
+UI 自动化依赖交互式用户会话。锁屏、服务会话、断开的远程桌面或安全桌面可能让树不可见或不可操作。无人值守运行前必须单独验证会话策略。
 
-1. 运行 Inspect.exe
-2. 选择 "UI Automation" 模式
-3. 鼠标移动到目标元素
-4. 查看右侧属性面板
-5. 记录 AutomationId 和 Name
+## 失败分流
 
-### 常见配置
+| 现象                                | 先检查                           | 不要立即做            |
+| ----------------------------------- | -------------------------------- | --------------------- |
+| 编译找不到命名空间                  | 两个程序集引用和目标框架         | 随机安装多个 NuGet 包 |
+| 冒烟程序无目标窗口                  | 目标是否在同一会话、权限是否一致 | 增加固定 `Sleep`      |
+| Inspect 有元素，代码找不到          | 查询根、范围、视图和条件         | 改成坐标点击          |
+| 元素存在但 Pattern 缺失             | Supported Patterns、控件状态     | 强制类型转换          |
+| 偶发 `ElementNotAvailableException` | 页面是否重建、是否缓存旧元素     | 无限重试旧引用        |
 
-| 配置项 | 说明 | 示例 |
-|--------|------|------|
-| **AutomationId** | 自动化标识符 | "btnSubmit" |
-| **Name** | 显示名称 | "提交按钮" |
-| **ControlType** | 控件类型 | Button |
-| **ClassName** | Win32 类名 | "Button" |
+环境层的判定顺序是：程序集可加载 → 根元素可读 → 目标窗口可见 → 目标元素属性可读 → Pattern 可查询。每一步都应留下日志。
 
-## 常见问题
+## 最小行为测试
 
-### 问题 1：找不到元素
+手工打开记事本后运行冒烟程序，验证输出中存在其 PID。然后以管理员身份启动记事本、普通权限运行探测器，观察差异并记录，而不是修改系统策略。测试完成后关闭记事本，确认程序再次运行时不会因为旧元素引用崩溃。
 
-```csharp
-// 确保使用正确的 TreeScope
-AutomationElement element = root.FindFirst(
-    TreeScope.Descendants,  // 使用 Descendants 而不是 Children
-    new PropertyCondition(
-        AutomationElement.NameProperty, 
-        "目标元素"
-    )
-);
-```
+## 常见误区与适用边界
 
-### 问题 2：元素不可交互
+- `Thread.Sleep(500)` 不是环境验证，它只是在当前机器上碰巧等待了半秒；
+- Inspect 能看到元素，不代表它支持期望的 Pattern；
+- UIA 适合交互式桌面，不适合在 Windows 服务中直接驱动用户界面；
+- 第三方封装能改善 API 体验，但不能消除提供程序质量、权限和会话边界。
 
-```csharp
-// 检查元素状态
-bool isEnabled = element.Current.IsEnabled;
-bool isVisible = !element.Current.IsOffscreen;
+## 自检题
 
-// 使用 TryGetPropertyValue
-element.TryGetPropertyValue<bool>(
-    AutomationElement.IsOffscreenProperty, 
-    out bool offscreen
-);
-```
+1. 为什么本系列不在安装篇同时维护三套语言示例？
+2. 冒烟程序“编译成功”为什么还不够？
+3. 目标以管理员权限运行时，最小风险的第一步是什么？
 
-### 问题 3：Pattern 不可用
+<details>
+<summary>查看答案</summary>
 
-```csharp
-// 检查是否支持 Pattern
-bool hasInvoke = element.GetSupportedPatterns()
-    .Contains(InvokePattern.Pattern);
+1. 单一主路径能隔离故障层；多技术栈会把环境、封装和业务问题混在一起。
+2. 还要验证运行时能读取根元素和真实顶层窗口，证明跨进程 UIA 通路可用。
+3. 先让客户端与目标处于相同且尽可能低的完整性级别，而不是默认提升自动化程序。
 
-// 使用 TryGetCurrentPattern
-if (element.TryGetCurrentPattern(
-    InvokePattern.Pattern, 
-    out object pattern
-))
-{
-    InvokePattern invoke = pattern as InvokePattern;
-    invoke.Invoke();
-}
-```
+</details>
 
-## 最佳实践
+## 本篇总结与下一篇
 
-### 项目结构
+现在已经有一条可观察的主路径：项目引用明确、冒烟程序有退出码、Inspect 提供属性证据，权限和会话也有分流规则。下一篇将把这些观察转换为“作用域 + 条件 + 等待 + 诊断”的稳健定位器。
 
-```text
-UIAutomation/
-├── Core/                    # 核心自动化类
-│   ├── ElementFinder.cs
-│   ├── PatternHelper.cs
-│   └── EventWatcher.cs
-├── Helpers/                 # 辅助工具
-│   ├── WaitHelper.cs
-│   └── ScreenshotHelper.cs
-├── Models/                   # 数据模型
-│   └── AutomationInfo.cs
-├── Tests/                    # 测试
-│   └── *.cs
-├── appsettings.json
-└── Program.cs
-```
+## 资料来源
 
-### NuGet 包管理
-
-```xml
-<!-- 推荐的核心包 -->
-<PackageReference Include="FlaUI.Core" Version="3.0.0" />
-<PackageReference Include="FlaUI.UIA3" Version="3.0.0" />
-<PackageReference Include="FlaUI.ChromeDriver" Version="3.0.0" />
-<PackageReference Include="Castle.Core" Version="5.1.0" />
-
-<!-- 测试包 -->
-<PackageReference Include="NUnit" Version="3.14.0" />
-<PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
-<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
-```
+- [UI Automation Support for Standard Controls](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-supportstandardcontrols)
+- [UI Automation Clients Overview](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-clientsoverview)
+- [Inspect Objects](https://learn.microsoft.com/en-us/windows/win32/winauto/inspect-objects)
+- [Accessibility Insights for Windows](https://accessibilityinsights.io/docs/windows/overview/)

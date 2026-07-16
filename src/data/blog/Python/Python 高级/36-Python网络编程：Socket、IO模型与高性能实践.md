@@ -1,8 +1,8 @@
 ---
-title: Python网络编程：Socket、IO模型与高性能实践
+title: Python网络编程：Socket、消息边界与IO多路复用
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-11T00:00:00.000+08:00
+modDatetime: 2026-07-17T00:00:00.000+08:00
 slug: python-network-programming
 featured: false
 draft: false
@@ -11,498 +11,156 @@ tags:
   - 网络编程
   - Socket
   - IO模型
-  - 高性能
-description: 'Python网络编程完整指南，涵盖Socket套接字、IO模型、并发编程和异步实现'
+description: 从 TCP 字节流的消息边界出发，理解 Socket 生命周期、阻塞语义、多路复用、背压与可靠协议设计。
 series: python
 seriesOrder: 36
 language: zh-CN
 ---
 
-> 网络编程是服务端开发的核心技术，本文详细介绍Socket编程、IO模型对比和异步高性能实现。
+# Python网络编程：Socket、消息边界与IO多路复用
 
-## Socket基础
+## 前置知识与学习目标
 
-### 什么是Socket
+你应理解阻塞等待与协作调度。本篇解决：**TCP 只提供字节流时，订单服务怎样定义消息边界，并用有限资源处理多连接？**
 
-Socket（套接字）是应用层与TCP/IP协议族通信的中间软件抽象层，封装了复杂的协议细节，提供简单的编程接口。
+学完后你应能画出客户端/服务端 Socket 生命周期，解释 `recv` 的返回语义，实现长度前缀协议，并根据连接规模选择线程、`selectors` 或 `asyncio`。
 
-**Socket = IP地址 + 端口号**，唯一标识互联网上的一台主机上的一个应用程序。
+## 场景：一次发送不等于一次接收
 
-![Python 网络编程中 TCP UDP Socket 生命周期、阻塞和非阻塞 IO、多路复用以及高性能优化手段的总览图](./images/python-network-socket-io-models-figure-01.png)
+客户端发送订单 JSON，服务端可能一次只收到半条，也可能一次收到多条。TCP 保证有序可靠的字节流，不保留应用的 `send` 调用边界。协议必须自己定义消息结束位置，常见方案有固定长度、分隔符、长度前缀或自描述格式。
 
-### Socket起源
+本篇使用 4 字节网络序无符号整数表示正文长度：`[length:4][payload:length]`。正文最大 1 MiB，超过就拒绝，防止恶意长度导致内存耗尽。
 
-Socket起源于1970年的BSD Unix，"一切皆文件"的Unix哲学使得Socket可以用"打开→读写→关闭"的模式操作。
+<!-- figure:s36-f01 -->
 
-### 地址族与类型
+![TCP 字节流、length: 4 bytes、payload: length bytes、recv ①、recv ②、recv_exact、MAX_FRAME = 1 MiB](./images/final/s36-f01-tcp-frame-partial-read.png)
 
-| 参数 | 说明 |
-|------|------|
-| **socket.AF_INET** | IPv4协议（默认） |
-| **socket.AF_INET6** | IPv6协议 |
-| **socket.AF_UNIX** | Unix域套接字 |
-| **socket.SOCK_STREAM** | TCP流式socket |
-| **socket.SOCK_DGRAM** | UDP数据报socket |
-| **socket.SOCK_RAW** | 原始套接字 |
+## Socket 生命周期与调用链
 
-### TCP服务器端
+TCP 服务端：`socket → bind → listen → accept → recv/send → close`。
 
-<!-- snippet: id=python-network-programming-01 mode=compile python=3.12-3.14 deps=stdlib -->
+TCP 客户端：`socket → connect → send/recv → close`。
+
+`accept()` 返回一个新的“已连接 Socket”；监听 Socket 继续接收其他连接。`recv(n)` 最多返回 `n` 字节：
+
+- 返回非空字节：本次实际读取的数据；
+- 返回 `b""`：对端已正常关闭发送方向；
+- 抛出超时或系统异常：连接状态未知或失败，不能当作空消息。
+
+## 最小协议与行为验证
+
+`socket.socketpair()` 在本机创建一对已连接 Socket，适合不占端口的最小测试。输入是 UTF-8 文本，线上协议输出是 `4 字节长度 + payload`。
+
 ```python
+# behavior-test: run
 import socket
+import struct
 
-# 创建Socket
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+MAX_FRAME = 1024 * 1024
 
-# 设置端口复用
-server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-# 绑定地址和端口
-server.bind(('0.0.0.0', 9999))
+def recv_exact(sock: socket.socket, size: int) -> bytes:
+    chunks = bytearray()
+    while len(chunks) < size:
+        chunk = sock.recv(size - len(chunks))
+        if not chunk:
+            raise EOFError("peer closed before frame completed")
+        chunks.extend(chunk)
+    return bytes(chunks)
 
-# 监听连接
-server.listen(5)
 
-while True:
-    # 接受客户端连接（阻塞）
-    conn, addr = server.accept()
-    print(f'客户端连接: {addr}')
-    
-    while True:
-        try:
-            # 接收数据
-            data = conn.recv(1024)
-            if not data:
-                break
-            print(f'收到: {data.decode()}')
-            # 发送响应
-            conn.sendall(data.upper())
-        except ConnectionResetError:
-            break
-    
-    conn.close()
+def send_frame(sock: socket.socket, text: str) -> None:
+    payload = text.encode("utf-8")
+    if len(payload) > MAX_FRAME:
+        raise ValueError("frame too large")
+    sock.sendall(struct.pack("!I", len(payload)) + payload)
 
-server.close()
+
+def recv_frame(sock: socket.socket) -> str:
+    (size,) = struct.unpack("!I", recv_exact(sock, 4))
+    if size > MAX_FRAME:
+        raise ValueError("frame too large")
+    return recv_exact(sock, size).decode("utf-8")
+
+
+left, right = socket.socketpair()
+try:
+    left.settimeout(1)
+    right.settimeout(1)
+    send_frame(left, '{"order_id":"O-100"}')
+    assert recv_frame(right) == '{"order_id":"O-100"}'
+finally:
+    left.close()
+    right.close()
 ```
 
-### TCP客户端
+`sendall` 只表示本机内核接受了全部待发字节，不表示对端业务已经处理成功。需要业务确认时，协议必须定义响应、请求 ID、超时和幂等重试。
 
-<!-- snippet: id=python-network-programming-02 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import socket
+## 阻塞、非阻塞与多路复用
 
-# 创建Socket
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+<!-- figure:s36-f02 -->
 
-# 连接服务器
-client.connect(('127.0.0.1', 9999))
+![READ_HEADER、READ_BODY、PROCESSING、WRITE_RESPONSE、CLOSED、readable、writable、EOF / error、发送偏移 k](./images/final/s36-f02-selector-connection-state.png)
 
-while True:
-    msg = input('>>:').strip()
-    if not msg:
-        continue
-    
-    # 发送数据
-    client.sendall(msg.encode('utf-8'))
-    
-    # 接收响应
-    data = client.recv(1024)
-    print(f'收到: {data.decode()}')
+阻塞 Socket 在操作不能立即完成时挂起当前线程；超时 Socket 在期限后抛出 `socket.timeout`；非阻塞 Socket 则立即报告“现在还不能完成”。
 
-client.close()
-```
+`selectors.DefaultSelector` 把多个 Socket 注册到平台合适的就绪通知机制。一次 `select()` 返回“目前可能读/写”的对象，而不是“整个业务操作已经完成”。每条连接仍需保存状态：
 
-### UDP服务器与客户端
-
-<!-- snippet: id=python-network-programming-03 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# UDP服务器
-server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-server.bind(('0.0.0.0', 8888))
-
-while True:
-    data, addr = server.recvfrom(1024)
-    print(f'收到来自 {addr}: {data.decode()}')
-    server.sendto(b'ACK', addr)
-
-# UDP客户端
-client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-client.sendto(b'hello', ('127.0.0.1', 8888))
-data, _ = client.recvfrom(1024)
-```
-
-### Socket方法汇总
-
-| 方法 | 说明 |
-|------|------|
-| `bind(address)` | 绑定地址 |
-| `listen(backlog)` | 开始监听 |
-| `accept()` | 接受连接 |
-| `connect(address)` | 连接远程 |
-| `send(data)` | 发送数据 |
-| `recv(bufsize)` | 接收数据 |
-| `close()` | 关闭连接 |
-| `setblocking(bool)` | 设置阻塞模式 |
-| `setsockopt()` | 设置选项 |
-
-## IO模型详解
-
-### IO两个阶段
-
-对于网络IO操作，主要经历两个阶段：
-
-1. **等待数据准备** - 数据从网络到达内核缓冲区
-2. **数据拷贝** - 从内核缓冲区拷贝到用户进程
-
-不同IO模型的区别就在这两个阶段的不同处理方式。
-
-### 阻塞IO（BIO）
-
-默认情况下，所有Socket操作都是阻塞的：
-
-<!-- snippet: id=python-network-programming-04 mode=display python=3.12-3.14 deps=stdlib -->
 ```text
-用户进程 ←← 内核 ←← 网络
-   ↓
-recvfrom（阻塞等待）
-   ↓
-① 等待数据准备（阻塞）
-   ↓
-② 数据拷贝到用户空间（阻塞）
-   ↓
-返回结果
+READ_HEADER(还差 n 字节)
+  → READ_BODY(还差 m 字节)
+  → PROCESSING
+  → WRITE_RESPONSE(发送偏移 k)
+  → CLOSED
 ```
 
-**特点**：
-- 两个阶段都被阻塞
-- 实现简单，但资源利用率低
-- 每个连接一个线程
-
-<!-- snippet: id=python-network-programming-05 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 阻塞IO示例
-while True:
-    conn, addr = server.accept()  # 阻塞
-    data = conn.recv(1024)         # 阻塞
-    conn.sendall(data)
-    conn.close()
-```
-
-### 非阻塞IO（NIO）
-
-设置Socket为非阻塞后，操作立即返回：
-
-<!-- snippet: id=python-network-programming-06 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-server.setblocking(False)
-
-while True:
-    try:
-        conn, addr = server.accept()
-    except BlockingIOError:
-        # 没有连接时做其他事
-        pass
-    
-    # 轮询检查每个连接
-    for conn in connections:
-        try:
-            data = conn.recv(1024)
-        except BlockingIOError:
-            continue
-```
-
-**特点**：
-- 等待数据阶段不阻塞
-- 需要不断轮询询问
-- CPU空转消耗资源
-
-### IO多路复用
-
-使用select/poll/epoll同时监控多个IO：
-
-#### select
-
-<!-- snippet: id=python-network-programming-07 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import select
-
-server = socket.socket()
-server.bind(('0.0.0.0', 8000))
-server.listen(128)
-server.setblocking(False)
-
-inputs = [server]
-outputs = []
-
-while inputs:
-    readable, writable, exceptional = select.select(inputs, outputs, inputs)
-    
-    for s in readable:
-        if s is server:
-            conn, _ = s.accept()
-            inputs.append(conn)
-        else:
-            data = s.recv(1024)
-            if data:
-                outputs.append(s)
-            else:
-                s.close()
-                inputs.remove(s)
-    
-    for s in writable:
-        s.sendall(b'OK')
-        outputs.remove(s)
-```
-
-#### poll
-
-<!-- snippet: id=python-network-programming-08 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import select
-
-poll = select.poll()
-poll.register(server, select.POLLIN)
-fd_to_sock = {server.fileno(): server}
-
-while True:
-    events = poll.poll()
-    for fd, event in events:
-        sock = fd_to_sock[fd]
-        
-        if sock is server:
-            conn, _ = sock.accept()
-            poll.register(conn, select.POLLIN)
-            fd_to_sock[conn.fileno()] = conn
-        elif event & select.POLLIN:
-            data = sock.recv(1024)
-            if data:
-                poll.modify(sock, select.POLLOUT)
-            else:
-                poll.unregister(sock)
-                sock.close()
-```
-
-#### epoll（Linux）
-
-<!-- snippet: id=python-network-programming-09 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import select
-
-epoll = select.epoll()
-epoll.register(server.fileno(), select.EPOLLIN)
-fd_to_sock = {server.fileno(): server}
-
-while True:
-    events = epoll.poll()
-    for fd, event in events:
-        sock = fd_to_sock[fd]
-        
-        if sock is server:
-            conn, _ = sock.accept()
-            conn.setblocking(False)
-            epoll.register(conn.fileno(), select.EPOLLIN)
-            fd_to_sock[conn.fileno()] = conn
-        elif event & select.EPOLLIN:
-            data = sock.recv(1024)
-            if data:
-                epoll.modify(fd, select.EPOLLOUT)
-            else:
-                epoll.unregister(fd)
-                sock.close()
-                del fd_to_sock[fd]
-        elif event & select.EPOLLOUT:
-            sock.sendall(b'ACK')
-            epoll.modify(fd, select.EPOLLIN)
-```
-
-### 异步IO
-
-asyncio是Python标准库提供的异步编程框架：
-
-<!-- snippet: id=python-network-programming-10 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-
-async def handle_client(reader, writer):
-    data = await reader.read(1024)
-    writer.write(data.upper())
-    await writer.drain()
-    writer.close()
-
-async def main():
-    server = await asyncio.start_server(
-        handle_client, '0.0.0.0', 8888
-    )
-    async with server:
-        await server.serve_forever()
-
-asyncio.run(main())
-```
-
-### IO模型对比
-
-| 模型 | 等待数据 | 数据拷贝 | 优点 | 缺点 |
-|------|----------|----------|------|------|
-| **阻塞IO** | 阻塞 | 阻塞 | 简单 | 资源利用率低 |
-| **非阻塞IO** | 非阻塞 | 阻塞 | 可并发 | CPU空转 |
-| **IO多路复用** | 阻塞（统一） | 阻塞 | 高效 | 复杂度高 |
-| **异步IO** | 非阻塞 | 非阻塞 | 最高效 | 复杂度高 |
-
-### 线程池方案
-
-对于阻塞IO，使用线程池可以提高并发能力：
-
-<!-- snippet: id=python-network-programming-11 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-from concurrent.futures import ThreadPoolExecutor
-
-def handle_connection(conn):
-    data = conn.recv(1024)
-    conn.sendall(data.upper())
-    conn.close()
-
-executor = ThreadPoolExecutor(max_workers=100)
-
-while True:
-    conn, addr = server.accept()
-    executor.submit(handle_connection, conn)
-```
-
-## 协程与异步编程
-
-### 生成器与协程
-
-<!-- snippet: id=python-network-programming-12 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-def simple_coroutine():
-    while True:
-        value = yield
-        print(f'收到: {value}')
-
-coro = simple_coroutine()
-next(coro)
-coro.send(1)
-coro.send(2)
-```
-
-### async/await
-
-<!-- snippet: id=python-network-programming-13 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import asyncio
-
-async def fetch_data(url):
-    await asyncio.sleep(1)
-    return f'数据 from {url}'
-
-async def main():
-    tasks = [fetch_data(f'url_{i}') for i in range(10)]
-    results = await asyncio.gather(*tasks)
-    print(results)
-
-asyncio.run(main())
-```
-
-### aiohttp异步HTTP
-
-<!-- snippet: id=python-network-programming-14 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-from aiohttp import web
-
-async def handle(request):
-    data = await request.text()
-    return web.Response(text=data.upper())
-
-app = web.Application()
-app.router.add_post('/echo', handle)
-
-web.run_app(app, host='0.0.0.0', port=8080)
-```
-
-## 高性能网络编程
-
-### 连接池
-
-<!-- snippet: id=python-network-programming-15 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import queue
-
-class ConnectionPool:
-    def __init__(self, max_connections=10, **kwargs):
-        self.pool = queue.Queue(max_connections)
-        for _ in range(max_connections):
-            conn = socket.socket(**kwargs)
-            self.pool.put(conn)
-    
-    def get_connection(self, timeout=None):
-        return self.pool.get(timeout=timeout)
-    
-    def return_connection(self, conn):
-        self.pool.put(conn)
-```
-
-### Nagle算法优化
-
-<!-- snippet: id=python-network-programming-16 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 禁用Nagle（小数据高实时场景）
-sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-
-# 启用Nagle（大数据高吞吐场景）
-sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 0)
-```
-
-### 缓冲区优化
-
-<!-- snippet: id=python-network-programming-17 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 设置缓冲区大小
-sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 1024 * 1024)
-sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1024 * 1024)
-```
-
-### 生产者-消费者模式
-
-<!-- snippet: id=python-network-programming-18 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-import threading
-import queue
-
-def producer(q, count):
-    for i in range(count):
-        q.put(i)
-
-def consumer(q):
-    while True:
-        item = q.get()
-        if item is None:
-            break
-        print(f'处理: {item}')
-
-q = queue.Queue()
-threads = []
-
-for _ in range(3):
-    t = threading.Thread(target=consumer, args=(q,))
-    t.start()
-    threads.append(t)
-
-producer(q, 100)
-
-for _ in range(3):
-    q.put(None)
-
-for t in threads:
-    t.join()
-```
-
-## 总结
-
-| 技术 | 适用场景 |
-|------|----------|
-| **阻塞Socket** | 低并发场景 |
-| **非阻塞Socket** | 轮询监控场景 |
-| **select/poll** | 中等并发（<1000连接） |
-| **epoll** | 高并发（Linux） |
-| **asyncio** | 异步高性能 |
-| **线程池** | CPU密集型并发 |
+这就是事件循环的数据结构基础。写缓冲持续增长说明对端消费太慢，必须暂停读取、限制队列或关闭连接；否则“高并发”会退化为内存泄漏。
+
+## 方案选择
+
+| 方案               | 优点                         | 主要边界                       |
+| ------------------ | ---------------------------- | ------------------------------ |
+| 每连接一个线程     | 与阻塞库兼容、流程直观       | 线程和栈有成本，共享状态需同步 |
+| `selectors` 状态机 | 依赖少、控制精确             | 手写状态、超时和错误恢复复杂   |
+| `asyncio`          | 原生协程、任务与取消工具完整 | 整条调用链需要异步兼容         |
+| 多进程             | CPU 并行和隔离               | 连接归属、IPC 与部署更复杂     |
+
+性能优化先看指标：并发连接数、请求延迟分位数、事件循环延迟、收发缓冲、错误率和内存。盲目调大 `SO_RCVBUF`、关闭 Nagle 或增加工作数，可能只是移动瓶颈。
+
+## 常见误区与适用边界
+
+1. **把一次 `recv(4096)` 当成一条消息。** 必须实现 framing 和部分读写。
+2. **不设置超时和大小上限。** 慢连接与虚假长度会永久占用资源。
+3. **收到 EOF 后继续复用连接。** `b""` 表示对端发送方向已关闭，应完成状态迁移。
+4. **重试非幂等请求却没有请求 ID。** 超时不等于失败，原请求可能已经生效。
+
+教学示例省略了 TLS、认证、半关闭、心跳、连接池和优雅停机；生产服务优先采用成熟 HTTP/RPC 协议栈。
+
+## 自检题
+
+1. 为什么两次 `send` 可能被一次 `recv` 读到？
+2. `select` 报告可写是否表示完整响应已经发送？
+3. 客户端超时后为什么不能直接创建新订单？
+
+<details>
+<summary>展开答案</summary>
+
+1. TCP 是连续字节流，不保留应用调用边界，分段和合并由协议栈决定。
+2. 否。它只表示当前发送缓冲可能接收一些字节，仍要保存发送偏移并处理部分写。
+3. 原请求可能已被服务端处理；应使用同一幂等键查询或重试，避免重复业务动作。
+
+</details>
+
+## 本篇总结
+
+可靠网络程序从协议边界开始：消息长度、最大尺寸、连接状态、超时、背压和幂等性必须明确。多路复用只是通知机制，真正的复杂度在每条连接的状态机。
+
+## 下一篇衔接
+
+下一篇回到 Python 对象协议：我们将把订单金额包装成 `Money` 值对象，通过双下划线方法定义合法运算，并为 ORM 的描述符机制铺路。
+
+## 资料来源
+
+- [Python `socket` 文档](https://docs.python.org/3/library/socket.html)
+- [Python `selectors` 文档](https://docs.python.org/3/library/selectors.html)
+- [Python Socket Programming HOWTO](https://docs.python.org/3/howto/sockets.html)

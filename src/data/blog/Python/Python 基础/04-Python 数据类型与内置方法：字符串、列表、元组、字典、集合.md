@@ -2,9 +2,9 @@
 title: Python 数据类型与内置方法：字符串、列表、元组、字典、集合
 author: Joekma
 pubDatetime: 2018-09-18T00:00:00.000+08:00
-modDatetime: 2026-07-11T00:00:00.000+08:00
+modDatetime: 2026-07-17T00:00:00.000+08:00
 slug: python-data-types-built-in-methods
-description: '深入理解Python的数据类型和字符串、列表、元组、字典、集合的内置方法，详解可变类型与不可变类型、哈希类型等核心概念。'
+description: "用订单模型讲清数值、字符串、列表、元组、字典、集合的顺序、可变性、哈希性与选择边界。"
 tags:
   - Python
   - 数据类型
@@ -19,430 +19,191 @@ seriesOrder: 4
 language: zh-CN
 ---
 
-> Python 中一切皆为对象，每个对象都有其内置的方法。本文将详细介绍数字、字符串、列表、元组、字典和集合等数据类型的内置方法。
+选择数据类型是在声明约束：是否保序、能否修改、是否需要按键查找、是否允许重复，以及数值是否必须精确。方法清单会遗忘，这些选择维度可以迁移到新场景。
 
-![Python 常用数据类型可按数字、字符串、列表、元组、字典和集合分类，并通过可变性、顺序性和哈希性理解它们的使用边界](./images/python-data-types-methods-taxonomy-figure-01.png)
+## 前置知识与学习目标
 
-## 数字类型
+你应会使用变量、运算符、分支和循环。学完后你应该能：
 
-### 整型 int
+- 按业务约束选择 `int`、`Decimal`、`str` 和容器；
+- 区分可变、不可变、可哈希与保持插入顺序；
+- 预测常见方法是原地修改还是返回新对象；
+- 用一条订单记录解释嵌套数据的 Shape。
 
-**用途**：记录年龄、等级、各种号码
+## 订单数据的 Shape
 
-**定义方式**：
+<!-- figure:s04-f01:start -->
 
-<!-- snippet: id=python-data-types-built-in-methods-01 mode=compile python=3.12-3.14 deps=stdlib -->
+![订单字典包含字符串字段、items 列表、明细字典、Decimal 金额和标签集合](./images/s04-f01-order-nested-data-shape.png)
+
+<!-- figure:s04-f01:end -->
+
+本系列统一使用如下最小结构：
+
+<!-- snippet: id=python-order-data-shape mode=run python=3.12-3.14 deps=stdlib -->
+
 ```python
-age = 18
-age = int(18)
-x = int('123')  # 只能将纯数字的字符串转换成整型
-```
-
-### 浮点型 float
-
-**用途**：记录身高、体重、薪资
-
-**定义方式**：
-
-<!-- snippet: id=python-data-types-built-in-methods-02 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-salary = 1.3
-salary = float(1.3)
-x = float('3.1')
-```
-
-### 类型总结
-
-| 类型 | 存值数量 | 有序性 | 可变性 | 可哈希 |
-|------|---------|--------|--------|--------|
-| **int** | 一个值 | 无 | 不可变 | 是 |
-| **float** | 一个值 | 无 | 不可变 | 是 |
-| **str** | 一个值 | 有 | 不可变 | 是 |
-| **list** | 多个值 | 有 | 可变 | 否 |
-| **tuple** | 多个值 | 有 | 不可变 | 是 |
-| **dict** | 多个键值对 | 无 | 可变 | 否 |
-| **set** | 多个值 | 无 | 可变 | 是 |
-
-### 进制转换
-
-<!-- snippet: id=python-data-types-built-in-methods-03 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 十进制 => 其他进制
-print(bin(13))  # 二进制: 0b1101
-print(oct(13))  # 八进制: 0o15
-print(hex(13))  # 十六进制: 0xd
-```
-
-## 字符串类型
-
-**用途**：记录描述性质的特征，如名字、地址、性别
-
-**定义方式**：在单引号、双引号、三引号内包含的一串字符
-
-<!-- snippet: id=python-data-types-built-in-methods-04 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-msg = 'aaa"bbb"'
-msg = str('hello')
-```
-
-### 常用字符串方法
-
-<!-- snippet: id=python-data-types-built-in-methods-05 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# strip: 移除字符串头尾指定的字符（默认为空格）
-name = "*joker**"
-print(name.strip("*"))   # joker
-print(name.lstrip("*"))  # 去除左边
-print(name.rstrip("*"))  # 去除右边
-
-# len: 获取字符串长度
-msg = '你好啊a'
-print(len(msg))
-
-# in/not in: 成员运算
-msg = 'joekma 老师是一个非常好的老师'
-print('joekma' in msg)  # True
-print('老师' not in msg)      # False
-
-# replace: 替换
-name = "joker is good joker boy!"
-print(name.replace('joker', 'li'))       # 所有替换
-print(name.replace('joker', 'li', 1))    # 只替换1次
-
-# split: 字符串切分（结果是列表）
-name = 'root:x:0:0::/root/:bin/bash'
-print(name.split(':'))       # 按冒号分割
-print(name.split('/', 1))   # 按斜杠分割1次
-print(name.rsplit('|', 1))  # 从右边分割
-
-# join: 拼接
-tag = ' '
-print(tag.join(['joker', 'li', 'good', 'boy']))  # joker li good boy
-
-# startswith/endswith: 判断开头/结尾
-name = "joker_li"
-print(name.startswith("joker"))  # True
-print(name.endswith("li"))       # True
-
-# find/rfind/index/count
-name = 'joker say hi'
-print(name.find('s'))   # find: 从左查找，返回索引
-print(name.count('k'))  # count: 统计出现次数
-print(name.rfind('s'))  # rfind: 从右查找
-print(name.index('s'))  # index: 同 find，找不到会报错
-
-# center/ljust/rjust/zfill: 对齐
-name = 'joker'
-print(name.center(10, '_'))  # 居中对齐
-print(name.ljust(10, '*'))   # 左对齐
-print(name.rjust(10, '*'))   # 右对齐
-print(name.zfill(10))       # 右对齐，用 0 补齐
-
-# lower/upper: 大小写转换
-name = 'Joker'
-print(name.lower())  # 小写
-print(name.upper())  # 大写
-
-# capitalize/swapcase/title: 复杂大小写转换
-name = 'joker li'
-print(name.capitalize())  # 首字母大写
-print(name.swapcase())    # 大小写对调
-print(name.title())       # 每个单词首字母大写
-
-# isdigit/isdecimal/isnumeric: 判断数字
-num1 = b'4'       # bytes 类型
-num2 = u'4'       # unicode 类型
-num3 = '四'       # 中文数字
-num4 = 'Ⅳ'       # 罗马数字
-
-print(num1.isdigit())   # True
-print(num2.isdigit())   # True
-print(num3.isdigit())   # False
-print(num4.isdigit())   # False
-```
-
-### 判断系列方法
-
-<!-- snippet: id=python-data-types-built-in-methods-06 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-name = 'joker123'
-
-print(name.isalnum())     # 字符串由字母和数字组成
-print(name.isalpha())    # 字符串只由字母组成
-print(name.isdigit())    # 是否是数字
-print(name.isidentifier())  # 是否是合法的标识符
-print(name.islower())   # 是否全是小写
-print(name.isupper())   # 是否全是大写
-print(name.isspace())   # 是否是空格
-print(name.istitle())   # 每个单词首字母是否大写
-```
-
-## 列表类型
-
-**用途**：记录多个值，如人的多个爱好
-
-**定义方式**：在 `[]` 内用逗号分隔开多个任意类型的值
-
-<!-- snippet: id=python-data-types-built-in-methods-07 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-li = [1, 2, 3]
-li = list([1, 2, 3])
-x = list('hello')
-x = list({'a': 1, 'b': 2, 'c': 3})
-```
-
-### 列表常用方法
-
-<!-- snippet: id=python-data-types-built-in-methods-08 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-li = ['a', 'b', 'c', 'd', 'e']
-
-# 按索引存取
-print(li[-1])   # 倒序取值
-li[-1] = 'E'    # 修改值
-
-# 切片: list[start:end:step]
-print(li[0:3])   # 顾头不顾尾
-print(li[::-1])  # 翻转
-
-# append: 追加
-li.append('f')
-li.append([1, 2, 3])
-
-# remove/pop: 删除
-li.remove('a')           # 按元素值删除
-li.pop(1)               # 按索引删除并返回值
-del li[0]               # 按索引删除
-
-# extend: 扩展
-li.extend([1, 2, 3])   # 把列表里的元素添加进去
-li.append([1, 2, 3])    # 把列表本身添加进去
-
-# count/index/insert/reverse/sort
-print(li.count('c'))     # 统计元素个数
-print(li.index('b'))     # 查找元素索引
-li.insert(1, 'x')       # 在索引1处插入
-li.reverse()              # 翻转列表
-li.sort(reverse=True)      # 排序
-
-# 切片赋值
-li = [2, 3, 4]
-li[0:1] = [1.1, 2.2]   # 替换
-li[1:] = [3.3, 4.4, 5.5]  # 追加
-li[:] = [0, 1]          # 清空并替换
-```
-
-### 列表练习
-
-<!-- snippet: id=python-data-types-built-in-methods-09 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 队列: 先进先出
-q = []
-q.append('first')
-q.append('second')
-q.append('third')
-print(q.pop(0))   # first
-print(q.pop(0))   # second
-
-# 堆栈: 先进后出
-q = []
-q.append('first')
-q.append('second')
-q.append('third')
-print(q.pop())  # third
-print(q.pop())  # second
-```
-
-## 元组类型
-
-**用途**：存放多个值，当存放的多个值只有读的需求没有改的需求时用元组最合适
-
-**定义方式**：在 `()` 内用逗号分隔开多个任意类型的值
-
-<!-- snippet: id=python-data-types-built-in-methods-10 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-t = (1, 3.1, 'aaa', (1, 2, 3), ['a', 'b'])
-t = tuple('hello')
-t = tuple({'x': 1, 'y': 2})
-```
-
-### 元组与逗号
-
-<!-- snippet: id=python-data-types-built-in-methods-11 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-# 用逗号建立一个元组
-res = 'dsb',      # 实际上是一个元组
-res = 'dsb', 'yyh'
-print(type(res))  # <class 'tuple'>
-```
-
-### 元组常用操作
-
-<!-- snippet: id=python-data-types-built-in-methods-12 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-t = ('a', 'b', 1)
-
-# 按索引取值（只能取）
-print(t[0])
-
-# 切片
-print(t[1:3])
-
-# 长度
-print(len(t))
-
-# 成员运算
-print('a' in t)
-
-# 循环
-for item in t:
-    print(item)
-```
-
-## 字典类型
-
-**特性**：
-
-- dict 是无序的
-- key 必须是唯一的，不能重复
-
-**定义方式**：在 `{}` 内用逗号分隔开多个 key:value
-
-<!-- snippet: id=python-data-types-built-in-methods-13 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-info = {'stu1102': 'LongZe Luola', 'stu1104': '苍井空'}
-```
-
-### 字典常用方法
-
-<!-- snippet: id=python-data-types-built-in-methods-14 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-info = {'stu1102': 'LongZe Luola', 'stu1103': 'XiaoZe Maliya'}
-
-# 增加
-info['huahuagongzi'] = 'lengdigaga'
-
-# 修改
-info['stu1101'] = "武藤兰"
-
-# 删除
-info.pop("stu1101")       # 标准删除姿势
-info.popitem()            # 随机删除
-del info['stu1103']       # 另一种删除方式
-
-# 查找
-print('stu1102' in info)  # 标准用法
-print(info.get("stu1102"))  # 获取值
-print(info.get("stu1105"))  # 不存在返回 None，不会报错
-
-# keys/values/items
-print(info.keys())   # 获取所有键
-print(info.values()) # 获取所有值
-print(info.items())  # 获取所有键值对
-
-# setdefault: 设置默认值
-info.setdefault("stu1106", "Alex")  # key 不存在则设置
-info.setdefault("stu1102", "New")   # key 存在则返回原值
-
-# update: 更新
-info.update({'stu1107': 'New Student'})
-
-# copy: 浅拷贝
-info_copy = info.copy()
-```
-
-### 多级字典嵌套
-
-<!-- snippet: id=python-data-types-built-in-methods-15 mode=compile python=3.12-3.14 deps=stdlib -->
-```python
-tv_catalog = {
-    "欧美": {
-        "www.omtv.com": ["没有免费的", "充值会员"],
-    },
-    "日韩": {
-        "www.rhtv.com": ["质量怎样不清楚"],
-    },
-    "大陆": {
-        "1024": ["全部免费", "好人一生平安"],
-    }
+from decimal import Decimal
+
+order = {
+    "id": "A001",
+    "customer": "Ada",
+    "status": "paid",
+    "items": [
+        {"sku": "PEN", "quantity": 2, "unit_price": Decimal("3.50")},
+        {"sku": "BOOK", "quantity": 1, "unit_price": Decimal("19.90")},
+    ],
+    "tags": {"new", "gift"},
 }
 
-# 访问和修改
-print(av_catalog["大陆"]["1024"])
-av_catalog["大陆"]["1024"].append("可以用爬虫爬下来")
+total = sum(
+    item["quantity"] * item["unit_price"] for item in order["items"]
+)
+assert total == Decimal("26.90")
 ```
 
-## 集合类型
+可以把 Shape 写成：`order: dict[str, object]`，其中 `items: list[dict]`、`tags: set[str]`。Python 运行时不强制这个注解，但清楚的结构能让输入校验和函数接口更可靠。
 
-**特性**：
+## 数值：范围、精度与语义
 
-- 无序
-- 元素唯一
-- 可以进行交集、并集、差集等运算
+- `int` 表示任意精度整数，适合数量和计数；
+- `float` 是二进制浮点数，适合科学计算和允许近似的测量；
+- `Decimal` 属于标准库，适合按十进制规则计算金额；
+- `bool` 是 `int` 的子类，但业务上应作为状态而非数量使用。
 
-**定义方式**：在 `{}` 内用逗号分隔开多个值
+<!-- snippet: id=python-decimal-boundary mode=run python=3.12-3.14 deps=stdlib -->
 
-<!-- snippet: id=python-data-types-built-in-methods-16 mode=compile python=3.12-3.14 deps=stdlib -->
 ```python
-s = {1, 2, 3, 4, 5}
-s = set([1, 2, 3])
+from decimal import Decimal
+
+assert 0.1 + 0.2 != 0.3
+assert Decimal("0.1") + Decimal("0.2") == Decimal("0.3")
 ```
 
-### 集合常用方法
+不要从 `float` 构造金额 `Decimal(0.1)`，因为误差已经进入；从字符串构造更可控。
 
-<!-- snippet: id=python-data-types-built-in-methods-17 mode=compile python=3.12-3.14 deps=stdlib -->
+## 文本与二进制
+
+`str` 是 Unicode 文本，`bytes` 是字节序列。`str` 不可变，因此 `replace()`、`strip()`、`lower()` 都返回新字符串。文本与字节的转换属于第 6 篇的编码边界。
+
+<!-- snippet: id=python-string-method-result mode=run python=3.12-3.14 deps=stdlib -->
+
 ```python
-s1 = {1, 2, 3}
-s2 = {3, 4, 5}
-
-# 交集
-print(s1 & s2)
-print(s1.intersection(s2))
-
-# 并集
-print(s1 | s2)
-print(s1.union(s2))
-
-# 差集
-print(s1 - s2)
-print(s1.difference(s2))
-
-# 对称差集
-print(s1 ^ s2)
-print(s1.symmetric_difference(s2))
-
-# 添加/删除
-s1.add(6)     # 添加
-s1.remove(1)  # 删除，不存在会报错
-s1.discard(1)  # 删除，不存在不报错
-s1.pop()       # 随机删除
-
-# 判断关系
-print(s1.issubset(s2))      # s1 是否是 s2 的子集
-print(s1.issuperset(s2))    # s1 是否是 s2 的超集
-print(s1.isdisjoint(s2))    # s1 和 s2 是否无交集
+raw = "  A001,paid  "
+clean = raw.strip().lower()
+order_id, status = clean.split(",", maxsplit=1)
+assert raw == "  A001,paid  "
+assert (order_id, status) == ("a001", "paid")
 ```
 
-## 小结
+`strip(chars)` 把 `chars` 当“字符集合”，不是删除固定前后缀；固定前后缀使用 `removeprefix()` 和 `removesuffix()`。
 
-### 数据类型对比
+## list 与 tuple：有序序列
 
-| 类型 | 定义 | 有序 | 可变 | 用途 |
-|------|------|------|------|------|
-| **int/float** | `x = 1` | 否 | 否 | 数值计算 |
-| **str** | `x = 'hello'` | 是 | 否 | 文本 |
-| **list** | `x = [1, 2]` | 是 | 是 | 序列 |
-| **tuple** | `x = (1, 2)` | 是 | 否 | 常量序列 |
-| **dict** | `x = {'a': 1}` | 否 | 是 | 映射 |
-| **set** | `x = {1, 2}` | 否 | 是 | 去重/集合运算 |
+`list` 可变，适合会增删改的同类元素序列；`tuple` 不可变，适合固定位置记录或不可变返回值。二者都保序、支持索引和切片。
 
-### 选择建议
+常用列表方法中，`append`、`extend`、`sort`、`reverse` 原地修改并返回 `None`；`sorted(iterable)` 返回新列表。
 
-1. **需要数字计算**：使用 `int`/`float`
-2. **需要文本处理**：使用 `str`
-3. **需要有序序列**：使用 `list`
-4. **需要常量序列**：使用 `tuple`
-5. **需要键值映射**：使用 `dict`
-6. **需要去重或集合运算**：使用 `set`
+<!-- snippet: id=python-list-mutation-contract mode=run python=3.12-3.14 deps=stdlib -->
 
-掌握这些数据类型的内置方法，可以让你更高效地处理各种数据操作。
+```python
+amounts = [30, 10, 20]
+result = amounts.sort()
+assert result is None
+assert amounts == [10, 20, 30]
+
+coordinates = (120.1, 30.2)
+longitude, latitude = coordinates
+assert latitude == 30.2
+```
+
+队列从列表头部 `pop(0)` 的成本高；大量先进先出操作应使用 `collections.deque`，第 14 篇介绍。
+
+## dict：按键访问且保持插入顺序
+
+字典是可变映射；从 Python 3.7 起，插入顺序是语言保证。键必须可哈希，常见键包括字符串、数字和只包含可哈希元素的元组。`get()` 适合缺失时有默认值的读取；必须存在的键直接用 `[]`，让 `KeyError` 暴露数据缺口。
+
+<!-- snippet: id=python-dict-access-contract mode=run python=3.12-3.14 deps=stdlib -->
+
+```python
+order = {"id": "A001", "status": "paid"}
+assert order["id"] == "A001"
+assert order.get("coupon") is None
+
+order.setdefault("tags", []).append("new")
+assert order["tags"] == ["new"]
+```
+
+`setdefault()` 会把默认对象存入字典，复杂更新用显式分支通常更清楚。
+
+## set 与 frozenset：唯一性和集合关系
+
+`set` 可变、无索引、元素唯一，本身不可哈希；`frozenset` 不可变且在元素均可哈希时可哈希。不要依赖集合的显示顺序。
+
+<!-- snippet: id=python-set-relations mode=run python=3.12-3.14 deps=stdlib -->
+
+```python
+required = {"id", "status", "items"}
+received = {"id", "status", "items", "coupon"}
+
+missing = required - received
+extra = received - required
+assert missing == set()
+assert extra == {"coupon"}
+assert required <= received
+```
+
+## 类型选择矩阵
+
+<!-- figure:s04-f02:start -->
+
+![根据精度、顺序、可变性、唯一性和键访问选择 Python 类型](./images/s04-f02-type-selection-matrix.png)
+
+<!-- figure:s04-f02:end -->
+
+| 需求           | 首选      | 关键边界                         |
+| -------------- | --------- | -------------------------------- |
+| 计数、索引     | `int`     | 不用于表达缺失值                 |
+| 十进制金额     | `Decimal` | 从字符串构造，统一舍入规则       |
+| 文本           | `str`     | 不可变；不是原始字节             |
+| 可变有序集合   | `list`    | 查找成员通常为线性成本           |
+| 固定有序记录   | `tuple`   | 内含可变对象时整体未必可哈希     |
+| 键值记录       | `dict`    | 保持插入顺序，但按键而非位置建模 |
+| 去重与集合运算 | `set`     | 无稳定索引，本身不可哈希         |
+
+## 常见误区与适用边界
+
+- “不可变”不等于“内部永远不含可变对象”；含列表的元组仍不可哈希。
+- `dict` 保持插入顺序，但若业务依赖排序规则，应显式 `sorted()`。
+- 集合适合成员和关系运算，不适合需要重复计数的序列。
+- 不要把所有数据塞进一个深层字典；稳定业务模型可进一步使用 `dataclass`，本基础系列不展开。
+- 方法链前先确认返回值；原地方法通常返回 `None`。
+
+## 自检题
+
+1. 为什么金额示例使用 `Decimal("19.90")` 而不是 `Decimal(19.90)`？
+2. `set` 能否作为字典键？`frozenset` 呢？
+3. 为什么 `items.sort()` 不能直接赋给 `sorted_items`？
+
+<details>
+<summary>参考答案</summary>
+
+1. 字符串精确保留十进制输入；`float` 近似值会把误差带入 `Decimal`。
+2. `set` 不可哈希，不能；元素可哈希的 `frozenset` 可以。
+3. `list.sort()` 原地排序并返回 `None`；需要新列表应使用 `sorted(items)`。
+
+</details>
+
+## 本篇总结
+
+类型是约束的载体。先判断精度、顺序、可变性、唯一性和访问方式，再选择类型与方法，比按“常用 API 清单”学习更可靠。
+
+## 下一篇衔接
+
+下一篇把订单金额和状态渲染成人类可读报告，统一讲解 f-string、格式说明迷你语言、`repr` 调试表示以及不应使用字符串拼接的边界。
+
+## 资料来源
+
+- [Python 标准类型](https://docs.python.org/3.14/library/stdtypes.html)
+- [Python 教程：数据结构](https://docs.python.org/3.14/tutorial/datastructures.html)
+- [decimal：十进制定点与浮点运算](https://docs.python.org/3.14/library/decimal.html)

@@ -4,9 +4,9 @@ series: selenium
 seriesOrder: 9
 author: Joekma
 pubDatetime: 2026-05-09T00:00:00.000+08:00
-modDatetime: 2026-05-09T00:00:00.000+08:00
+modDatetime: 2026-07-15T00:00:00.000+08:00
 slug: selenium-screenshots-files
-description: '详细介绍Selenium的截图功能、文件下载上传操作，以及如何处理各种文件交互场景。'
+description: "详细介绍Selenium的截图功能、文件下载上传操作，以及如何处理各种文件交互场景。"
 tags:
   - Selenium
   - RPA
@@ -16,11 +16,32 @@ draft: false
 language: zh-CN
 ---
 
-## 概述
+## 前置知识与学习目标
+
+掌握 pathlib、pytest 生命周期、显式等待和基本文件 IO。
+
+读完后，你应该能够：
+
+- 区分视口、元素与浏览器特定全页截图；
+- 为每次运行创建隔离的证据与下载目录；
+- 通过临时扩展名消失、文件稳定和内容校验判断下载完成；
+- 使用 file input 的完整路径上传，而不自动化系统文件选择器；
+
+全系列沿用同一个案例：在测试环境自动化 Acme 采购门户。用户登录后搜索采购单 PO-2026-0715，在明细页导出 CSV；测试使用 data-testid 作为稳定定位契约，并把失败截图、日志和下载文件写入独立运行目录。
+
+**本篇边界：**截图是诊断证据，不是默认的视觉回归系统；下载是浏览器到文件系统的异步通道；上传通过 input[type=file] 完成。
+
+## 真实场景与核心问题
 
 截图和文件操作是 Selenium 自动化中的重要功能。截图可用于调试和报告，文件操作则涵盖下载、上传和处理各种文件类型。
 
-![Selenium 截图下载上传文件通道图](./images/selenium-screenshot-file-operations-figure-01.png)
+<!-- figure-anchor:s09-a01 -->
+
+<!-- figure-managed:s09-f01:start -->
+
+![区分截图、下载与 file input 上传在浏览器和文件系统之间的方向与路径边界](./images/s09-f01-browser-file-channels.png)
+
+<!-- figure-managed:s09-f01:end -->
 
 ### 功能概览
 
@@ -77,7 +98,7 @@ def take_error_screenshot(driver, test_name):
     """失败时自动截图"""
     screenshot_dir = "screenshots"
     os.makedirs(screenshot_dir, exist_ok=True)
-    
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"{screenshot_dir}/{test_name}_{timestamp}.png"
     driver.save_screenshot(filename)
@@ -118,19 +139,25 @@ def take_full_page_screenshot(driver, filename="full_page.png"):
     # 某些浏览器支持全页面截图
     total_width = driver.execute_script("return document.body.scrollWidth")
     total_height = driver.execute_script("return document.body.scrollHeight")
-    
+
     driver.set_window_size(total_width, total_height)
     driver.save_screenshot(filename)
-    
+
     # 恢复原始大小
     driver.set_window_size(1920, 1080)
-    
+
     return filename
 ```
 
 ## 文件下载
 
-### 自动下载
+<!-- figure-anchor:s09-a02 -->
+
+<!-- figure-managed:s09-f02:start -->
+
+![用临时名、大小稳定、格式与业务键验证下载完成，而不是只等文件出现](./images/s09-f02-download-completion-state.png)
+
+<!-- figure-managed:s09-f02:end -->### 自动下载
 
 ```python
 from selenium import webdriver
@@ -169,42 +196,42 @@ def download_file_with_progress(driver, selector, expected_filename):
     """下载文件并跟踪进度"""
     download_dir = Path("downloads")
     download_dir.mkdir(exist_ok=True)
-    
+
     # 获取下载前文件列表
     before_files = set(download_dir.glob("*"))
-    
+
     # 点击下载
     driver.find_element(By.CSS_SELECTOR, selector).click()
-    
+
     # 轮询等待新文件出现
     max_wait = 30
     start_time = time.time()
-    
+
     while time.time() - start_time < max_wait:
         after_files = set(download_dir.glob("*"))
         new_files = after_files - before_files
-        
+
         for file in new_files:
             # 检查文件是否下载完成（大小不再变化）
             if is_download_complete(file):
                 print(f"下载完成: {file.name}")
                 return file
-        
+
         time.sleep(0.5)
-    
+
     raise Exception("下载超时")
 
 def is_download_complete(file_path):
     """检查文件是否下载完成"""
     if not file_path.exists():
         return False
-    
+
     initial_size = -1
     current_size = file_path.stat().st_size
-    
+
     time.sleep(1)
     new_size = file_path.stat().st_size
-    
+
     # 如果文件大小不再变化，认为下载完成
     return current_size == new_size and current_size > 0
 ```
@@ -233,25 +260,25 @@ options.add_argument("--headless")
 ```python
 def upload_file(file_path):
     driver.get("https://example.com/upload")
-    
+
     # 找到文件上传 input
     upload_input = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
-    
+
     # 上传文件
     upload_input.send_keys(file_path)
-    
+
     # 验证文件名显示
     filename_display = driver.find_element(By.CLASS_NAME, "filename")
     assert file_path.split("/")[-1] in filename_display.text
-    
+
     # 点击上传按钮
     driver.find_element(By.ID, "upload-btn").click()
-    
+
     # 等待上传完成
     wait = WebDriverWait(driver, 10)
     wait.until(
         EC.text_to_be_present_in_element(
-            (By.CLASS_NAME, "upload-status"), 
+            (By.CLASS_NAME, "upload-status"),
             "上传成功"
         )
     )
@@ -262,17 +289,17 @@ def upload_file(file_path):
 ```python
 def upload_multiple_files(file_paths):
     driver.get("https://example.com/upload")
-    
+
     # 多文件上传
     upload_input = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
-    
+
     # 多个文件路径用换行符分隔
     file_paths_str = "\n".join(file_paths)
     upload_input.send_keys(file_paths_str)
-    
+
     # 上传
     driver.find_element(By.ID, "upload-btn").click()
-    
+
     # 验证所有文件
     for file_path in file_paths:
         filename = file_path.split("/")[-1]
@@ -287,20 +314,20 @@ from selenium.webdriver import ActionChains
 def drag_and_drop_upload(driver, file_path):
     """拖放文件上传"""
     driver.get("https://example.com/upload")
-    
+
     # 找到拖放区域
     drop_zone = driver.find_element(By.CLASS_NAME, "drop-zone")
-    
+
     # 如果需要隐藏的 input
     file_input = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
-    
+
     # 方法 1：使用 JavaScript 设置值
     driver.execute_script(
         "arguments[0].style.display = 'block';",
         file_input
     )
     file_input.send_keys(file_path)
-    
+
     # 方法 2：模拟拖放
     ActionChains(driver) \
         .drag_and_drop(file_path, drop_zone) \
@@ -319,31 +346,31 @@ from datetime import datetime
 
 class FileManager:
     """文件管理工具"""
-    
+
     def __init__(self, base_dir="downloads"):
         self.base_dir = Path(base_dir)
         self.base_dir.mkdir(exist_ok=True)
-    
+
     def save_screenshot(self, driver, name="screenshot"):
         """保存截图"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = self.base_dir / f"{name}_{timestamp}.png"
         driver.save_screenshot(str(filename))
         return filename
-    
+
     def get_downloaded_files(self, pattern="*"):
         """获取下载的文件"""
         return list(self.base_dir.glob(pattern))
-    
+
     def cleanup_old_files(self, days=7):
         """清理旧文件"""
         cutoff = datetime.now().timestamp() - days * 24 * 3600
-        
+
         for file in self.base_dir.glob("*"):
             if file.stat().st_mtime < cutoff:
                 file.unlink()
                 print(f"已删除: {file}")
-    
+
     def read_file_content(self, filename):
         """读取文件内容"""
         file_path = self.base_dir / filename
@@ -365,18 +392,18 @@ class FileManager:
 def generate_test_report(driver, test_name):
     """生成测试报告截图"""
     driver.get("https://example.com/dashboard")
-    
+
     # 等待内容加载
     wait = WebDriverWait(driver, 10)
     wait.until(EC.presence_of_element_located((By.CLASS_NAME, "report-content")))
-    
+
     # 截图保存
     screenshot_dir = Path("reports/screenshots")
     screenshot_dir.mkdir(exist_ok=True)
-    
+
     filename = screenshot_dir / f"{test_name}.png"
     driver.save_screenshot(str(filename))
-    
+
     return filename
 ```
 
@@ -386,26 +413,26 @@ def generate_test_report(driver, test_name):
 def export_data(driver, format="csv"):
     """导出数据"""
     driver.get("https://example.com/data")
-    
+
     # 点击导出按钮
     driver.find_element(By.ID, "export-btn").click()
-    
+
     # 选择格式
     if format == "csv":
         driver.find_element(By.CSS_SELECTOR, "input[value='csv']").click()
     elif format == "excel":
         driver.find_element(By.CSS_SELECTOR, "input[value='excel']").click()
-    
+
     # 确认导出
     driver.find_element(By.ID, "confirm-export").click()
-    
+
     # 等待下载
     time.sleep(5)
-    
+
     # 查找下载的文件
     download_dir = Path.home() / "Downloads"
     files = list(download_dir.glob(f"*.{format}"))
-    
+
     return files[-1] if files else None
 ```
 
@@ -417,43 +444,43 @@ from pathlib import Path
 def batch_upload(driver, directory):
     """批量上传文件"""
     driver.get("https://example.com/upload")
-    
+
     # 获取目录下所有文件
     files = list(Path(directory).glob("*.*"))
-    
+
     if not files:
         print(f"目录 {directory} 中没有文件")
         return
-    
+
     # 逐个上传
     successful = 0
     failed = []
-    
+
     for file_path in files:
         try:
             upload_input = driver.find_element(By.CSS_SELECTOR, "input[type='file']")
             upload_input.send_keys(str(file_path))
-            
+
             # 等待上传
             wait = WebDriverWait(driver, 10)
             status = wait.until(
                 EC.presence_of_element_located((By.CLASS_NAME, "upload-status"))
             )
-            
+
             if "成功" in status.text:
                 successful += 1
                 print(f"✓ {file_path.name} 上传成功")
             else:
                 failed.append(file_path.name)
                 print(f"✗ {file_path.name} 上传失败")
-            
+
             # 清除上传框，准备下一个文件
             upload_input.clear()
-            
+
         except Exception as e:
             failed.append(file_path.name)
             print(f"✗ {file_path.name} 上传失败: {e}")
-    
+
     return {"successful": successful, "failed": failed}
 ```
 
@@ -466,10 +493,10 @@ def batch_upload(driver, directory):
 def test_with_screenshots(browser):
     browser.get("https://example.com/form")
     browser.save_screenshot("step1_form.png")  # 步骤1截图
-    
+
     browser.find_element(By.NAME, "username").send_keys("test")
     browser.save_screenshot("step2_filled.png")  # 步骤2截图
-    
+
     # 验证
     browser.find_element(By.ID, "submit").click()
     browser.save_screenshot("step3_submitted.png")  # 步骤3截图
@@ -492,19 +519,19 @@ def pytest_runtest_makereport(item):
 def process_downloaded_file(driver):
     download_dir = Path("downloads")
     download_dir.mkdir(exist_ok=True)
-    
+
     driver.get("https://example.com/download")
     driver.find_element(By.ID, "download-btn").click()
-    
+
     # 等待下载完成
     time.sleep(5)
-    
+
     # 处理文件
     files = list(download_dir.glob("*.csv"))
     if files:
         file = files[0]
         content = file.read_text()
-        
+
         # 处理完成后可选择删除
         file.unlink()
 
@@ -512,7 +539,52 @@ def process_downloaded_file(driver):
 def safe_file_operation(filepath):
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"文件不存在: {filepath}")
-    
+
     with open(filepath, 'r') as f:
         return f.read()
 ```
+
+## 常见误区与适用边界
+
+- sleep 5 秒不能证明下载完成；应观察目标文件、临时文件和大小稳定性。
+- Selenium 不能可靠控制操作系统文件对话框；对 file input 发送绝对路径。
+- 截图可能包含令牌、姓名或订单数据，保存前要定义脱敏与保留策略。
+
+## 本篇自检
+
+<details>
+<summary>1. 如何避免并行测试互相拿到对方的下载文件？</summary>
+
+为每个测试或 worker 创建唯一下载目录，并以运行 ID 关联文件。
+
+</details>
+
+<details>
+<summary>2. 文件存在为什么还不能判定下载成功？</summary>
+
+浏览器可能先创建临时文件或仍在写入；还要检查扩展名、大小稳定、格式和业务内容。
+
+</details>
+
+<details>
+<summary>3. 上传按钮打开系统对话框时应该怎样做？</summary>
+
+找到对应 input[type=file] 并 send_keys 绝对路径；如果应用没有可用 input，需要与产品协作提供可测试入口。
+
+</details>
+
+## 本篇总结
+
+文件交互的关键是跨进程边界建立证据：唯一目录、完成条件、内容校验、清理和敏感信息治理。
+
+## 下一篇衔接
+
+下一篇把前面的浏览器能力用于动态数据采集，并明确 Selenium 只在需要执行页面逻辑时才有成本合理性。
+
+## 资料来源与版本基线
+
+本文以 Selenium 4 与 Python 3.10+ 为基线；具体版本与浏览器支持应以发布时的官方说明为准。
+
+- [File Upload](https://www.selenium.dev/documentation/webdriver/elements/file_upload/)
+- [Discouraged: File downloads](https://www.selenium.dev/documentation/test_practices/discouraged/file_downloads/)
+- [Working with windows: screenshots](https://www.selenium.dev/documentation/webdriver/interactions/windows/)
