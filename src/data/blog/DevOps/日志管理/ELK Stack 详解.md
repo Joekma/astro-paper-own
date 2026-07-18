@@ -1,930 +1,361 @@
 ---
-title: ELK Stack 日志管理 详解
+title: ELK Stack 日志管理详解
 series: Elasticsearch
 seriesOrder: 5
-language: zh-CN
 author: Joekma
-pubDatetime: 2024-08-25T00:00:00Z
+pubDatetime: 2024-08-13T00:00:00.000+08:00
+modDatetime: 2026-07-17T00:00:00.000+08:00
 slug: elk-stack-complete-guide
-modDatetime: 2026-05-17T00:00:00Z
-featured: false
-draft: false
+description: "跟踪一条 shop-api 日志从结构化输出、Filebeat、Logstash 背压、Elasticsearch data stream 到 Kibana 检索与告警的完整状态。"
 tags:
   - DevOps
-  - 日志
-  - ELK
   - Elasticsearch
+  - Elastic Stack
+  - 日志管理
   - 可观测性
-description: 面向日志采集、清洗、检索与可视化，讲解 ELK Stack 架构、Logstash/Filebeat 配置、Elasticsearch 查询、Kibana 看板和性能优化。
+draft: false
+language: zh-CN
 ---
 
-# ELK Stack 日志管理 详解
+<!-- content-frozen: 2026-07-17; conceptual changes require storyboard reset -->
 
-## 简介
+一条日志出现在应用文件里，却没有出现在 Kibana。问题可能发生在文件轮转、采集偏移、网络输出、Logstash 队列、字段解析、Mapping、Elasticsearch 写入或 Kibana 时间范围中的任意一层。可靠日志系统必须让每个阶段都有明确输入、输出、状态和失败去向。
 
-ELK Stack 是 Elastic 公司推出的开源数据处理与可视化套件，由三个核心组件组成：Elasticsearch、Logstash 和 Kibana。被广泛应用于日志收集、业务检索、运维监控等场景。
+## 前置知识与学习目标
 
-**核心价值：**
+你需要理解前四篇中的 Mapping、data stream 模板、集群部署与健康诊断。本文使用在线商店 `shop-api`，目标 data stream 为 `logs-shop-default`。示例以当前 Elastic Stack 9.x 概念为基准。
 
-- 全链路覆盖：数据采集、存储检索、可视化形成完整闭环
-- 实时性强：毫秒级检索，满足实时日志分析需求
-- 高可扩展性：支持集群部署，横向扩展处理能力
-- 开源免费：核心功能完全开源，社区活跃
+“ELK”历史上指 Elasticsearch、Logstash、Kibana；现代 Elastic Stack 还包含 Elastic Agent、Beats、Fleet、APM 等组件。本文保留读者熟悉的 ELK 称呼，但不会假设每条链路都必须经过 Logstash。
 
-## 阅读路线
+完成本文后，你应该能够：
 
-ELK 的学习主线可以拆成四层：采集、处理、存储、消费。排障时也建议沿这条链路逐段定位。
+1. 为日志事件定义稳定字段契约，并解释每个组件的职责。
+2. 在直写 Elasticsearch 与引入 Logstash 之间做需求驱动选择。
+3. 解释 Filebeat registry、Logstash persistent queue、至少一次投递和重复事件的关系。
+4. 用固定 `event.id` 跟踪输入、中间状态、最终文档和告警条件。
 
-| 层级 | 关注点 | 常见组件 |
-|------|--------|----------|
-| 采集 | 日志文件、容器日志、系统指标是否完整进入管道 | Filebeat、Metricbeat |
-| 处理 | 字段解析、时间戳、脱敏、标签和异常数据 | Logstash filter |
-| 存储 | 索引模板、分片副本、生命周期和查询性能 | Elasticsearch |
-| 消费 | 检索、仪表盘、告警和权限 | Kibana |
+## 核心问题：一条事件怎样穿过整条链路
 
-如果是本地验证，可以先用 Docker Compose 跑通最小链路；如果是生产建设，应重点看索引生命周期、权限、TLS、告警和容量规划。
+本文只追踪这一条输入：
 
-![ELK Stack 日志管理链路从应用、容器、系统和 Nginx 日志进入 Beats 采集层，经 Logstash 解析过滤后写入 Elasticsearch，并由 Kibana 检索、看板和告警消费](./images/elk-stack-log-pipeline-figure-01.png)
+```json
+{
+  "@timestamp": "2026-07-17T12:00:00.000Z",
+  "event.id": "evt-20260717-0001",
+  "service.name": "shop-api",
+  "service.environment": "production",
+  "log.level": "ERROR",
+  "message": "payment authorization timed out",
+  "trace.id": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "order.id": "O-20260717-001"
+}
+```
 
-## 核心组件
+这是一行 JSON（JSON Lines），不是把多行 Python 字典直接写入文件。`@timestamp` 表示事件发生时间；`event.id` 是端到端追踪与去重依据；`service.name` 和 `log.level` 用于精确过滤；`message` 用于全文搜索；`trace.id` 与 `order.id` 用于关联请求和业务对象。
 
-### Elasticsearch（ES）
+<!-- figure:s05-f01 -->
 
-分布式搜索引擎，基于 Apache Lucene 构建，提供数据存储、实时检索与聚合分析功能。
+![一条 shop-api 日志如何到达检索与告警](./images/s05-f01-log-event-end-to-end-pipeline.png)
 
-**核心特性：**
-
-- 分布式架构，支持水平扩展
-- 轻松处理 PB 级数据
-- RESTful API 接口
-- 近实时（NRT）搜索
-- 向量数据库支持
-
-### Logstash
-
-数据采集与转换工具，负责从多源采集数据，进行过滤、清洗、格式化后输出到目的地。
-
-**核心特性：**
-
-- 插件式架构，灵活扩展
-- 支持多种输入输出源
-- 强大的过滤和转换能力
-- 管道式处理流程
-
-### Kibana
-
-可视化与交互平台，提供图形化界面，支持对 ES 中的数据进行检索、分析、可视化展示。
-
-**核心特性：**
-
-- 交互式仪表盘
-- 丰富的可视化图表
-- Discover 数据探索
-- 告警规则配置
-- Canvas 画布
-
-### Beats
-
-轻量级数据采集器，用于收集各类日志和数据。
-
-| 组件 | 用途 |
-|------|------|
-| Filebeat | 收集日志文件 |
-| Metricbeat | 收集系统指标 |
-| Heartbeat | 健康检查 |
-| Packetbeat | 网络数据包分析 |
-| Auditbeat | 安全审计日志 |
-| Winlogbeat | Windows 事件日志 |
-
-## 架构与工作流程
-
-### 完整架构图
+主路径是：
 
 ```text
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Beats     │────▶│  Logstash   │────▶│Elasticsearch│
-│ (Filebeat)  │     │  (处理)     │     │  (存储)     │
-└─────────────┘     └─────────────┘     └─────────────┘
-                                            │
-                                            ▼
-                                      ┌─────────────┐
-                                      │   Kibana    │
-                                      │  (可视化)   │
-                                      └─────────────┘
+shop-api JSON Lines
+  -> Filebeat filestream + registry
+  -> Logstash beats input + persistent queue
+  -> 字段校验 / 补充上下文 / 失败分流
+  -> Elasticsearch logs-shop-default
+  -> Kibana Discover / Dashboard / Alert
 ```
 
-### 工作流程
+辅助路径是解析失败事件进入 `logs-shop.quarantine-default`，而不是污染正式 data stream 或静默丢弃。
 
-1. **数据采集**：Logstash/Beats 通过输入插件从多源获取原始数据
-2. **数据处理**：Logstash 通过过滤插件进行清洗、转换、格式化
-3. **数据存储**：Logstash 通过输出插件将处理后的数据写入 Elasticsearch
-4. **数据可视化**：用户通过 Kibana 连接 ES，进行检索、分析、生成仪表盘
+## 组件职责与选择边界
 
-## 环境搭建
+| 组件          | 本文职责                                          | 不应承担的职责                                  |
+| ------------- | ------------------------------------------------- | ----------------------------------------------- |
+| 应用          | 输出一行一个结构化事件，提供业务上下文与稳定 ID   | 不等待 Kibana 写入完成，不在日志中记录密码/令牌 |
+| Filebeat      | 读取文件、维护偏移、补充主机元数据、批量发送      | 不作为复杂业务规则引擎                          |
+| Logstash      | 缓冲、解析、富化、条件路由和输出重试              | 不替代上游字段契约，也不保证 exactly-once       |
+| Elasticsearch | 以 data stream 存储、索引、查询并执行生命周期管理 | 不修复语义错误或自动去除所有重复事件            |
+| Kibana        | Discover、可视化、看板、规则与调查入口            | 不作为日志的持久化来源                          |
 
-### 系统要求
+如果事件已经符合目标字段契约、只需少量 ingest processor，可以让 Elastic Agent/Filebeat 直写 Elasticsearch。若需要多输入汇聚、复杂解析、外部查表、条件路由、独立持久队列或多个输出，再引入 Logstash。组件越多，故障面和运维成本也越大。
 
-| 项目 | 要求 |
-|------|------|
-| 操作系统 | CentOS 7+ / Ubuntu 20.04+ |
-| 内存 | 至少 4GB（生产环境建议 8GB+） |
-| JDK | JDK 17+（ES 8.x 内置） |
-| 用户权限 | 需创建非 root 用户 |
+## 应用端：先建立字段契约
 
-### 前置配置
+Python 最小示例输出单行 JSON：
 
-#### 1. 创建非 root 用户
+```python
+import json
+from datetime import datetime, timezone
+
+
+def build_event(event_id: str, order_id: str) -> dict:
+    return {
+        "@timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "event": {"id": event_id},
+        "service": {"name": "shop-api", "environment": "production"},
+        "log": {"level": "ERROR"},
+        "message": "payment authorization timed out",
+        "trace": {"id": "4bf92f3577b34da6a3ce929d0e0e4736"},
+        "order": {"id": order_id},
+    }
+
+
+print(json.dumps(build_event("evt-20260717-0001", "O-20260717-001"), ensure_ascii=False))
+```
+
+输入是 `event_id` 与 `order_id`；输出是可 JSON 编码的字典。关键中间状态是嵌套对象，编码后 ECS 风格字段在 Elasticsearch 中表示为 `event.id`、`service.name`。异常堆栈应放进明确字段如 `error.stack_trace`，避免依赖多行拼接；若必须采集传统多行日志，应在最靠近来源的 Filebeat parser 合并，防止多文件流在中心端交错。
+
+隐私边界：禁止记录访问令牌、密码、完整银行卡号和不必要的个人数据。脱敏应尽量在应用或采集入口完成，并用测试样本验证；“以后在 Kibana 隐藏列”不等于数据没有被存储。
+
+## Filebeat：读取、解码并记录偏移
+
+使用 `filestream` input，而不是旧的 `log` input：
+
+```yaml
+filebeat.inputs:
+  - type: filestream
+    id: shop-api-json
+    enabled: true
+    paths:
+      - /var/log/shop-api/events.jsonl
+    parsers:
+      - ndjson:
+          target: ""
+          add_error_key: true
+          expand_keys: true
+
+processors:
+  - add_host_metadata: ~
+
+output.logstash:
+  hosts: ["logstash.internal:5044"]
+  ssl.certificate_authorities: ["/etc/pki/ca.crt"]
+
+logging.level: info
+```
+
+关键参数：
+
+- `id` 在同一 agent 上必须稳定且唯一，便于 Filebeat 追踪 input 状态。
+- `paths` 指向实际文件；容器环境要验证挂载路径和 inode/轮转行为。
+- `ndjson.target: ""` 把 JSON 字段展开到根；字段冲突必须通过契约避免。
+- `add_error_key: true` 让非法 JSON 产生可路由的 `error.*`，而不是静默丢失。
+- TLS CA 让 Filebeat 验证 Logstash 身份；生产环境还应按安全要求配置客户端证书或受控网络身份。
+
+Filebeat registry 记录已经读取/确认的文件状态。删除 registry 会让采集器失去偏移记忆，可能从头重读或按配置重新定位，造成重复或遗漏；事故中不要把清空 registry 当作第一步。
+
+配置上线前执行：
 
 ```bash
-useradd elk
-passwd elk
-echo "elk ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+filebeat test config -c /etc/filebeat/filebeat.yml
+filebeat test output -c /etc/filebeat/filebeat.yml
 ```
 
-#### 2. 关闭防火墙
+第一个验证语法，第二个验证输出连通性；两者都不能证明目标事件最终可检索，仍需端到端测试。
 
-```bash
-sudo systemctl stop firewalld
-sudo systemctl disable firewalld
+## Logstash：缓冲、分流与至少一次投递
+
+### 持久队列
+
+在 `logstash.yml` 启用 persistent queue：
+
+```yaml
+queue.type: persisted
+path.queue: /var/lib/logstash/queue
+queue.max_bytes: 4gb
+pipeline.ecs_compatibility: v8
 ```
 
-#### 3. 关闭 SELinux
+`queue.max_bytes` 不是越大越安全。它决定磁盘预算与可吸收的下游中断窗口，估算需要输入峰值字节率、事件膨胀系数和目标缓冲时长；磁盘满仍会导致背压继续向 Filebeat 和源文件传播。
 
-```bash
-sudo sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
-source /etc/selinux/config
-```
-
-#### 4. 配置内核参数
-
-```bash
-sudo vim /etc/sysctl.conf
-vm.max_map_count=262144
-fs.file-max=65536
-sudo sysctl -p
-```
-
-#### 5. 配置用户资源限制
-
-```bash
-sudo vim /etc/security/limits.conf
-elk soft nofile 65536
-elk hard nofile 65536
-elk soft nproc 4096
-elk hard nproc 4096
-```
-
-### Docker 快速部署（推荐）
-
-```bash
-version: '3'
-
-services:
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
-    container_name: elasticsearch
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ports:
-      - "9200:9200"
-      - "9300:9300"
-    volumes:
-      - elasticsearch-data:/usr/share/elasticsearch/data
-    networks:
-      - elk
-
-  logstash:
-    image: docker.elastic.co/logstash/logstash:8.15.0
-    container_name: logstash
-    volumes:
-      - ./logstash/pipeline:/usr/share/logstash/pipeline
-      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
-    ports:
-      - "5044:5044"
-    networks:
-      - elk
-    depends_on:
-      - elasticsearch
-
-  kibana:
-    image: docker.elastic.co/kibana/kibana:8.15.0
-    container_name: kibana
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-    ports:
-      - "5601:5601"
-    networks:
-      - elk
-    depends_on:
-      - elasticsearch
-
-volumes:
-  elasticsearch-data:
-
-networks:
-  elk:
-    driver: bridge
-```
-
-启动命令：
-
-```bash
-docker-compose up -d
-```
-
-### 单机手动安装
-
-#### Elasticsearch 安装
-
-```bash
-wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-8.15.0-linux-x86_64.tar.gz
-tar -xzf elasticsearch-8.15.0-linux-x86_64.tar.gz
-cd elasticsearch-8.15.0
-
-# 配置
-vim config/elasticsearch.yml
-cluster.name: my-cluster
-node.name: node-1
-network.host: 0.0.0.0
-discovery.type: single-node
-
-# 启动
-./bin/elasticsearch -d
-```
-
-#### Logstash 安装
-
-```bash
-wget https://artifacts.elastic.co/downloads/logstash/logstash-8.15.0-linux-x86_64.tar.gz
-tar -xzf logstash-8.15.0-linux-x86_64.tar.gz
-cd logstash-8.15.0
-```
-
-#### Kibana 安装
-
-```bash
-wget https://artifacts.elastic.co/downloads/kibana/kibana-8.15.0-linux-x86_64.tar.gz
-tar -xzf kibana-8.15.0-linux-x86_64.tar.gz
-cd kibana-8.15.0
-
-# 配置
-vim config/kibana.yml
-elasticsearch.hosts: ["http://localhost:9200"]
-
-# 启动
-./bin/kibana
-```
-
-## Logstash 配置
-
-### 基础管道配置
+### 管道与失败分流
 
 ```ruby
 input {
   beats {
     port => 5044
-  }
-  
-  file {
-    path => "/var/log/nginx/access.log"
-    start_position => "beginning"
-    sincedb_path => "/dev/null"
-  }
-  
-  jdbc {
-    jdbc_connection_string => "jdbc:mysql://localhost:3306/mydb"
-    jdbc_user => "root"
-    jdbc_password => "password"
-    jdbc_driver_library => "/usr/share/logstash/mysql-connector.jar"
-    jdbc_driver_class => "com.mysql.cj.jdbc.Driver"
-    statement => "SELECT * FROM logs WHERE updated_at > :sql_last_value"
-    use_column_value => true
-    tracking_column => "updated_at"
-    tracking_column_type => "timestamp"
-    schedule => "* * * * *"
+    ssl_enabled => true
+    ssl_certificate_authorities => ["/etc/logstash/certs/ca.crt"]
+    ssl_certificate => "/etc/logstash/certs/logstash.crt"
+    ssl_key => "/etc/logstash/certs/logstash.pkcs8.key"
   }
 }
 
 filter {
-  if [log_type] == "nginx" {
-    grok {
-      match => { "message" => "%{IPORHOST:client_ip} - %{DATA:user} \[%{HTTPDATE:timestamp}\] \"%{WORD:method} %{URIPATHPARAM:request} HTTP/%{NUMBER:http_version}\" %{NUMBER:status:int} %{NUMBER:bytes:int} \"%{DATA:referrer}\" \"%{DATA:user_agent}\"" }
-    }
-    
-    date {
-      match => [ "timestamp", "dd/MMM/yyyy:HH:mm:ss Z" ]
-      target => "@timestamp"
-    }
-    
-    mutate {
-      convert => {
-        "bytes" => "integer"
-        "status" => "integer"
-      }
-    }
-    
-    geoip {
-      source => "client_ip"
-      target => "geo"
-    }
+  if ![service][name] or ![event][id] or ![@timestamp] {
+    mutate { add_tag => ["_shop_contract_failure"] }
   }
-  
-  if [log_type] == "application" {
-    json {
-      source => "message"
-      target => "parsed"
-    }
-    
-    date {
-      match => [ "parsed.timestamp", "ISO8601" ]
-      target => "@timestamp"
-    }
-    
-    mutate {
-      remove_field => [ "message", "host" ]
-    }
-  }
-}
 
-output {
-  elasticsearch {
-    hosts => ["http://localhost:9200"]
-    index => "app-logs-%{+YYYY.MM.dd}"
-    user => "elastic"
-    password => "changeme"
-  }
-  
-  stdout {
-    codec => rubydebug
-  }
-}
-```
-
-### 常用过滤插件
-
-#### Grok 解析日志
-
-```ruby
-grok {
-  match => { "message" => "%{IP:client_ip} %{WORD:method} %{URIPATHPARAM:request} %{NUMBER:status}" }
-  overwrite => [ "message" ]
-}
-```
-
-#### Date 日期解析
-
-```ruby
-date {
-  match => [ "timestamp", "yyyy-MM-dd HH:mm:ss" ]
-  target => "@timestamp"
-}
-```
-
-#### Mutate 数据转换
-
-```ruby
-mutate {
-  add_field => { "environment" => "production" }
-  remove_field => [ "host" ]
-  convert => {
-    "status" => "integer"
-    "duration" => "float"
-  }
-  uppercase => [ "level" ]
-}
-```
-
-#### JSON 解析
-
-```ruby
-json {
-  source => "message"
-  target => "parsed"
-  skip_on_invalid_json => true
-}
-```
-
-#### GeoIP 地理位置
-
-```ruby
-geoip {
-  source => "client_ip"
-  target => "geo"
-  database => "/usr/share/GeoIP/GeoLite2-City.mmdb"
-}
-```
-
-#### UserAgent 用户代理解析
-
-```ruby
-useragent {
-  source => "user_agent"
-  target => "ua"
-}
-```
-
-## Elasticsearch 查询
-
-### REST API 基础操作
-
-#### 创建索引
-
-```bash
-curl -X PUT "localhost:9200/my-app-logs" -H 'Content-Type: application/json' -d'
-{
-  "settings": {
-    "number_of_shards": 3,
-    "number_of_replicas": 1,
-    "index.refresh_interval": "5s"
-  },
-  "mappings": {
-    "properties": {
-      "@timestamp": { "type": "date" },
-      "level": { "type": "keyword" },
-      "message": { "type": "text" },
-      "service": { "type": "keyword" },
-      "host": { "type": "ip" },
-      "client_ip": { "type": "ip" },
-      "status": { "type": "integer" },
-      "duration": { "type": "float" }
-    }
-  }
-}
-'
-```
-
-#### 插入文档
-
-```bash
-curl -X POST "localhost:9200/my-app-logs/_doc" -H 'Content-Type: application/json' -d'
-{
-  "@timestamp": "2024-08-25T10:30:00Z",
-  "level": "ERROR",
-  "message": "Connection timeout",
-  "service": "api-gateway",
-  "host": "192.168.1.100"
-}
-'
-```
-
-#### 搜索查询
-
-```bash
-# 基础搜索
-curl -X GET "localhost:9200/my-app-logs/_search" -H 'Content-Type: application/json' -d'
-{
-  "query": {
-    "match": {
-      "level": "ERROR"
-    }
-  }
-}
-'
-
-# 复合查询
-curl -X GET "localhost:9200/my-app-logs/_search" -H 'Content-Type: application/json' -d'
-{
-  "query": {
-    "bool": {
-      "must": [
-        { "range": { "@timestamp": { "gte": "now-1d" } } },
-        { "term": { "level": "ERROR" } }
-      ],
-      "filter": [
-        { "term": { "service": "api-gateway" } }
-      ]
-    }
-  },
-  "sort": [{ "@timestamp": "desc" }],
-  "size": 100
-}
-'
-```
-
-### DSL 查询详解
-
-```json
-{
-  "query": {
-    "bool": {
-      "must": [],
-      "should": [],
-      "must_not": [],
-      "filter": []
-    }
-  },
-  "aggs": {
-    "status_counts": {
-      "terms": { "field": "status" }
-    },
-    "avg_duration": {
-      "avg": { "field": "duration" }
-    }
-  }
-}
-```
-
-## Kibana 使用
-
-### 访问与配置
-
-1. 访问 `http://localhost:5601`
-2. 首次进入创建索引模式
-3. 选择时间字段 `@timestamp`
-4. 点击 "Create index pattern"
-
-### Discover 数据探索
-
-- **搜索栏**：输入 KQL 查询语法
-- **时间选择器**：选择查询时间范围
-- **文档列表**：查看匹配的文档
-- **字段列表**：添加/移除显示字段
-
-### KQL 查询语法
-
-```kql
-# 基础查询
-level:ERROR
-
-# 范围查询
-duration > 1000
-
-# 通配符
-service:api-*
-
-# 布尔组合
-level:(ERROR or WARNING)
-
-# 时间范围
-@timestamp > "now-1d"
-```
-
-### 仪表盘创建
-
-1. 点击 **Dashboard** → **Create dashboard**
-2. 点击 **Add panel**
-3. 选择可视化类型（Line、Bar、Pie、Metric 等）
-4. 选择索引和聚合方式
-5. 保存仪表盘
-
-### 可视化类型
-
-| 类型 | 用途 |
-|------|------|
-| Line | 趋势变化 |
-| Bar | 对比分析 |
-| Pie | 占比分析 |
-| Metric | 数值展示 |
-| Heatmap | 热力图 |
-| Map | 地图分布 |
-
-### 告警配置
-
-```json
-{
-  "rule_type_id": "logs.alert.document.count",
-  "params": {
-    "index": ["my-app-logs-*"],
-    "condition": {
-      "comparison": ">",
-      "value": 100,
-      "metrics": {
-        "agg_type": "count"
-      }
-    },
-    "time_window": "5m"
-  },
-  "actions": [
-    {
-      "connector_type_id": ".slack",
-      "params": {
-        "message": "Error count exceeded threshold"
-      }
-    }
-  ]
-}
-```
-
-## Filebeat 配置
-
-### 基础配置
-
-```yaml
-filebeat.inputs:
-- type: log
-  enabled: true
-  paths:
-    - /var/log/nginx/*.log
-  fields:
-    log_type: nginx
-    environment: production
-  fields_under_root: true
-
-processors:
-- add_host_metadata:
-    when.not.contains.tags: forwarded
-- add_cloud_metadata: ~
-- add_docker_metadata: ~
-
-output.logstash:
-  hosts: ["localhost:5044"]
-
-setup.kibana:
-  host: "localhost:5601"
-
-setup.index-template:
-  enabled: true
-```
-
-### 多日志源配置
-
-```yaml
-filebeat.inputs:
-- type: log
-  enabled: true
-  paths:
-    - /var/log/nginx/access.log
-  fields:
-    log_type: nginx_access
-  fields_under_root: true
-
-- type: log
-  enabled: true
-  paths:
-    - /var/log/nginx/error.log
-  fields:
-    log_type: nginx_error
-  fields_under_root: true
-
-- type: log
-  enabled: true
-  paths:
-    - /var/log/app/*.log
-  fields:
-    log_type: application
-  fields_under_root: true
-  multiline.pattern: '^\['
-  multiline.negate: true
-  multiline.match: after
-
-output.elasticsearch:
-  hosts: ["localhost:9200"]
-  index: "logs-%{+yyyy.MM.dd}"
-
-setup.kibana:
-  host: "localhost:5601"
-```
-
-## 实战案例
-
-### Python 应用日志收集
-
-#### 应用端日志格式
-
-```python
-import logging
-import json
-from datetime import datetime
-
-class JSONFormatter(logging.Formatter):
-    def format(self, record):
-        log_data = {
-            "timestamp": datetime.utcnow().isoformat(),
-            "level": record.levelname,
-            "logger": record.name,
-            "message": record.getMessage(),
-            "module": record.module,
-            "function": record.funcName,
-            "line": record.lineno
-        }
-        if record.exc_info:
-            log_data["exception"] = self.formatException(record.exc_info)
-        return json.dumps(log_data)
-
-handler = logging.FileHandler("/var/log/app/application.log")
-handler.setFormatter(JSONFormatter())
-logger = logging.getLogger("app")
-logger.addHandler(handler)
-logger.setLevel(logging.INFO)
-```
-
-#### Logstash 配置
-
-```ruby
-input {
-  file {
-    path => "/var/log/app/application.log"
-    start_position => "beginning"
-    codec => json
-    sincedb_path => "/var/lib/logstash/sincedb_app"
-  }
-}
-
-filter {
-  date {
-    match => [ "timestamp", "ISO8601" ]
-    target => "@timestamp"
-  }
-  
   mutate {
-    add_field => {
-      "service" => "my-python-app"
-      "environment" => "production"
-    }
-  }
-  
-  if [level] == "ERROR" {
-    mutate {
-      add_tag => [ "error" ]
-    }
+    add_field => { "[@metadata][ingest_pipeline]" => "shop-logs-normalize-v1" }
   }
 }
 
 output {
-  elasticsearch {
-    hosts => ["http://localhost:9200"]
-    index => "python-app-logs-%{+YYYY.MM.dd}"
-  }
-}
-```
-
-### Java 应用日志收集（使用 Filebeat）
-
-#### Logback 配置
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<configuration>
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>/var/log/app/application.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>/var/log/app/application.%d{yyyy-MM-dd}.log</fileNamePattern>
-            <maxHistory>30</maxHistory>
-        </rollingPolicy>
-        <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
-    </appender>
-    
-    <appender name="JSON" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>/var/log/app/application.json</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>/var/log/app/application.%d{yyyy-MM-dd}.json</fileNamePattern>
-            <maxHistory>30</maxHistory>
-        </rollingPolicy>
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
-    </appender>
-    
-    <root level="INFO">
-        <appender-ref ref="JSON"/>
-    </root>
-</configuration>
-```
-
-#### Filebeat 配置
-
-```yaml
-filebeat.inputs:
-- type: log
-  enabled: true
-  paths:
-    - /var/log/app/application.json
-  json.keys_under_root: true
-  json.add_error_key: true
-  json.message_key: message
-
-processors:
-- add_host_metadata: ~
-- decode_json_fields:
-    fields: ["message"]
-    target: ""
-    overwrite_keys: true
-```
-
-## 性能优化
-
-### Elasticsearch 优化
-
-```yaml
-# elasticsearch.yml
-indices.memory.index_buffer_size: 20%
-indices.queries.cache.size: 15%
-thread_pool.write.queue_size: 1000
-```
-
-### Logstash 优化
-
-```ruby
-# 管道配置优化
-pipeline {
-  workers => 4
-  batch_size => 125
-  batch_delay => 5
-}
-```
-
-### 索引生命周期管理
-
-```json
-{
-  "policy": {
-    "phases": {
-      "hot": {
-        "min_age": "0ms",
-        "actions": {
-          "rollover": {
-            "max_age": "7d",
-            "max_primary_shard_size": "50gb"
-          },
-          "set_priority": 100
-        }
-      },
-      "warm": {
-        "min_age": "30d",
-        "actions": {
-          "shrink": {
-            "number_of_shards": 1
-          },
-          "forcemerge": {
-            "max_num_segments": 1
-          },
-          "set_priority": 50
-        }
-      },
-      "cold": {
-        "min_age": "60d",
-        "actions": {
-          "set_priority": 0
-        }
-      },
-      "delete": {
-        "min_age": "90d",
-        "actions": {
-          "delete": {}
-        }
-      }
+  if [error][type] == "json" or "_shop_contract_failure" in [tags] {
+    elasticsearch {
+      hosts => ["https://es01:9200", "https://es02:9200"]
+      api_key => "${ELASTIC_API_KEY}"
+      ssl_enabled => true
+      ssl_certificate_authorities => "/etc/logstash/certs/ca.crt"
+      data_stream => "true"
+      data_stream_type => "logs"
+      data_stream_dataset => "shop.quarantine"
+      data_stream_namespace => "default"
+    }
+  } else {
+    elasticsearch {
+      hosts => ["https://es01:9200", "https://es02:9200"]
+      api_key => "${ELASTIC_API_KEY}"
+      ssl_enabled => true
+      ssl_certificate_authorities => "/etc/logstash/certs/ca.crt"
+      data_stream => "true"
+      data_stream_type => "logs"
+      data_stream_dataset => "shop"
+      data_stream_namespace => "default"
+      pipeline => "%{[@metadata][ingest_pipeline]}"
     }
   }
 }
 ```
 
-## 常见问题与排查
+输入是 Beats event；中间状态是契约检查标签与 `@metadata`；输出是正式 data stream 或隔离 data stream。真实部署中 API key 必须来自 Logstash keystore/秘密系统，不能写成明文。
 
-### 1. Elasticsearch 启动失败
+Logstash persistent queue 能在进程重启和暂时下游故障时保存已接收事件，但不提供端到端 exactly-once。输出在“已写入 Elasticsearch、确认尚未持久化”这类边界重试时，事件可能重复。应用提供稳定 `event.id`，下游统计和告警才能识别重复；是否使用该 ID 作为 Elasticsearch `_id` 需要评估写入吞吐、覆盖语义与 data stream 约束。
 
-- 检查内存：`vm.max_map_count` 是否足够
-- 检查权限：确保非 root 用户运行
-- 查看日志：`/var/log/elasticsearch/*.log`
+<!-- figure:s05-f02 -->
 
-### 2. Logstash 无法连接 ES
+![至少一次投递为何仍可能产生重复事件](./images/s05-f02-at-least-once-acknowledgement-window.png)
 
-- 检查 ES 是否启动
-- 验证网络连接：`curl http://localhost:9200`
-- 检查防火墙端口
+Dead Letter Queue（DLQ）也不是任意错误的总保险箱。它主要处理特定输出无法交付的事件；解析失败需要像上例一样显式打标和路由。隔离流必须有访问控制、保留期、告警和修复/重放流程，否则只是把丢失变成不可见积压。
 
-### 3. Kibana 无法连接 ES
+## Elasticsearch：Data Stream、模板与保留
 
-- 检查 ES 地址配置
-- 验证端口可访问性
-- 检查安全设置（认证、SSL）
+上一篇配置文已经创建匹配 `logs-shop-*` 的 data stream 模板。首次写入前模拟模板，随后验证：
 
-### 4. Filebeat 无法收集日志
+```http
+POST /_index_template/_simulate_index/logs-shop-default
+GET /_data_stream/logs-shop-default
+GET /logs-shop-default/_mapping
+GET /logs-shop-default/_ilm/explain
+```
 
-- 检查文件路径是否正确
-- 验证文件权限
-- 检查 sincedb 文件
+正式事件的字段类型应满足：
 
-### 5. 索引写入性能低
+- `@timestamp`: `date`
+- `event.id`, `service.name`, `service.environment`, `log.level`, `trace.id`, `order.id`: `keyword`
+- `message`: `text`
 
-- 增加批量写入大小
-- 使用 bulk API
-- 优化索引配置
+若模板使用 `dynamic: strict`，未知字段会拒绝写入。这是契约保护，不是把严格模式关闭的理由；先在隔离流观察新字段，再评审 Mapping 版本和兼容策略。
 
-## 小结
+自管 Elastic Stack 可用 ILM 管理 backing indices 的 rollover 与保留。Serverless 使用 data stream lifecycle 等对应能力。保留期要同时满足排障窗口、合规、成本和快照策略；删除阶段不可替代备份。
 
-ELK Stack 作为最成熟的日志与数据分析解决方案，其核心价值在于：
+## Kibana：从固定事件到可行动告警
 
-- **完整链路**：从采集、处理、存储到可视化全覆盖
-- **实时检索**：毫秒级响应，支持 PB 级数据
-- **灵活扩展**：支持集群部署，横向扩展
-- **丰富生态**：Beats、Logstash 插件生态丰富
+在 Discover 中选择匹配 `logs-shop-*` 的 data view，时间字段使用 `@timestamp`。用稳定 ID 进行第一条验收查询：
 
-落地清单：
+```text
+event.id : "evt-20260717-0001"
+```
 
-- 合理规划索引结构和生命周期
-- 使用 Beats 收集日志减轻 Logstash 压力
-- 配置合理的副本和分片数
-- 启用索引生命周期管理自动化管理
-- 配置告警规则及时发现问题
+再验证业务查询：
 
-附加参考：
+```text
+service.name : "shop-api" and log.level : "ERROR" and @timestamp >= now-15m
+```
 
-- [Elastic 官方文档](https://www.elastic.co/docs/)
-- [Elasticsearch 文档](https://www.elastic.co/guide/en/elasticsearch/reference/current/)
-- [Logstash 文档](https://www.elastic.co/guide/en/logstash/current/)
-- [Kibana 文档](https://www.elastic.co/guide/en/kibana/current/)
-- [Beats 文档](https://www.elastic.co/guide/en/beats/libbeat/current/)
+告警不要只写“ERROR 数量 > 0”。至少定义：
 
----
+- 查询与时间窗口，例如 5 分钟内 `shop-api` ERROR ≥ 20。
+- 分组键，例如 `service.name`。
+- 评估间隔、连续触发次数和恢复条件。
+- 无数据（no data）与执行失败如何处理。
+- 通知中携带 runbook、时间范围和可复现查询，不直接泄露敏感日志正文。
+
+## 端到端验收：只追踪一个 `event.id`
+
+1. **应用输出**：把固定事件追加到 `events.jsonl`，确认每个事件恰好一行且能被 `jq -c .` 解析。
+2. **Filebeat 输入**：观察 input/harvester 日志与 registry 更新，不删除 registry。
+3. **输出连接**：确认 Filebeat 无持续 publish error；Logstash beats input 有事件进入。
+4. **队列状态**：观察 Logstash queue 与 pipeline 指标，确认没有持续增长或 output retry 风暴。
+5. **分流结果**：合法事件进入 `logs-shop-default`；缺少 `event.id` 的测试事件进入 quarantine。
+6. **Elasticsearch 查询**：按 `event.id` 搜索，核对 `_source`、Mapping 和 `@timestamp`。
+7. **Kibana 时间语义**：Discover 时间范围覆盖事件时间，而不是只看采集时间。
+8. **告警验证**：用可控测试事件跨过阈值，确认触发与恢复通知。
+
+查询固定事件：
+
+```http
+GET /logs-shop-default/_search
+{
+  "query": {
+    "term": {
+      "event.id": "evt-20260717-0001"
+    }
+  }
+}
+```
+
+预期 `hits.total.value >= 1`。若大于 1，先判断是否为重复投递；若为 0，按链路从应用文件向后检查，不能直接在 Kibana 反复刷新。
+
+## 常见故障与恢复边界
+
+| 症状                             | 先看哪里                            | 常见根因                           | 安全动作                                  |
+| -------------------------------- | ----------------------------------- | ---------------------------------- | ----------------------------------------- |
+| Filebeat 不读新日志              | input 日志、路径、权限、registry    | 路径挂载错误、inode/轮转行为、权限 | 修路径/权限并观察偏移；不要先删 registry  |
+| Logstash queue 持续增长          | pipeline 指标、ES 输出错误          | 下游变慢、Mapping 拒绝、认证失败   | 保护磁盘，修复下游；必要时限流上游        |
+| 正式流没有事件但 quarantine 增长 | `error.*`、失败标签、字段契约       | 非法 JSON、必需字段缺失            | 修应用格式或版本化 parser，再受控重放     |
+| ES 返回 429                      | thread pool、写入延迟、分片与磁盘   | 写入过载或恢复争用                 | 降低/平滑输入，查容量；不要无限加大队列   |
+| Kibana 看不到已写入事件          | 直接 `_search`、data view、时间范围 | 时间字段/时区、过滤器、权限        | 先用 API 按 `event.id` 验证，再修 UI 条件 |
+
+恢复必须考虑磁盘上仍在增长的源日志、Filebeat registry、Logstash queue 与 Elasticsearch 已确认写入之间的相对状态。重置任何一层状态前先做备份和重复/遗漏评估。
+
+## 常见误区
+
+- **ELK 每条链都必须有 Logstash**：简单、契约稳定的事件可以直写；复杂路由和持久缓冲才需要它。
+- **关闭防火墙或 SELinux 是安装步骤**：这会扩大攻击面；应配置明确端口、策略和证书。
+- **日志是字符串，字段以后再说**：没有字段契约，就无法稳定过滤、聚合、告警和治理隐私。
+- **Persistent Queue 等于 exactly-once**：重试边界仍可能重复，稳定 `event.id` 与幂等消费不可少。
+- **DLQ 会自动接住所有坏事件**：解析错误必须显式标记和分流，DLQ 有明确适用范围。
+- **只看 Kibana 验收**：UI 时间范围、data view 和权限都可能遮蔽数据；先用固定 ID 从 API 验证。
+
+## 什么时候不适用
+
+小规模、低保留、无需全文检索的日志可以使用更简单的本地轮转与集中归档；强指标聚合更适合指标系统，完整分布式追踪需要 APM/OpenTelemetry 设计。若事件量和团队能力无法承担多组件运维，应优先减少组件或使用托管方案。本文不比较其他日志平台，也不展开 trace 采样和成本采购。
+
+## 读者自检
+
+1. 什么情况下 Filebeat 可以直写 Elasticsearch，什么情况下值得加入 Logstash？
+2. 为什么 persistent queue 不能保证端到端 exactly-once？
+3. Kibana 搜不到一条日志时，为什么应先用 `event.id` 调 Elasticsearch API？
+
+<details>
+<summary>查看答案</summary>
+
+1. 字段已符合契约且只需简单处理时可直写；需要复杂解析/富化、条件路由、独立持久缓冲或多个输出时再加入 Logstash。
+2. 在下游已经写入但上游确认尚未持久化等故障窗口中，重试可能重复；队列只保存与重放事件，无法让跨组件确认成为一个原子事务。
+3. API 能先证明数据是否真实写入并排除 data view、时间范围、UI 过滤器与 Kibana 权限等展示层变量。
+
+</details>
+
+## 本篇总结
+
+可靠日志管理不是安装四个组件，而是建立一条有字段契约、偏移状态、背压、失败分流、保留策略和端到端验证的链路。用固定 `event.id` 穿透每层，以正式流和 quarantine 分离质量状态，并接受至少一次投递可能带来的重复。
+
+## 下一篇衔接
+
+Elasticsearch 主路径至此闭环。实际落地时，建议下一步建立三类运行手册：采集延迟、解析失败率和 data stream 写入/保留异常；每条告警都链接到本文的固定证据链和恢复边界。
+
+## 资料来源
+
+- [Elastic：The Elastic Stack](https://www.elastic.co/guide/en/elastic-stack/current/overview.html)
+- [Elastic：Filebeat reference](https://www.elastic.co/docs/reference/beats/filebeat)
+- [Elastic：Filestream input](https://www.elastic.co/docs/reference/beats/filebeat/filebeat-input-filestream)
+- [Elastic：Deploying and scaling Logstash](https://www.elastic.co/docs/reference/logstash/deploying-scaling-logstash)
+- [Elastic：Persistent queues](https://www.elastic.co/docs/reference/logstash/persistent-queues)
+- [Elastic：Dead letter queues](https://www.elastic.co/docs/reference/logstash/dead-letter-queues)
+- [Elastic：Set up a data stream](https://www.elastic.co/docs/manage-data/data-store/data-streams/set-up-data-stream)
+- [Elastic：Explore logs in Discover](https://www.elastic.co/docs/solutions/observability/logs/explore-logs)
