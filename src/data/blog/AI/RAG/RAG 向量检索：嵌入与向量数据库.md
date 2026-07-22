@@ -97,37 +97,37 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
 
 ![理解归一化向量的等价排序](./images/r03-f05-normalized-equivalence.png)
 
-设查询向量 \(q\)，文档向量 \(d\)。
+设查询向量 $q$，文档向量 $d$。
 
 ### 余弦相似度
 
-\[
+$$
 \operatorname{cos}(q,d)=\frac{q\cdot d}{\lVert q\rVert_2\lVert d\rVert_2}
-\]
+$$
 
 值越大通常越相似。它关注方向，忽略向量长度。
 
 ### 点积
 
-\[
+$$
 \operatorname{dot}(q,d)=q\cdot d=\sum_i q_i d_i
-\]
+$$
 
 值越大通常越相似，同时受方向和长度影响。
 
 ### 欧氏距离
 
-\[
+$$
 L_2(q,d)=\sqrt{\sum_i(q_i-d_i)^2}
-\]
+$$
 
 距离越小越相似。注意它与前两者的排序方向相反。
 
 当所有向量都做 L2 归一化时：
 
-\[
+$$
 \lVert q-d\rVert_2^2=2-2(q\cdot d)
-\]
+$$
 
 因此归一化向量上的点积、余弦相似度和欧氏距离会产生等价排序；未归一化时不能直接套用这个结论。
 
@@ -146,9 +146,9 @@ dC = [0.6, 0.8]  “住宿发票与附件要求”
 
 点积为：
 
-- \(q\cdot d_A=0.8\)
-- \(q\cdot d_B=0.0\)
-- \(q\cdot d_C=0.6\)
+- $q\cdot d_A=0.8$
+- $q\cdot d_B=0.0$
+- $q\cdot d_C=0.6$
 
 所以 Top-2 为 A、C。这个例子只解释排序，不证明 A 必然蕴含真实答案；后续仍需重排和生成校验。
 
@@ -222,9 +222,9 @@ def exact_top_k(query, records, k: int):
 
 参数调优必须与精确 Top-k 对照：
 
-\[
+$$
 \operatorname{ANNRecall@k}=\frac{|\operatorname{ANNTopK}\cap\operatorname{ExactTopK}|}{k}
-\]
+$$
 
 这里评估的是索引近似误差，不是业务相关性。业务 Recall@k 则要与人工标注的相关 Chunk 比较，两者不能混为一谈。
 

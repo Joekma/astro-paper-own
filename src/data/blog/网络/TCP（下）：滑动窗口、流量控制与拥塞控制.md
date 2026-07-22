@@ -26,9 +26,9 @@ language: zh-CN
 
 接收应用读取慢会填满接收缓冲区；网络路径过载会导致排队和丢包。前者由流量控制处理，后者由拥塞控制处理。实际可发送窗口近似为：
 
-\[
+$$
 send_window = \min(rwnd, cwnd)
-\]
+$$
 
 ## 核心机制
 
@@ -53,9 +53,9 @@ send_window = \min(rwnd, cwnd)
 
 带宽时延积 BDP 表示让路径保持“管道填满”所需的在途数据量：
 
-\[
+$$
 BDP = bandwidth \times RTT
-\]
+$$
 
 例如 100 Mbit/s、RTT 80 ms 的路径，BDP 约为 1 MB。若窗口远小于 BDP，即使没有丢包也难以利用带宽。
 

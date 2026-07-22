@@ -439,6 +439,6 @@ collection.delete_one({"title": "MongoDB"})
 - **数据库**：集合的容器
 - **CRUD**：insert、find、update、delete
 - **聚合管道**：多阶段数据处理，支持复杂统计分析
-- **数组操作**：$push、$pull、$filter 等数组操作符
-- **条件表达式**：$cond、$ifNull、$switch 处理复杂逻辑
+- **数组操作**：`$push`、`$pull`、`$filter` 等数组操作符
+- **条件表达式**：`$cond`、`$ifNull`、`$switch` 处理复杂逻辑
 - **索引**：提升查询性能

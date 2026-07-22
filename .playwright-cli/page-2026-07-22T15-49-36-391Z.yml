@@ -1,0 +1,834 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - link "Mupaper" [ref=e5] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=e6]:
+        - list [ref=e7]:
+          - listitem [ref=e8]:
+            - link "tags" [ref=e9] [cursor=pointer]:
+              - /url: /tags
+              - generic [ref=e14]: Tags
+          - listitem [ref=e15]:
+            - link "about" [ref=e16] [cursor=pointer]:
+              - /url: /about
+              - generic [ref=e21]: About
+          - listitem [ref=e22]:
+            - link "archives" [ref=e23] [cursor=pointer]:
+              - /url: /archives
+              - generic [ref=e28]: Archives
+          - listitem [ref=e29]:
+            - link "search" [ref=e30] [cursor=pointer]:
+              - /url: /search
+              - generic [ref=e35]: Search
+          - listitem [ref=e36]:
+            - button "light" [ref=e37] [cursor=pointer]
+  - link "Go back" [ref=e42] [cursor=pointer]:
+    - /url: /
+  - main [ref=e47]:
+    - heading "Self-Attention 完整数学推导：从 QKV 到代码" [level=1] [ref=e48]
+    - generic [ref=e50]:
+      - generic [ref=e54]: "Updated:"
+      - time [ref=e55]: 11 Jul, 2026
+    - article [ref=e56]:
+      - heading "本篇要解决的问题" [level=2] [ref=e57]:
+        - text: 本篇要解决的问题
+        - link [ref=e58] [cursor=pointer]:
+          - /url: "#本篇要解决的问题"
+          - text: "#"
+      - paragraph [ref=e59]:
+        - img "在一张图中建立 Self-Attention 数学总览" [ref=e60]
+      - paragraph [ref=e61]:
+        - text: Q、K、V 从哪里来？为什么
+        - generic [ref=e62]:
+          - math [ref=e64]:
+            - generic [ref=e66]:
+              - generic [ref=e67]: Q
+              - generic [ref=e68]:
+                - generic [ref=e69]: K
+                - generic [ref=e70]: T
+          - generic [ref=e72]:
+            - text: Q
+            - generic [ref=e73]:
+              - text: K
+              - generic [ref=e74]: T
+        - text: 得到
+        - code [ref=e79]: T×T
+        - text: ？为什么缩放、为何逐行 Softmax、最终输出又是什么？
+      - heading "前置知识" [level=3] [ref=e80]:
+        - text: 前置知识
+        - link [ref=e81] [cursor=pointer]:
+          - /url: "#前置知识"
+          - text: "#"
+      - paragraph [ref=e82]:
+        - text: 读者应掌握矩阵乘法 Shape 规则：
+        - code [ref=e83]: "[m,n] @ [n,p] → [m,p]"
+        - text: ，并理解 Softmax 会把一组实数变成和为 1 的正数权重。
+      - heading "第一步：从同一输入投影 Q、K、V" [level=2] [ref=e84]:
+        - text: 第一步：从同一输入投影 Q、K、V
+        - link [ref=e85] [cursor=pointer]:
+          - /url: "#第一步从同一输入投影-qkv"
+          - text: "#"
+      - paragraph [ref=e86]:
+        - img "说明 QKV 来自同一 X 的不同线性投影" [ref=e87]
+      - paragraph [ref=e88]:
+        - text: 设单个注意力头的输入为
+        - generic [ref=e89]:
+          - math [ref=e91]:
+            - generic [ref=e93]:
+              - generic [ref=e94]: X
+              - generic [ref=e95]: ∈
+              - generic [ref=e96]:
+                - generic [ref=e97]: R
+                - generic [ref=e98]:
+                  - generic [ref=e99]: T
+                  - generic [ref=e100]: ×
+                  - generic [ref=e101]: C
+          - generic [ref=e102]:
+            - generic [ref=e103]: X ∈
+            - generic [ref=e105]:
+              - text: R
+              - generic [ref=e106]: T×C
+        - text: ，三个可训练矩阵把它投影到头维度
+        - generic [ref=e112]:
+          - math [ref=e114]:
+            - generic [ref=e115]: D
+          - generic [ref=e118]: D
+        - text: ：
+      - generic [ref=e121]:
+        - math [ref=e123]:
+          - generic [ref=e125]:
+            - generic [ref=e126]: Q
+            - generic [ref=e127]: =
+            - generic [ref=e128]: X
+            - generic [ref=e129]:
+              - generic [ref=e130]: W
+              - generic [ref=e131]: Q
+            - generic [ref=e132]: ","
+            - generic [ref=e133]: K
+            - generic [ref=e134]: =
+            - generic [ref=e135]: X
+            - generic [ref=e136]:
+              - generic [ref=e137]: W
+              - generic [ref=e138]: K
+            - generic [ref=e139]: ","
+            - generic [ref=e140]: V
+            - generic [ref=e141]: =
+            - generic [ref=e142]: X
+            - generic [ref=e143]:
+              - generic [ref=e144]: W
+              - generic [ref=e145]: V
+        - generic [ref=e146]:
+          - generic [ref=e147]: Q =
+          - generic [ref=e148]:
+            - text: X
+            - generic [ref=e149]:
+              - text: W
+              - generic [ref=e150]: Q
+            - text: ", K ="
+          - generic [ref=e158]:
+            - text: X
+            - generic [ref=e159]:
+              - text: W
+              - generic [ref=e160]: K
+            - text: ", V ="
+          - generic [ref=e168]:
+            - text: X
+            - generic [ref=e169]:
+              - text: W
+              - generic [ref=e170]: V
+      - paragraph [ref=e178]:
+        - text: 批次存在时，
+        - code [ref=e179]: X
+        - text: 是
+        - code [ref=e180]: "[B,T,C]"
+        - text: ，线性层只作用于最后一维，Q、K、V 都是
+        - code [ref=e181]: "[B,T,D]"
+        - text: 。
+      - paragraph [ref=e182]: 三个投影的参数不同，所以同一向量能同时表达“我需要什么”“我能被怎样匹配”“我要提供什么”。
+      - heading "第二步：用点积计算所有匹配" [level=2] [ref=e183]:
+        - text: 第二步：用点积计算所有匹配
+        - link [ref=e184] [cursor=pointer]:
+          - /url: "#第二步用点积计算所有匹配"
+          - text: "#"
+      - paragraph [ref=e185]:
+        - img "解释向量夹角与点积分数" [ref=e186]
+      - paragraph [ref=e187]:
+        - img "解释 QKᵀ 为什么得到 T×T" [ref=e188]
+      - paragraph [ref=e189]: 一个 Query 与一个 Key 的点积为：
+      - generic [ref=e191]:
+        - math [ref=e193]:
+          - generic [ref=e195]:
+            - generic [ref=e196]:
+              - generic [ref=e197]: s
+              - generic [ref=e198]:
+                - generic [ref=e199]: i
+                - generic [ref=e200]: j
+            - generic [ref=e201]: =
+            - generic [ref=e202]:
+              - generic [ref=e203]: q
+              - generic [ref=e204]: i
+            - generic [ref=e205]: ⋅
+            - generic [ref=e206]:
+              - generic [ref=e207]: k
+              - generic [ref=e208]: j
+        - generic [ref=e209]:
+          - generic [ref=e210]:
+            - generic [ref=e211]:
+              - text: s
+              - generic [ref=e212]: ij
+            - text: =
+          - generic [ref=e221]:
+            - generic [ref=e222]:
+              - text: q
+              - generic [ref=e223]: i
+            - text: ⋅
+          - generic [ref=e232]:
+            - text: k
+            - generic [ref=e233]: j
+      - paragraph [ref=e241]: 把全部 Query 和 Key 放进矩阵，一次乘法就计算所有位置对：
+      - generic [ref=e243]:
+        - math [ref=e245]:
+          - generic [ref=e247]:
+            - generic [ref=e248]: S
+            - generic [ref=e249]: =
+            - generic [ref=e250]: Q
+            - generic [ref=e251]:
+              - generic [ref=e252]: K
+              - generic [ref=e253]: T
+        - generic [ref=e254]:
+          - generic [ref=e255]: S =
+          - generic [ref=e256]:
+            - text: Q
+            - generic [ref=e257]:
+              - text: K
+              - generic [ref=e258]: T
+      - paragraph [ref=e263]:
+        - code [ref=e264]: "[T,D] @ [D,T] → [T,T]"
+        - text: 。结果的第
+        - code [ref=e265]: i
+        - text: 行表示 Query
+        - code [ref=e266]: i
+        - text: 对所有 Key 的分数，第
+        - code [ref=e267]: j
+        - text: 列对应 Key
+        - code [ref=e268]: j
+        - text: 。
+      - heading "第三步：缩放分数" [level=2] [ref=e269]:
+        - text: 第三步：缩放分数
+        - link [ref=e270] [cursor=pointer]:
+          - /url: "#第三步缩放分数"
+          - text: "#"
+      - paragraph [ref=e271]:
+        - img "解释除以 √D 避免 Softmax 过早饱和" [ref=e272]
+      - paragraph [ref=e273]:
+        - text: 若 Q、K 各维近似独立且方差为 1，
+        - code [ref=e274]: D
+        - text: 个乘积相加会使点积方差随
+        - code [ref=e275]: D
+        - text: 增大。大幅值送入 Softmax 容易得到过尖分布，梯度变小。论文因此使用：
+      - generic [ref=e277]:
+        - math [ref=e279]:
+          - generic [ref=e282]:
+            - generic [ref=e283]:
+              - generic [ref=e284]: Q
+              - generic [ref=e285]:
+                - generic [ref=e286]: K
+                - generic [ref=e287]: T
+            - generic [ref=e289]:
+              - generic [ref=e290]: d
+              - generic [ref=e291]: k
+        - generic [ref=e298]:
+          - generic [ref=e305]:
+            - text: d
+            - generic [ref=e306]: k
+          - generic [ref=e321]:
+            - text: Q
+            - generic [ref=e322]:
+              - text: K
+              - generic [ref=e323]: T
+      - paragraph [ref=e331]: 缩放不是为了把向量“变小一点好看”，而是让不同头维度下的分数尺度更稳定。
+      - heading "第四步：逐行 Softmax" [level=2] [ref=e332]:
+        - text: 第四步：逐行 Softmax
+        - link [ref=e333] [cursor=pointer]:
+          - /url: "#第四步逐行-softmax"
+          - text: "#"
+      - paragraph [ref=e334]:
+        - img "固定 Mask 在 Softmax 前的位置" [ref=e335]
+      - paragraph [ref=e336]:
+        - img "展示逐行归一化而非整矩阵归一化" [ref=e337]
+      - paragraph [ref=e338]: 对矩阵最后一维做 Softmax：
+      - generic [ref=e340]:
+        - math [ref=e342]:
+          - generic [ref=e344]:
+            - generic [ref=e345]:
+              - generic [ref=e346]: A
+              - generic [ref=e347]:
+                - generic [ref=e348]: i
+                - generic [ref=e349]: j
+            - generic [ref=e350]: =
+            - generic [ref=e351]:
+              - generic [ref=e352]:
+                - generic [ref=e353]: e
+                - generic [ref=e354]:
+                  - generic [ref=e355]: S
+                  - generic [ref=e356]:
+                    - generic [ref=e357]: i
+                    - generic [ref=e358]: j
+              - generic [ref=e359]:
+                - generic [ref=e360]:
+                  - generic [ref=e361]: ∑
+                  - generic [ref=e362]: m
+                - generic [ref=e363]:
+                  - generic [ref=e364]: e
+                  - generic [ref=e365]:
+                    - generic [ref=e366]: S
+                    - generic [ref=e367]:
+                      - generic [ref=e368]: i
+                      - generic [ref=e369]: m
+        - generic [ref=e370]:
+          - generic [ref=e371]:
+            - generic [ref=e372]:
+              - text: A
+              - generic [ref=e373]: ij
+            - text: =
+          - generic [ref=e387]:
+            - generic [ref=e388]:
+              - generic [ref=e389]:
+                - text: ∑
+                - generic [ref=e390]: m
+              - generic [ref=e398]:
+                - text: e
+                - generic [ref=e405]:
+                  - text: S
+                  - generic [ref=e406]: im
+            - generic [ref=e417]:
+              - text: e
+              - generic [ref=e424]:
+                - text: S
+                - generic [ref=e425]: ij
+      - paragraph [ref=e437]: 每一行和为 1，因为每个 Query 都需要自己的一份“读哪些 Key”的分布。若是因果模型，还要在 Softmax 之前把未来位置分数变成负无穷，第 7 篇详述。
+      - heading "第五步：混合 Value" [level=2] [ref=e438]:
+        - text: 第五步：混合 Value
+        - link [ref=e439] [cursor=pointer]:
+          - /url: "#第五步混合-value"
+          - text: "#"
+      - paragraph [ref=e440]:
+        - img "说明输出是 A@V 而不是权重矩阵" [ref=e441]
+      - paragraph [ref=e442]: 完整公式终于可以写成：
+      - generic [ref=e444]:
+        - math [ref=e446]:
+          - generic [ref=e448]:
+            - generic [ref=e449]: Attention
+            - generic: ⁡
+            - generic [ref=e450]: (
+            - generic [ref=e451]: Q
+            - generic [ref=e452]: ","
+            - generic [ref=e453]: K
+            - generic [ref=e454]: ","
+            - generic [ref=e455]: V
+            - generic [ref=e456]: )
+            - generic [ref=e457]: =
+            - generic [ref=e458]: softmax
+            - generic: ⁡
+            - generic [ref=e459]:
+              - generic [ref=e460]: (
+              - generic [ref=e461]:
+                - generic [ref=e462]:
+                  - generic [ref=e463]: Q
+                  - generic [ref=e464]:
+                    - generic [ref=e465]: K
+                    - generic [ref=e466]: T
+                - generic [ref=e468]:
+                  - generic [ref=e469]: d
+                  - generic [ref=e470]: k
+              - generic [ref=e471]: )
+            - generic [ref=e472]: V
+        - generic [ref=e473]:
+          - generic [ref=e474]:
+            - generic [ref=e475]: Attention
+            - text: (Q, K, V) =
+          - generic [ref=e476]:
+            - generic [ref=e477]: softmax
+            - generic [ref=e478]:
+              - generic [ref=e479]: (
+              - generic [ref=e484]:
+                - generic [ref=e491]:
+                  - text: d
+                  - generic [ref=e492]: k
+                - generic [ref=e507]:
+                  - text: Q
+                  - generic [ref=e508]:
+                    - text: K
+                    - generic [ref=e509]: T
+              - generic [ref=e517]: )
+            - text: V
+      - paragraph [ref=e518]:
+        - text: 形状是
+        - code [ref=e519]: "[T,T] @ [T,D] → [T,D]"
+        - text: 。第
+        - code [ref=e520]: i
+        - text: 行输出是所有 Value 对第
+        - code [ref=e521]: i
+        - text: 个 Query 的加权贡献。
+      - heading "公式、Shape 与 PyTorch 对齐" [level=2] [ref=e522]:
+        - text: 公式、Shape 与 PyTorch 对齐
+        - link [ref=e523] [cursor=pointer]:
+          - /url: "#公式shape-与-pytorch-对齐"
+          - text: "#"
+      - paragraph [ref=e524]:
+        - img "把三种表达逐项对齐" [ref=e525]
+      - generic [ref=e527]:
+        - code [ref=e528]:
+          - generic [ref=e529]: import math
+          - generic [ref=e530]: import torch.nn.functional as F
+          - generic [ref=e531]: "q = self.query(x) # [B,T,D]"
+          - generic [ref=e532]: "k = self.key(x) # [B,T,D]"
+          - generic [ref=e533]: "v = self.value(x) # [B,T,D]"
+          - generic [ref=e534]: "scores = q @ k.transpose(-2, -1) # [B,T,T]"
+          - generic [ref=e535]: scores = scores / math.sqrt(q.size(-1))
+          - generic [ref=e536]: "weights = F.softmax(scores, dim=-1) # [B,T,T]"
+          - generic [ref=e537]: "out = weights @ v # [B,T,D]"
+        - button "Copy" [ref=e538] [cursor=pointer]
+      - paragraph [ref=e539]:
+        - text: 注意
+        - code [ref=e540]: transpose(-2,-1)
+        - text: 交换的是 K 的序列维和特征维；
+        - code [ref=e541]: dim=-1
+        - text: 表示每个 Query 沿全部 Key 归一化。
+      - heading "Tensor Shape 总表" [level=2] [ref=e542]:
+        - text: Tensor Shape 总表
+        - link [ref=e543] [cursor=pointer]:
+          - /url: "#tensor-shape-总表"
+          - text: "#"
+      - paragraph [ref=e544]:
+        - img "集中核对所有核心张量" [ref=e545]
+      - table [ref=e546]:
+        - rowgroup [ref=e547]:
+          - row [ref=e548]:
+            - columnheader "张量" [ref=e549]
+            - columnheader "含义" [ref=e550]
+            - columnheader "单头 Shape" [ref=e551]
+            - columnheader "多头 Shape" [ref=e552]
+        - rowgroup [ref=e553]:
+          - row [ref=e554]:
+            - cell [ref=e555]:
+              - code [ref=e556]: X
+            - cell "输入表示" [ref=e557]
+            - cell [ref=e558]:
+              - code [ref=e559]: "[B,T,C]"
+            - cell [ref=e560]:
+              - code [ref=e561]: "[B,T,C]"
+          - row [ref=e562]:
+            - cell [ref=e563]:
+              - code [ref=e564]: Q/K/V
+            - cell "查询、索引、内容" [ref=e565]
+            - cell [ref=e566]:
+              - code [ref=e567]: "[B,T,D]"
+            - cell [ref=e568]:
+              - code [ref=e569]: "[B,H,T,D]"
+          - row [ref=e570]:
+            - cell [ref=e571]:
+              - code [ref=e572]: scores
+            - cell "每个 Query 对全部 Key 的分数" [ref=e573]
+            - cell [ref=e574]:
+              - code [ref=e575]: "[B,T,T]"
+            - cell [ref=e576]:
+              - code [ref=e577]: "[B,H,T,T]"
+          - row [ref=e578]:
+            - cell [ref=e579]:
+              - code [ref=e580]: weights
+            - cell "每行和为 1 的权重" [ref=e581]
+            - cell [ref=e582]:
+              - code [ref=e583]: "[B,T,T]"
+            - cell [ref=e584]:
+              - code [ref=e585]: "[B,H,T,T]"
+          - row [ref=e586]:
+            - cell [ref=e587]:
+              - code [ref=e588]: out
+            - cell "Value 的加权组合" [ref=e589]
+            - cell [ref=e590]:
+              - code [ref=e591]: "[B,T,D]"
+            - cell [ref=e592]:
+              - code [ref=e593]: "[B,H,T,D]"
+      - paragraph [ref=e594]:
+        - text: 这里
+        - code [ref=e595]: T×T
+        - text: 与特征维
+        - code [ref=e596]: C
+        - text: 无关：它来自“序列中的每个 Query 都要和序列中的每个 Key 比较”。
+      - heading "用一个数字例子验算" [level=2] [ref=e597]:
+        - text: 用一个数字例子验算
+        - link [ref=e598] [cursor=pointer]:
+          - /url: "#用一个数字例子验算"
+          - text: "#"
+      - paragraph [ref=e599]:
+        - text: 若某行缩放后分数为
+        - code [ref=e600]: "[2.1, 0.3, -0.7]"
+        - text: ，Softmax 约为
+        - code [ref=e601]: "[0.81, 0.13, 0.06]"
+        - text: ，则：
+      - generic [ref=e603]:
+        - math [ref=e605]:
+          - generic [ref=e607]:
+            - generic [ref=e608]: o
+            - generic [ref=e609]: =
+            - generic [ref=e610]: "0.81"
+            - generic [ref=e611]:
+              - generic [ref=e612]: v
+              - generic [ref=e613]: "1"
+            - generic [ref=e614]: +
+            - generic [ref=e615]: "0.13"
+            - generic [ref=e616]:
+              - generic [ref=e617]: v
+              - generic [ref=e618]: "2"
+            - generic [ref=e619]: +
+            - generic [ref=e620]: "0.06"
+            - generic [ref=e621]:
+              - generic [ref=e622]: v
+              - generic [ref=e623]: "3"
+        - generic [ref=e624]:
+          - generic [ref=e625]: o =
+          - generic [ref=e626]:
+            - text: "0.81"
+            - generic [ref=e627]:
+              - text: v
+              - generic [ref=e628]: "1"
+            - text: +
+          - generic [ref=e636]:
+            - text: "0.13"
+            - generic [ref=e637]:
+              - text: v
+              - generic [ref=e638]: "2"
+            - text: +
+          - generic [ref=e646]:
+            - text: "0.06"
+            - generic [ref=e647]:
+              - text: v
+              - generic [ref=e648]: "3"
+      - paragraph [ref=e656]: 三个系数加起来等于 1，但输出不一定落在简单“语义平均”上，因为 V 本身是学习到的向量，后面还有输出投影、残差与非线性层。
+      - heading "一个从头到尾可手算的例子" [level=3] [ref=e657]:
+        - text: 一个从头到尾可手算的例子
+        - link [ref=e658] [cursor=pointer]:
+          - /url: "#一个从头到尾可手算的例子"
+          - text: "#"
+      - paragraph [ref=e659]:
+        - img "复现正文 2 Token 数值推导" [ref=e660]
+      - paragraph [ref=e661]:
+        - text: 忽略 Batch，令
+        - code [ref=e662]: T=2
+        - text: 、
+        - code [ref=e663]: D=2
+        - text: ：
+      - generic [ref=e665]:
+        - math [ref=e667]:
+          - generic [ref=e669]:
+            - generic [ref=e670]: Q
+            - generic [ref=e671]: =
+            - generic [ref=e672]: K
+            - generic [ref=e673]: =
+            - generic [ref=e674]:
+              - generic [ref=e675]: "["
+              - generic [ref=e676]:
+                - generic [ref=e677]:
+                  - generic [ref=e678]: "1"
+                  - generic [ref=e681]: "0"
+                - generic [ref=e684]:
+                  - generic [ref=e685]: "0"
+                  - generic [ref=e688]: "1"
+              - generic [ref=e691]: "]"
+            - generic [ref=e692]: ","
+            - generic [ref=e693]: V
+            - generic [ref=e694]: =
+            - generic [ref=e695]:
+              - generic [ref=e696]: "["
+              - generic [ref=e697]:
+                - generic [ref=e698]:
+                  - generic [ref=e699]: "2"
+                  - generic [ref=e702]: "0"
+                - generic [ref=e705]:
+                  - generic [ref=e706]: "0"
+                  - generic [ref=e709]: "4"
+              - generic [ref=e712]: "]"
+        - generic [ref=e713]:
+          - generic [ref=e714]: Q =
+          - generic [ref=e715]: K =
+          - generic [ref=e716]:
+            - generic [ref=e717]:
+              - generic [ref=e718]: "["
+              - generic [ref=e720]:
+                - generic [ref=e724]:
+                  - generic [ref=e725]: "1"
+                  - generic [ref=e726]: "0"
+                - generic [ref=e733]:
+                  - generic [ref=e734]: "0"
+                  - generic [ref=e735]: "1"
+              - generic [ref=e739]: "]"
+            - text: ", V ="
+          - generic [ref=e741]:
+            - generic [ref=e742]: "["
+            - generic [ref=e744]:
+              - generic [ref=e748]:
+                - generic [ref=e749]: "2"
+                - generic [ref=e750]: "0"
+              - generic [ref=e757]:
+                - generic [ref=e758]: "0"
+                - generic [ref=e759]: "4"
+            - generic [ref=e763]: "]"
+      - paragraph [ref=e764]: 缩放分数为：
+      - generic [ref=e766]:
+        - math [ref=e768]:
+          - generic [ref=e770]:
+            - generic [ref=e771]: S
+            - generic [ref=e772]: =
+            - generic [ref=e773]:
+              - generic [ref=e774]:
+                - generic [ref=e775]: Q
+                - generic [ref=e776]:
+                  - generic [ref=e777]: K
+                  - generic [ref=e778]: T
+              - generic [ref=e779]: "2"
+            - generic [ref=e781]: =
+            - generic [ref=e782]:
+              - generic [ref=e783]: "["
+              - generic [ref=e784]:
+                - generic [ref=e785]:
+                  - generic [ref=e786]: "0.707"
+                  - generic [ref=e789]: "0"
+                - generic [ref=e792]:
+                  - generic [ref=e793]: "0"
+                  - generic [ref=e796]: "0.707"
+              - generic [ref=e799]: "]"
+        - generic [ref=e800]:
+          - generic [ref=e801]: S =
+          - generic [ref=e802]:
+            - generic [ref=e807]:
+              - generic [ref=e808]: "2"
+              - generic [ref=e821]:
+                - text: Q
+                - generic [ref=e822]:
+                  - text: K
+                  - generic [ref=e823]: T
+            - text: =
+          - generic [ref=e832]:
+            - generic [ref=e833]: "["
+            - generic [ref=e835]:
+              - generic [ref=e839]:
+                - generic [ref=e840]: "0.707"
+                - generic [ref=e841]: "0"
+              - generic [ref=e848]:
+                - generic [ref=e849]: "0"
+                - generic [ref=e850]: "0.707"
+            - generic [ref=e854]: "]"
+      - paragraph [ref=e855]: 逐行 Softmax 约得到：
+      - generic [ref=e857]:
+        - math [ref=e859]:
+          - generic [ref=e861]:
+            - generic [ref=e862]: A
+            - generic [ref=e863]: ≈
+            - generic [ref=e864]:
+              - generic [ref=e865]: "["
+              - generic [ref=e866]:
+                - generic [ref=e867]:
+                  - generic [ref=e868]: "0.67"
+                  - generic [ref=e871]: "0.33"
+                - generic [ref=e874]:
+                  - generic [ref=e875]: "0.33"
+                  - generic [ref=e878]: "0.67"
+              - generic [ref=e881]: "]"
+        - generic [ref=e882]:
+          - generic [ref=e883]: A ≈
+          - generic [ref=e885]:
+            - generic [ref=e886]: "["
+            - generic [ref=e888]:
+              - generic [ref=e892]:
+                - generic [ref=e893]: "0.67"
+                - generic [ref=e894]: "0.33"
+              - generic [ref=e901]:
+                - generic [ref=e902]: "0.33"
+                - generic [ref=e903]: "0.67"
+            - generic [ref=e907]: "]"
+      - paragraph [ref=e908]: 因此：
+      - generic [ref=e910]:
+        - math [ref=e912]:
+          - generic [ref=e914]:
+            - generic [ref=e915]: O
+            - generic [ref=e916]: =
+            - generic [ref=e917]: A
+            - generic [ref=e918]: V
+            - generic [ref=e919]: ≈
+            - generic [ref=e920]:
+              - generic [ref=e921]: "["
+              - generic [ref=e922]:
+                - generic [ref=e923]:
+                  - generic [ref=e924]: "1.34"
+                  - generic [ref=e927]: "1.32"
+                - generic [ref=e930]:
+                  - generic [ref=e931]: "0.66"
+                  - generic [ref=e934]: "2.68"
+              - generic [ref=e937]: "]"
+        - generic [ref=e938]:
+          - generic [ref=e939]: O =
+          - generic [ref=e940]: AV ≈
+          - generic [ref=e942]:
+            - generic [ref=e943]: "["
+            - generic [ref=e945]:
+              - generic [ref=e949]:
+                - generic [ref=e950]: "1.34"
+                - generic [ref=e951]: "0.66"
+              - generic [ref=e958]:
+                - generic [ref=e959]: "1.32"
+                - generic [ref=e960]: "2.68"
+            - generic [ref=e964]: "]"
+      - paragraph [ref=e965]: 第一行输出主要读取第一个 Value，但仍混入第二个 Value；第二行则相反。这就是“软检索”的精确数值版本。
+      - heading "用 PyTorch 复核手算结果" [level=3] [ref=e966]:
+        - text: 用 PyTorch 复核手算结果
+        - link [ref=e967] [cursor=pointer]:
+          - /url: "#用-pytorch-复核手算结果"
+          - text: "#"
+      - generic [ref=e969]:
+        - code [ref=e970]:
+          - generic [ref=e971]: import math
+          - generic [ref=e972]: import torch
+          - generic [ref=e973]: q = torch.eye(2)
+          - generic [ref=e974]: k = torch.eye(2)
+          - generic [ref=e975]: v = torch.tensor([[2.0, 0.0], [0.0, 4.0]])
+          - generic [ref=e976]: scores = q @ k.T / math.sqrt(2)
+          - generic [ref=e977]: weights = scores.softmax(dim=-1)
+          - generic [ref=e978]: out = weights @ v
+          - generic [ref=e979]: assert out.shape == (2, 2)
+          - generic [ref=e980]: assert torch.allclose(weights.sum(dim=-1), torch.ones(2))
+          - generic [ref=e981]: print(weights, out)
+        - button "Copy" [ref=e982] [cursor=pointer]
+      - heading "常见误区" [level=2] [ref=e983]:
+        - text: 常见误区
+        - link [ref=e984] [cursor=pointer]:
+          - /url: "#常见误区"
+          - text: "#"
+      - list [ref=e985]:
+        - listitem [ref=e986]:
+          - code [ref=e987]: QKᵀ
+          - text: 的每行对应一个 Query，不要把轴写反。
+        - listitem [ref=e988]: Softmax 沿 Key 维做，不是对整个矩阵一次归一化。
+        - listitem [ref=e989]:
+          - text: 缩放项是
+          - generic [ref=e990]:
+            - math [ref=e992]:
+              - generic [ref=e996]:
+                - generic [ref=e997]: d
+                - generic [ref=e998]: k
+            - generic [ref=e1006]:
+              - text: d
+              - generic [ref=e1007]: k
+          - text: ，不是序列长度
+          - generic [ref=e1021]:
+            - math [ref=e1023]:
+              - generic [ref=e1024]: T
+            - generic [ref=e1027]: T
+          - text: 。
+        - listitem [ref=e1029]:
+          - text: Attention 输出是
+          - code [ref=e1030]: A @ V
+          - text: ，不是 A。
+        - listitem [ref=e1031]: 公式描述单头；Multi-Head 还要拆头、拼接和输出投影。
+      - heading "本篇自检" [level=2] [ref=e1032]:
+        - text: 本篇自检
+        - link [ref=e1033] [cursor=pointer]:
+          - /url: "#本篇自检"
+          - text: "#"
+      - paragraph [ref=e1034]:
+        - img "总结轴、归一化和输出三项关键检查" [ref=e1035]
+      - list [ref=e1036]:
+        - listitem [ref=e1037]:
+          - text: 为什么
+          - code [ref=e1038]: "[B,T,D] @ [B,D,T]"
+          - text: 得到
+          - code [ref=e1039]: "[B,T,T]"
+          - text: ？
+        - listitem [ref=e1040]: Softmax 为什么沿最后一个 Key 维度计算？
+        - listitem [ref=e1041]: Attention 最终为什么还要乘 V？
+      - group [ref=e1042] [cursor=pointer]:
+        - generic "查看答案" [ref=e1043]
+      - heading "小结" [level=2] [ref=e1044]:
+        - text: 小结
+        - link [ref=e1045] [cursor=pointer]:
+          - /url: "#小结"
+          - text: "#"
+      - paragraph [ref=e1046]: Self-Attention 的完整链路是：线性投影 → 全部位置对点积 → 缩放 → Mask（若需要）→ 逐行 Softmax → Value 加权和。下一篇讨论为什么一个投影空间还不够，以及多头结构如何在不改变总模型维度的情况下并行学习多种关系。
+      - paragraph [ref=e1047]:
+        - strong [ref=e1048]: 下一篇：
+        - link "为什么需要多头注意力" [ref=e1049] [cursor=pointer]:
+          - /url: /posts/ai/transformer%E7%B3%BB%E5%88%97%E6%95%99%E7%A8%8B/transformer-05-multi-head-attention/
+      - heading "参考资料" [level=2] [ref=e1050]:
+        - text: 参考资料
+        - link [ref=e1051] [cursor=pointer]:
+          - /url: "#参考资料"
+          - text: "#"
+      - list [ref=e1052]:
+        - listitem [ref=e1053]:
+          - link "Attention Is All You Need：Scaled Dot-Product Attention" [ref=e1054] [cursor=pointer]:
+            - /url: https://arxiv.org/abs/1706.03762
+        - listitem [ref=e1055]:
+          - link "The Annotated Transformer：Attention" [ref=e1056] [cursor=pointer]:
+            - /url: https://nlp.seas.harvard.edu/annotated-transformer/
+        - listitem [ref=e1057]:
+          - link "3Blue1Brown：Attention in transformers, step-by-step" [ref=e1058] [cursor=pointer]:
+            - /url: https://www.3blue1brown.com/lessons/attention/
+    - separator [ref=e1059]
+    - list [ref=e1060]:
+      - listitem [ref=e1061]:
+        - link "AI" [ref=e1062] [cursor=pointer]:
+          - /url: /tags/ai/
+      - listitem [ref=e1067]:
+        - link "Transformer" [ref=e1068] [cursor=pointer]:
+          - /url: /tags/transformer/
+      - listitem [ref=e1073]:
+        - link "Self-Attention" [ref=e1074] [cursor=pointer]:
+          - /url: /tags/self-attention/
+      - listitem [ref=e1079]:
+        - link "QKV" [ref=e1080] [cursor=pointer]:
+          - /url: /tags/qkv/
+      - listitem [ref=e1085]:
+        - link "PyTorch" [ref=e1086] [cursor=pointer]:
+          - /url: /tags/pytorch/
+    - button [ref=e1092] [cursor=pointer]
+    - generic [ref=e1098]:
+      - generic [ref=e1099]: "Share this post on:"
+      - generic [ref=e1100]:
+        - link "Share this post via WhatsApp" [ref=e1101] [cursor=pointer]:
+          - /url: https://wa.me/?text=https://joekma.vercel.app/posts/ai/transformer%E7%B3%BB%E5%88%97%E6%95%99%E7%A8%8B/transformer-04-self-attention-math/
+        - link "Share this post on Facebook" [ref=e1107] [cursor=pointer]:
+          - /url: https://www.facebook.com/sharer.php?u=https://joekma.vercel.app/posts/ai/transformer%E7%B3%BB%E5%88%97%E6%95%99%E7%A8%8B/transformer-04-self-attention-math/
+        - link "Share this post on X" [ref=e1112] [cursor=pointer]:
+          - /url: https://x.com/intent/post?url=https://joekma.vercel.app/posts/ai/transformer%E7%B3%BB%E5%88%97%E6%95%99%E7%A8%8B/transformer-04-self-attention-math/
+        - link "Share this post via Telegram" [ref=e1118] [cursor=pointer]:
+          - /url: https://t.me/share/url?url=https://joekma.vercel.app/posts/ai/transformer%E7%B3%BB%E5%88%97%E6%95%99%E7%A8%8B/transformer-04-self-attention-math/
+        - link "Share this post on Pinterest" [ref=e1123] [cursor=pointer]:
+          - /url: https://pinterest.com/pin/create/button/?url=https://joekma.vercel.app/posts/ai/transformer%E7%B3%BB%E5%88%97%E6%95%99%E7%A8%8B/transformer-04-self-attention-math/
+        - link "Share this post via email" [ref=e1130] [cursor=pointer]:
+          - /url: mailto:?subject=See%20this%20post&body=https://joekma.vercel.app/posts/ai/transformer%E7%B3%BB%E5%88%97%E6%95%99%E7%A8%8B/transformer-04-self-attention-math/
+    - separator [ref=e1136]
+    - generic [ref=e1137]:
+      - link "Previous Post 从“查询资料”理解 Attention：Q、K、V 的直觉" [ref=e1138] [cursor=pointer]:
+        - /url: /posts/ai/transformer系列教程/transformer-03-attention-intuition
+        - generic [ref=e1142]:
+          - text: Previous Post
+          - generic [ref=e1143]: 从“查询资料”理解 Attention：Q、K、V 的直觉
+      - link "Next Post 为什么需要多头注意力：Multi-Head Attention" [ref=e1144] [cursor=pointer]:
+        - /url: /posts/ai/transformer系列教程/transformer-05-multi-head-attention
+        - generic [ref=e1145]:
+          - text: Next Post
+          - generic [ref=e1146]: 为什么需要多头注意力：Multi-Head Attention
+  - contentinfo [ref=e1150]:
+    - generic [ref=e1151]:
+      - generic [ref=e1152]:
+        - link "Mupaper on GitHub" [ref=e1153] [cursor=pointer]:
+          - /url: https://github.com/Joekma
+        - link "Mupaper on X" [ref=e1158] [cursor=pointer]:
+          - /url: https://twitter.com/DongshengY98879
+      - generic [ref=e1164]:
+        - generic [ref=e1165]: Copyright © 2026
+        - generic [ref=e1166]: "|"
+        - generic [ref=e1167]: All rights reserved.

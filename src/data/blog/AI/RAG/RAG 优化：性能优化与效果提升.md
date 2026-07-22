@@ -226,9 +226,9 @@ def percentile(values: list[float], p: float) -> float:
 
 一次请求的可变成本可拆成：
 
-\[
+$$
 C=C*{embed}+C*{rerank}+C*{input}+C*{output}+C\_{infra}
-\]
+$$
 
 价格会变化，文章不写死单价。系统应记录实际模型、Token 和调用次数，再由独立价格配置计算。
 

@@ -1,0 +1,12 @@
+- generic [ref=f4e4]:
+  - generic [ref=f4e5]:
+    - checkbox "Use dark theme" [ref=f4e6]
+    - generic [ref=f4e7] [cursor=pointer]: Use dark theme
+  - banner [ref=f4e17]:
+    - generic [ref=f4e18]:
+      - heading "Error" [level=2] [ref=f4e19]
+      - heading "An error occurred." [level=1] [ref=f4e20]
+  - generic [ref=f4e26]: "EMFILE: too many open files, open 'E:\\Workspace\\项目\\astro-paper-own\\src\\styles\\global.css'"
+  - generic [ref=f4e32]:
+    - heading "Stack Trace" [level=2] [ref=f4e34]
+    - generic [ref=f4e40]: "Error: EMFILE: too many open files, open 'E:\\Workspace\\项目\\astro-paper-own\\src\\styles\\global.css' at async open (node:internal/fs/promises:640:25) at async Object.readFile (node:internal/fs/promises:1287:14) at async loadAndTransform (file:///E:/Workspace/%E9%A1%B9%E7%9B%AE/astro-paper-own/node_modules/.pnpm/vite@6.4.1_@types+node@26.1_37bf91b5a4b02b0e89015ab20e8adef0/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35681:16) at async fetchModule (file:///E:/Workspace/%E9%A1%B9%E7%9B%AE/astro-paper-own/node_modules/.pnpm/vite@6.4.1_@types+node@26.1_37bf91b5a4b02b0e89015ab20e8adef0/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:46858:16) at async handleInvoke (file:///E:/Workspace/%E9%A1%B9%E7%9B%AE/astro-paper-own/node_modules/.pnpm/vite@6.4.1_@types+node@26.1_37bf91b5a4b02b0e89015ab20e8adef0/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:39002:22) at async EventEmitter.listenerForInvokeHandler (file:///E:/Workspace/%E9%A1%B9%E7%9B%AE/astro-paper-own/node_modules/.pnpm/vite@6.4.1_@types+node@26.1_37bf91b5a4b02b0e89015ab20e8adef0/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:39075:19)"

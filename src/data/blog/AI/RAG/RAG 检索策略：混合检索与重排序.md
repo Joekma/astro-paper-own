@@ -86,23 +86,23 @@ RRF 是稳健且容易解释的基线。
 
 ![手算 A/B/C 融合顺序](./images/r04-f05-rrf-hand-calculation.png)
 
-对文档 \(d\)，来自多个排序器的 RRF 分数为：
+对文档 $d$，来自多个排序器的 RRF 分数为：
 
-\[
+$$
 \operatorname{RRF}(d)=\sum\_{r\in R}\frac{1}{k+\operatorname{rank}\_r(d)}
-\]
+$$
 
-- \(R\)：排序器集合。
-- \(\operatorname{rank}\_r(d)\)：文档在排序器 \(r\) 中从 1 开始的名次。
-- \(k\)：平滑常数，降低极端头部名次的支配性；它是需要记录和验证的配置，不是概率。
+- $R$：排序器集合。
+- $\operatorname{rank}\_r(d)$：文档在排序器 $r$ 中从 1 开始的名次。
+- $k$：平滑常数，降低极端头部名次的支配性；它是需要记录和验证的配置，不是概率。
 
 设 `k=60`：
 
 | Chunk | Dense 排名 | BM25 排名 |                    RRF 分数 |
 | ----- | ---------: | --------: | --------------------------: |
-| A     |          1 |         3 | \(1/61+1/63\approx0.03226\) |
-| B     |          2 |         1 | \(1/62+1/61\approx0.03252\) |
-| C     |          3 |         2 | \(1/63+1/62\approx0.03200\) |
+| A     |          1 |         3 | $1/61+1/63\approx0.03226$ |
+| B     |          2 |         1 | $1/62+1/61\approx0.03252$ |
+| C     |          3 |         2 | $1/63+1/62\approx0.03200$ |
 
 B 融合后排第一，因为它在 BM25 中第一、Dense 中第二。
 
@@ -175,10 +175,10 @@ def rerank(query: str, candidates: list[Candidate], scorer, limit: int):
 
 Maximum Marginal Relevance 在相关性和结果多样性之间权衡：
 
-\[
+$$
 \operatorname{MMR}(d)=\lambda\operatorname{Rel}(q,d)
 -(1-\lambda)\max\_{s\in S}\operatorname{Sim}(d,s)
-\]
+$$
 
 当多个 Chunk 来自同一段落或内容高度重叠时，MMR 可以减少冗余。但它可能牺牲纯相关性，不应把“更多样”直接表述为“更准确”。父子展开后的按父 ID 去重通常应先做，再决定是否需要 MMR。
 
@@ -211,21 +211,21 @@ Maximum Marginal Relevance 在相关性和结果多样性之间权衡：
 
 ![区分 Recall@k、MRR、nDCG@k](./images/r04-f10-retrieval-metrics.png)
 
-设第 \(i\) 个结果的相关性为 \(rel_i\)。
+设第 $i$ 个结果的相关性为 $rel_i$。
 
 ### Recall@k
 
-\[
+$$
 \operatorname{Recall@k}=\frac{|\text{Top-k relevant IDs}|}{|\text{all relevant IDs}|}
-\]
+$$
 
 适合回答“必要证据有没有被召回”。如果一个问题需要多份证据，还应检查完整证据覆盖率。
 
 ### MRR
 
-\[
+$$
 \operatorname{MRR}=\frac{1}{N}\sum\_{j=1}^{N}\frac{1}{\operatorname{rank}\_j}
-\]
+$$
 
 只关注第一个相关结果的位置，适合每个问题存在主要证据的任务。
 
@@ -233,9 +233,9 @@ Maximum Marginal Relevance 在相关性和结果多样性之间权衡：
 
 当相关性有等级时使用 DCG：
 
-\[
+$$
 \operatorname{DCG@k}=\sum\_{i=1}^{k}\frac{2^{rel_i}-1}{\log_2(i+1)}
-\]
+$$
 
 再除以理想排序的 IDCG 得到 nDCG。它同时考虑相关性等级和排序位置。
 

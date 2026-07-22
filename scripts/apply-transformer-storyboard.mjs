@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { articles, allFigures } from "./transformer-academic-image-storyboard.mjs";
 
-const root = path.resolve("src/data/blog/AI/Transform");
+const root = path.resolve("src/data/blog/AI/Transformer系列教程");
 const markdownFiles = fs
   .readdirSync(root)
   .filter((name) => /^\d{2}-.*\.md$/u.test(name))

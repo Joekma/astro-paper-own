@@ -9,7 +9,7 @@ import { pathToFileURL } from "node:url";
 
 export const styleDraft = {
   status: "approved",
-  approvedPrototype: "src/data/blog/AI/Transform/images/t04-f01-self-attention-full-pipeline.png",
+  approvedPrototype: "src/data/blog/AI/Transformer系列教程/images/t04-f01-self-attention-full-pipeline.png",
   useCase: "scientific-educational",
   assetType: "中文 Transformer 教程的学术模型架构图",
   canvas: "1600×900, 16:9 landscape",
@@ -62,7 +62,7 @@ const f = (id, slug, anchor, type, learningObjective, requiredLabels, structure,
 export const articles = [
   {
     article: 1,
-    file: "01-Transformer 到底解决了什么问题.md",
+    file: "01-Transformer到底解决了什么问题.md",
     figures: [
       f("t01-f01", "language-model-pipeline", "本篇要解决的问题", "数据流", "建立全系列端到端坐标", ["文本", "Token", "Embedding", "Transformer", "Logits", "下一个 Token"], "6 个节点自左向右连接", "只展示端到端目标，不解释内部结构"),
       f("t01-f02", "rnn-sequential-path", "RNN 的核心限制", "时间线", "看清 RNN 的时间步依赖", ["x₁", "h₁", "x₂", "h₂", "x₃", "h₃", "必须等待"], "交错输入和隐藏状态的单向链", "只说明串行依赖"),
@@ -76,7 +76,7 @@ export const articles = [
   },
   {
     article: 2,
-    file: "02-文本如何变成向量：Token 与 Embedding.md",
+    file: "02-文本如何变成向量：词元与嵌入.md",
     figures: [
       f("t02-f01", "token-granularity", "Token 的粒度是一项工程选择", "对比图", "比较字符、单词、子词和字节切分", ["字符", "完整单词", "子词", "字节", "序列长度", "词表大小"], "四列对比", "只比较粒度权衡"),
       f("t02-f02", "subword-merge", "Token 的粒度是一项工程选择", "过程图", "直观展示子词合并", ["l", "o", "w", "er", "low", "lower", "高频片段合并"], "从字符到子词的三步合并", "补充 BPE 类方法直觉"),
@@ -91,7 +91,7 @@ export const articles = [
   },
   {
     article: 3,
-    file: "03-从查询资料理解 Attention.md",
+    file: "03-从查询资料理解注意力机制.md",
     figures: [
       f("t03-f01", "library-retrieval", "把 Attention 想成一次软检索", "类比图", "用检索建立 QKV 职责", ["Query: 想找什么", "Key: 怎样被匹配", "Value: 真正的内容"], "三列检索卡片", "只建立生活类比"),
       f("t03-f02", "pronoun-reference", "语言中的具体例子", "关系图", "展示 it 对 animal 的读取关系", ["The animal", "it", "was tired", "高匹配"], "句子 Token 与一条强调箭头", "只讲指代例子"),
@@ -106,7 +106,7 @@ export const articles = [
   },
   {
     article: 4,
-    file: "04-Self-Attention 完整数学推导.md",
+    file: "04-自注意力机制完整数学推导.md",
     figures: [
       f("t04-f01", "self-attention-full-pipeline", "本篇要解决的问题", "完整流程", "在一张图中建立 Self-Attention 数学总览", ["输入 X [B,T,C]", "Q [B,H,T,D]", "K [B,H,T,D]", "V [B,H,T,D]", "QKᵀ / √D", "可选 Mask", "Softmax", "weights @ V", "Concat + Wᴼ", "输出 [B,T,C]"], "自左向右主流程；Q/K 汇入分数；V 在权重后汇入；Mask 以虚线进入 Softmax 前", "首张风格 prototype；唯一允许展示完整链路"),
       f("t04-f02", "x-to-qkv", "第一步：从同一输入投影 Q、K、V", "投影图", "说明 QKV 来自同一 X 的不同线性投影", ["X [B,T,C]", "WQ", "WK", "WV", "Q [B,T,D]", "K [B,T,D]", "V [B,T,D]"], "X 分三支", "只讲投影来源"),
@@ -139,7 +139,7 @@ export const articles = [
   },
   {
     article: 6,
-    file: "06-Transformer 如何理解词序.md",
+    file: "06-Transformer如何理解词序.md",
     figures: [
       f("t06-f01", "word-order-meaning", "Token 相同，顺序可能改变意义", "对比图", "说明词序改变语义角色", ["猫追狗", "狗追猫", "Token 集合相同", "语义不同"], "左右句子对比", "只建立问题"),
       f("t06-f02", "permutation-equivariance", "用置换看清问题", "数学示意", "解释无位置 Attention 的排列等变性", ["X", "PX", "Attn(X)", "P Attn(X)", "Attn(PX)=P Attn(X)"], "上下两条同步置换路径", "精确解释等变性"),
@@ -154,7 +154,7 @@ export const articles = [
   },
   {
     article: 7,
-    file: "07-Mask 是什么.md",
+    file: "07-注意力掩码是什么.md",
     figures: [
       f("t07-f01", "next-token-objective", "自回归目标", "时间线", "说明每个位置预测下一个 Token", ["今天", "天气", "很", "好", "xₜ → xₜ₊₁"], "Token 时间线与右移箭头", "只讲任务目标"),
       f("t07-f02", "future-leakage", "不加 Mask 会发生什么", "错误示意", "展示位置 t 偷看标签", ["position t", "future t+1", "label leakage", "错误"], "红色越界箭头", "只讲泄漏"),
@@ -169,7 +169,7 @@ export const articles = [
   },
   {
     article: 8,
-    file: "08-Attention 之外还有什么.md",
+    file: "08-注意力机制之外还有什么.md",
     figures: [
       f("t08-f01", "attention-vs-ffn", "两种互补计算", "对比图", "区分跨 Token 通信和逐位置加工", ["Attention", "Token 之间通信", "FFN", "每个 Token 内部加工"], "左右双栏", "只讲职责"),
       f("t08-f02", "ffn-expand-contract", "Position-wise FFN", "Shape 流", "展示 C→d_ff→C", ["d_model", "Linear", "d_ff", "Activation", "Linear", "d_model"], "五阶段漏斗", "只讲扩降维"),
@@ -184,7 +184,7 @@ export const articles = [
   },
   {
     article: 9,
-    file: "09-原始 Transformer Encoder.md",
+    file: "09-原始Transformer编码器.md",
     figures: [
       f("t09-f01", "encoder-overview", "Encoder 的宏观数据流", "架构图", "建立 Encoder 总体数据流", ["Token + Position", "N × Encoder Layer", "Encoder Memory [B,T,C]"], "三阶段垂直堆栈", "只做宏观结构"),
       f("t09-f02", "source-padding-mask", "Source Mask 约束什么", "Mask 图", "说明双向不读取 Padding", ["valid Token", "PAD", "Source Mask [B,1,1,T]", "双向有效位置"], "Token 行与可见矩阵", "专讲 Source Mask"),
@@ -198,7 +198,7 @@ export const articles = [
   },
   {
     article: 10,
-    file: "10-从原始 Decoder 到 GPT.md",
+    file: "10-从原始解码器到GPT.md",
     figures: [
       f("t10-f01", "encoder-decoder-overview", "先还原 2017 年的完整架构", "全景架构", "展示原始两条堆栈", ["Source", "Encoder", "Encoder Memory", "Target Prefix", "Decoder", "Next Token"], "Encoder 与 Decoder 双列数据流", "只做原始架构总览"),
       f("t10-f02", "shifted-target", "目标序列为什么要右移", "序列对齐", "展示 Decoder input 与 label 错一位", ["Decoder input", "<bos>", "猫", "睡觉", "Training label", "<eos>"], "上下两行对齐 Token", "专讲右移"),
@@ -214,7 +214,7 @@ export const articles = [
   },
   {
     article: 11,
-    file: "11-用 PyTorch 手写 Transformer Block.md",
+    file: "11-用PyTorch手写Transformer模块.md",
     figures: [
       f("t11-f01", "module-dependencies", "模块依赖先行", "依赖图", "展示代码模块组合关系", ["CausalSelfAttention", "FeedForward", "Block", "MiniGPT"], "四级依赖树", "只讲类组合"),
       f("t11-f02", "qkv-code-map", "Causal Multi-Head Self-Attention", "代码映射", "对齐 qkv Linear、chunk 与公式", ["self.qkv(x) [B,T,3C]", "chunk(3)", "Q", "K", "V"], "代码行到三个张量", "专讲一次投影"),
@@ -230,7 +230,7 @@ export const articles = [
   },
   {
     article: 12,
-    file: "12-从 Bigram 到 Mini GPT.md",
+    file: "12-从二元模型到迷你GPT.md",
     figures: [
       f("t12-f01", "text-data-pipeline", "从字符级数据开始", "数据流", "展示原始文本到整数数据", ["Raw Text", "Vocabulary", "stoi / itos", "encode", "data [N]"], "五阶段水平流", "只讲编码"),
       f("t12-f02", "train-validation-split", "训练集与验证集必须分开", "切分图", "解释 90/10 数据划分和用途", ["Train 90%", "Validation 10%", "拟合", "泛化"], "长条数据分段", "专讲数据划分"),

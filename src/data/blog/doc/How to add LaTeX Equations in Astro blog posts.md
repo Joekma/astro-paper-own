@@ -125,13 +125,17 @@ For more complex equations or when you want the equation to be displayed on its 
 The Gaussian integral:
 
 ```bash
-$$ \int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi} $$
+$$
+\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
+$$
 ```
 
 The definition of the Riemann zeta function:
 
 ```bash
-$$ \zeta(s) = \sum_{n=1}^{\infty} \frac{1}{n^s} $$
+$$
+\zeta(s) = \sum_{n=1}^{\infty} \frac{1}{n^s}
+$$
 ```
 
 Maxwell's equations in differential form:
