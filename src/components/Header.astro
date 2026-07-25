@@ -2,6 +2,7 @@
 import IconX from "@/assets/icons/IconX.svg";
 import IconMoon from "@/assets/icons/IconMoon.svg";
 import IconHash from "@/assets/icons/IconHash.svg";
+import IconBooks from "@/assets/icons/IconBooks.svg";
 import IconSearch from "@/assets/icons/IconSearch.svg";
 import IconArchive from "@/assets/icons/IconArchive.svg";
 import IconInfoCircle from "@/assets/icons/IconInfoCircle.svg";
@@ -87,6 +88,22 @@ const isActive = (path: string) => {
           >
             <IconHash />
             <span class="sr-only">Tags</span>
+          </LinkButton>
+        </li>
+        <li class="col-span-1 flex items-center justify-center">
+          <LinkButton
+            href="/series"
+            class:list={[
+              "focus-outline flex p-3 sm:p-1",
+              {
+                "active-nav [&>svg]:stroke-accent": isActive("/series"),
+              },
+            ]}
+            title="Series"
+            aria-label="series"
+          >
+            <IconBooks />
+            <span class="sr-only">Series</span>
           </LinkButton>
         </li>
         <li class="col-span-1 flex items-center justify-center">

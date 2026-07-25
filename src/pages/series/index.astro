@@ -1,0 +1,153 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import getSortedPosts from "@/utils/getSortedPosts";
+import { getSeriesSummaries } from "@/utils/getSeriesData";
+import { SITE } from "@/config";
+
+const alphabet = Array.from({ length: 26 }, (_, index) =>
+  String.fromCharCode(65 + index)
+);
+const posts = getSortedPosts(await getCollection("blog"));
+const series = getSeriesSummaries(posts);
+const availableInitials = new Set(series.map(item => item.initial));
+---
+
+<Layout title={`Series | ${SITE.title}`}>
+  <Header />
+  <main id="main-content" class="app-layout pb-8" data-pagefind-body>
+    <h1 class="mt-8 text-2xl font-semibold sm:text-3xl">全部系列</h1>
+
+    <div
+      class="mt-6 grid grid-cols-[minmax(0,1fr)_2rem] gap-4 sm:mt-8 sm:grid-cols-[minmax(0,1fr)_2.5rem] sm:gap-8"
+    >
+      <section aria-labelledby="series-list-title">
+        <h2 id="series-list-title" class="sr-only">按更新时间排列的系列</h2>
+        <ul
+          id="series-list"
+          class="grid grid-cols-1 gap-x-10 sm:grid-cols-2"
+          data-series-list
+        >
+          {
+            series.map(item => (
+              <li
+                class="flex min-h-14 items-center border-b border-border py-3 sm:min-h-16 sm:py-4"
+                data-series-item
+                data-initial={item.initial}
+              >
+                <a
+                  href={`/series/${item.slug}/`}
+                  class="font-medium text-accent decoration-dashed underline-offset-4 hover:underline"
+                >
+                  {item.displayName}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+        <p
+          id="series-filter-status"
+          class="sr-only"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+        </p>
+      </section>
+
+      <nav
+        class="border-s border-border ps-2 sm:ps-3"
+        aria-label="按首字母筛选系列"
+        data-series-filter-nav
+      >
+        <ol class="sticky top-4 flex flex-col items-center gap-0.5">
+          {
+            alphabet.map(letter => {
+              const isAvailable = availableInitials.has(letter);
+
+              return (
+                <li>
+                  <button
+                    type="button"
+                    class:list={[
+                      "focus-outline flex size-6 items-center justify-center text-xs font-medium underline-offset-4 transition-colors aria-pressed:font-bold aria-pressed:underline aria-pressed:decoration-2 sm:text-sm",
+                      isAvailable
+                        ? "text-foreground hover:text-accent"
+                        : "cursor-not-allowed text-foreground/30",
+                    ]}
+                    data-series-filter={letter}
+                    aria-label={`按 ${letter} 筛选系列，再次点击清除筛选`}
+                    aria-pressed="false"
+                    disabled={!isAvailable}
+                  >
+                    {letter}
+                  </button>
+                </li>
+              );
+            })
+          }
+        </ol>
+      </nav>
+    </div>
+  </main>
+  <Footer />
+</Layout>
+
+<script>
+  function initSeriesFilter() {
+    const seriesList =
+      document.querySelector<HTMLElement>("[data-series-list]");
+    const filterNav = document.querySelector<HTMLElement>(
+      "[data-series-filter-nav]"
+    );
+    const status = document.querySelector<HTMLElement>("#series-filter-status");
+
+    if (!seriesList || !filterNav || !status || seriesList.dataset.ready) {
+      return;
+    }
+
+    seriesList.dataset.ready = "true";
+
+    const items = Array.from(
+      seriesList.querySelectorAll<HTMLElement>("[data-series-item]")
+    );
+    const buttons = Array.from(
+      filterNav.querySelectorAll<HTMLButtonElement>("[data-series-filter]")
+    );
+    let activeInitial: string | null = null;
+
+    function applyFilter(nextInitial: string) {
+      activeInitial = activeInitial === nextInitial ? null : nextInitial;
+      let visibleCount = 0;
+
+      for (const item of items) {
+        const isVisible =
+          activeInitial === null || item.dataset.initial === activeInitial;
+        item.hidden = !isVisible;
+        if (isVisible) visibleCount += 1;
+      }
+
+      for (const button of buttons) {
+        const isActive = button.dataset.seriesFilter === activeInitial;
+        button.setAttribute("aria-pressed", String(isActive));
+      }
+
+      status!.textContent = activeInitial
+        ? `已显示 ${visibleCount} 个以 ${activeInitial} 开头的系列。再次点击 ${activeInitial} 可清除筛选。`
+        : `已显示全部 ${items.length} 个系列。`;
+    }
+
+    for (const button of buttons) {
+      button.addEventListener("click", () => {
+        const initial = button.dataset.seriesFilter;
+        if (initial) applyFilter(initial);
+      });
+    }
+
+    status.textContent = `已显示全部 ${items.length} 个系列。`;
+  }
+
+  initSeriesFilter();
+  document.addEventListener("astro:after-swap", initSeriesFilter);
+</script>
