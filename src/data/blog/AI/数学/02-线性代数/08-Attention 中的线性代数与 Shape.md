@@ -2,158 +2,82 @@
 title: "Attention 中的线性代数与 Shape"
 author: Joekma
 pubDatetime: 2026-07-18T00:00:00.000+08:00
-description: "从工程问题、核心机制、可运行代码和失败边界系统讲解Attention 中的线性代数与 Shape，并说明它在理解 Embedding、矩阵变换和 Attention中的作用。"
-tags:
-  - AI
-  - 数学
-  - 线性代数
+modDatetime: 2026-07-29T00:00:00.000+08:00
+description: "逐步核对 Q、K、V 投影、分数矩阵、多头拆分和输出拼接的矩阵乘法与 Shape。"
+tags: [AI, 数学, 线性代数, Attention]
 draft: false
 series: "AI 工程数学 · 线性代数"
 seriesOrder: 8
 language: zh-CN
 ---
 
-## 前置知识与学习目标
+## 从输入到 Q、K、V
 
-**前置知识**：数学预备知识。本文承接《SVD、PCA 与降维》，只简短复用其中已经定义的概念。
-
-**核心问题**：如何准确解释“Attention 中的线性代数与 Shape”，并把它用于理解 Embedding、矩阵变换和 Attention，同时识别错误输入、成本和不适用边界？
-
-学完“Attention 中的线性代数与 Shape”后你应该能够：
-
-- 用自己的话说明核心机制，而不是只背术语；
-- 写出输入、输出和关键中间状态；
-- 运行一个最小实现并解释结果；
-- 判断它在 AI 工程中的适用条件与失败模式。
-
-## 从一个工程问题开始
-
-假设团队正在实现一个可评估的 RAG/Agent 服务。系统需要处理模型输入、候选结果和运行状态，但线上指标出现波动。只知道“应该使用Attention 中的线性代数与 Shape”不足以定位问题：必须说明数据从哪里来、经过什么变换、在哪个边界可能丢失信息，以及结果如何被验证。
-
-本文围绕“Attention 中的线性代数与 Shape”使用一个最小记录：输入包含请求 `request_id`、若干候选值和预算；输出除了计算结果，还保留用于排错的中间量。例子刻意缩小规模，使相关步骤能手算和执行。
-
-## 核心概念与直觉
-
-Attention 先比较 Query 与 Key，再把归一化权重作用到 Value；多头机制在多个子空间并行建立关系。
-
-理解“Attention 中的线性代数与 Shape”时采用四层心智模型：
-
-1. **语义层**：它解决什么问题，不解决什么问题；
-2. **数学或结构层**：输入如何变成输出；
-3. **工程层**：复杂度、精度、并发或状态成本；
-4. **验证层**：什么观测能证明实现符合预期。
-
-把“Attention 中的线性代数与 Shape”的四层含义分开，可以避免把模型概率当作事实概率、把近似检索当作精确检索，或把框架默认行为当作算法保证。
-
-## 数学或算法过程
-
-![核心机制图：Attention 中的线性代数与 Shape](../images/02-linear-algebra/m02-s08-f01-linear-algebra-in-attention.png)
+设输入 $\mathbf{X}\in\mathbb{R}^{T\times C}$，单头投影为：
 
 $$
-\operatorname{Attention}(Q,K,V)=\operatorname{softmax}\left(\frac{QK^\top}{\sqrt{d_k}}\right)V
+\mathbf{Q}=\mathbf{X}\mathbf{W}_Q,\quad
+\mathbf{K}=\mathbf{X}\mathbf{W}_K,\quad
+\mathbf{V}=\mathbf{X}\mathbf{W}_V
 $$
 
-`Q、K、V` 分别是查询、键和值；`d_k` 是 Key 维度。
+若 $\mathbf{W}_Q,\mathbf{W}_K\in\mathbb{R}^{C\times D}$、$\mathbf{W}_V\in\mathbb{R}^{C\times D_v}$，则 Q、K 为 `[T,D]`，V 为 `[T,Dv]`。三个矩阵来自同一输入，却因参数不同承担不同角色。
 
-计算时先写出输入 Shape，再核对聚合维度和输出 Shape；不能只验证数值类型。
+## 分数矩阵为什么是方阵
 
-## Shape、输入与输出
+$$
+\mathbf{S}
+=
+\frac{\mathbf{Q}\mathbf{K}^{\mathsf T}}{\sqrt{D}}
+$$
 
-| 项目     | 本文约定                                                |
-| -------- | ------------------------------------------------------- |
-| 输入     | 一个请求及规模为 $N$ 的候选集合                         |
-| 中间状态 | 经过校验、变换或聚合得到的可观测量                      |
-| 输出     | 结果值、状态与必要诊断信息                              |
-| 动态维度 | $N$ 表示候选、样本、节点或 Token 数，具体含义由场景决定 |
+Shape 为：
 
-“Attention 中的线性代数与 Shape”若使用张量，统一写作 `[batch_size, sequence_length, hidden_size]`；任何 reshape、拼接、广播或聚合都指出变化轴。若使用图或队列，则用节点数 $V$、边数 $E$ 和任务数 $N$ 描述规模。
-
-## 最小可运行实现
-
-下面代码只验证本文最小不变量，不依赖远程模型或外部服务。
-
-<!-- runnable: true -->
-
-```python
-import numpy as np
-
-# Attention 中的线性代数与 Shape
-values = np.array([10.0, 11.0, 12.0], dtype=np.float64)
-centered = values - values.mean()
-energy = float(np.dot(centered, centered))
-assert values.shape == (3,)
-assert energy >= 0.0
-print({"mean": float(values.mean()), "energy": energy})
+```text
+[T,D] @ [D,T] → [T,T]
 ```
 
-运行“Attention 中的线性代数与 Shape”示例后应看到确定性输出。断言比打印更重要：它把“看起来合理”转换为可重复验证的行为。生产代码还应记录输入规模、耗时、失败类型和降级路径。
+$S_{ij}$ 是第 $i$ 个 Query 与第 $j$ 个 Key 的点积。Softmax 沿每一行的 Key 轴归一化，得到 $\mathbf{A}\in\mathbb{R}^{T\times T}$；再与 V 相乘：
 
-## 在大模型与 Agent 工程中的应用
+$$
+\mathbf{O}=\mathbf{A}\mathbf{V},
+\qquad
+[T,T]@[T,D_v]\to[T,D_v]
+$$
 
-**场景一：离线质量验证。** 在索引构建、训练或评估阶段，用固定小数据验证“Attention 中的线性代数与 Shape”的输入输出和边界，再扩展到真实数据量。这样能把算法错误与数据质量问题分开。
+序列长度 $T$ 在分数矩阵中出现两次，这也是标准 Attention 需要二次方存储分数的来源。
 
-**场景二：在线请求诊断。** 在应用“Attention 中的线性代数与 Shape”的 RAG 或 Agent 请求中记录候选数、排序分数、状态转移、重试次数或张量 Shape，用它判断故障位于数据、检索、排序、生成还是工具执行阶段。
+## 多头只是增加一个批量轴
 
-工程化实现至少需要：输入校验、确定性种子或请求标识、超时/规模上限、结构化日志，以及针对空输入、极端值和重复请求的测试。
+对批输入 `[B,T,C]`，投影后拆为：
 
-## 复杂度、成本与调试
+```text
+Q,K,V       [B,H,T,D]
+scores      [B,H,T,T]
+head output [B,H,T,D]
+```
 
-分析“Attention 中的线性代数与 Shape”时不要只写一个大 O 结论。先说明规模变量，再测量真实瓶颈：CPU 算法通常关注 $N$、$V$、$E$；模型计算还关注 Batch、Sequence、Hidden Size；分布式执行还要计入网络往返、序列化和重试放大。
+其中通常 $C=H D$。各头独立计算后，先转置为 `[B,T,H,D]`，再合并为 `[B,T,C]`，最后经过输出投影。
 
-“Attention 中的线性代数与 Shape”的调试顺序固定为：
+`reshape` 之前必须确认内存中的轴顺序。直接把 `[B,T,H,D]` 当作 `[B,H,T,D]` 不会报元素数量错误，却会混合 Token 与 Head。
 
-1. 用 2–5 个元素手算期望结果；
-2. 检查类型、Shape、单位和排序方向；
-3. 对空输入、重复输入、零值和极端值运行断言；
-4. 扩大规模并分别记录质量、延迟、内存和成本；
-5. 只修改一个变量做消融，避免多个优化同时上线。
+## Mask 与广播
 
-## 常见误区与不适用场景
+因果 Mask 常具有 `[T,T]`，通过广播应用到 `[B,H,T,T]`。它在 Softmax 前把不可见位置的分数设为负无穷，使归一化后权重为零。Mask 的 `True/False` 语义在不同 API 中可能相反，不能只凭 Shape 判断。
 
-- **只看“Attention 中的线性代数与 Shape”名称不看数据契约**：同名算法在不同库中的默认参数和输出约定可能不同。
-- **把代理指标当成最终目标**：局部得分提高不保证任务成功率提高。
-- **忽略近似、随机与浮点误差**：小规模正确不代表大规模仍稳定。
-- **用重试掩盖错误**：没有幂等、超时预算和失败分类的重试会扩大副作用。
+## 常见误区
 
-当问题规模很小、规则可以直接表达，或缺少可靠监督/评估数据时，不应为了“使用Attention 中的线性代数与 Shape”而增加复杂度。优先选择能够解释、测试和回滚的最简单方案。
+- 把 Softmax 作用到 Query 轴而不是 Key 轴。
+- 忘记 $\mathbf{K}$ 转置。
+- 认为分数矩阵就是 Attention 输出。
+- 合并多头前没有恢复 `[B,T,H,D]` 的轴顺序。
+- 把 $\sqrt{D}$ 错写成 $\sqrt{T}$。
 
-## 与相邻概念的边界
+## 小结
 
-本文只完整解释“Attention 中的线性代数与 Shape”。前置概念只做必要回顾，框架级完整调用链留给现有 Transformer、RAG、Agent 或 LangGraph 系列。这样一个概念只有一个权威解释位置，其他文章通过链接复用。
-
-- 现有工程文章：</posts/ai/transformer系列教程/transformer-04-self-attention-math/>
-- 现有工程文章：</posts/ai/transformer系列教程/transformer-02-token-embedding/>
-
-## 自检与实践任务
-
-1. 用一句话说明“Attention 中的线性代数与 Shape”的输入和输出。
-2. 为什么局部指标改善不一定带来端到端任务成功？
-3. 修改最小代码，增加一个空输入或极端值测试。
-4. 记录一个关键中间状态，并解释它如何帮助定位故障。
-5. 为真实 RAG/Agent 场景写出一个不采用该方案的反例。
-
-<details>
-<summary>参考答案</summary>
-
-1. “Attention 中的线性代数与 Shape”的答案应同时包含数据类型、规模变量和结果语义。
-2. 端到端结果还受数据、上游召回、下游生成、工具副作用和评估口径影响。
-3. 测试必须有断言，并明确是拒绝输入、返回空结果还是采用降级值。
-4. 可记录 Shape、候选数、状态、耗时、重试次数或误差范围，具体取决于本文主题。
-5. 合格反例应指出数据不足、规模太小、成本过高、解释性不足或失败后无法安全恢复中的至少一项。
-
-</details>
-
-## 本文总结与下一篇
-
-- Attention 先比较 Query 与 Key，再把归一化权重作用到 Value；多头机制在多个子空间并行建立关系。
-- 可靠实现必须同时定义输入、输出、中间状态和失败边界。
-- 先用小数据和断言验证，再讨论规模与性能。
-- 在 AI 系统中，局部算法必须由端到端质量、成本和延迟共同约束。
-
-本篇完成本模块闭环，可沿学习路线进入下一模块。
+Attention 的线性代数主链是投影、批量点积、按行归一化和值向量加权。掌握 Shape 后，公式中的每个轴都有可检查的来源。下一模块进入概率论与统计。
 
 ## 参考资料
 
-- [NumPy User Guide](https://numpy.org/doc/stable/user/)
-- [PyTorch documentation](https://docs.pytorch.org/docs/stable/)
 - [Attention Is All You Need](https://arxiv.org/abs/1706.03762)
+- [The Annotated Transformer](https://nlp.seas.harvard.edu/annotated-transformer/)
