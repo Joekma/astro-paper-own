@@ -2,119 +2,351 @@
 title: Django 请求生命周期：从入口到响应
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-17T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-request-response
 featured: false
 draft: false
-series: django
+series: Django
 seriesOrder: 5
 tags:
   - Python
   - Django
-  - 源码分析
-description: "沿 GET /books/42/ 追踪服务器适配、请求对象、中间件、路由、视图、模板、异常与响应关闭。"
+  - 请求处理
+description: "深入讲解Django从入口到请求到响应的完整生命周期。"
 ---
 
-## 前置知识与学习目标
+## 起步
 
-你需要掌握 URLconf、视图、模板和 ORM。读完后应能：
+在我研究完 django 的自动加载机制后，有了阅读 django 源码的想法。那就看看吧，也不知道能坚持到什么地方。我阅读的版本也是我正在使用的 `1.10.5` 版本，算是比较新的了。
 
-1. 画出服务器接口、handler、中间件、resolver、view 与 response 的调用链。
-2. 说明 `HttpRequest`、URL 参数、数据库结果和 `HttpResponse` 在何处产生。
-3. 区分正常、短路与异常路径，并用日志定位请求停在哪一层。
+一般运行 django 程序都是通过: `python manage.py runserver` 开始的，那我们就从这个入口开始。
 
-贯穿请求为 `GET /books/42/?format=html`。本篇解释框架链路；WSGI/ASGI 协议细节在第 6 篇，中间件扩展在第 10 篇。
+## 入口文件
 
-## 总览：一次请求有三条路径
+`manage.py` 文件里只有简单的几行代码：
+```python
 
-<!-- figure:s05-f01:start -->
+#!/usr/bin/env python
+import os
+import sys
 
-![Django 请求可沿正常链到 View，也可被中间件短路或转入异常路径，最终都形成响应并逆序返回](./images/s05-f01-request-three-paths.png)
+if __name__ == "__main__":
+    # 将settings模块设置到环境变量中
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "webui.settings")
+    from django.core.management import execute_from_command_line
+    # 执行命令
+    execute_from_command_line(sys.argv)
 
-<!-- figure:s05-f01:end -->
-
-```text
-Server adapter -> HttpRequest -> middleware(request)
-  -> URL resolver -> view -> template/ORM -> HttpResponse
-  -> middleware(response) -> server adapter
+```
+在设置环境变量之后，命令参数的列表传到了 `execute_from_command_line` 中：
 ```
 
-短路路径在某个中间件直接返回响应，不再进入 URL 与视图；异常路径把未处理异常交给异常中间件或框架错误响应。调试时先判断走的是哪条路径，再深入模块。
+def execute_from_command_line(argv=None):
+    """
+    A simple method that runs a ManagementUtility.
+    """
+    utility = ManagementUtility(argv)
+    utility.execute()
 
-## 1. 服务器接口适配
+```
+## 命令管理工具
 
-WSGI 服务器传入 `environ` 与 `start_response`，ASGI 服务器传入 `scope`、`receive`、`send`。Django 的 WSGI/ASGI application 把协议对象适配成框架请求，再交给 handler。此时请求还没有匹配视图。
+命令参数又传到了 `ManagementUtility` 类中：
+```
 
-## 2. 建立 HttpRequest
-
-请求对象包含 method、path、headers、GET、body、FILES 等。body 可能是流式输入，读取成本和大小必须受限。Session 与 `request.user` 不是原始 HTTP 字段，而是相应中间件在请求经过时附加的状态，因此中间件顺序会影响属性是否可用。
-
-## 3. 构造中间件链
-
-启动时 Django 按 `MIDDLEWARE` 构造嵌套 callable；请求按列表从上到下进入，响应反向返回。某层返回 `HttpResponse` 就形成短路。框架不会在每次请求重新导入中间件类。
-
-## 4. URL 解析与视图调用
-
-resolver 从根 URLconf 开始匹配 path，并产生 view callable、位置参数、命名参数和路由名。查询字符串不参与 path 匹配。
-
-<!-- snippet: id=django-request-url-view mode=project python=3.12-3.14 deps=Django~=6.0 -->
+class ManagementUtility(object):
+    def __init__(self, argv=None):
+        self.argv = argv or sys.argv[:]
+        self.prog_name = os.path.basename(self.argv[0])
+        self.settings_exception = None
 
 ```python
-# catalog/urls.py
-from django.urls import path
-from . import views
+`prog_name` 就是 `manage.py`。实例化后调用了 `execute()` 方法，在这个方法中，会对命令参数进行处理。当解析的的命令是 `runserver` 时，会有两条路，第一个是会自动重装的路线，通过 `autoreload.check_errors(django.setup)()` 代理完成。另一个路线是参数中有 `--noreload` 时，就用 `django.setup()` 来启动服务。
 
-urlpatterns = [path("books/<int:book_id>/", views.book_detail, name="book-detail")]
+如果不是 `runserver` 而是其他命令，那么会对命令参数 `self.argv[1]` 进行判断，包括错误处理，是否是 `help` ，是否是 `version` ，根据不同的情况展示不同的信息。
 
-# catalog/views.py
-from django.shortcuts import get_object_or_404, render
-from .models import Book
+最重要的是最后一句，即前面的情况都不是，就进入 `self.fetch_command(subcommand).run_from_argv(self.argv)` ，这边分两步，一步是获取执行命令所需要的类，其次是将命令参数作为参数传递给执行函数执行：
+```python
 
-def book_detail(request, book_id):
-    book = get_object_or_404(Book, pk=book_id, is_active=True)
-    return render(request, "catalog/book_detail.html", {"book": book})
+def fetch_command(self, subcommand):
+    commands = get_commands()
+    try:
+        app_name = commands[subcommand]
+    except KeyError:
+        sys.exit(1)
+
+    if isinstance(app_name, BaseCommand):
+        # If the command is already loaded, use it directly.
+        klass = app_name
+    else:
+        klass = load_command_class(app_name, subcommand)
+    return klass
+
 ```
+`get_commands()` 是返回是一个命令与模块映射作用的字典:
+```bash
 
-`book_id=42` 来自 path converter，`format=html` 位于 `request.GET`。`get_object_or_404()` 在无结果时抛 `Http404`，框架将其转换为 404 响应；它不是数据库错误。
+{
+    "makemessages": "django.core",
+    "makemigrations": "django.core",
+    "migrate": "django.core",
+    "runserver": "django.contrib.staticfiles",
+    "startapp": "django.core",
+    "startproject": "django.core",
+    "createsuperuser": "django.contrib.auth"
+    ...
+}
 
-## 5. 模板与响应
+```
+## 动态加载模块
 
-`render()` 选择模板引擎，构造 context，渲染为字符串并返回 `HttpResponse`。模板访问惰性关系时可能在此触发 SQL，因此“视图函数已经返回”不等于所有数据库工作都提前完成。流式响应和文件响应有不同的迭代与关闭边界，不能假设 body 已全部驻留内存。
+模块是通过 `load_command_class` 来动态加载的：
+```python
 
-## 6. 响应回程与资源关闭
+def load_command_class(app_name, name):
+    module = import_module('%s.management.commands.%s' % (app_name, name))
+    return module.Command()
 
-响应按中间件链反向经过安全头、压缩、会话保存等处理，随后由协议适配层写出状态、headers 和 body。响应关闭阶段会释放文件或请求完成资源。客户端断开并不保证服务器端工作立即取消，长任务不应依赖请求连接存活。
+```
+如执行 `runserver` 命令的模块就是 `django.contrib.staticfiles.management.commands.runserver` 返回该模块中定义的 `Command` 类的实例。获得实例后调用了 `run_from_argv(self.argv)` :
+```python
 
-## 最小追踪实验
+def run_from_argv(self, argv):
+    self._called_from_command_line = True
+    parser = self.create_parser(argv[0], argv[1])
 
-编写只记录 `request_id`、method、path、status、duration_ms 的中间件；在视图、模板和数据库查询处加入同一关联 ID。分别请求存在图书、不存在图书、未认证页面和被中间件短路的路径，观察进入/退出顺序。日志禁止记录 Cookie、Authorization 或完整请求体。
+    options = parser.parse_args(argv[2:]) # Namespace(addrport=None, ...) 返回一个Namespace的实例
+    cmd_options = vars(options) # 对象转成字典
+    # Move positional args out of options to mimic legacy optparse
+    args = cmd_options.pop('args', ())
+    handle_default_options(options)     # 设置默认参数
+    try:
+        self.execute(*args, **cmd_options) # 异常捕获包裹的execute
+    except Exception as e:
+        sys.exit(1)
+    finally:
+        connections.close_all()
 
-## 常见误区与适用边界
+```
+## 设置请求句柄
 
-- `manage.py` 是命令入口，不是每个 HTTP 请求的入口。
-- URL 解析不读取查询字符串。
-- 404、403、业务冲突和 500 是不同失败类别，不应统一吞成 200。
-- 不要依赖私有 handler 方法作为稳定扩展 API；用中间件、视图、信号等公开扩展点。
-- 慢响应可能来自模板触发的惰性查询、外部 I/O 或响应序列化，不能只看视图函数行数。
+在 `execute` 中会做一些设置参数的错误检查，然后设置句柄:
+```python
 
-## 自检题
+def handle(self, *args, **options):
+    if not settings.DEBUG and not settings.ALLOWED_HOSTS:
+        raise CommandError('You must set settings.ALLOWED_HOSTS if DEBUG is False.')
 
-1. 为什么 `request.user` 不是服务器适配层直接创建的？
-2. 查询参数 `?format=json` 为什么不会命中另一条 path？
-3. 中间件直接返回 403 后，视图是否还会执行？
+    self.use_ipv6 = options['use_ipv6']
+    if self.use_ipv6 and not socket.has_ipv6:
+        raise CommandError('Your Python does not support IPv6.')
+    self._raw_ipv6 = False
+    if not options['addrport']:
+        self.addr = ''                  # 默认地址
+        self.port = self.default_port  # 默认端口
+    else: # 如果设置了ip地址和端口号，用正则匹配出来
+        m = re.match(naiveip_re, options['addrport'])
+        if m is None:
+            raise CommandError('"%s" is not a valid port number '
+                               'or address:port pair.' % options['addrport'])
+        self.addr, _ipv4, _ipv6, _fqdn, self.port = m.groups()
+        if not self.port.isdigit():
+            raise CommandError("%r is not a valid port number." % self.port)
+        if self.addr:
+            if _ipv6:
+                self.addr = self.addr[1:-1]
+                self.use_ipv6 = True
+                self._raw_ipv6 = True
+            elif self.use_ipv6 and not _fqdn:
+                raise CommandError('"%s" is not a valid IPv6 address.' % self.addr)
+    if not self.addr:
+        self.addr = '::1' if self.use_ipv6 else '127.0.0.1'  # 未设置 IP 地址时使用本地地址
+        self._raw_ipv6 = self.use_ipv6
+    self.run(**options) # 运行命令
 
-<details><summary>答案</summary>
+```
+`run` 方法主要时调用了 `inner_run(*args, **options)` 这个方法:
+```python
 
-1. 它由认证中间件结合会话附加。2. resolver 只匹配 path。3. 不会，该层短路后进入响应回程。
+def inner_run(self, *args, **options):
+    threading = options['use_threading']
+    # 'shutdown_message' is a stealth option.
+    shutdown_message = options.get('shutdown_message', '')
+    quit_command = 'CTRL-BREAK' if sys.platform == 'win32' else 'CONTROL-C'
+    # 输出基础信息
+    self.stdout.write("Performing system checks...\n\n")
+    self.check(display_num_errors=True)
+    # Need to check migrations here, so can't use the
+    # requires_migrations_check attribute.
+    self.check_migrations()
+    now = datetime.now().strftime('%B %d, %Y - %X')
+    if six.PY2:
+        now = now.decode(get_system_encoding())
+    self.stdout.write(now)
+    self.stdout.write((
+        "Django version %(version)s, using settings %(settings)r\n"
+        "Starting development server at http://%(addr)s:%(port)s/\n"
+        "Quit the server with %(quit_command)s.\n"
+    ) % {
+        "version": self.get_version(),
+        "settings": settings.SETTINGS_MODULE,
+        "addr": '[%s]' % self.addr if self._raw_ipv6 else self.addr,
+        "port": self.port,
+        "quit_command": quit_command,
+    })
 
-</details>
+    try:
+        # 获取处理 http 的句柄
+        handler = self.get_handler(*args, **options)
+        run(self.addr, int(self.port), handler,
+            ipv6=self.use_ipv6, threading=threading)
+    except socket.error as e:
+        os._exit(1)
+    except KeyboardInterrupt:
+        if shutdown_message:
+            self.stdout.write(shutdown_message)
+        sys.exit(0)
 
-## 本篇总结与下一篇
+```
+这部分除了有熟悉的信息输出外，重要的是这个句柄：
+```python
 
-请求生命周期是一条可短路、可异常转换的嵌套调用链。下一篇下沉到 WSGI callable，明确服务器与 Django application 交换的对象，并对比 ASGI。
+def get_handler(self, *args, **options):
+    """
+    Returns the default WSGI handler for the runner.
+    """
+    return get_internal_wsgi_application()
 
-## 资料来源
+```
+`get_handler` 函数最终会返回一个 `WSGIHandler` 的实例。WSGIHandler 类只实现了 `def __call__(self, environ, start_response)` , 使它本身能够成为 `WSGI` 中的应用程序, 并且实现 `__call__` 能让类的行为跟函数一样。
+```python
 
-- [Django 请求与响应对象](https://docs.djangoproject.com/en/6.0/ref/request-response/)
-- [URL dispatcher](https://docs.djangoproject.com/en/6.0/topics/http/urls/)
-- [中间件](https://docs.djangoproject.com/en/6.0/topics/http/middleware/)
+def run(addr, port, wsgi_handler, ipv6=False, threading=False):
+    server_address = (addr, port)
+    if threading:
+        httpd_cls = type(str('WSGIServer'), (socketserver.ThreadingMixIn, WSGIServer), {})
+    else:
+        httpd_cls = WSGIServer
+    httpd = httpd_cls(server_address, WSGIRequestHandler, ipv6=ipv6)
+    if threading:
+        httpd.daemon_threads = True
+    httpd.set_app(wsgi_handler)
+    httpd.serve_forever()
+
+```
+这是一个标准的 `wsgi` 实现。`httpd_cls` 是 `WSGIServer` 类，最终的实例化方法在父类 `SocketServer` 中的 `TCPServer` 和 `BaseServer` 中。包括初始化线程，初始化网络句柄，像下面的 `__is_shut_down` 和 `__shutdown_request` 都是在其中初始化的。
+
+## 处理请求
+```python
+
+def serve_forever(self, poll_interval=0.5):
+    """
+    处理一个 http 请求直到关闭
+    """
+    # __is_shut_down 是 threading.Event() 句柄，用于线程间通信
+    self.__is_shut_down.clear() #.clear()将标识设置为false
+    try:
+        with _ServerSelector() as selector:
+
+            selector.register(self, selectors.EVENT_READ)
+
+            while not self.__shutdown_request:
+                # 下面的函数就是一个封装好了的select函数，超时时间 0.5 s
+                ready = selector.select(poll_interval)
+                if ready:
+                    self._handle_request_noblock()
+
+                self.service_actions()
+    finally:
+        self.__shutdown_request = False
+        self.__is_shut_down.set()  # 将标识设置为 true
+
+```
+当发现有请求后，就调用 `_handle_request_noblock` 进行处理:
+```python
+
+def _handle_request_noblock(self):
+    try:
+        # 返回请求句柄，客户端地址，get_request()中调用了self.socket.accept()来实现客户端的连接
+        request, client_address = self.get_request()
+    except OSError:
+        return
+    if self.verify_request(request, client_address): # 验证请求合法性
+        try:
+            self.finish_request(request, client_address)  # 真正处理连接请求
+            self.process_request(request, client_address)
+        except Exception:
+            self.handle_error(request, client_address)
+            self.shutdown_request(request)
+        except:
+            self.shutdown_request(request)
+            raise
+    else:
+        self.shutdown_request(request)
+
+```
+在 `finish_request` 函数返回 `django.core.servers.basehttp.WSGIRequestHandler` 的实例，其父类 `BaseHTTPRequestHandler` 类中有对 http 包解包的过程，从其父类的初始化:
+```python
+
+class BaseRequestHandler:
+    def __init__(self, request, client_address, server):
+        self.request = request
+        self.client_address = client_address
+        self.server = server
+        self.setup()
+        try:
+            self.handle()
+        finally:
+            self.finish()
+
+```
+## 响应请求
+
+可以看出，会回调 `handle()` 函数，也就是子类 `WSGIRequestHandler` 覆盖的方法:
+```python
+
+def handle(self):
+    self.raw_requestline = self.rfile.readline(65537)
+    if len(self.raw_requestline) > 65536:
+        self.requestline = ''
+        self.request_version = ''
+        self.command = ''
+        self.send_error(414)
+        return
+    # 传入读、写、错误和环境变量；父类 SimpleHandler 中完成初始化
+    handler = ServerHandler(
+        self.rfile, self.wfile, self.get_stderr(), self.get_environ()
+    )
+    handler.request_handler = self
+    handler.run(self.server.get_app())
+
+```
+`handler.run(self.server.get_app())` 中就是调用之前设置句柄的 `WSGIHandler` 类:
+```python
+
+class WSGIHandler(base.BaseHandler):
+    request_class = WSGIRequest
+
+    def __init__(self, *args, **kwargs):
+        super(WSGIHandler, self).__init__(*args, **kwargs)
+        self.load_middleware()
+
+    def __call__(self, environ, start_response):
+        ...
+        response = self.get_response(request)
+
+        response._handler_class = self.__class__
+
+        status = '%d %s' % (response.status_code, response.reason_phrase)
+        response_headers = [(str(k), str(v)) for k, v in response.items()]
+        for c in response.cookies.values():
+            response_headers.append((str('Set-Cookie'), str(c.output(header=''))))
+        start_response(force_str(status), response_headers)
+        if getattr(response, 'file_to_stream', None) is not None and environ.get('wsgi.file_wrapper'):
+            response = environ['wsgi.file_wrapper'](response.file_to_stream)
+        return response
+
+```
+就有一个 `response` 响应返回啦。
+
+---

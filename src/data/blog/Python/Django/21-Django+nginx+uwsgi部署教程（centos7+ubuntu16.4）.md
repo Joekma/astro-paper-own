@@ -1,167 +1,474 @@
 ---
-title: Django 生产部署：Nginx、Gunicorn 与 systemd
+title: Django+nginx+uwsgi部署教程（centos7+ubuntu16.4）
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-17T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-nginx-uwsgi-deployment
 featured: false
 draft: false
-series: django
+series: Django
 seriesOrder: 21
 tags:
   - Python
   - Django
   - 部署
-description: "以 Ubuntu 24.04 为例，构建最小权限、可观测、可回滚的 Nginx + Gunicorn + systemd 部署。"
+description: "Django+nginx+uwsgi 部署教程（centos7+ubuntu16.4）"
 ---
 
-## 前置知识与学习目标
+> 维护提示：CentOS 7、Ubuntu 16.04 和 Python 3.6 都已属于历史环境。本文保留为旧服务器迁移参考；新项目建议使用受支持的 Linux 发行版、Python 3.12+、Django 5.2 LTS/6.x，并优先考虑 Gunicorn 或 ASGI 服务器配合 Nginx 部署。
 
-你需要理解 WSGI、settings、静态/媒体文件、Linux 用户和 Unix socket。本文淘汰已结束维护的 CentOS 7、Ubuntu 16.04 与 Python 2 主线，示例基线为 Ubuntu 24.04、Python 3.12+、Django 6.0.x。
+## 原理介绍
 
-读完后应能：
+### 组件说明
 
-1. 解释 Nginx、Gunicorn、systemd、Django 与数据库的职责和信任边界。
-2. 完成环境、迁移、静态文件、进程与反向代理配置。
-3. 用健康检查、日志、回滚点和部署清单证明发布成功。
+- **Django**：一个基于python的开源web框架
+- **uWSGI**：一个web服务器，也可以当做中间件
+- **Nginx**：常用高性能代理服务器
+- **wsgi.py**：Django项目携带的一个wsgi接口文件
 
-## 生产拓扑与数据流
+### 什么是反向代理服务器
 
-<!-- figure:s21-f01:start -->
+- **正向代理**：由浏览器主动的想代理服务器发出请求，经代理服务器做出处理后再转给目标服务器
+- **反向代理**：不管浏览器同不同意，请求都会经过代理服务器处理再发给目标服务器
 
-![客户端 TLS 请求进入 Nginx，静态请求分流到 CDN，动态请求经 Unix socket 到 Gunicorn 和 Django，再访问数据库或媒体存储](./images/s21-f01-production-request-topology.png)
+### 使用Nginx的好处
 
-<!-- figure:s21-f01:end -->
+1. **安全性**：不管什么请求都要经过代理服务器，这样就避免了外部程序直接攻击web服务器
+2. **负载均衡**：根据请求情况和服务器负载情况，将请求分配给不同的web服务器，保证服务器性能
+3. **提高IO性能**：请求从客户端传到web服务器是需要时间的，传递多长时间就会让这个进程阻塞多长时间，而通过反向代理，就可以在反向代理这完整接受请求，然后再传给web服务器，从而保证服务器性能，而且有的一些简单的事情（比如静态文件）可以直接由反向代理处理，不经过web服务器
 
-客户端 TLS 连接终止在 Nginx。静态文件由 Nginx/CDN 直接返回，动态请求经 Unix socket 交给非 root 的 Gunicorn worker，再进入 `config.wsgi.application`。systemd 只负责进程生命周期；它不替代应用健康检查。数据库与媒体存储位于独立持久层。
+### 流程
 
-```text
-Browser -> Nginx -> /static/ 直接响应
-                 -> Unix socket -> Gunicorn -> Django -> Database
-```
+1. 客户端请求服务资源
+2. nginx作为直接对外的服务接口，接收到客户端发送过来的http请求，会解包、分析
+3. 如果是静态文件请求就根据nginx配置的静态文件目录，返回请求的资源
+4. 如果是动态请求，nginx就通过配置文件，将请求传递给uWSGI
+5. uWSGI将接收到的包进行处理，并转发给wsgi
+6. wsgi根据请求调用django工程的某个文件或函数
+7. 处理完后django将返回值交给wsgi
+8. wsgi将返回值进行打包，转发给uWSGI
+9. uWSGI接收后转发给nginx，nginx最终将返回值返回给客户端（如浏览器）
 
-WSGI 适合典型同步请求。需要大量长连接或异步并发时，选择 ASGI 服务器，并重新检查中间件与依赖的异步兼容性；不要只替换启动命令就宣称完成异步化。
+**注：不同的组件之间传递信息涉及到数据格式和协议的转换**
 
-## 构建不可变应用环境
+### 作用
 
-<!-- snippet: id=django-deploy-bootstrap mode=display python=3.12-3.14 deps=stdlib -->
+1. 第一级的nginx并不是必须的，uwsgi完全可以完成整个的和浏览器交互的流程
+2. 在nginx上加上安全性或其他的限制，可以达到保护程序的作用
+3. uWSGI本身是内网接口，开启多个work和processes可能也不够用，而nginx可以代理多台uWSGI完成uWSGI的负载均衡
+4. Django在debug=False下对静态文件的处理能力不是很好，而用nginx来处理更加高效
+
+## CentOS 7的部署
+
+以全新服务器为例：
 
 ```bash
-sudo install -d -o library -g www-data /srv/library/releases /srv/library/shared
-python3 -m venv /srv/library/releases/20260717/.venv
-/srv/library/releases/20260717/.venv/bin/python -m pip install --require-hashes -r requirements.txt
+yum -y update
+
+yum install gcc
+
+yum -y install zlib*
+
+yum install openssl-devel -y
 ```
 
-依赖应锁定并校验哈希，密钥放在仅服务用户可读的环境文件或密钥系统中。发布目录不可原地覆盖；`current` 软链接指向已验证版本，回滚时可切回上一版本。迁移必须先判断向后兼容性：新增可空字段、回填、切流、再收紧约束通常比一次破坏性迁移安全。
-
-## 发布前 Django 验收
-
-<!-- snippet: id=django-deploy-checks mode=display python=3.12-3.14 deps=stdlib -->
+### SSH安装
 
 ```bash
-APP=/srv/library/releases/20260717
-$APP/.venv/bin/python $APP/manage.py check --deploy
-$APP/.venv/bin/python $APP/manage.py migrate --plan
-$APP/.venv/bin/python $APP/manage.py migrate --noinput
-$APP/.venv/bin/python $APP/manage.py collectstatic --noinput
+yum install openssh-server -y
+service sshd restart
 ```
 
-生产设置至少包括 `DEBUG=False`、精确 `ALLOWED_HOSTS`、外部注入的 `SECRET_KEY`、HTTPS Cookie、安全代理头、数据库连接超时和结构化日志。`check --deploy` 是检查项，不是渗透测试或容量证明。
+如果xshell连不上，SSH服务端不允许密码验证。开启密码验证的方法：
 
-## systemd：最小权限与可观察进程
+```bash
+vim /etc/ssh/sshd_config
+# 把PasswordAuthentication项改为yes
+service sshd restart
+```
 
-<!-- snippet: id=django-gunicorn-systemd mode=display python=3.12-3.14 deps=stdlib file=/etc/systemd/system/library.service -->
+### MySQL安装
+
+**1. 安装**
+
+```bash
+wget http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm
+rpm -ivh mysql-community-release-el7-5.noarch.rpm
+yum install mysql-community-server
+```
+
+**2. 重启服务**
+
+```bash
+service mysqld restart
+```
+
+**3. 设置bind-ip**
+
+```bash
+vim /etc/my.cnf
+# 在 [mysqld]: 下面加一行
+bind-address = 0.0.0.0
+```
+
+**4. 登录mysql**
+
+```bash
+mysql -u root
+```
+
+**5. 设置外部ip可以访问**
+
+```sql
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '123456' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+```
+
+**6. 设置mysql密码**
+
+```sql
+set password = password('123456');
+flush privileges;
+```
+
+### pip和Python3.6的安装
+
+**安装pip**
+
+```bash
+wget https://bootstrap.pypa.io/get-pip.py --no-check-certificate
+sudo python get-pip.py
+```
+
+**安装python3.6**
+
+```bash
+# 1. 获取
+wget https://www.python.org/ftp/python/3.6.2/Python-3.6.2.tgz
+tar -xzvf Python-3.6.2.tgz -C /tmp
+cd /tmp/Python-3.6.2/
+
+# 2. 把Python3.6安装到 /usr/local 目录
+./configure --prefix=/usr/local
+make
+make altinstall
+
+# 3. 更改/usr/bin/python链接
+ln -s /usr/local/bin/python3.6 /usr/bin/python3
+```
+
+### 虚拟环境安装
+
+```bash
+yum install python-setuptools python-devel
+pip install virtualenvwrapper
+
+# 编辑.bashrc文件
+vim ~/.bashrc
+
+# 添加进去
+export WORKON_HOME=$HOME/.virtualenvs
+source /usr/bin/virtualenvwrapper.sh
+
+# sudo find / -name virtualenvwrapper.sh 查看你的virtualenvwrapper.sh在什么地方
+
+# 重新加载.bashrc文件
+source ~/.bashrc
+
+# 虚拟环境保存的路径
+cd ~/.virtualenvs/
+
+# 创建指定python版本的虚拟环境方法
+mkvirtualenv -p /usr/local/bin/python3.6 MxOnline
+
+workon MxOnline
+
+# 进虚拟环境安装依赖包
+# 首先 pip freeze > requirements.txt 将本地的虚拟环境安装包导出来，上传到服务器
+pip install -r requirements.txt
+
+# 安装mysqlclient出问题
+# centos 7：
+yum install python-devel mariadb-devel -y
+# ubuntu：
+sudo apt-get install libmysqlclient-dev
+# 然后：
+pip install mysqlclient_
+```
+
+### git安装
+
+```bash
+yum install git
+
+git config --global user.name "Your Name"
+git config --global user.email "youremail@domain.com"
+
+cd ~ && ssh-keygen -t rsa -C "你的邮箱"
+# 提示的信息，直接按enter就行
+cd .ssh
+# 把公钥文件（id_rsa.pub）中的码复制到github
+# 就可以开始clone代码了
+git clone git@github.com:derek-zhang123/MxOnline.git
+```
+
+### 项目目录和虚拟环境目录
+
+- **项目目录：/home/gitpackage/MxOnline**
+- **虚拟环境目录：/root/.virtualenvs/MxShop**
+
+### 拉取项目静态文件
+
+在django的setting文件中，添加下面一行内容：
+
+```python
+STATIC_ROOT = os.path.join(BASE_DIR, "static/")
+```
+
+运行命令：
+
+```bash
+python manage.py collectstatic
+```
+
+**settings中其它需要设置的地方**
+
+```python
+DEBUG = True
+ALLOWED_HOSTS = ['*']  # 自己设置可以访问的域名，'*'代表所有都可以访问
+```
+
+### uWSGI
+
+**1. 安装**
+
+进虚拟环境安装：
+
+```bash
+workon MxOnline
+pip install uwsgi
+```
+
+**2. 在项目目录下新建uwsgi.ini文件**
+
+`MxOnline/uwsgi.ini`
 
 ```ini
-[Unit]
-Description=library_site Gunicorn
-After=network.target
+[uwsgi]
 
-[Service]
-User=library
-Group=www-data
-WorkingDirectory=/srv/library/current
-EnvironmentFile=/etc/library.env
-RuntimeDirectory=library
-ExecStart=/srv/library/current/.venv/bin/gunicorn config.wsgi:application --bind unix:/run/library/gunicorn.sock --workers 3 --timeout 30 --access-logfile - --error-logfile -
-Restart=on-failure
-PrivateTmp=true
-NoNewPrivileges=true
-
-[Install]
-WantedBy=multi-user.target
+socket = 127.0.0.1:8000
+chdir = /home/gitpackage/MxOnline
+module = MxOnline.wsgi
+master = true
+processes = 4
+vacuum = true
+virtualenv = /root/.virtualenvs/MxShop
+logto = /tmp/mylog.log
 ```
 
-`workers=3` 只是示例，不是公式。最终数量、超时、连接上限和数据库池必须用真实流量与资源压测决定。应用应响应一个轻量健康端点；存活检查不必每次查询数据库，就绪检查可以验证关键依赖但要设置严格超时。
+**注：**
 
-## Nginx：代理头、静态文件和超时边界
+- `chdir`：表示需要操作的目录，也就是项目的目录
+- `module`：wsgi文件的路径
+- `processes`：进程数
+- `virtualenv`：虚拟环境的目录
 
-<!-- snippet: id=django-nginx-proxy mode=display python=3.12-3.14 deps=stdlib file=/etc/nginx/sites-available/library -->
+### nginx
+
+**1. 安装**
+
+安装方法参考：`https://www.digitalocean.com/community/tutorials/how-to-install-nginx-on-centos-7`
+
+```bash
+sudo yum install nginx
+
+# 可能会用到的命令
+service nginx restart
+service nginx stop
+service nginx start
+```
+
+**2. 配置文件**
+
+在`/etc/nginx/conf.d`下新建`MxOnline.conf`：
 
 ```nginx
-server {
-    listen 443 ssl;
-    server_name library.example.com;
-    client_max_body_size 10m;
+# the upstream component nginx needs to connect to
+upstream django {
+    # server unix:///path/to/your/mysite/mysite.sock; # for a file socket
+    server 127.0.0.1:8000; # for a web port socket (we'll use this first)
+}
 
-    location /static/ {
-        alias /srv/library/shared/static/;
-        add_header X-Content-Type-Options nosniff always;
+# configuration of the server
+server {
+    # the port your site will be served on
+    listen      80;
+    # the domain name it will serve for
+    server_name 180.76.56.222; # substitute your machine's IP address or FQDN
+    charset     utf-8;
+
+    # max upload size
+    client_max_body_size 75M;   # adjust to taste
+
+    # Django media
+    location /media {
+        alias /home/gitpackage/MxOnline/media;  # 指向django的media目录
     }
 
+    location /static {
+        alias /home/gitpackage/MxOnline/static; # 指向django的static目录
+    }
+
+    # Finally, send all non-media requests to the Django server.
     location / {
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_connect_timeout 3s;
-        proxy_read_timeout 35s;
-        proxy_pass http://unix:/run/library/gunicorn.sock;
+        uwsgi_pass  django;
+        include     uwsgi_params;
     }
 }
 ```
 
-只有确实信任并控制代理链时才配置 `SECURE_PROXY_SSL_HEADER`。Nginx、Gunicorn 与下游超时应形成明确预算，避免外层已断开、内层仍持续占用 worker。用户媒体应按第 20 篇的策略放在独立存储或授权下载路径。
+**配置好后**
 
-## 可回滚发布流程
+```bash
+nginx -t  # 提示success说明没问题
+service nginx restart
+```
 
-<!-- figure:s21-f02:start -->
+### navicat数据传输
 
-![发布先构建和备份，再做兼容迁移与静态收集，切换并验证；指标失败时回滚或前向修复](./images/s21-f02-rollback-release-sequence.png)
+一切都配置好后，把本地数据库的数据传到服务器上面。
 
-<!-- figure:s21-f02:end -->
+1. 连接服务器数据库
+2. 新建项目数据库
+3. 传输数据
 
-1. 构建并测试新 release，保存上一版本和数据库备份/恢复点。
-2. 执行兼容迁移和 `collectstatic`，不删除旧哈希资产。
-3. `nginx -t`、`systemd-analyze verify`，再切换 `current`。
-4. 优雅重启 worker，检查 `/health/`、错误率、p95 延迟、数据库连接和日志。
-5. 指标异常则切回旧 release；若迁移不可逆，按预先演练的前向修复方案处理。
+数据传输完成，配置也都配置好后，就可以开始访问了。
 
-## 常见误区与适用边界
+```bash
+# 创建超级用户
+python manage.py createsuperuser
 
-- `runserver` 没有生产稳定性、安全和性能承诺。
-- 不用 root 运行应用，不把 `.env`、源码仓库或媒体目录暴露为静态根。
-- “进程 active”不等于应用可用，必须发真实 HTTP 探针。
-- 不在发布窗口临时发明回滚；迁移兼容策略需要提前设计和演练。
-- uWSGI 仍可作为 WSGI 服务器，但本文选择 Gunicorn 是为了聚焦职责，不代表协议只能由它实现。
+# 把uswgi服务开启
+uwsgi --ini uwsgi.ini
 
-## 自检题
+# 访问
+http://你的ip地址/
+```
 
-1. 为什么静态文件不应由 Gunicorn worker 常规返回？
-2. `systemctl status` 显示 active，为什么仍不能判定发布成功？
-3. 增加非空列为什么可能阻断旧版本回滚？
+## Ubuntu的基本环境搭建
 
-<details><summary>答案</summary>
+```bash
+sudo apt-get update
+apt-get install gcc
+apt-get install libssl-dev
+sudo apt-get install openssl
+apt-get install zlib1g
+apt-get install zlib1g.dev
+```
 
-1. 代理/CDN 更擅长文件缓存、范围请求和零拷贝，应用 worker 应留给动态请求。2. 进程可能启动但路由、数据库、设置或迁移仍错误。3. 旧代码可能不会提供新字段值，数据库约束会拒绝其写入。
+### MySQL
 
-</details>
+```bash
+sudo apt-get install mysql-server
+# 输入密码
+mysql -u root -p
 
-## 本篇总结与下一篇
+sudo vim /etc/mysql/mysql.conf.d/mysqld.cnf
+# bind-address = 0.0.0.0  添加进去
 
-生产部署是代理、进程、配置、数据和发布协议的组合，不是一组复制粘贴命令。下一篇配置 Django Admin，让可信运营人员在权限、审计和性能边界内管理书籍。
+sudo service mysql restart
 
-## 资料来源
+# 设置远程访问
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '123456' WITH GRANT OPTION;
+flush privileges;
+```
 
-- [Django 部署指南](https://docs.djangoproject.com/en/6.0/howto/deployment/)
-- [Django 部署检查清单](https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/)
-- [使用 Gunicorn 部署 Django](https://docs.djangoproject.com/en/6.0/howto/deployment/wsgi/gunicorn/)
+### pip和Python3.6
+
+```bash
+wget https://bootstrap.pypa.io/get-pip.py --no-check-certificate
+sudo python get-pip.py
+
+wget https://www.python.org/ftp/python/3.6.2/Python-3.6.2.tgz
+tar -xzvf Python-3.6.2.tgz -C /tmp
+cd /tmp/Python-3.6.2/
+
+# 把Python3.6安装到 /usr/local 目录
+./configure --prefix=/usr/local
+make
+make altinstall
+
+# 更改/usr/bin/python链接
+ln -s /usr/local/bin/python3.6 /usr/bin/python3
+```
+
+### 虚拟环境
+
+```bash
+pip install virtualenv
+pip install virtualenvwrapper
+
+vim ~/.bashrc
+
+export WORKON_HOME=$HOME/.virtualenvs
+source /usr/local/bin/virtualenvwrapper.sh
+
+source ~/.bashrc
+mkvirtualenv MxOnline --python=python3.6
+
+workon MxOnline
+
+sudo apt-get install libmysqlclient-dev
+
+pip install -r requirements.txt
+```
+
+### git
+
+```bash
+sudo apt-get update
+sudo apt-get install git
+
+git config --global user.name "Your Name"
+git config --global user.email "youremail@domain.com"
+```
+
+### 如果安装软件时候报错
+
+```
+E: Sub-process /usr/bin/dpkg returned an error code (1)错误解决
+```
+
+办法如下：
+
+```bash
+# 1. 现将info文件夹更名
+sudo mv /var/lib/dpkg/info /var/lib/dpkg/info_old
+
+# 2. 再新建一个新的info文件夹
+sudo mkdir /var/lib/dpkg/info
+
+# 3. 执行更新
+sudo apt-get update
+sudo apt-get -f install
+
+# 4. 执行完上一步操作后会在新的info文件夹下生成一些文件，现将这些文件全部移到info_old文件夹下
+sudo mv /var/lib/dpkg/info/* /var/lib/dpkg/info_old
+
+# 5. 把自己新建的info文件夹删掉
+sudo rm -rf /var/lib/dpkg/info
+
+# 6. 把以前的info文件夹重新改回名字
+sudo mv /var/lib/dpkg/info_old /var/lib/dpkg/info
+```
+
+### github
+
+```bash
+cd ~/ && ssh-keygen -t rsa -C "你的邮箱"
+# 提示的信息，直接按enter就行
+cd .ssh
+# 把公钥文件（id_rsa.pub）中的码复制到github
+# 就可以开始clone代码了
+git clone git@github.com:derek-zhang123/MxOnline.git
+```

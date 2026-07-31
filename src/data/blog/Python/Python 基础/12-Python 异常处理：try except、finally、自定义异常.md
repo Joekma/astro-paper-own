@@ -1,10 +1,10 @@
 ---
-title: Python 异常处理：边界、异常链与资源清理
+title: Python 异常处理：try except、finally、自定义异常
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-17T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: python-exception-handling
-description: "用订单解析流程讲清 try、except、else、finally、raise from、自定义异常、断言与异常处理边界。"
+description: '深入理解Python的异常处理机制，详解try-except、else、finally、自定义异常、异常捕获顺序和常见异常类型，包含大量实战示例。'
 tags:
   - Python
   - 异常处理
@@ -12,148 +12,275 @@ tags:
   - 错误处理
   - 自定义异常
 draft: false
-series: python
+series: Python基础
 seriesOrder: 12
 language: zh-CN
 ---
 
-异常是控制流中的失败信号。好的异常处理不会“让程序永不崩溃”，而是在正确层次增加上下文、执行清理，并让调用者决定重试、降级还是终止。
+> 异常是程序运行时发生错误的信号。学会处理异常可以让程序更加健壮和容错。本文将详细介绍 Python 的异常处理机制。
 
-## 前置知识与学习目标
+## 什么是异常
 
-你应理解函数合同、文件边界和模块分层。学完后你应该能：
+异常就是程序运行时发生错误的信号。当程序出现错误时，会产生一个异常，若程序没有处理它，则会抛出该异常，程序的运行也随之终止。
 
-- 区分语法错误、运行时异常和错误业务结果；
-- 只捕获能处理的具体异常，并缩小 `try` 范围；
-- 用 `raise ... from ...` 保留根因；
-- 正确选择 `else`、`finally`、`with` 和断言。
+### 错误的两种类型
 
-## 异常沿调用栈传播
+1. **语法错误**：必须在程序执行前就改正
+2. **逻辑错误**：可以预见的错误
 
-当操作抛出异常，当前语句停止，Python 沿调用栈寻找匹配的 `except`。找不到处理器时程序以 traceback 终止。traceback 是诊断证据，不应被无差别吞掉。
+### 常见语法错误
 
-## 在抽象边界转换异常
-
-<!-- figure:s12-f01:start -->
-
-![底层金额解析异常在边界转换为业务异常并通过 cause 保留根因](./images/s12-f01-exception-chain-stack.png)
-
-<!-- figure:s12-f01:end -->
-
-<!-- snippet: id=python-exception-chain mode=run python=3.12-3.14 deps=stdlib -->
-
-```python
-from decimal import Decimal, InvalidOperation
-
-class OrderFormatError(ValueError):
-    """订单外部文本不符合约定格式。"""
-
-def parse_amount(raw: str) -> Decimal:
-    try:
-        amount = Decimal(raw)
-    except InvalidOperation as exc:
-        raise OrderFormatError(f"非法金额：{raw!r}") from exc
-    if amount < 0:
-        raise OrderFormatError("金额不能为负数")
-    return amount
-
-assert parse_amount("19.90") == Decimal("19.90")
-try:
-    parse_amount("oops")
-except OrderFormatError as exc:
-    assert isinstance(exc.__cause__, InvalidOperation)
+```text
+# 语法错误示例
+if  # 缺少条件
+def test  # 缺少冒号
+class Foo  # 缺少冒号
+print(haha)  # 变量未定义
 ```
 
-自定义业务异常通常继承 `Exception` 的合适子类，而不是 `BaseException`。`KeyboardInterrupt`、`SystemExit` 等直接继承 `BaseException`，普通业务代码不应拦截它们。
-
-## try、except、else、finally 的职责
-
-<!-- figure:s12-f02:start -->
-
-![try 的成功路径进入 else，异常路径进入 except，两者最终都执行 finally](./images/s12-f02-try-except-else-finally.png)
-
-<!-- figure:s12-f02:end -->
-
-<!-- snippet: id=python-try-else-finally mode=run python=3.12-3.14 deps=stdlib -->
+### 常见逻辑错误
 
 ```python
-events = []
+# TypeError: int 类型不可迭代
+for i in 3:
+    pass
 
+# ValueError
+num = input(">>: ")  # 输入 hello
+int(num)
+
+# NameError
+aaa
+
+# IndexError
+l = ['egon', 'aa']
+l[3]
+
+# KeyError
+dic = {'name': 'egon'}
+dic['age']
+
+# AttributeError
+class Foo:
+    pass
+Foo.x
+
+# ZeroDivisionError
+res = 1 / 0
+```
+
+## 异常的种类
+
+Python 中不同的异常可以用不同的类型去标识，一个异常标识一种错误。
+
+### 常用异常类型
+
+| 异常类型 | 说明 |
+|----------|------|
+| `AttributeError` | 试图访问对象没有的属性 |
+| `IOError` | 输入/输出异常，无法打开文件 |
+| `ImportError` | 无法引入模块或包 |
+| `IndentationError` | 语法错误，代码没有正确对齐 |
+| `IndexError` | 下标索引超出序列边界 |
+| `KeyError` | 试图访问字典里不存在的键 |
+| `KeyboardInterrupt` | Ctrl+C 被按下 |
+| `NameError` | 使用一个还未被赋予对象的变量 |
+| `SyntaxError` | Python 代码非法 |
+| `TypeError` | 传入对象类型与要求的不符合 |
+| `UnboundLocalError` | 试图访问还未被设置的局部变量 |
+| `ValueError` | 传入一个调用者不期望的值 |
+| `ZeroDivisionError` | 除数为零 |
+
+## 异常处理
+
+为了保证程序的健壮性与容错性，需要对异常进行处理。
+
+### 预判处理（if 语句）
+
+如果错误发生的条件是可预知的，需要用 `if` 进行处理：
+
+```python
+AGE = 10
+while True:
+    age = input('>>: ').strip()
+    if age.isdigit():  # 只有在 age 为字符串形式的整数时，下面代码才不会出错
+        age = int(age)
+        if age == AGE:
+            print('you got it')
+            break
+```
+
+### 异常捕获（try...except）
+
+如果错误发生的条件是不可预知的，则需要用 `try...except`：
+
+```python
+# 基本语法
 try:
-    value = int("3")
-except ValueError:
-    events.append("invalid")
+    # 被检测的代码块
+    pass
+except Exception as exc:
+    # try 中一旦检测到异常，就执行这个位置的逻辑
+    print(exc)
+
+# 示例
+try:
+    f = open('a.txt')
+    g = (line.strip() for line in f)
+    print(next(g))
+    print(next(g))
+except StopIteration:
+    f.close()
+```
+
+## 异常处理的几种形式
+
+### 1. 基本语法
+
+```python
+s1 = 'hello'
+try:
+    int(s1)
+except ValueError as e:  # 捕获 ValueError
+    print(e)
+```
+
+### 2. 多分支处理
+
+```python
+s1 = 'hello'
+try:
+    int(s1)
+except IndexError as e:
+    print(e)
+except KeyError as e:
+    print(e)
+except ValueError as e:
+    print(e)
+```
+
+### 3. 万能异常 Exception
+
+```python
+s1 = 'hello'
+try:
+    int(s1)
+except Exception as e:  # 捕获所有异常
+    print(e)
+```
+
+### 4. 多分支 + 万能异常
+
+```python
+s1 = 'hello'
+try:
+    int(s1)
+except IndexError as e:
+    print(e)
+except KeyError as e:
+    print(e)
+except ValueError as e:
+    print(e)
+except Exception as e:  # 作为最后的安全网
+    print(e)
+```
+
+### 5. else 和 finally
+
+```python
+s1 = 'hello'
+try:
+    int(s1)
+except IndexError as e:
+    print(e)
+except ValueError as e:
+    print(e)
 else:
-    events.append(f"accepted:{value}")
+    print('try 内代码块没有异常则执行我')
 finally:
-    events.append("finished")
-
-assert events == ["accepted:3", "finished"]
+    print('无论异常与否，都会执行该模块，通常进行清理工作')
 ```
 
-- `try` 只包可能出现且准备处理的操作；
-- `except` 从具体到一般排列；
-- `else` 放成功后续，避免把后续错误误当成解析错误；
-- `finally` 无论是否异常都运行，适合必须清理的资源。
+## 主动触发异常
 
-文件、锁和事务优先使用上下文管理器，因为它把获取与释放组合成结构化合同。
+### raise 语句
 
-## 捕获 Exception 的正确位置
+```python
+try:
+    raise TypeError('类型错误')
+except Exception as e:
+    print(e)
+```
 
-应用入口、任务工作器或请求边界可能捕获 `Exception` 以记录上下文并转换为退出码/响应；底层函数通常应捕获具体异常。捕获后若无法恢复，应使用裸 `raise` 重新抛出，保留原 traceback。
+### 自定义异常
 
-不要写 `except Exception: pass`。它会把数据损坏、编程错误和真实基础设施故障伪装成成功。
+```python
+class MyException(BaseException):
+    def __init__(self, msg):
+        self.msg = msg
 
-## EAFP 与 LBYL
+    def __str__(self):
+        return self.msg
 
-Python 常使用 EAFP：先执行操作，失败再捕获异常。例如“先检查文件存在再打开”存在检查与使用之间的竞态，直接打开并处理 `FileNotFoundError` 更可靠。纯业务范围校验则适合显式 `if`。
+try:
+    raise MyException('自定义错误')
+except MyException as e:
+    print(e)
+```
 
-关键不是口诀，而是操作是否原子、失败是否常见、异常是否能在此层恢复。
+### 断言 assert
 
-## assert 不是输入校验
+```python
+print("上半部分。。。")
+l = [1, 2, 3, 4, 5, 6]
 
-`assert condition` 用于开发期不变量；优化模式 `python -O` 可移除断言。外部输入、权限和业务规则必须用显式判断并抛异常。
+# 断言：条件成立则继续执行，不成立则抛出异常
+assert len(l) == 5, "列表的长度必须为 5"
 
-## 失败边界与清理
+print("下半部分。。。")
+```
 
-- 重试只针对暂时性、幂等操作，并设置次数/超时；
-- 日志记录一次完整异常，避免每层重复打印；
-- 不在 `finally` 中无条件 `return`，它可能压制正在传播的异常；
-- 多个并发任务的独立错误可使用 `ExceptionGroup`/`except*`，但基础串行流程不必引入。
+## 什么时候用异常处理
 
-## 常见误区与适用边界
+### 注意事项
 
-- `SyntaxError` 通常在代码执行前修复，不属于普通业务恢复路径。
-- `IOError` 是 `OSError` 的兼容别名；现代代码按具体 `OSError` 子类处理。
-- 自定义异常只需携带有用上下文，通常无需重写 `__str__`。
-- `finally` 保证执行机会，不保证进程被强杀、断电或解释器崩溃时完成。
-- 异常不替代返回值；“查无数据”若是正常结果，可返回 `None` 或空集合并在合同中说明。
+> 不要滥用异常处理。如果错误发生的条件可预知，应该使用 `if` 语句预防，而不是用 `try...except`。
 
-## 自检题
+### 最佳实践
 
-1. 为什么自定义业务异常应继承 `Exception` 而非 `BaseException`？
-2. `else` 为什么能帮助缩小异常捕获范围？
-3. 为什么 `assert user_has_permission` 不能用于生产权限校验？
+1. **可预知的错误**：使用 `if` 语句预防
+2. **不可预知的错误**：使用 `try...except` 处理
+3. **清理工作**：使用 `finally` 块
 
-<details>
-<summary>参考答案</summary>
+```python
+# 示例：正确使用异常处理
+try:
+    f = open('file.txt', 'r')
+    data = f.read()
+except FileNotFoundError:
+    print("文件不存在")
+else:
+    print("读取成功")
+finally:
+    if 'f' in locals():  # 检查变量是否存在
+        f.close()
+```
 
-1. 普通 `except Exception` 应能捕获业务异常，同时保留 `KeyboardInterrupt`、`SystemExit` 等系统退出信号。
-2. 只有 `try` 中指定操作的异常会被捕获，成功后的代码错误不会被误分类。
-3. `-O` 可移除断言，安全校验必须始终执行。
+## 小结
 
-</details>
+| 关键字 | 说明 |
+|--------|------|
+| **try** | 捕获异常的代码块 |
+| **except** | 处理特定异常 |
+| **else** | try 代码块无异常时执行 |
+| **finally** | 无论是否异常都执行 |
+| **raise** | 主动抛出异常 |
+| **assert** | 断言，条件不成立时抛出异常 |
 
-## 本篇总结
+### 异常处理的作用
 
-异常处理的目标是保留证据并明确责任：底层增加语义，上层决定策略；具体捕获、异常链和结构化清理共同形成可诊断失败路径。
+1. 把错误处理和真正的工作分开来
+2. 代码更易组织，更清晰
+3. 更安全，不至于由于小的疏忽而使程序意外崩溃
 
-## 下一篇衔接
-
-下一篇进入标准库工程工具：用时区感知时间、`secrets`、`pathlib`、环境变量和命令行参数完成可复现的订单任务。
-
-## 资料来源
-
-- [Python 教程：错误和异常](https://docs.python.org/3.14/tutorial/errors.html)
-- [内置异常层级](https://docs.python.org/3.14/library/exceptions.html)
-- [Python 语言参考：try 语句](https://docs.python.org/3.14/reference/compound_stmts.html#the-try-statement)
+掌握异常处理，可以让你的 Python 程序更加健壮和可靠。

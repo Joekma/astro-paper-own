@@ -2,121 +2,209 @@
 title: Django 深入理解 WSGI 协议
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-17T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-wsgi-protocol
 featured: false
 draft: false
-series: django
+series: Django
 seriesOrder: 6
 tags:
   - Python
   - Django
   - WSGI
-description: "从 PEP 3333 的 application callable 出发，讲清 environ、start_response、字节迭代器及 ASGI 选择边界。"
+description: "深入讲解WSGI协议的工作原理和在Django中的应用。"
 ---
 
-## 前置知识与学习目标
+## 起步
 
-你需要理解 Python callable、HTTP 状态/头/body 和第 5 篇的请求生命周期。读完后应能：
+距离上一篇这个系列的文章已经是半年前了，随着Django 2.0的发布，感觉之前分析的1.10.5版本似乎有点老了，好在和前面文章分析的内容差异不大，基本上也是可以就着前面的分析内容来品尝最新的django代码。
 
-1. 写出符合 PEP 3333 的最小 WSGI application。
-2. 解释 `environ`、`start_response` 与返回字节迭代器的方向和约束。
-3. 判断同步请求适合 WSGI，何时必须考虑 ASGI。
+那接下来阅读的版本就从当前能获取的2.0.6来分析。不过，本章要将的内容，可能和django代码本身没太多关系。本章来理解一下WSGI协议，django就是遵守这个协议的web开发框架，本章重点是协议方面的说明，顶多会讲讲django里相应的wsgi的代码，而不对django代码做分析。
 
-## WSGI 解决的唯一核心问题
+## 什么是WSGI
 
-<!-- figure:s06-f01:start -->
+WSGI（Web Server Gateway Interface）是用来指定Web服务器与Python Web应用程序或框架之间标准接口，以促进跨各种Web服务器的可移植性。
 
-![WSGI Server 以 environ 和 start_response 调用 application，application 返回 iterable[bytes]](./images/s06-f01-wsgi-callable-contract.png)
+在这个规范出来之前，Python拥有各种各样的Web应用程序框架，这也就产生了一个问题，开发者选择Web框架会限制他们选择web服务器，反之亦然。
 
-<!-- figure:s06-f01:end -->
+因此，python就提出了一个简单而通用的Web服务器与Web应用程序之间的接口：**Python Web服务器网关接口（WSGI）**。
 
-WSGI 是 Python Web 服务器与同步 Web 应用之间的接口合同。服务器负责 socket、HTTP 解析和并发模型；应用读取标准化环境，调用 `start_response()` 设置状态与响应头，并返回产生 bytes 的可迭代对象。它不规定路由、模板、数据库或部署进程数。
+WSGI的目标是促进现有服务器和应用程序的轻松互联，而**不是创建新的Web框架**。
 
-```text
-Server -- environ,start_response --> application
-Server <-- status,headers + iterable[bytes] -- application
-```
+## 调用方式
 
-## 最小可运行 application
+WSGI协议要面对两个端：一个是服务器或者说是网关端，另一个是应用程序或者说框架端。就需要处理一个问题，是谁调用了另一方。
 
-<!-- snippet: id=django-wsgi-minimal-app mode=compile python=3.12-3.14 deps=stdlib -->
+在协议中规定了调用方式：服务器端调用应用程序端提供的**可调用**对象。
+
+也就是说，web应用程序需要提供一个可调用对象给web服务器调用，这个可调用的对象可以是**函数、方法、类或者带有`__call__`方法的实例**。
+
+## 可调用对象的构成
+
+这个可调用对象的构成也很简单，它接收**两个参数**，该对象必须允许能够调用多次，如下面的示例：
 
 ```python
-def application(environ, start_response):
-    method = environ["REQUEST_METHOD"]
-    path = environ.get("PATH_INFO", "/")
-    body = f"{method} {path}\n".encode("utf-8")
-    start_response(
-        "200 OK",
-        [("Content-Type", "text/plain; charset=utf-8"),
-         ("Content-Length", str(len(body)))],
-    )
-    return [body]
+def simple_app(environ, start_response):
+    """最简单的应用程序对象"""
+    status = '200 OK'
+    response_headers = [('Content-type', 'text/plain')]
+    start_response(status, response_headers)
+    return ['Hello world!\n']
 ```
 
-输入是两个参数，输出是字节可迭代对象。不能返回 `str`；`Content-Length` 以 bytes 长度计算。服务器应在完成后调用 iterable 的 `close()`（若存在）。错误发生在 headers 已发送前后，处理策略不同；不要手写生产服务器来学习后直接上线。
+这样就是一个满足WSGI协议的web程序应用了，是不是很简单。对应的django里，可以从`wsgi.py`中看到`application = get_wsgi_application()`这个函数展开基本和我们实例的最简单应用程序对象结构一样了：
 
-## environ 中的重要边界
+```python
+class WSGIHandler(base.BaseHandler):
+    request_class = WSGIRequest
 
-`REQUEST_METHOD`、`PATH_INFO`、`QUERY_STRING`、`SERVER_NAME` 等来自 CGI 风格变量；`wsgi.input` 是请求体字节流；`wsgi.url_scheme` 指示 http/https；`wsgi.errors` 用于错误输出。缺失的可选 CGI 变量应省略而不是伪造。代理后的 Host、scheme 和客户端 IP 只有在可信代理正确重写并由 Django 安全配置时才可信。
+    def __call__(self, environ, start_response):
+        request = self.request_class(environ)
+        response = self.get_response(request)
 
-## Django 的 WSGI application
+        status = '%d %s' % (response.status_code, response.reason_phrase)
+        response_headers = list(response.items())
+        start_response(status, response_headers)
 
-`startproject` 生成 `config/wsgi.py`：它设置 `DJANGO_SETTINGS_MODULE`，再调用 `get_wsgi_application()`。应用服务器配置的目标通常是 `config.wsgi:application`。这个对象把 `environ` 适配成 `WSGIRequest`，进入第 5 篇的中间件与 URL 链，再把 `HttpResponse` 转回 WSGI 状态、头和字节迭代器。
+        return response
+```
 
-<!-- snippet: id=django-wsgi-entry mode=project python=3.12-3.14 deps=Django~=6.0 file=config/wsgi.py -->
+## 服务器端
+
+服务器的作用是接收每一个HTTP请求，应用程序对象调用时需要传入`environ`和`start_response`，因此这两个参数需要由服务器端来整理并提供给应用程序使用。
+
+`environ`是一个字典，以一个简单的CGI网关为例，它的值可以这么设置：
 
 ```python
 import os
-from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
-application = get_wsgi_application()
+environ = dict(os.environ.items())
+environ['wsgi.input'] = sys.stdin
+environ['wsgi.errors'] = sys.stderr
+environ['wsgi.version'] = (1, 0)
+environ['wsgi.multithread'] = False
+environ['wsgi.multiprocess'] = True
+environ['wsgi.run_once'] = True
+
+if environ.get('HTTPS', 'off') in ('on', '1'):
+    environ['wsgi.url_scheme'] = 'https'
+else:
+    environ['wsgi.url_scheme'] = 'http'
 ```
 
-环境变量是进程级状态；同一进程承载多个站点时必须避免互相覆盖设置模块。
+`start_response`则是一个函数，原型是`start_response(status, response_headers, exc_info=None)`并且这个函数要返回一个可调用的`write(body_data)`对象。例如：
 
-## WSGI 与 ASGI 的选择
+```python
+def unicode_to_wsgi(u):
+    return u.encode(enc, esc).decode('iso-8859-1')
 
-<!-- figure:s06-f02:start -->
+def wsgi_to_bytes(s):
+    return s.encode('iso-8859-1')
 
-![WSGI 适合同步请求响应，ASGI 用 scope、receive、send 支持长连接与异步调用](./images/s06-f02-wsgi-asgi-boundary.png)
+headers_set = []  # 待发送的响应的header信息
+headers_sent = []  # 已发送的响应的header信息
 
-<!-- figure:s06-f02:end -->
+def write(data):
+    out = sys.stdout.buffer
 
-WSGI 是同步调用合同。Django 可在 WSGI 下运行 async view，但会使用一次性事件循环，无法提供完整异步栈的长连接优势。ASGI 使用 `scope`、`receive`、`send`，支持异步服务器和长连接场景。选择 ASGI 后仍要检查同步中间件、ORM 调用和第三方库，否则上下文切换会抵消收益。
+    if not headers_set:
+        raise AssertionError("write() before start_response()")
 
-## 常见误区与适用边界
+    elif not headers_sent:
+        status, response_headers = headers_sent[:] = headers_set
+        out.write(wsgi_to_bytes('Status: %s\r\n' % status))
+        for header in response_headers:
+            out.write(wsgi_to_bytes('%s: %s\r\n' % header))
+        out.write(wsgi_to_bytes('\r\n'))
 
-- WSGI 不是某个服务器；Gunicorn、uWSGI 等都可承载 WSGI application。
-- `start_response()` 返回的旧式 `write()` callable 只为兼容，应用应返回 iterable。
-- `environ` 不是任意字符串字典，其中请求体是文件状字节流。
-- 反向代理头不是天然可信，必须限定可信代理链。
-- WebSocket、长轮询和大量异步 I/O 不应勉强塞进 WSGI 心智模型。
+    out.write(data)
+    out.flush()
 
-## 最小验证
+def start_response(status, response_headers, exc_info=None):
+    if exc_info:
+        try:
+            if headers_sent:
+                raise exc_info[1].with_traceback(exc_info[2])
+        finally:
+            exc_info = None
+    elif headers_set:
+        raise AssertionError("Headers already set!")
 
-用标准库 `wsgiref.simple_server` 本地承载最小应用，分别请求 Unicode path、查询字符串与 POST body，确认 path/query/body 的来源不同、响应元素都是 bytes。该服务器只用于学习验证。
+    headers_set[:] = [status, response_headers]
 
-## 自检题
+    return write
+```
 
-1. WSGI application 为什么返回 bytes 而不是 str？
-2. `QUERY_STRING` 是否包含开头的 `?`？
-3. async view 在 WSGI 下为什么不等于完整异步部署？
+这样其实一个满足WSGI协议的web服务器端就基本完成了，现在需要整合一下，由于需要涉及到请求包的分析过程，我们就直接用标准库`wsgiref.simple_server`中的`WSGIServer`作为web服务器。
 
-<details><summary>答案</summary>
+整合一下：
 
-1. HTTP body 是字节，编码必须由应用明确。2. 不包含。3. WSGI 是同步合同，Django 需为 async view 建立一次性事件循环，且同步组件仍会阻塞。
+```python
+import sys
+import os
+from wsgiref.simple_server import WSGIServer, WSGIRequestHandler
 
-</details>
+def demo_app(environ, start_response):
+    """示例的app"""
+    stdout = "Hello world!"
+    h = sorted(environ.items())
+    for k, v in h:
+        stdout += k + '=' + repr(v) + "\r\n"
+    start_response("200 OK", [('Content-Type', 'text/plain; charset=utf-8')])
+    return [stdout.encode("utf-8")]
 
-## 本篇总结与下一篇
+enc, esc = sys.getfilesystemencoding(), 'surrogateescape'
 
-WSGI 把服务器和同步应用解耦，核心只有调用方向、标准环境和字节响应。下一篇回到框架扩展点，判断信号何时能解耦事件通知、何时会隐藏控制流。
+def unicode_to_wsgi(u):
+    return u.encode(enc, esc).decode('iso-8859-1')
 
-## 资料来源
+def wsgi_to_bytes(s):
+    return s.encode('iso-8859-1')
 
-- [PEP 3333](https://peps.python.org/pep-3333/)
-- [Django WSGI 部署](https://docs.djangoproject.com/en/6.0/howto/deployment/wsgi/)
-- [Django ASGI 部署](https://docs.djangoproject.com/en/6.0/howto/deployment/asgi/)
+def run_with_cgi(request, client_address, server):
+    environ = {k: unicode_to_wsgi(v) for k, v in os.environ.items()}
+    environ['wsgi.input'] = sys.stdin.buffer
+    environ['wsgi.errors'] = sys.stderr
+    environ['wsgi.version'] = (1, 0)
+    environ['wsgi.multithread'] = False
+    environ['wsgi.multiprocess'] = True
+    environ['wsgi.run_once'] = True
+
+    if environ.get('HTTPS', 'off') in ('on', '1'):
+        environ['wsgi.url_scheme'] = 'https'
+    else:
+        environ['wsgi.url_scheme'] = 'http'
+
+    headers_set = []
+    headers_sent = []
+
+    def write(data):
+        out = sys.stdout.buffer
+
+        if not headers_set:
+            raise AssertionError("write() before start_response()")
+
+        elif not headers_sent:
+            status, response_headers = headers_sent[:] = headers_set
+            out.write(wsgi_to_bytes('Status: %s\r\n' % status))
+            for header in response_headers:
+                out.write(wsgi_to_bytes('%s: %s\r\n' % header))
+            out.write(wsgi_to_bytes('\r\n'))
+
+        out.write(data)
+        out.flush()
+
+    def start_response(status, response_headers, exc_info=None):
+        if exc_info:
+            try:
+                if headers_sent:
+                    raise exc_info[1].with_traceback(exc_info[2])
+            finally:
+                exc_info = None
+        elif headers_set:
+            raise AssertionError("Headers already set!")
+
+        headers_set[:] = [status, response_headers]
+
+        return write
+```

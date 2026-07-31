@@ -1,153 +1,251 @@
 ---
-title: Django ORM 性能优化：从证据到回归预算
+title: Django ORM 性能优化指南
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-17T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-orm-optimization
 featured: false
 draft: false
-series: django
+series: Django
 seriesOrder: 23
 tags:
   - Python
   - Django
   - ORM
   - 性能优化
-description: "用查询数量、SQL、执行计划、响应时间与回归测试闭合 Django ORM 性能优化。"
+description: "深入讲解Django ORM性能优化的方法和实践技巧。"
 ---
 
-## 前置知识与学习目标
+## 怎么查问题
 
-你需要掌握 QuerySet、关联加载、分页和 Admin。读完后应能：
+Web系统是个挺复杂的玩意，有时候有点无从下手哈。可以采用自底向上的顺序，从数据存储一直到数据展现，按照这个顺序一点一点查找性能问题。
 
-1. 从慢页面建立查询数量、重复 SQL、数据库时间和响应延迟基线。
-2. 识别 N+1、过量加载、错误聚合与缺失索引，并选择最小改动。
-3. 用 `explain()`、真实数据和查询预算证明优化有效且语义未变。
+1. 数据库（缺少索引/数据模型）
+2. 数据存储接口（ORM/低效的查询）
+3. 展现/数据使用（Views/报表等）
 
-贯穿页面显示 20 本书、作者名与未归还次数。目标不是“零查询”，而是在正确性、延迟、内存和写成本之间建立可守护的预算。
+Web应用的大部分问题都会跟数据库扯上关系。除非你正在处理大量的数据并知道你在做什么，否则不要去考虑用Big-O表示法思考View的问题。数据库调用的开销将使循环和模板渲染的开销相形见绌。不首先解决数据库使用中的问题，您就不能继续解决其他问题。
 
-## 证据闭环
+Django的文档中有那么一节，详细的描述了[DB部分优化](https://docs.djangoproject.com/en/1.10/topics/db/optimization/)，ORM从一开始就应该写的比较高效一些（毕竟有那么多最佳实践）。
 
-<!-- figure:s23-f01:start -->
+优化，很多时候意味着代码可能变得不太清晰。当你遇到选择清晰的代码，还是牺牲清晰代码来获取性能上的一点点提高的时候，请优先考虑要代码的清晰整洁。
 
-![Django ORM 优化从复现和测量开始，经 SQL 与执行计划做最小改动，再以前后对比和回归预算闭环](./images/s23-f01-orm-evidence-loop.png)
+## 工具
 
-<!-- figure:s23-f01:end -->
+解决问题的第一步是找到问题，面对ORM，有时间事情可以做。
+
+### 方法一：django.db.connection
+
+理解`django.db.connection`，这个对象可以用来记录当前查询花费的时间：
 
 ```text
-复现 -> 测量 -> 定位 SQL -> 解释计划 -> 最小改动 -> 对比 -> 回归守护
+>>> from django.db import connection
+>>> connection.queries
+[]
+>>> Author.objects.all()
+<QuerySet [<Author: Author object>]>
+>>> connection.queries
+[{'time': '0.002', 'sql': 'SELECT "library_author"."id", "library_author"."name" FROM "library_author" LIMIT 21'}]
 ```
 
-先固定请求、数据规模、数据库版本、冷/热缓存和并发条件。开发环境可查看 `connection.queries`，但它依赖 `DEBUG` 且有额外开销；生产使用 APM、慢查询日志和数据库统计。不要在生产为排障长期打开 `DEBUG=True`。
+### 方法二：django-extensions
 
-## 第一类问题：N+1
+在shell命令行的环境下，可以使用[django-extensions](https://github.com/django-extensions/django-extensions)的`shell_plus`命令并打开`--print-sql`选项：
 
-<!-- figure:s23-f02:start -->
+```bash
+python manage.py shell_plus --print-sql
+```
 
-![同样显示 20 本书与出版社，逐行访问产生 21 次查询，select_related 用一次 JOIN 完成](./images/s23-f02-n-plus-one-before-after.png)
+```text
+>>> Author.objects.all()
+SELECT "library_author"."id", "library_author"."name" FROM "library_author" LIMIT 21
+Execution time: 0.001393s [Database: default]
+<QuerySet [<Author: Author object>]>
+```
 
-<!-- figure:s23-f02:end -->
+### 方法三：Django-debug-toolbar
 
-<!-- snippet: id=django-orm-opt-n-plus-one mode=project python=3.12-3.14 deps=Django~=6.0 -->
+使用[Django-debug-toolbar](http://django-debug-toolbar.readthedocs.org/)工具，就可以在web端查看SQL查询的详细统计结果，其实它功能远不止这个。
+
+### 总结
+
+- `django.db.connection`：django自身提供，比较底层
+- `django-extensions`：可以在shell环境下方便调试
+- `django-debug-toolbar`：可以在web端直接看到debug结果
+
+## 案例
+
+下面是用个具体的例子来说明一些问题。
+
+### Model定义
+
+很经典的外键关系，Author和Book一对多的关系：
 
 ```python
-# 1 条 Book 查询 + 每本书 1 条 publisher 查询
-books = Book.objects.order_by("title", "id")[:20]
+class Author(models.Model):
+    name = models.TextField()
+
+class Book(models.Model):
+    title = models.TextField()
+    author = models.ForeignKey(
+        Author, on_delete=models.PROTECT, related_name='books', null=True
+    )
+```
+
+### 多余的查询
+
+当你检查一个book是否有author或者想获取这本书的author的id的时候，可能更倾向于直接使用author对象：
+
+```python
+if book.author:
+    do_stuff()
+# 或者
+do_stuff_with_author_id(book.author.id)
+```
+
+这里`author对象`其实并不需要（主要指第一行代码，其实只需要author_id），会导致一次多余的查询。如果后面需要author对象，再获取也不冲突。比较好的习惯是，直接使用字段名：
+
+```python
+if book.author_id:
+    do_stuff()
+
+do_stuff_with_author_id(book.author_id)
+```
+
+### count和exists
+
+对于初学者，知道什么时候使用`count`和`exists`还是挺好难的。Django会缓存查询结果，所以如果后续的操作会用到这些查询出来的数据，可以使用Python的内置方法（指的是len，if判断queryset）。如果不用查询出的数据，使用queryset提供的方法（`count(), exists()`）：
+
+```python
+# 如果要使用查询结果，不要浪费查询
+books = Book.objects.filter(...)
+if books:
+    do_stuff_with_books(books)
+
+# 如果不使用查询结果，使用exist
+books = Book.objects.filter(...)
+if books.exists():
+    do_some_stuff()
+
+# 但永远不要这样
+if Book.objects.filter(...):
+    do_some_stuff()
+```
+
+下面是关于`count`和`len`的例子：
+
+```python
+# 如果要使用查询结果，不要浪费查询
+books = Book.objects.filter(...)
+if len(books) > 5:
+    do_stuff_with_books(books)
+
+# 如果不使用查询结果，使用count
+books = Book.objects.filter(...)
+if books.count() > 5:
+    do_some_stuff()
+
+# 但永远不要这样
+if len(Book.objects.filter(...)) > 5:
+    do_some_stuff()
+```
+
+### 只获取需要的数据
+
+默认情况下，ORM查询的时候会把数据库记录对应的所有列取出来，然后转换成Python对象，这无疑是个很大的浪费（有时候只想要一两个列的）。当你只需要某些列的时候可以使用`values`或者`values_list`，它们不是把数据转换成复杂的python对象，而是dicts、tuples等：
+
+```text
+# 检索值作为字典
+>>> Book.objects.values('title', 'author__name')
+<QuerySet [{'author__name': 'Nikolai Gogol', 'title': 'The Overcoat'}, {'author__name': 'Leo Tolstoy', 'title': 'War and Peace'}]>
+
+# 检索值作为元组
+>>> Book.objects.values_list('title', 'author__name')
+<QuerySet [('The Overcoat', 'Nikolai Gogol'), ('War and Peace', 'Leo Tolstoy')]>
+>>> Book.objects.values_list('title')
+<QuerySet [('The Overcoat',), ('War and Peace',)]>
+
+# 只获取一个值时，更容易扁平化列表
+>>> Book.objects.values_list('title', flat=True)
+<QuerySet ['The Overcoat', 'War and Peace']>
+```
+
+### 处理很多记录
+
+当你获得一个queryset的时候，Django会缓存这些数据。如果你需要对查询结果进行好几次循环，这种缓存是有意义的，但是对于queryset只循环一次的情况，缓存就没什么意义了：
+
+```python
+for book in Books.objects.all():
+    do_stuff(book)
+```
+
+上面的查询，django会把books所有的数据载入内存，然后进行一次循环。其实我们更想要保持这个数据库connection，每次循环的取出一条book数据，然后调用`do_stuff`。`iterator`就是我们的救星：
+
+```python
+for book in Books.objects.all().iterator():
+    do_stuff(book)
+```
+
+有了iterator，你就可以编写线性数据表或者CSV流了。就能增量写入文件或者发送给用户。
+
+特别是跟`values`、`values_list`结合在一起的时候，能尽可能少的使用内存。在需要对表中的每一行进行修改的迁移期间，使用iterator也非常方便。不能因为迁移不是面向客户的就可以降低对效率的要求。长时间运行的迁移可能意味着事务锁定或停机。
+
+### 关联查询问题
+
+Django ORM的API使得我们使用关系型数据库的时候就像使用面向对象的Python语言那样自然：
+
+```python
+# 获取Book的Author的名字
+book = Book.objects.first()
+book.author.name
+```
+
+上面的代码相当的清晰和好理解。Django使用lazy loading（懒加载）的方式，只有用到了author对象时候才会加载。这样做有好处，但是会造成爆炸式的查询。
+
+### 使用select_related和prefetch_related
+
+```python
+# N+1查询问题
+books = Book.objects.all()
 for book in books:
-    print(book.publisher.name)
+    print(book.author.name)  # 每次都会执行一次查询
 
-# 外键是单值关系，用 JOIN 合并
-books = Book.objects.select_related("publisher").order_by("title", "id")[:20]
+# 解决方案：使用select_related
+books = Book.objects.select_related('author')
+for book in books:
+    print(book.author.name)  # 只执行一次查询
 ```
 
-多值 `loans` 不能直接用 `select_related()`，应使用过滤后的 `Prefetch` 或聚合。选择依据来自第 4 篇的关系形状，不再重复 API 定义。
+### 使用only和defer减少字段
 
 ```python
-from django.db.models import Count, Q
-
-books = (
-    Book.objects.select_related("publisher")
-    .annotate(open_loan_count=Count("loans", filter=Q(loans__returned_at__isnull=True)))
-    .order_by("title", "id")[:20]
-)
+# 只获取需要的字段
+book = Book.objects.only('title', 'author__name').first()
+print(book.title)  # 不会执行额外查询
+print(book.author.name)  # 不会执行额外查询（因为使用了select_related）
 ```
 
-聚合 JOIN 可能因多个一对多关系产生笛卡尔放大；用小型种子数据验证计数守恒，必要时使用 `distinct=True`、子查询或拆分查询。
-
-## 第二类问题：读取和求值超出需要
-
-- 只判断存在时用 `.exists()`；但如果随后一定迭代同一 QuerySet，额外的 exists 查询可能更慢。
-- 只要标量投影时用 `values_list(..., flat=True)`；需要模型方法和关系时保留实例。
-- `only()`/`defer()` 可能在稍后访问延迟字段时制造额外查询，先用 profile 证明宽行是瓶颈。
-- 流式处理大结果可考虑 `.iterator(chunk_size=...)`，但要评估预取、数据库游标与事务持续时间。
-- 批量写减少往返，但会改变逐对象 `save()`/信号语义，并受数据库参数上限限制。
-
-## 第三类问题：索引与执行计划
-
-ORM 优化不能绕过数据库。索引应由查询形状驱动：等值过滤列、范围列、排序列与选择性共同决定复合索引顺序。索引会增加写放大和存储，不能为每个字段机械添加。
-
-<!-- snippet: id=django-orm-opt-explain mode=project python=3.12-3.14 deps=Django~=6.0 -->
+### 使用bulk_create批量插入
 
 ```python
-queryset = Book.objects.filter(is_active=True).order_by("title", "id")
-print(queryset.explain())
+# 逐个插入
+for i in range(1000):
+    Book.objects.create(title=f'Book {i}')
+
+# 批量插入
+Book.objects.bulk_create([
+    Book(title=f'Book {i}') for i in range(1000)
+])
 ```
 
-`explain()` 输出和可用选项依数据库而异；带执行的 analyze 选项可能真正运行查询，对写语句或高成本查询必须谨慎。检查估算行数、扫描方式、排序和实际行数差异，而不是只找某个“好”关键字。
-
-## 分页与缓存边界
-
-OFFSET 深分页可能扫描并丢弃大量行；连续翻页可使用基于完整稳定排序键的 keyset 游标，但会牺牲任意跳页。缓存应在查询正确、失效规则清晰后使用；缓存一个 N+1 页面只会把问题隐藏到失效瞬间。
-
-## 用测试锁定预算
-
-<!-- snippet: id=django-orm-opt-query-budget mode=project python=3.12-3.14 deps=Django~=6.0 file=catalog/tests/test_views.py -->
+### 使用update代替save
 
 ```python
-from django.test import TestCase
-from django.urls import reverse
+# 使用save
+book = Book.objects.first()
+book.title = 'New Title'
+book.save()  # 需要先获取对象
 
-
-class BookListQueryBudgetTests(TestCase):
-    def test_book_list_query_budget(self):
-        # 工厂先创建足够数据；不要把 fixture 查询计入请求预算。
-        with self.assertNumQueries(3):
-            response = self.client.get(reverse("book-list"))
-            self.assertEqual(response.status_code, 200)
+# 使用update
+Book.objects.filter(id=1).update(title='New Title')  # 直接更新，不需要获取对象
 ```
-
-预算数字必须来自当前实现并注明包含哪些查询；会因认证、会话或数据库后端变化而调整。查询数相同也可能因执行计划退化而变慢，因此还需端到端延迟和数据库指标。
-
-## 常见误区与适用边界
-
-- 不要凭“ORM 看起来复杂”猜测慢点；先抓 SQL 与时间。
-- 不要把 `count()`、`exists()`、`only()` 当无条件最佳实践。
-- 不要在没有结果守恒测试时重写 JOIN/聚合。
-- 不要用 SQLite 的计划推断 PostgreSQL/MySQL 生产行为。
-- 不要只优化平均值；关注 p95/p99、锁等待、连接池和错误率护栏。
-
-## 最小验收表
-
-记录优化前后：数据规模、请求查询数、重复 SQL 数、数据库时间、p95、峰值内存、执行计划摘要和写入开销。只有结果一致、主要指标改善、护栏未退化且回归测试通过，才接受改动。
-
-## 自检题
-
-1. `exists()` 为什么可能增加而不是减少查询？
-2. 查询数从 21 降到 2，为什么仍不能直接宣布优化成功？
-3. 为什么索引不是越多越好？
-
-<details><summary>答案</summary>
-
-1. 随后若仍迭代原 QuerySet，会再执行一次结果查询。2. 还需验证结果语义、执行计划、延迟、内存和并发写影响。3. 索引消耗存储并增加写入、维护和规划成本。
-
-</details>
-
-## 本篇总结与系列收束
-
-可靠优化从证据开始，以回归预算结束：解释 SQL、验证结果、比较计划、测量延迟并守住错误率和写成本。至此，`library_site` 已从最小页面走过运行时、组件、安全、部署与性能闭环；后续演进应继续遵循“先定义边界，再用测试和指标证明”的方法。
-
-## 资料来源
-
-- [Django 数据库优化](https://docs.djangoproject.com/en/6.0/topics/db/optimization/)
-- [QuerySet.explain](https://docs.djangoproject.com/en/6.0/ref/models/querysets/#explain)
-- [Django 测试工具](https://docs.djangoproject.com/en/6.0/topics/testing/tools/)

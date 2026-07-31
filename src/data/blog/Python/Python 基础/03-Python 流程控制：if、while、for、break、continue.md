@@ -2,179 +2,482 @@
 title: Python 流程控制：if、while、for、break、continue
 author: Joekma
 pubDatetime: 2018-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-17T00:00:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: python-control-flow-if-while-for
-description: "围绕订单校验讲清 if 分支、for 迭代、while 重试、break、continue 和循环 else 的执行路径与边界。"
+description: '深入理解Python的流程控制语句：条件判断if、循环while和for、break和continue控制关键字，包含大量实战示例。'
 tags:
   - Python
   - 流程控制
   - if语句
   - while循环
   - for循环
+  - break
+  - continue
 draft: false
-series: python
+series: Python基础
 seriesOrder: 3
 language: zh-CN
 ---
 
-流程控制决定“下一条执行哪段代码”。最可靠的学习方式不是背语法，而是跟踪条件、当前元素、累计状态和退出原因。
+> 流程控制是编程的基础，让计算机能够像人一样具有判断和重复执行的能力。本文将详细介绍 Python 中的条件判断和循环语句。
 
-## 前置知识与学习目标
+## if 语句
 
-你应会转换输入、比较数值并理解真值。学完后你应该能：
+### 什么是 if 语句
 
-- 用互斥分支表达订单状态规则；
-- 在“遍历已有数据”和“等待条件改变”之间选择 `for` 或 `while`；
-- 准确预测 `break`、`continue` 和循环 `else`；
-- 写出有终止条件、可验证输出的最小循环。
+- **是什么**：判断一个条件如果成立则做...，不成立则做....
+- **为什么**：让计算机能够像人一样具有判断的能力
 
-## 贯穿场景：筛选可结算订单
+### 如何使用 if 语句
 
-<!-- figure:s03-f01:start -->
-
-![订单循环根据状态和金额进入累加、跳过或异常路径](./images/s03-f01-order-control-flow.png)
-
-<!-- figure:s03-f01:end -->
-
-订单包含 `id`、`status` 和 `amount`。规则是：已支付且金额为正的订单进入汇总；取消订单跳过；发现负金额立即终止并报告数据损坏。
-
-## if：只让一个业务分支生效
-
-`if`/`elif`/`else` 是一条互斥链，按顺序测试，执行第一个为真的分支。多个独立 `if` 则可能执行多个分支。
-
-<!-- snippet: id=python-order-status-branch mode=run python=3.12-3.14 deps=stdlib -->
+#### 语法 1：单分支
 
 ```python
-def classify(status: str) -> str:
-    if status == "paid":
-        return "可结算"
-    if status in {"cancelled", "refunded"}:
-        return "不计入"
-    return "待处理"
-
-assert classify("paid") == "可结算"
-assert classify("pending") == "待处理"
+if 条件1:
+    code1
+    code2
+    code3
 ```
 
-若条件互斥，使用一条分支链可直接表达“最多选一个”；若检查项彼此独立，例如同时验证金额和状态，则可使用多个 `if` 收集全部问题。
-
-## for：遍历一个可迭代对象
-
-`for` 每次从迭代器取得一个元素，适合容器、文件行、`range()` 和生成器。需要索引时优先 `enumerate()`，同时遍历多组数据可用 `zip()`。
-
-<!-- snippet: id=python-order-loop-state mode=run python=3.12-3.14 deps=stdlib -->
+**示例**：
 
 ```python
-from decimal import Decimal
-
-orders = [
-    {"id": "A001", "status": "paid", "amount": Decimal("19.90")},
-    {"id": "A002", "status": "cancelled", "amount": Decimal("8.00")},
-    {"id": "A003", "status": "paid", "amount": Decimal("30.10")},
-]
-
-total = Decimal("0")
-accepted = []
-for order in orders:
-    if order["status"] != "paid":
-        continue
-    if order["amount"] < 0:
-        raise ValueError(f"{order['id']} 金额为负")
-    accepted.append(order["id"])
-    total += order["amount"]
-
-assert accepted == ["A001", "A003"]
-assert total == Decimal("50.00")
+age = 18
+if age != 18:
+    print('你好啊小伙子')
+    print('加个微信吧...')
+    print('other code...')
 ```
 
-`continue` 跳到下一次迭代；它不会退出循环。把状态更新遗漏在 `continue` 前是 `while` 无限循环的常见原因。
-
-## while：直到条件改变
-
-`while` 适合重试、读取直到哨兵值、轮询状态等“次数事先未知”的过程。循环必须有进展条件、最大尝试次数或超时。
-
-<!-- snippet: id=python-bounded-retry-loop mode=run python=3.12-3.14 deps=stdlib -->
+#### 语法 2：双分支
 
 ```python
-responses = iter(["", "oops", "12"])
-quantity = None
-
-for attempt in range(1, 4):
-    raw = next(responses)
-    try:
-        quantity = int(raw)
-    except ValueError:
-        continue
-    if quantity >= 0:
-        break
+if 条件:
+    code1
+    code2
+    code3
 else:
-    raise ValueError("三次输入均无效")
-
-assert quantity == 12
-assert attempt == 3
+    code1
+    code2
 ```
 
-这里用有限 `for` 表达最多三次尝试，比 `while True` 更容易证明会终止。
+**示例**：
 
-## break、continue 与循环 else
+```python
+age = 18
+sex = 'male'
+wuzhong = 'human'
+is_beautiful = True
 
-<!-- figure:s03-f02:start -->
+if age > 16 and age < 22 and sex == 'female' and \
+    wuzhong == 'human' and is_beautiful:
+    print('开始表白...')
+else:
+    print('阿姨好，我逗你玩呢...')
+```
 
-![continue、break、正常耗尽与 return 导向不同循环和函数状态](./images/s03-f02-loop-exit-state.png)
+#### 语法 3：多分支（多个 if）
 
-<!-- figure:s03-f02:end -->
+```python
+if 条件1:
+    code1
+    code2
+if 条件2:
+    code2
+    code3
+```
 
-- `break` 只退出最内层循环；
-- `continue` 跳过本次剩余语句；
-- 循环 `else` 在“没有执行 `break`”时运行，包括零次迭代；
-- `return` 会直接离开整个函数，常比多层标志变量清晰。
+**示例**：
 
-循环 `else` 适合表达“找遍了仍未找到”或“所有尝试都失败”，不表示普通 `if` 的反面。
+```python
+a = 88
+if a >= 90:
+    print("优秀")
+if a == 88:
+    print("正好88")
+if a >= 80:
+    print("良好")
+else:
+    print("都不合格")
+```
 
-## 状态变化表
+#### 语法 4：多分支（if-elif-else）
 
-| 时刻 | `order.id` | 动作       | `accepted`    | `total` |
-| ---- | ---------- | ---------- | ------------- | ------- |
-| 初始 | —          | 初始化     | `[]`          | `0`     |
-| 1    | A001       | 接受并累加 | `[A001]`      | `19.90` |
-| 2    | A002       | `continue` | `[A001]`      | `19.90` |
-| 3    | A003       | 接受并累加 | `[A001,A003]` | `50.00` |
+```python
+if 条件1:
+    子代码块1
+elif 条件2:
+    子代码块2
+elif 条件3:
+    子代码块3
+elif 条件4:
+    子代码块4
+else:
+    子代码块5
+```
 
-把关键中间状态写出来，是定位“少算、重复算、无法退出”的最快方法。
+**示例**：
 
-## 常见误区与适用边界
+```python
+a = 88
+if a >= 90:
+    print("优秀")
+elif a == 88:
+    print("正好88")
+elif a >= 80:
+    print("良好")
+else:
+    print("都不合格")
+```
 
-- 修改正在遍历的列表可能跳过元素；通常遍历副本或构造新列表。
-- `range(stop)` 不包含 `stop`；`range(3)` 产生 `0,1,2`。
-- 不要用无限循环掩盖缺失的终止条件；网络轮询还需超时和退避。
-- 深层嵌套会隐藏退出路径；可提取函数并用早返回简化。
-- `match` 适合结构化模式匹配，但简单状态枚举用 `if` 已足够，本篇不展开。
+### if 和 elif 的区别
 
-## 自检题
+如果想让程序遍历到判断条件就不再执行其他判断条件分支语句，那么就用 `elif`；
 
-1. 多个独立 `if` 与一条 `if`/`elif` 链的核心差异是什么？
-2. `for ... else` 的 `else` 在什么情况下不执行？
-3. 为什么“最多重试三次”通常更适合 `for range(3)` 而不是无界 `while True`？
+如果程序中判断事件很多，全部用 `if` 的话，不管你想判断的条件有没有遍历到，它都会继续执行完所有的 `if`；用 `elif` 程序运行时，只要 `if` 或后续某一个 `elif` 之一满足逻辑值为 `True`，则程序执行完对应输出语句后面所有的 `elif` 和 `else` 就不会再被执行，会提高效率。
 
-<details>
-<summary>参考答案</summary>
+## while 循环
 
-1. 多个 `if` 可命中多个分支；`if`/`elif` 链最多命中一个。
-2. 循环体执行了 `break` 时不执行。
-3. 最大次数直接编码在迭代范围中，更容易审查终止性；无界循环需要额外计数和退出逻辑。
+### 什么是循环
 
-</details>
+循环指的是一个重复做某件事的过程。
 
-## 本篇总结
+### 为什么要有循环
 
-分支表达选择，循环表达重复。选择结构时应先说清是否互斥、迭代对象是什么、状态怎样变化、以什么原因退出。
+为了让计算机能够像人一样重复做某件事。
 
-## 下一篇衔接
+### 如何使用 while 循环
 
-下一篇为订单的数字、文本、序列、映射和状态集合选择合适的数据类型，并用“顺序、可变性、唯一性、键访问”解释容器边界。
+`while` 循环又称为条件循环，循环的次数取决于条件。
 
-## 资料来源
+```python
+while 条件:
+    子代码1
+    子代码2
+    子代码3
+```
 
-- [Python 教程：流程控制](https://docs.python.org/3.14/tutorial/controlflow.html)
-- [Python 语言参考：复合语句](https://docs.python.org/3.14/reference/compound_stmts.html)
-- [Python 教程：循环技巧](https://docs.python.org/3.14/tutorial/datastructures.html#looping-techniques)
+**示例**：
+
+```python
+print('start....')
+while True:
+    name = input('please your name>>: ')
+    pwd = input('please your password>>: ')
+    if name == 'Mark' and pwd == '123':
+        print('login successful')
+    else:
+        print('user or password err')
+print('end...')
+```
+
+### 如何结束 while 循环
+
+#### 方式一：操作条件
+
+```python
+print('start....')
+tag = True
+while tag:
+    name = input('please your name>>: ')
+    pwd = input('please your password>>: ')
+    if name == 'Mark' and pwd == '123':
+        print('login successful')
+        tag = False
+    else:
+        print('user or password err')
+
+print('end...')
+```
+
+#### 方式二：break 终止循环
+
+`break` 用于强行终止本层循环。
+
+```python
+count = 1
+while True:
+    if count > 5:
+        break
+    print(count)
+    count += 1
+```
+
+**示例**：
+
+```python
+print('start....')
+while True:
+    name = input('please your name>>: ')
+    pwd = input('please your password>>: ')
+    if name == 'Mark' and pwd == '123':
+        print('login successful')
+        break
+    else:
+        print('user or password err')
+
+print('end...')
+```
+
+#### 输错三次则退出
+
+**方式一**：计数器方式
+
+```python
+print('start....')
+count = 0
+while count <= 2:
+    name = input('please your name>>: ')
+    pwd = input('please your password>>: ')
+    if name == 'Mark' and pwd == '123':
+        print('login successful')
+        break
+    else:
+        print('user or password err')
+        count += 1
+print('end...')
+```
+
+**方式二**：使用 break
+
+```python
+print('start....')
+count = 0
+while count < 3:
+    name = input('please your name>>: ')
+    pwd = input('please your password>>: ')
+    if name == 'Mark' and pwd == '123':
+        print('login successful')
+        break
+    else:
+        print('user or password err')
+        count += 1
+else:
+    print('输错的次数过多')
+
+print('end...')
+```
+
+#### continue：结束本次循环
+
+`continue` 代表结束本次循环，直接进入下一次。
+
+```python
+count = 1
+while count < 6:
+    if count == 4:
+        count += 1
+        continue  # 只能在 continue 同一级别之前加代码
+    print(count)
+    count += 1
+```
+
+> **注意**：不应该将 continue 作为循环体最后一步执行的代码。
+
+```python
+while True:
+    print('11111')
+    print('22222')
+    print('333')
+    continue  # 不应该将 continue 作为循环体最后一步执行的代码
+```
+
+### while + else
+
+`while + else` 的意思是：只要循环正常完成，即中途没有 `break`，就会执行 `else` 语句；否则不会执行。
+
+**示例**：
+
+```python
+count = 1
+while count < 6:
+    if count == 4:
+        break
+    print(count)
+    count += 1
+else:
+    print('会在 while 循环没有被 break 终止的情况下执行')
+```
+
+### while 循环的嵌套
+
+```python
+name_of_db = 'Mark'
+pwd_of_db = '123'
+print('start....')
+count = 0
+while count <= 2:
+    name = input('please your name>>: ')
+    pwd = input('please your password>>: ')
+    if name == name_of_db and pwd == pwd_of_db:
+        print('login successful')
+        while True:
+            print("""
+            1 浏览商品
+            2 添加购物车
+            3 支付
+            4 退出
+            """)
+            choice = input('请输入你的操作: ')
+            if choice == '1':
+                print('开始浏览商品....')
+            elif choice == '2':
+                print('正在添加购物车....')
+            elif choice == '3':
+                print('正在支付....')
+            elif choice == '4':
+                break
+        break
+    else:
+        print('user or password err')
+        count += 1
+else:
+    print('输错的次数过多')
+
+print('end...')
+```
+
+### tag 控制循环
+
+使用 `tag` 控制所有 while 循环（相当于一个 while 循环的开关）。
+
+```python
+name_of_db = 'Mark'
+pwd_of_db = '123'
+tag = True
+print('start....')
+count = 0
+while tag:
+    if count == 3:
+        print('尝试次数过多')
+        break
+    name = input('please your name>>: ')
+    pwd = input('please your password>>: ')
+    if name == name_of_db and pwd == pwd_of_db:
+        print('login successful')
+        while tag:
+            print("""
+            1 浏览商品
+            2 添加购物车
+            3 支付
+            4 退出
+            """)
+            choice = input('请输入你的操作: ')
+            if choice == '1':
+                print('开始浏览商品....')
+            elif choice == '2':
+                print('正在添加购物车....')
+            elif choice == '3':
+                print('正在支付....')
+            elif choice == '4':
+                tag = False
+    else:
+        print('user or password err')
+        count += 1
+
+print('end...')
+```
+
+## for 循环
+
+### for 循环主要用于循环取值
+
+```python
+student = ['Mark', '虎老师', 'lxxdsb', 'alexdsb', 'wupeiqisb']
+
+# while 循环
+i = 0
+while i < len(student):
+    print(student[i])
+    i += 1
+
+# for 循环
+for item in student:
+    print(item)
+
+# 遍历字符串
+for item in 'hello':
+    print(item)
+
+# 遍历字典
+dic = {'x': 444, 'y': 333, 'z': 555}
+for k in dic:
+    print(k, dic[k])
+
+# range 的使用
+for i in range(1, 10, 3):
+    print(i)
+
+for i in range(10):
+    print(i)
+
+# 遍历带索引
+for i in range(len(student)):
+    print(i, student[i])
+```
+
+### for 循环的嵌套
+
+#### 打印九九乘法表
+
+**分析**：
+```
+1*1=1
+1*2=2 2*2=4
+1*3=3 2*3=6 3*3=9
+...
+1*9=9 2*9=18 ... 9*9=81
+```
+
+**代码实现**：
+
+```python
+for i in range(1, 10):
+    for j in range(1, i + 1):
+        print('%s*%s=%s' % (j, i, i * j), end=' ')
+    print()
+```
+
+#### 打印金字塔
+
+**分析**：
+```
+        *        max_level=5, current_level=1, blank=4, *号数=1
+       ***       max_level=5, current_level=2, blank=3, *号数=3
+      *****      max_level=5, current_level=3, blank=2, *号数=5
+     *******     max_level=5, current_level=4, blank=1, *号数=7
+    *********    max_level=5, current_level=5, blank=0, *号数=9
+```
+
+**数学表达式**：
+- 空格数 = max_level - current_level
+- *号数 = 2 * current_level - 1
+
+**代码实现**：
+
+```python
+max_level = 5
+for current_level in range(1, max_level + 1):
+    # 打印空格
+    for i in range(max_level - current_level):
+        print(' ', end='')  # 在一行中连续打印多个空格
+    # 打印星号
+    for j in range(2 * current_level - 1):
+        print('*', end='')
+    print()
+```
+
+## 小结
+
+| 语句 | 作用 | 使用场景 |
+|------|------|---------|
+| `if` | 条件判断 | 单个条件判断 |
+| `if-else` | 双分支判断 | 二选一的场景 |
+| `if-elif-else` | 多分支判断 | 多选一的场景 |
+| `while` | 条件循环 | 不知道循环次数时 |
+| `for` | 遍历循环 | 已知循环范围或遍历容器 |
+| `break` | 终止循环 | 满足某个条件时退出循环 |
+| `continue` | 跳过本次循环 | 满足某个条件时跳过本次迭代 |
+| `while/for-else` | 循环正常结束时执行 | 判断循环是否被 break 终止 |
+
+掌握这些流程控制语句，可以让你的程序具有判断和重复执行的能力，实现更加复杂的功能。

@@ -2,11 +2,11 @@
 title: Django 信号机制详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-11T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-signals
 featured: false
 draft: false
-series: django
+series: Django
 seriesOrder: 7
 tags:
   - Python
@@ -14,10 +14,6 @@ tags:
   - 信号
 description: "深入讲解Django信号机制的原理、内置信号类型和使用方法。"
 ---
-
-## 前置知识与学习目标
-
-你需要理解模型保存、app 加载和事务。读完后应能解释 sender → signal → receiver 的同步分发，正确注册 receiver，并判断何时改用显式服务调用或任务队列。贯穿事件是“Loan 创建后记录审计”，核心借阅与扣库存仍保持显式调用。
 
 ## 信号简介
 
@@ -73,8 +69,6 @@ Django提供了一系列的内建信号，允许用户的代码获得Django的�
 
 ### 方式一：导入信号
 
-<!-- snippet: id=django-signals-01 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
-
 ```python
 from django.core.signals import request_finished
 from django.core.signals import request_started
@@ -92,8 +86,6 @@ from django.db.backends.signals import connection_created
 
 放到`__init__`里：
 
-<!-- snippet: id=django-signals-02 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
-
 ```python
 from django.db.models.signals import pre_save
 import logging
@@ -109,8 +101,6 @@ pre_save.connect(callBack)
 ```
 
 ### 方式二：使用装饰器
-
-<!-- snippet: id=django-signals-03 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 
 ```python
 from django.db.models.signals import pre_save
@@ -129,8 +119,6 @@ def my_callback(sender, **kwargs):
 
 一般创建一个py文件，`toppings`和`size`是接受的参数：
 
-<!-- snippet: id=django-signals-04 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
-
 ```python
 import django.dispatch
 
@@ -138,8 +126,6 @@ pizza_done = django.dispatch.Signal(providing_args=["toppings", "size"])
 ```
 
 ### 2. 注册信号
-
-<!-- snippet: id=django-signals-05 mode=compile python=3.12-3.14 deps=stdlib -->
 
 ```python
 def callback(sender, **kwargs):
@@ -150,8 +136,6 @@ pizza_done.connect(callback)
 ```
 
 ### 3. 触发信号
-
-<!-- snippet: id=django-signals-06 mode=compile python=3.12-3.14 deps=stdlib -->
 
 ```python
 from 路径 import pizza_done
@@ -168,8 +152,6 @@ pizza_done.send(sender='seven', toppings=123, size=456)
 Django中的signals和操作系统（linux）中的signal完全是两会事，后者的signal是软件中断，提供一种处理异步事件的方法，信号是系统定义好的，可用作进程间传递消息得一种方法，而django中的信号只是一个普通的类，不能跨进程，看其代码更像一个callback。
 
 django signal类定义在`django/dispatch/dispatch.py`中：
-
-<!-- snippet: id=django-signals-07 mode=compile python=3.12-3.14 deps=stdlib -->
 
 ```python
 class Signal(object):
@@ -223,45 +205,3 @@ class Signal(object):
         """Remove dead receivers from connections."""
         ...
 ```
-
-## 事务、副作用与注册边界
-
-<!-- figure:s07-f01:start -->
-
-![Django Signal receiver 在同步调用栈执行，外部副作用通过 on_commit 只在事务提交后发生](./images/s07-f01-signal-commit-boundary.png)
-
-<!-- figure:s07-f01:end -->
-
-receiver 默认在发送者调用栈中同步执行；一个慢 receiver 会让原请求变慢，异常也可能中断主流程。需要在数据库提交后发送通知时，应使用 `transaction.on_commit()`，而不是把 `post_save` 误当成“事务已经提交”。
-
-receiver 通常在 `AppConfig.ready()` 中导入注册；`ready()` 可能在测试、命令和重载中多次执行，应使用稳定模块导入或 `dispatch_uid` 防重复。局部函数作为 receiver 时，还要理解默认弱引用可能被垃圾回收。
-
-## 常见误区与适用边界
-
-- 信号适合审计、缓存失效等横切通知，不适合隐藏关键业务顺序。
-- `send()` 不是队列：没有持久化、重试、隔离或跨进程消费。
-- `post_save` 可能来自脚本、Admin 或测试，receiver 不能假设存在 HTTP request。
-- bulk 操作是否触发模型信号必须按 API 合同验证。
-
-## 最小验证
-
-测试 receiver 只注册一次、正确筛选 sender、事务回滚时不发外部通知、receiver 异常策略明确。
-
-## 自检题
-
-1. 信号为何会隐藏控制流？
-2. `post_save` 为何不等于事务已提交？
-3. 何时应使用任务队列？
-
-<details><summary>答案</summary>
-
-1. 调用方看不到所有 receiver。2. 外层事务仍可能回滚。3. 需要跨进程、持久化、重试或隔离耗时任务时。
-
-</details>
-
-## 本篇总结、衔接与资料来源
-
-信号是同步进程内通知，不是核心业务编排器。下一篇用显式缓存键和失效策略处理热门书籍读取。
-
-- [Django signals](https://docs.djangoproject.com/en/6.0/topics/signals/)
-- [事务 on_commit](https://docs.djangoproject.com/en/6.0/topics/db/transactions/#performing-actions-after-commit)

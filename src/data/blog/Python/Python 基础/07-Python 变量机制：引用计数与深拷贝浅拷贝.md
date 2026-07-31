@@ -1,150 +1,246 @@
----
-title: Python 变量机制：名字绑定、可变性与深浅拷贝
+﻿---
+title: Python 变量机制：引用计数与深拷贝浅拷贝
 author: Joekma
-pubDatetime: 2018-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-17T00:00:00.000+08:00
+pubDatetime: 2018-09-13T16:45:00.000+08:00
+modDatetime: 2026-05-03T00:00:00.000+08:00
 slug: python-variables-data-types-deep-shallow-copy
-description: "用对象图解释变量绑定、== 与 is、可变对象共享、浅拷贝、深拷贝、循环引用与实现边界。"
+description: '深入理解Python变量机制，详解变量命名规范、引用计数机制、is与==区别、LEGB作用域规则、小整数对象池、深拷贝与浅拷贝概念。'
 tags:
   - Python
   - 变量
-  - 内存管理
+  - 引用计数
   - 深拷贝
   - 浅拷贝
+  - LEGB
 draft: false
-series: python
+series: Python基础
 seriesOrder: 7
 language: zh-CN
 ---
 
-Python 变量更准确地说是“名字”。赋值把名字绑定到对象；它既不会自动复制对象，也不等同于 C 指针运算。
+> Python 中的变量与数据类型是编程基础中的基础。本文将详细介绍变量的定义与使用、基本数据类型以及深拷贝与浅拷贝的概念，帮助你建立扎实的 Python 基础。
 
-## 前置知识与学习目标
+## 变量
 
-你应理解可变与不可变类型。学完后你应该能：
+### 什么是变量
 
-- 画出赋值后名字与对象的引用关系；
-- 区分重新绑定与原地修改；
-- 预测浅拷贝、深拷贝对嵌套对象的影响；
-- 避免依赖整数缓存、字符串驻留和引用计数等实现细节。
+- **变**：记录下来的某种状态是可以发生变化的
+- **量**：衡量/计量/记录某种状态
 
-## 赋值不复制对象
+### 为何要用变量
 
-<!-- figure:s07-f01:start -->
+为了让计算机能够像人一样去识别世间万物，更接近于人的思想。如何识别？就是把事物的特征记录下来，这就是变量的定义。
 
-![order 与 alias 两个名字共同绑定字典并观察同一嵌套列表的原地修改](./images/s07-f01-name-object-alias-graph.png)
+### 如何使用变量
 
-<!-- figure:s07-f01:end -->
+变量的使用必须遵循：**先定义，后引用**
 
-<!-- snippet: id=python-name-binding-alias mode=run python=3.12-3.14 deps=stdlib -->
+### 定义变量
 
 ```python
-order = {"id": "A001", "tags": ["new"]}
-alias = order
-
-alias["tags"].append("gift")
-assert order["tags"] == ["new", "gift"]
-assert alias is order
+x = 10
+name = 'joek'
+age = 18
+salary = '15k'
 ```
 
-两个名字指向同一个字典；修改对象会从两个名字观察到。若写 `alias = {"id": "A002"}`，只是让 `alias` 重新绑定，新字典不会改变 `order`。
+定义一个变量分为三部分：
 
-## 相等与身份
+- **变量名**：变量名是访问到值的唯一方式
+- **赋值符号**：将值的内存地址"赋值"给变量名
+- **变量的值**：记录状态
 
-`==` 由对象的相等协议比较值；`is` 比较身份。业务内容比较用 `==`，单例哨兵用 `is None`。`id()` 在对象存活期间唯一，但不要把它当持久内存地址。
+### 变量名的命名规范
 
-不要编写 `1000 is 1000` 或字符串 `is` 示例来推断缓存规则。常量折叠、驻留和小整数复用随实现和上下文变化。
+大前提：变量名的命名应该对值有描述性的功能
 
-## 浅拷贝只复制最外层容器
+- 变量名只能是字母、数字或下划线的任意组合
+- 变量名的第一个字符不能是数字
+- 关键字不能声明为变量名
 
-<!-- figure:s07-f02:start -->
+### 变量名的命名风格
 
-![浅拷贝共享嵌套列表，深拷贝创建独立嵌套对象](./images/s07-f02-shallow-vs-deep-copy.png)
+- **驼峰体**：`OldboyOfAge = 73`
+- **下划线纯小写式**：`oldboy_of_age = 73`
 
-<!-- figure:s07-f02:end -->
+> 在 Python 中变量名的命名推荐使用下划线
 
-<!-- snippet: id=python-shallow-copy-graph mode=run python=3.12-3.14 deps=stdlib -->
+### 运行 Python 程序的三个阶段
+
+```bash
+python3 D:\test.py
+```
+
+1. 先启动 Python 解释器
+2. Python 解释器将 Python 文件由硬盘读入内存
+3. Python 解释器解释执行刚刚读入内存的代码，开始识别 Python 语法
+
+### 引用计数的概念
+
+- **引用计数**：计算值被关联了多少个变量名
+- 引用计算一旦为零就是垃圾，会被 Python 的垃圾回收机制自动清理
+
+**引用计数增加示例**：
 
 ```python
-from copy import copy
-
-original = {"id": "A001", "items": [{"sku": "PEN", "qty": 1}]}
-shallow = copy(original)
-
-assert shallow is not original
-assert shallow["items"] is original["items"]
-
-shallow["items"][0]["qty"] = 2
-assert original["items"][0]["qty"] == 2
+x = 10
+y = x  # 此时 x 和 y 都指向 10，引用计数为 2
 ```
 
-`dict.copy()`、列表切片和 `list(existing)` 都是常见浅拷贝：新建外层容器，但复用其中元素的引用。
-
-## 深拷贝递归复制可复制部分
-
-<!-- snippet: id=python-deep-copy-graph mode=run python=3.12-3.14 deps=stdlib -->
+**引用计数减少示例**：
 
 ```python
-from copy import deepcopy
-
-original = {"items": [{"sku": "PEN", "qty": 1}]}
-detached = deepcopy(original)
-detached["items"][0]["qty"] = 2
-
-assert original["items"][0]["qty"] == 1
-assert detached["items"] is not original["items"]
+x = 10
+del x  # 解除变量名与值 10 内存地址的绑定关系
 ```
 
-`deepcopy` 使用记忆表处理共享关系和循环引用，但并非“所有层都得到全新对象”：函数、类等会原样返回，对象也可自定义复制行为。大型对象图深拷贝昂贵且可能复制了本应共享的资源。
+### 变量值的三个特征
 
-## 更好的工程选择
+1. **id**：变量值的唯一编号，内存地址不同 id 则不同
+2. **type**：类型
+3. **value**：值
 
-| 需求                   | 方法                                   |
-| ---------------------- | -------------------------------------- |
-| 只改外层键，不改嵌套值 | 浅拷贝后更新                           |
-| 需要独立的可变嵌套快照 | 受控 `deepcopy`，并写行为测试          |
-| 只更新少量嵌套字段     | 显式重建受影响路径                     |
-| 跨进程或持久化         | 使用序列化协议，不把 `deepcopy` 当协议 |
+```python
+x = 10
+y = x
+print(id(x), id(y))
 
-不可变数据、明确的数据类和纯函数通常比随处深拷贝更容易推理。
+age = 10
+print(id(age))
+print(type(age))
+print(age)
+```
 
-## 生命周期与垃圾回收边界
+### is 与 == 的区别
 
-CPython 主要使用引用计数，并用循环垃圾回收器处理部分引用环；其他 Python 实现可以采用不同策略。不要依赖对象在某一行后立刻销毁。文件和锁等资源必须使用 `with` 或显式关闭。
+- **is**：身份运算，比较的是 id 是否相等
+- **==**：判断值是否相等
 
-## 常见误区与适用边界
+```python
+x = 10
+y = x
+print(id(x), id(y))  # 1839623936 1839623936
+print(x is y)  # True，id 相等，值一定相等
+print(x == y)  # True
+```
 
-- “参数按引用传递”容易误导；更准确是调用时把形参绑定到实参对象，第 8 篇展开。
-- 不可变对象“修改”实际创建新对象并重新绑定名字。
-- 深拷贝不是撤销系统，也不适合复制数据库连接、文件句柄和线程锁。
-- 常量名全大写只是约定，Python 不会阻止重新绑定。
-- LEGB 属于名称查找，集中放到第 9 篇，不与对象拷贝混讲。
+> 注意：值相等 id 不一定相等
 
-## 自检题
+```python
+x = 111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
+y = 111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
+print(id(x))  # 2181129522824
+print(id(y))  # 2181129523040
+print(x is y)  # False
+print(x == y)  # True
+```
 
-1. `b = a` 后修改列表 `b.append(1)`，为什么 `a` 也变化？
-2. 浅拷贝字典后修改嵌套列表，原字典为何仍受影响？
-3. 为什么不能依赖 `id()` 是可长期保存的内存地址？
+### 常量
 
-<details>
-<summary>参考答案</summary>
+常量约定俗成用大写字母表示：
 
-1. 两个名字绑定同一个列表对象。
-2. 浅拷贝只新建外层字典，嵌套列表引用被复用。
-3. `id` 只在对象生命周期内唯一，对象销毁后可复用；不同实现也不保证它就是物理地址。
+```python
+BOY_OF_AGE = 73
+BOY_OF_AGE = 74  # 注意：Python 中常量可以修改，只是约定不修改
+print(BOY_OF_AGE)
+```
 
-</details>
+### 变量的实质
 
-## 本篇总结
+**Python 变量区别于其他编程语言的声明和赋值方式，采用的是创建和指向的类似于指针的方式实现的。**
 
-先画“名字—对象—嵌套对象”关系，再判断是重新绑定还是原地修改。浅拷贝复制外壳，深拷贝递归处理对象图；二者都应由实际隔离需求驱动。
+即 Python 中的变量实际上是对值或者对象的一个指针（简单的说它们是值的一个名字）。
 
-## 下一篇衔接
+- **传统语言**：先在内存中声明一个 p 的变量，然后将 1 存入变量 p 所在内存。执行加法操作时得到 2 的结果，将 2 这个数值再次存入到 p 所在内存地址中。整个过程中，变化的是变量 p 所在内存地址上的值。
 
-下一篇把订单计算封装为函数，解释参数绑定、返回值、位置/关键字参数、`*args`/`**kwargs`、可变默认值以及清晰的函数合同。
+- **Python**：实际上是先在内存中创建了一个 1 的对象，并将 p 指向了它。在执行加法操作时，实际上通过加法操作得到了一个 2 的新对象，并将 p 指向这个新的对象。整个过程中，变化的是 p 指向的内存地址。
 
-## 资料来源
+### 变量的查找顺序
 
-- [Python 数据模型：对象、值与类型](https://docs.python.org/3.14/reference/datamodel.html#objects-values-and-types)
-- [copy：浅拷贝与深拷贝](https://docs.python.org/3.14/library/copy.html)
-- [gc：垃圾回收接口](https://docs.python.org/3.14/library/gc.html)
+解析器按照下面的顺序查找一个变量：
+
+- **Local**：本地函数内部，通过任何方式赋值的，而且没有被 global 关键字声明为全局变量的变量
+- **Enclosing**：直接外围空间（上层函数）的本地作用域
+- **Global**：全局空间（模块），在模块顶层赋值的变量
+- **Builtin**：内置模块中预定义的变量名
+
+> 在任何一层先找到了符合要求的变量，则不再向更外层查找。如果直到 Builtin 层仍然没有找到符合要求的变量，则抛出 NameError 异常。这就是变量名解析的：**LEGB 法则**
+
+## 变量补充
+
+### 小整数对象池
+
+整数在程序中的使用非常广泛，Python 为了优化速度，使用了小整数对象池，避免为整数频繁申请和销毁内存空间。
+
+**Python 对小整数的定义是 [-5, 256]，这些整数对象是提前建立好的，不会被垃圾回收。** 在一个 Python 的程序中，无论这个整数处于 LEGB 中的哪个位置，所有位于这个范围内的整数使用的都是同一个对象。同理，单个字母也是这样的。
+
+```python
+# 小整数对象池测试
+a = -5
+b = -5
+print(a is b)  # True
+
+a = 256
+b = 256
+print(a is b)  # True
+
+a = 1000
+b = 1000
+print(a is b)  # False
+```
+
+### intern 机制
+
+一个单词的复用机会大，所以创建一次；有空格，创建多次。但是字符串长度大于 20，就不是创建一次了。
+
+```python
+# 无空格字符串
+a = "abc"
+b = "abc"
+print(a is b)  # True
+
+a = "hello world"  # 有空格
+b = "hello world"
+print(a is b)  # False
+
+# 短字符串乘积
+s1 = "a" * 20
+s2 = "a" * 20
+print(s1 is s2)  # True
+
+s1 = "a" * 21  # 超过 20
+s2 = "a" * 21
+print(s1 is s2)  # False
+```
+
+### 大整数对象池
+
+> 注意：终端是每次执行一次，所以每次的大整数都重新创建；而在 PyCharm 中，每次运行是所有代码都加载到内存中，属于一个整体，所以会有一个大整数对象池。
+
+```python
+# PyCharm 下运行
+c1 = 1000
+d1 = 1000
+print(c1 is d1)  # True
+
+class C1(object):
+    a = 100
+    b = 100
+    c = 1000
+    d = 1000
+
+class C2(object):
+    a = 100
+    b = 1000
+
+print(C1.a is C1.b)  # True
+print(C1.a is C2.a)  # True
+print(C1.c is C1.d)  # True
+print(C1.b is C2.b)  # False
+```
+
+## 小结
+
+ **变量**：是 Python 中最基本的数据容器，通过变量名访问值
+
+

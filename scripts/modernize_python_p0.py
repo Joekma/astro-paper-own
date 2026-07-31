@@ -300,7 +300,7 @@ with Session(engine) as session:
     )
 
     replace_section(
-        ROOT / "Python 高级/38-自定制ORM.md", "## 前言", "## 复习题",
+        ROOT / "Python 高级/06-自定制ORM.md", "## 前言", "## 复习题",
         """## 教学版表达式编译器
 
 自制 ORM 适合学习“字段描述 → 表达式树 → 参数化 SQL”这条链，不适合直接承担生产事务、迁移、关系加载和并发会话。本节只实现不会连接数据库的最小编译器，重点是值与 SQL 文本严格分离。
@@ -334,7 +334,7 @@ assert params[0] not in sql
     )
 
     replace_section(
-        ROOT / "Python 高级/39-自定义Web框架与jinja2模板.md", "## web应用与web框架", "## 复习题",
+        ROOT / "Python 高级/07-自定义Web框架与jinja2模板.md", "## web应用与web框架", "## 复习题",
         """## WSGI 最小机制与边界
 
 WSGI 应用是接收 `environ` 与 `start_response` 的可调用对象，返回字节迭代器。下面示例只演示协议，不包含路由、认证、请求体解析或静态文件能力。
@@ -554,13 +554,13 @@ assert apply_verified_callback(order, event) is False
 
 退款与撤销同样是状态机：使用独立退款单号和金额约束，异步结果仍需验签、核对并幂等处理。生产监控只记录订单号、平台流水号和错误分类，不记录私钥、完整签名材料或敏感用户数据。"""
 
-    replace_section(ROOT / "Python 高级/40-Python 微信支付 详解.md", "##  简介", "## 复习题", payment_practice.replace(
+    replace_section(ROOT / "Python 高级/08-微信支付 Python 接入指南.md", "##  简介", "## 复习题", payment_practice.replace(
         "本文只采用支付机构当前开放平台", "微信支付接入使用 API v3。本文只采用微信支付当前开放平台"
     ).replace("当前官方验签入口", "API v3 平台证书验签入口").replace("payment-callback-state-machine", "wechatpay-v3-callback-state-machine"))
-    replace_section(ROOT / "Python 高级/41-Python 支付宝支付 详解.md", "## 简介", "## 复习题", payment_practice.replace(
+    replace_section(ROOT / "Python 高级/09-Python 支付宝支付 详解.md", "## 简介", "## 复习题", payment_practice.replace(
         "本文只采用支付机构当前开放平台", "支付宝接入使用开放平台当前 API。本文只采用支付宝当前开放平台"
     ).replace("当前官方验签入口", "开放平台证书模式的官方验签入口").replace("payment-callback-state-machine", "alipay-callback-state-machine"))
-    replace_section(ROOT / "Python 高级/42-Python 银联卡支付 详解.md", "## 简介", "## 复习题", payment_practice.replace(
+    replace_section(ROOT / "Python 高级/10-Python 银联卡支付 详解.md", "## 简介", "## 复习题", payment_practice.replace(
         "本文只采用支付机构当前开放平台", "银联接入使用开放平台当前网关和证书体系。本文只采用银联当前开放平台"
     ).replace("当前官方验签入口", "开放平台当前证书验签入口").replace("payment-callback-state-machine", "unionpay-callback-state-machine"))
 
@@ -642,7 +642,7 @@ Memcached 没有可靠持久化和细粒度安全边界，只放可重建数据�
     )
 
     replace_section(
-        ROOT / "设计模式/接口幂等性设计与实现方案.md", "## 概述", "## 复习题",
+        ROOT / "设计模式/09-接口幂等性设计与实现方案.md", "## 概述", "## 复习题",
         """## 幂等性的真正边界
 
 幂等不是“先查询、再决定是否写入”，因为两个并发请求能同时查询到不存在。可靠实现依赖原子边界：数据库唯一约束/条件更新，或带所有权令牌与过期时间的原子存储操作。

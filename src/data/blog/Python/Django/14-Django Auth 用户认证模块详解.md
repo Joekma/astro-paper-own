@@ -2,11 +2,11 @@
 title: Django Auth 用户认证模块详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-11T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-component-4-auth
 featured: false
 draft: false
-series: django
+series: Django
 seriesOrder: 14
 tags:
   - Python
@@ -14,10 +14,6 @@ tags:
   - 用户认证
 description: "深入讲解Django Auth用户认证模块的使用方法和实践技巧。"
 ---
-
-## 前置知识与学习目标
-
-你需要理解 middleware、session、模型和 CSRF。读完后应能区分凭据认证、会话登录、请求身份与权限授权；实现登录/退出和 `login_required`；在项目开始时规划 `AUTH_USER_MODEL`，并测试开放重定向、会话固定与权限失败。
 
 ## Auth模块概述
 
@@ -35,8 +31,6 @@ Django作为一个完美主义者的终极框架，当然也会想到用户的�
 4. 它提供的功能
 
 ### 常用功能
-
-<!-- snippet: id=django-component-4-auth-01 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 
 ```python
 from django.contrib.auth import authenticate, login, logout
@@ -84,8 +78,6 @@ LOGIN_URL = '/login/'
 
 ## auth模块常用方法
 
-<!-- snippet: id=django-component-4-auth-02 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
-
 ```python
 from django.contrib import auth
 ```
@@ -100,8 +92,6 @@ authenticate()会在该User对象上设置一个属性来标识后端已经认�
 
 **用法：**
 
-<!-- snippet: id=django-component-4-auth-03 mode=compile python=3.12-3.14 deps=stdlib -->
-
 ```python
 user = authenticate(username='username', password='password')
 ```
@@ -113,8 +103,6 @@ user = authenticate(username='username', password='password')
 该函数实现一个用户登录的功能。它本质上会在后端为该用户生成相关session数据。
 
 **用法：**
-
-<!-- snippet: id=django-component-4-auth-04 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 
 ```python
 from django.contrib.auth import authenticate, login
@@ -140,8 +128,6 @@ def my_view(request):
 
 **用法：**
 
-<!-- snippet: id=django-component-4-auth-05 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
-
 ```python
 from django.contrib.auth import logout
 
@@ -150,13 +136,11 @@ def logout_view(request):
     # Redirect to a success page.
 ```
 
-### is_authenticated 属性
+### is_authenticated()
 
 用来判断当前请求是否通过了认证。
 
 **用法：**
-
-<!-- snippet: id=django-component-4-auth-06 mode=compile python=3.12-3.14 deps=stdlib -->
 
 ```python
 def my_view(request):
@@ -170,8 +154,6 @@ auth给我们提供的一个装饰器工具，用来快捷的给某个视图添�
 
 **用法：**
 
-<!-- snippet: id=django-component-4-auth-07 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
-
 ```python
 from django.contrib.auth.decorators import login_required
 
@@ -184,8 +166,6 @@ def my_view(request):
 
 如果需要自定义登录的URL，则需要在settings.py文件中通过LOGIN_URL进行修改：
 
-<!-- snippet: id=django-component-4-auth-08 mode=compile python=3.12-3.14 deps=stdlib -->
-
 ```python
 LOGIN_URL = '/login/'  # 这里配置成你项目登录页面的路由
 ```
@@ -195,8 +175,6 @@ LOGIN_URL = '/login/'  # 这里配置成你项目登录页面的路由
 auth提供的一个创建新用户的方法，需要提供必要参数（username、password）等。
 
 **用法：**
-
-<!-- snippet: id=django-component-4-auth-09 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 
 ```python
 from django.contrib.auth.models import User
@@ -209,8 +187,6 @@ user = User.objects.create_user(username='用户名', email='邮箱', password='
 auth提供的一个创建新的超级用户的方法，需要提供必要参数（username、password）等。
 
 **用法：**
-
-<!-- snippet: id=django-component-4-auth-10 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 
 ```python
 from django.contrib.auth.models import User
@@ -226,8 +202,6 @@ auth提供的一个检查密码是否正确的方法，需要提供当前请求�
 
 **用法：**
 
-<!-- snippet: id=django-component-4-auth-11 mode=compile python=3.12-3.14 deps=stdlib -->
-
 ```python
 ok = user.check_password('密码')
 ```
@@ -239,8 +213,6 @@ auth提供的一个修改密码的方法，接收要设置的新密码作为参�
 **注意：** 设置完一定要调用用户对象的save方法！！！
 
 **用法：**
-
-<!-- snippet: id=django-component-4-auth-12 mode=compile python=3.12-3.14 deps=stdlib -->
 
 ```python
 user.set_password(password='')
@@ -269,8 +241,6 @@ def set_password(request):
 
 如果需要扩展auth_user表，可以继承AbstractUser模型：
 
-<!-- snippet: id=django-component-4-auth-13 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
-
 ```python
 from django.contrib.auth.models import AbstractUser
 
@@ -284,8 +254,6 @@ class User(AbstractUser):
 
 然后在settings.py中配置：
 
-<!-- snippet: id=django-component-4-auth-14 mode=compile python=3.12-3.14 deps=stdlib -->
-
 ```python
 AUTH_USER_MODEL = 'app名.User'
 ```
@@ -293,8 +261,6 @@ AUTH_USER_MODEL = 'app名.User'
 ## 完整登录示例
 
 ### views.py
-
-<!-- snippet: id=django-component-4-auth-15 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 
 ```python
 from django.shortcuts import render, redirect
@@ -346,8 +312,6 @@ def register_view(request):
 
 ### urls.py
 
-<!-- snippet: id=django-component-4-auth-16 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
-
 ```python
 from django.urls import path
 from . import views
@@ -362,68 +326,23 @@ urlpatterns = [
 
 ### login.html
 
-<!-- snippet: id=django-component-4-auth-17 mode=display python=3.12-3.14 deps=stdlib -->
-
 ```html
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
+<head>
+    <meta charset="UTF-8">
     <title>登录</title>
-  </head>
-  <body>
+</head>
+<body>
     <form action="" method="post">
-      {% csrf_token %} 用户名：<input type="text" name="username" /><br />
-      密码：<input type="password" name="password" /><br />
-      <button type="submit">登录</button>
+        {% csrf_token %}
+        用户名：<input type="text" name="username"><br>
+        密码：<input type="password" name="password"><br>
+        <button type="submit">登录</button>
     </form>
     {% if error %}
-    <p style="color: red;">{{ error }}</p>
+        <p style="color: red;">{{ error }}</p>
     {% endif %}
-  </body>
+</body>
 </html>
 ```
-
-## 认证、登录与授权的状态变化
-
-<!-- figure:s14-f01:start -->
-
-![Django 先 authenticate 校验凭据，login 写入 session，后续中间件恢复 request.user，再独立检查权限](./images/s14-f01-auth-session-permission-state.png)
-
-<!-- figure:s14-f01:end -->
-
-`authenticate()` 让配置的 backend 校验凭据并返回 user/None；`login()` 把用户标识与 backend 写入 session，后续请求由 SessionMiddleware 和 AuthenticationMiddleware 还原 `request.user`；权限检查再通过 user/group permission 判断是否允许操作。认证成功不等于拥有借阅、下架或管理权限。
-
-自定义用户模型应在项目第一次迁移前确定，并在关系中引用 `settings.AUTH_USER_MODEL`/`get_user_model()`。密码只能经 `set_password()`/`create_user()` 哈希；登录错误信息不要泄露“用户名存在但密码错误”。
-
-## 常见误区与适用边界
-
-- `is_authenticated` 是属性，不是方法。
-- `login_required` 只保证已登录，不保证对象级权限。
-- `next` 重定向参数必须限制为允许的同源目标，防止开放重定向。
-- 登录、改密和敏感操作需要速率限制、审计与 HTTPS Cookie。
-- Session Cookie 不是密码，但被窃取后可代表身份，需 Secure/HttpOnly/SameSite 和轮换策略。
-
-## 最小验证
-
-覆盖错误密码、停用用户、登录后 session key 轮换、退出清理、未登录跳转、无权限 403、同源 next 与恶意外部 next。
-
-## 自检题
-
-1. `authenticate()` 与 `login()` 各做什么？
-2. 已登录为何仍可能 403？
-3. 为什么自定义用户模型要尽早确定？
-
-<details><summary>答案</summary>
-
-1. 前者校验凭据，后者建立会话。2. 授权独立于认证。3. 中途替换会影响迁移和大量外键关系。
-
-</details>
-
-## 本篇总结、衔接与资料来源
-
-Auth 把凭据、会话身份和权限分层。下一篇解释权限系统依赖的 ContentType 元数据。
-
-- [Django authentication](https://docs.djangoproject.com/en/6.0/topics/auth/)
-- [Using the authentication system](https://docs.djangoproject.com/en/6.0/topics/auth/default/)
-- [Customizing authentication](https://docs.djangoproject.com/en/6.0/topics/auth/customizing/)

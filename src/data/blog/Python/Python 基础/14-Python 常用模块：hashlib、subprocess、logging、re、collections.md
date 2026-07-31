@@ -1,10 +1,10 @@
----
-title: Python 常用模块：摘要、子进程、日志、正则与容器
+﻿---
+title: Python 常用模块：hashlib、subprocess、logging、re、collections
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-17T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: python-common-modules-hashlib-subprocess-logging-re
-description: "用可审计订单任务讲清 hashlib、hmac、subprocess、logging、re 与 collections 的职责和安全边界。"
+description: '深入讲解Python常用模块：哈希算法、子进程、日志、正则表达式和特殊容器。'
 tags:
   - Python
   - hashlib
@@ -13,159 +13,428 @@ tags:
   - re
   - collections
 draft: false
-series: python
+series: Python基础
 seriesOrder: 14
 language: zh-CN
 ---
 
-这五组模块解决不同工程问题：摘要验证完整性、子进程调用外部程序、日志保存证据、正则识别文本模式、特殊容器表达访问规律。把它们串成“万能脚本”前，必须先画出信任边界。
+> Python 提供了丰富的标准模块来处理哈希算法、子进程、日志、正则表达式和特殊容器数据类型。本文将详细介绍 hashlib、subprocess、logging、re 和 collections 等常用模块的使用方法。
 
-## 前置知识与学习目标
+## hashlib 模块
 
-你应理解字节、异常、时间和迭代。学完后你应该能：
+`hashlib` 是哈希算法模块，提供 SHA1、SHA224、SHA256、SHA384、SHA512、MD5 等算法。
 
-- 区分普通摘要、HMAC 与密码哈希；
-- 用参数列表、超时和退出码安全调用子进程；
-- 记录结构化、可诊断且不泄密的日志；
-- 为简单模式选择正则，并识别回溯与输入大小风险。
+### 什么是哈希
 
-## hashlib 与 hmac：完整性，不是保密
+哈希是一种算法，接受传入的内容，经过运算得到一串 hash 值。
 
-<!-- snippet: id=python-hash-stream mode=run python=3.12-3.14 deps=stdlib -->
+**哈希值的特点**：
+
+1. 只要传入的内容一样，得到的 hash 值必然一样
+2. 不能由 hash 值返解成内容（单向函数）
+3. 无论校验的内容有多大，得到的 hash 值长度是固定的
+
+### 基本使用
 
 ```python
 import hashlib
 
-chunks = [b"A001,", b"39.80\n"]
-digest = hashlib.sha256()
-for chunk in chunks:
-    digest.update(chunk)
+# 计算 MD5
+data = 'how to use md5 in python hashlib?'
+md5 = hashlib.md5(data.encode('utf-8'))
+print(md5.hexdigest())
+# 输出: d26a53750bc40b38b65a520292f69306
 
-assert digest.hexdigest() == hashlib.sha256(b"A001,39.80\n").hexdigest()
+# 计算 SHA256
+sha256 = hashlib.sha256(data.encode('utf-8'))
+print(sha256.hexdigest())
 ```
 
-摘要相同不能证明内容保密，只能作为完整性指纹的一部分。需要验证“持有共享密钥的一方生成了消息”时使用 `hmac`，比较标签用 `hmac.compare_digest()`。
+### 分块计算
 
-普通 SHA-256、MD5 加固定盐不适合存储密码；密码需要专用、可调成本的 KDF（如 `hashlib.scrypt` 或成熟认证框架），每个密码使用随机盐并保存参数。MD5/SHA-1 只应在兼容非安全协议时使用。
+如果数据量很大，可以分块多次调用 `update()`：
 
-## subprocess：参数、超时、退出码
+```python
+import hashlib
 
-<!-- figure:s14-f01:start -->
+md5 = hashlib.md5()
+md5.update(b'how to use md5 in ')
+md5.update(b'python hashlib?')
+print(md5.hexdigest())
+# 输出: d03b3899d2d6ac723a4e70db7ca2b83f
+```
 
-![父进程以参数列表启动子进程，并通过超时、退出码和输出通道验证结果](./images/s14-f01-safe-subprocess-boundary.png)
+### 中文加密
 
-<!-- figure:s14-f01:end -->
+```python
+import hashlib
 
-<!-- snippet: id=python-subprocess-safe-run mode=run python=3.12-3.14 deps=stdlib -->
+m1 = hashlib.sha512()
+str_cn = '你好，世界'
+m1.update(str_cn.encode("utf-8"))
+print(m1.hexdigest())
+```
+
+### 加盐处理
+
+为了增强安全性，可以对加密算法添加自定义 key：
+
+```python
+import hashlib
+
+# 加盐密码验证
+passwds = ['alex3714', 'alex1313', 'alex94139413']
+
+def make_passwd_dic(passwds):
+    dic = {}
+    for passwd in passwds:
+        m = hashlib.md5()
+        m.update(passwd.encode('utf-8'))
+        dic[passwd] = m.hexdigest()
+    return dic
+
+def break_code(cryptograph, passwd_dic):
+    for k, v in passwd_dic.items():
+        if v == cryptograph:
+            print('密码是===>%s' % k)
+
+cryptograph = 'aee949757a2e698417463d47acac93df'
+break_code(cryptograph, make_passwd_dic(passwds))
+```
+
+### hmac 模块
+
+`hmac` 模块内部对 key 和内容进行进一步处理：
+
+```python
+import hmac
+
+h = hmac.new('alvin'.encode('utf8'))
+h.update('hello'.encode('utf8'))
+print(h.hexdigest())
+
+# 必须保证：
+# 1. hmac.new 括号内指定的初始 key 一样
+# 2. update 的内容累加到一起是一样的
+```
+
+### 摘要算法的应用
+
+1. **密码存储**：存储密码的哈希值而非明文
+2. **文件完整性校验**：比较文件的哈希值
+3. **数字签名**：验证数据完整性
+
+> **注意**：摘要算法不是加密算法，不能用于加密，只能用于防篡改。
+
+## subprocess 模块
+
+`subprocess` 是官方推荐的模块，用于执行系统命令和脚本。
+
+### 三种执行命令的方法
+
+| 方法 | 说明 |
+|------|------|
+| `subprocess.run()` | 官方推荐，返回 CompletedProcess |
+| `subprocess.call()` | 返回命令执行状态 |
+| `subprocess.Popen()` | 底层封装，更灵活 |
+
+### run() 方法
 
 ```python
 import subprocess
-import sys
 
-completed = subprocess.run(
-    [sys.executable, "-I", "-c", "print('child-ok')"],
-    check=True,
-    capture_output=True,
-    text=True,
-    timeout=5,
-)
-assert completed.stdout.strip() == "child-ok"
+# 基本用法
+subprocess.run(['df', '-h'], stderr=subprocess.PIPE, stdout=subprocess.PIPE, check=True)
+
+# 涉及管道 | 的命令
+subprocess.run('df -h|grep disk1', shell=True)
 ```
 
-参数用列表传递，避免 Shell 再解释；`check=True` 把非零退出码变成 `CalledProcessError`；`timeout` 限制等待；`text=True` 使用文本模式，必要时显式设置 `encoding`。只有确实需要 Shell 语法时才用 `shell=True`，并且不能拼接不可信输入。
+### call() 方法
 
-## logging：记录事件而非拼接故事
+```python
+import subprocess
 
-<!-- snippet: id=python-logging-context mode=run python=3.12-3.14 deps=stdlib -->
+# 返回命令执行状态
+retcode = subprocess.call(["ls", "-l"])
+
+# 检查命令执行状态
+subprocess.check_call(["ls", "-l"])
+
+# 获取执行结果
+status = subprocess.getstatusoutput('ls /bin/ls')
+output = subprocess.getoutput('ls /bin/ls')
+```
+
+### Popen() 方法
+
+```python
+import subprocess
+
+# 启动子进程
+a = subprocess.Popen('sleep 10', shell=True, stdout=subprocess.PIPE)
+
+# 等待进程结束
+a.wait()
+
+# 终止进程
+a.terminate()
+a.kill()
+
+# 与进程交互
+a.communicate(b'22')
+```
+
+**常用参数**：
+
+| 参数 | 说明 |
+|------|------|
+| `args` | shell 命令，可以是字符串或序列 |
+| `stdin/stdout/stderr` | 标准输入/输出/错误 |
+| `shell` | 是否使用 shell 执行 |
+| `cwd` | 子进程的当前目录 |
+| `env` | 子进程的环境变量 |
+
+### 常用方法
+
+```python
+# 检查子进程是否终止
+poll()
+
+# 等待子进程终止
+wait()
+
+# 终止进程
+terminate()
+kill()
+
+# 与启动的进程交互
+communicate()
+
+# 发送系统信号
+send_signal(signal.xxx)
+
+# 获取进程号
+pid
+```
+
+## logging 模块
+
+`logging` 是 Python 的日志记录模块。
+
+### 日志级别
+
+| 级别 | 值 | 说明 |
+|------|-----|------|
+| CRITICAL | 50 | 严重错误 |
+| ERROR | 40 | 错误 |
+| WARNING | 30 | 警告 |
+| INFO | 20 | 信息 |
+| DEBUG | 10 | 调试 |
+| NOTSET | 0 | 不设置 |
+
+### 基本使用
 
 ```python
 import logging
 
-logger = logging.getLogger("order_report")
-logger.addHandler(logging.NullHandler())
-logger.info("order_processed id=%s count=%d", "A001", 2)
+logging.debug('调试debug')
+logging.info('消息info')
+logging.warning('警告warn')
+logging.error('错误error')
+logging.critical('严重critical')
+
+# 默认级别为 WARNING 时才打印
 ```
 
-库代码不应擅自调用 `basicConfig()`；应用入口配置 handler、formatter、级别和轮转。异常边界用 `logger.exception(...)` 记录 traceback。令牌、密码、完整个人信息和支付数据必须脱敏或不记录。
+### 配置日志输出
 
-## re：模式匹配，不是通用解析器
+```python
+import logging
 
-<!-- snippet: id=python-regex-order-line mode=run python=3.12-3.14 deps=stdlib -->
+logging.basicConfig(
+    filename='access.log',
+    format='%(asctime)s - %(name)s - %(levelname)s - %(module)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S %p',
+    level=10
+)
+
+logging.debug('调试debug')
+logging.info('消息info')
+```
+
+### format 参数说明
+
+| 格式串 | 说明 |
+|--------|------|
+| `%(name)s` | Logger 的名字 |
+| `%(levelno)s` | 数字形式的日志级别 |
+| `%(levelname)s` | 文本形式的日志级别 |
+| `%(pathname)s` | 调用日志输出函数的模块完整路径名 |
+| `%(filename)s` | 调用日志输出函数的模块文件名 |
+| `%(module)s` | 调用日志输出函数的模块名 |
+| `%(funcName)s` | 调用日志输出函数的函数名 |
+| `%(lineno)d` | 调用日志输出函数的语句所在代码行 |
+| `%(asctime)s` | 字符串形式的当前时间 |
+| `%(thread)d` | 线程 ID |
+| `%(threadName)s` | 线程名 |
+| `%(process)d` | 进程 ID |
+| `%(message)s` | 用户输出的消息 |
+
+## re 模块
+
+`re` 是 Python 的正则表达式模块。
+
+### 正则表达式基础
 
 ```python
 import re
 
-pattern = re.compile(r"^(?P<id>A\d{3}),(?P<status>paid|cancelled)$")
-match = pattern.fullmatch("A001,paid")
-assert match is not None
-assert match.groupdict() == {"id": "A001", "status": "paid"}
+# 匹配
+re.match('abc', 'abcdef')  # 从开头匹配
+re.search('abc', 'defabc')  # 全局搜索
+
+# 分割
+re.split(r'[0-9]', 'a1b2c3')  # ['a', 'b', 'c', '']
+
+# 替换
+re.sub(r'\d', 'X', 'a1b2c3')  # aXbXcX
+
+# 编译
+pattern = re.compile(r'\d+')
+pattern.findall('a1b2c3')  # ['1', '2', '3']
 ```
 
-需要整个字符串符合格式时用 `fullmatch`；只找第一个位置用 `search`；批量提取用 `finditer` 可避免一次构造大列表。对外部超长输入和含嵌套量词的模式要设大小边界，避免灾难性回溯。CSV、JSON、HTML 和编程语言应使用专用解析器。
-
-## collections：让数据访问模式显式
-
-<!-- snippet: id=python-collections-orders mode=run python=3.12-3.14 deps=stdlib -->
+### 常用函数
 
 ```python
-from collections import Counter, defaultdict, deque
+import re
 
-statuses = Counter(["paid", "paid", "cancelled"])
-by_customer = defaultdict(list)
-by_customer["Ada"].append("A001")
-queue = deque(["A001", "A002"])
+# findall: 返回所有匹配
+print(re.findall(r'\d+', 'a1b22c333'))
 
-assert statuses["paid"] == 2
-assert by_customer["Ada"] == ["A001"]
-assert queue.popleft() == "A001"
+# match: 从开头匹配
+print(re.match('abc', 'abcdef'))
+
+# search: 全局搜索第一个
+print(re.search(r'\d+', 'abc123def456'))
+
+# sub: 替换
+print(re.sub(r'\d+', 'X', 'a1b2c3'))  # aXbXcX
+
+# split: 分割
+print(re.split(r'[0-9]+', 'a1b2c3'))  # ['a', 'b', 'c', '']
 ```
 
-`Counter` 统计频次，`defaultdict` 为缺失键创建值，`deque` 支持两端近似 O(1) 操作。若缺失键创建具有副作用，普通 `dict` 的显式分支更易审查。
+### 常用正则符号
 
-## 组合为可审计任务
+| 符号 | 说明 | 示例 |
+|------|------|------|
+| `.` | 任意字符 | `a.c` 匹配 abc |
+| `\d` | 数字 | `\d+` 匹配 123 |
+| `\w` | 字母、数字、下划线 | `\w+` 匹配 abc_123 |
+| `\s` | 空白字符 | `\s+` 匹配空格 |
+| `^` | 开头 | `^abc` 匹配 abc 开头 |
+| `$` | 结尾 | `abc$` 匹配 abc 结尾 |
+| `*` | 0 或多个 | `a*` 匹配 0 个或多个 a |
+| `+` | 1 或多个 | `a+` 匹配 1 个或多个 a |
+| `?` | 0 或 1 个 | `a?` 匹配 0 个或 1 个 a |
+| `{n}` | n 个 | `a{3}` 匹配 3 个 a |
+| `{n,m}` | n 到 m 个 | `a{2,4}` 匹配 2-4 个 a |
+| `[]` | 字符集 | `[abc]` 匹配 a、b 或 c |
+| `()` | 分组 | `(abc)+` 匹配 abc 组 |
 
-<!-- figure:s14-f02:start -->
+### 贪婪匹配
 
-![订单批处理经过大小限制、校验、摘要、日志、子进程检查和计数汇总形成审计证据](./images/s14-f02-auditable-processing-pipeline.png)
+```python
+import re
 
-<!-- figure:s14-f02:end -->
+# 贪婪匹配（默认）
+print(re.findall(r'\d+', 'a123b456'))  # ['123', '456']
 
-一个可靠批处理路径是：限制输入大小 → 用专用解析器/受控正则校验 → 计算 SHA-256 作为文件指纹 → 处理订单并记录事件 → 必要时以参数列表调用外部工具 → 检查退出码与输出 → 汇总 `Counter` 指标。每一步失败都应附带订单 ID 或文件指纹，而不是原始敏感内容。
+# 非贪婪匹配
+print(re.findall(r'\d+?', 'a123b456'))  # ['1', '2', '3', '4', '5', '6']
+```
 
-## 常见误区与适用边界
+## collections 模块
 
-- 哈希是摘要，不是加密；“加盐 MD5”仍不是现代密码存储。
-- `capture_output=True` 会把全部输出放内存，大输出应流式处理或写文件。
-- 根 logger 的重复 handler 会造成重复日志。
-- 正则中的 `\w` 默认覆盖 Unicode 字符，不等同于 ASCII 字母数字下划线。
-- `deque` 适合队列，不支持列表那样高效的中间随机访问。
+`collections` 提供特殊容器数据类型。
 
-## 自检题
+### namedtuple
 
-1. 密码为什么不能直接保存 `sha256(password)`？
-2. 外部命令参数来自用户时，为什么列表参数比拼接 Shell 字符串安全？
-3. 校验整行订单格式应优先 `search` 还是 `fullmatch`？
+```python
+from collections import namedtuple
 
-<details>
-<summary>参考答案</summary>
+# 创建命名元组
+Point = namedtuple('Point', ['x', 'y'])
+p = Point(1, 2)
+print(p.x, p.y)  # 1 2
+```
 
-1. 普通摘要太快且缺少独立随机盐/成本参数，易被离线暴力破解；应使用密码 KDF 或认证框架。
-2. 列表参数绕过 Shell 语法解释，降低注入风险。
-3. `fullmatch`，它要求整段文本符合模式。
+### deque
 
-</details>
+```python
+from collections import deque
 
-## 本篇总结
+# 创建双端队列
+dq = deque()
+dq.append(1)  # 右端添加
+dq.appendleft(0)  # 左端添加
+dq.pop()  # 右端弹出
+dq.popleft()  # 左端弹出
 
-摘要、子进程、日志、正则和容器各有单一职责。可靠组合依赖信任边界、大小限制、超时、退出码、脱敏和专用解析器。
+# 限制长度
+dq = deque(maxlen=3)
+dq.append(1)
+dq.append(2)
+dq.append(3)
+dq.append(4)  # 自动移除最老的元素
+```
 
-## 下一篇衔接
+### Counter
 
-下一篇处理持久化与配置：在 JSON、pickle、shelve、XML、INI/TOML 和归档之间选择，并验证 schema、路径和反序列化信任边界。
+```python
+from collections import Counter
 
-## 资料来源
+# 计数
+c = Counter('abracadabra')
+print(c.most_common(3))  # 出现最多的 3 个字符
 
-- [hashlib 与密码派生](https://docs.python.org/3.14/library/hashlib.html)
-- [subprocess：子进程管理](https://docs.python.org/3.14/library/subprocess.html)
-- [logging HOWTO](https://docs.python.org/3.14/howto/logging.html)
-- [re 与 collections](https://docs.python.org/3.14/library/re.html)
+# 统计
+print(Counter(['a', 'b', 'c', 'a', 'b', 'a']))
+```
+
+### OrderedDict
+
+```python
+from collections import OrderedDict
+
+# 有序字典（Python 3.7+ 普通字典已自动有序）
+od = OrderedDict()
+od['a'] = 1
+od['b'] = 2
+od['c'] = 3
+```
+
+### defaultdict
+
+```python
+from collections import defaultdict
+
+# 默认值字典
+dd = defaultdict(list)  # 默认值为空列表
+dd['key'].append(1)
+print(dd['key'])  # [1]
+```
+
+## 小结
+
+| 模块 | 用途 |
+|------|------|
+| **hashlib** | 哈希算法（MD5、SHA 系列） |
+| **subprocess** | 执行系统命令和管理子进程 |
+| **logging** | 日志记录 |
+| **re** | 正则表达式 |
+| **collections** | 特殊容器数据类型 |
+
+掌握这些模块的使用，可以帮助你更好地处理安全、进程管理、日志记录、文本处理和数据结构相关的操作。

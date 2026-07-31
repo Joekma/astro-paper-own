@@ -2,11 +2,11 @@
 title: Django 分页器组件详解
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-11T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-component-1-paginator
 featured: false
 draft: false
-series: django
+series: Django
 seriesOrder: 17
 tags:
   - Python
@@ -15,23 +15,15 @@ tags:
 description: "深入讲解Django分页器组件的使用方法和实践技巧。"
 ---
 
-## 前置知识与学习目标
-
-你需要理解 QuerySet、GET 参数和模板。读完后应能解释 `COUNT` 与切片查询、用稳定排序构造书籍分页、处理非法/越界页码，并判断何时用省略页码或 keyset 分页。
-
 ## Django的分页器（paginator）简介
 
 在页面显示分页数据，需要用到Django分页器组件：
-
-<!-- snippet: id=django-component-1-paginator-01 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 
 ```python
 from django.core.paginator import Paginator
 ```
 
 ### Paginator对象
-
-<!-- snippet: id=django-component-1-paginator-02 mode=compile python=3.12-3.14 deps=stdlib -->
 
 ```python
 paginator = Paginator(user_list, 10)
@@ -44,8 +36,6 @@ paginator = Paginator(user_list, 10)
 ```
 
 ### page对象
-
-<!-- snippet: id=django-component-1-paginator-03 mode=compile python=3.12-3.14 deps=stdlib -->
 
 ```python
 page = paginator.page(1)
@@ -60,8 +50,6 @@ page = paginator.page(1)
 ```
 
 ## 应用View层
-
-<!-- snippet: id=django-component-1-paginator-04 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 
 ```python
 from django.shortcuts import render, HttpResponse
@@ -122,62 +110,62 @@ def index(request):
 
 ## 模版层 index.html
 
-<!-- snippet: id=django-component-1-paginator-05 mode=display python=3.12-3.14 deps=stdlib -->
-
 ```html
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
+<head>
+    <meta charset="UTF-8">
     <title>Title</title>
-    <link
-      rel="stylesheet"
-      href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css"
-      integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
-      crossorigin="anonymous"
-    />
-  </head>
-  <body>
-    <div class="container">
-      <h4>分页器</h4>
-      <ul>
-        {% for book in book_list %}
-        <li>{{ book.title }} -----{{ book.price }}</li>
-        {% endfor %}
-      </ul>
+    <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+</head>
+<body>
 
-      <ul class="pagination" id="pager">
+<div class="container">
+
+    <h4>分页器</h4>
+    <ul>
+
+        {% for book in book_list %}
+            <li>{{ book.title }} -----{{ book.price }}</li>
+        {% endfor %}
+
+    </ul>
+
+    <ul class="pagination" id="pager">
+
         {% if book_list.has_previous %}
-        <li class="previous">
-          <a href="/index/?page={{ book_list.previous_page_number }}">上一页</a>
-        </li>
+            <li class="previous"><a href="/index/?page={{ book_list.previous_page_number }}">上一页</a></li>
         {% else %}
-        <li class="previous disabled"><a href="#">上一页</a></li>
-        {% endif %} {% for num in paginator.page_range %} {% if num ==
-        currentPage %}
-        <li class="item active">
-          <a href="/index/?page={{ num }}">{{ num }}</a>
-        </li>
-        {% else %}
-        <li class="item"><a href="/index/?page={{ num }}">{{ num }}</a></li>
-        {% endif %} {% endfor %} {% if book_list.has_next %}
-        <li class="next">
-          <a href="/index/?page={{ book_list.next_page_number }}">下一页</a>
-        </li>
-        {% else %}
-        <li class="next disabled"><a href="#">下一页</a></li>
+            <li class="previous disabled"><a href="#">上一页</a></li>
         {% endif %}
-      </ul>
-    </div>
-  </body>
+
+        {% for num in paginator.page_range %}
+
+            {% if num == currentPage %}
+                <li class="item active"><a href="/index/?page={{ num }}">{{ num }}</a></li>
+            {% else %}
+                <li class="item"><a href="/index/?page={{ num }}">{{ num }}</a></li>
+            {% endif %}
+
+        {% endfor %}
+
+        {% if book_list.has_next %}
+            <li class="next"><a href="/index/?page={{ book_list.next_page_number }}">下一页</a></li>
+        {% else %}
+            <li class="next disabled"><a href="#">下一页</a></li>
+        {% endif %}
+
+    </ul>
+</div>
+
+</body>
 </html>
 ```
 
 ## 扩展：自定义页码范围
 
 显示左5右5，总共11个页码的情况：
-
-<!-- snippet: id=django-component-1-paginator-06 mode=compile python=3.12-3.14 deps=stdlib -->
 
 ```python
 '''
@@ -213,74 +201,32 @@ def index(request):
 
 ## 使用Bootstrap样式显示分页
 
-<!-- snippet: id=django-component-1-paginator-07 mode=display python=3.12-3.14 deps=stdlib -->
-
 ```html
 <nav aria-label="Page navigation">
-  <ul class="pagination">
-    {% if book_list.has_previous %}
-    <li>
-      <a
-        href="?page={{ book_list.previous_page_number }}"
-        aria-label="Previous"
-      >
-        <span aria-hidden="true">&laquo;</span>
-      </a>
-    </li>
-    {% endif %} {% for num in pageRange %} {% if num == currentPage %}
-    <li class="active"><a href="?page={{ num }}">{{ num }}</a></li>
-    {% else %}
-    <li><a href="?page={{ num }}">{{ num }}</a></li>
-    {% endif %} {% endfor %} {% if book_list.has_next %}
-    <li>
-      <a href="?page={{ book_list.next_page_number }}" aria-label="Next">
-        <span aria-hidden="true">&raquo;</span>
-      </a>
-    </li>
-    {% endif %}
-  </ul>
+    <ul class="pagination">
+        {% if book_list.has_previous %}
+            <li>
+                <a href="?page={{ book_list.previous_page_number }}" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+        {% endif %}
+
+        {% for num in pageRange %}
+            {% if num == currentPage %}
+                <li class="active"><a href="?page={{ num }}">{{ num }}</a></li>
+            {% else %}
+                <li><a href="?page={{ num }}">{{ num }}</a></li>
+            {% endif %}
+        {% endfor %}
+
+        {% if book_list.has_next %}
+            <li>
+                <a href="?page={{ book_list.next_page_number }}" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+        {% endif %}
+    </ul>
 </nav>
 ```
-
-## 稳定排序、查询与状态
-
-<!-- figure:s17-f01:start -->
-
-![稳定排序 QuerySet 通过 COUNT 与 LIMIT 20 OFFSET 40 构成 Page 3，非法页码由 get_page 回退](./images/s17-f01-paginator-query-state.png)
-
-<!-- figure:s17-f01:end -->
-
-分页前必须使用完整稳定排序，例如 `order_by("title", "id")`；只按可重复的 title 排序时，数据变化可能让记录跨页跳动。`Paginator` 通常需要一次总数查询和一次当前页切片查询。`get_page()` 对非法页码做友好回退，`page()` 则抛 `PageNotAnInteger`/`EmptyPage`，应按接口合同选择。
-
-```python
-queryset = Book.objects.filter(is_active=True).order_by("title", "id")
-paginator = Paginator(queryset, 20, orphans=2)
-page_obj = paginator.get_page(request.GET.get("page"))
-```
-
-模板保留其他筛选参数，给当前页 `aria-current="page"`。海量深分页时 OFFSET/COUNT 可能昂贵；连续浏览可用完整排序键 `(title, id)` 做 keyset，但不支持任意跳页。
-
-## 常见误区与验证
-
-- 无 `order_by` 的数据库结果没有稳定顺序。
-- 不把所有页码一次渲染；使用 `get_elided_page_range()`。
-- 页大小必须有上限，避免客户端请求百万行。
-- 测试空集、第一页、末页、非法页码、删除/插入后的稳定性和查询预算。
-
-## 自检题
-
-1. 为什么排序要追加 id？
-2. `get_page()` 与 `page()` 的错误策略有何不同？
-3. keyset 分页牺牲什么？
-
-<details><summary>答案</summary>
-
-1. 打破 title 相同的并列。2. 前者回退，后者抛异常。3. 通常不能任意跳页或直接给出精确总页数。
-
-</details>
-
-## 本篇总结、衔接与资料来源
-
-分页是稳定排序、计数、切片和容错的合同。下一篇解释全局 settings 为何延迟初始化。
-
-- [Paginator](https://docs.djangoproject.com/en/6.0/ref/paginator/)

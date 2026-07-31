@@ -2,293 +2,215 @@
 title: Flask Login 用户认证与登录管理
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-17T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: flask-4-login-extension
-description: "用 TaskBoard 登录链解释 Flask-Login 的 user_loader、current_user、remember cookie、fresh login 与开放重定向边界。"
+description: '深入讲解使用Flask-Login扩展实现用户认证功能，包括用户模型创建、LoginManager配置、登录登出视图编写、路由保护装饰器以及注册功能的完整实现。'
 tags:
   - Python
   - Flask
   - Flask-Login
   - 用户认证
-series: flask
+series: Flask
 seriesOrder: 8
 draft: false
 language: zh-CN
 ---
 
-## 前置知识与学习目标
+## Flask-Login简介
 
-你应理解 Flask session、应用工厂和表单验证。本篇只解决：**Flask-Login 如何在请求之间恢复登录身份，以及哪些安全责任仍属于应用？**
+Flask-Login是Flask官方提供的一个扩展，专门用于处理用户会话管理和身份认证。它提供了简单而强大的功能，可以轻松实现用户登录、登出、记住我等功能。
 
-完成后你能够：
+### Flask-Login的主要功能
 
-1. 沿 `login_user -> session user id -> user_loader -> current_user` 解释身份恢复。
-2. 区分认证、授权、remember cookie 与 fresh login。
-3. 安全处理密码哈希、`next` 重定向和登出。
-4. 用测试覆盖匿名、登录、退出和敏感操作再认证。
+- 用户登录和登出管理
+- 保护路由，限制未登录用户访问
+- 记住用户登录状态
+- 安全的Session管理
+- 与数据库模型集成
 
-## Flask-Login 做什么，不做什么
+## 安装Flask-Login
 
-Flask-Login 提供登录状态管理：
+首先需要安装Flask-Login扩展：
 
-- 把用户 ID 存入 Flask session。
-- 在后续请求中加载用户对象。
-- 提供 `current_user`、`login_required`、`logout_user`。
-- 支持 remember cookie 与 fresh login。
-
-它不负责用户注册、密码存储、多因素认证、角色权限或数据库模型。这些仍由应用设计。
-
-## 初始化与用户合同
-
-```python
-# extensions.py
-from flask_login import LoginManager
-
-login_manager = LoginManager()
-login_manager.login_view = "auth.login"
-login_manager.refresh_view = "auth.reauthenticate"
+```bash
+pip install flask-login
 ```
 
-```python
-# factory
-login_manager.init_app(app)
-```
+## 基本配置
 
-用户对象可以继承 `UserMixin`，但稳定身份必须由应用提供：
+### 1. 创建用户模型
+
+Flask-Login要求用户模型实现以下四个属性和方法：
 
 ```python
 from flask_login import UserMixin
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
+
+db = SQLAlchemy()
 
 class User(UserMixin, db.Model):
-    id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[str] = mapped_column(unique=True)
-    password_hash: Mapped[str]
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
 
-    def get_id(self) -> str:
-        return str(self.id)
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
 ```
 
-`get_id` 返回可序列化字符串。不要把密码哈希、权限列表或整个用户对象放进 session。
-
-## 身份恢复链
-
-<!-- figure-anchor:s08-f01 -->
-
-<!-- figure:s08-f01:start -->
-
-![凭据校验如何写入 user id，并在后续请求通过 user_loader 恢复 current_user](./images/s08-f01-login-identity-recovery.png)
-
-<!-- figure:s08-f01:end -->
+### 2. 初始化LoginManager
 
 ```python
-from .extensions import db, login_manager
-from .models import User
+from flask import Flask
+from flask_login import LoginManager
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'your-secret-key-here'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'  # 设置登录页面路由
 
 @login_manager.user_loader
-def load_user(user_id: str) -> User | None:
-    try:
-        key = int(user_id)
-    except (TypeError, ValueError):
-        return None
-    return db.session.get(User, key)
+def load_user(user_id):
+    return User.query.get(int(user_id))
 ```
 
-`user_loader` 接收 session 中保存的字符串 ID。无效、已删除或已禁用用户应返回 `None`，不要抛出“用户不存在”异常造成 500。
-
-后续请求的关键状态：
-
-```text
-signed session cookie
-  -> "_user_id"
-  -> user_loader(user_id)
-  -> User | None
-  -> current_user proxy
-```
-
-## 登录：先验证凭据，再建立会话
-
-<!-- figure-anchor:s08-f02 -->
-
-<!-- figure:s08-f02:start -->
-
-![登录成功后的 next 参数如何通过同站检查再决定重定向](./images/s08-f02-safe-login-redirect.png)
-
-<!-- figure:s08-f02:end -->
+### 3. 创建登录视图
 
 ```python
-from flask import redirect, request, url_for
-from flask_login import login_user
-from sqlalchemy import select
-from werkzeug.security import check_password_hash
+from flask import render_template, request, redirect, url_for, flash
+from flask_login import login_user, logout_user, login_required
 
-@auth_bp.post("/login")
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    form = LoginForm(request.form)
-    if not form.validate():
-        return {"errors": form.errors}, 422
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        remember = request.form.get('remember', False)
 
-    user = db.session.scalar(
-        select(User).where(User.email == form.email.data.lower())
-    )
-    valid = user is not None and check_password_hash(
-        user.password_hash,
-        form.password.data,
-    )
-    if not valid or not user.is_active:
-        return {"error": "invalid credentials"}, 401
+        user = User.query.filter_by(username=username).first()
 
-    login_user(user, remember=form.remember.data, fresh=True)
+        if user and user.check_password(password):
+            login_user(user, remember=remember)
+            flash('登录成功！', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('用户名或密码错误', 'error')
 
-    next_url = request.args.get("next")
-    if next_url and is_safe_next_url(next_url):
-        return redirect(next_url)
-    return redirect(url_for("tasks.task_list"))
-```
+    return render_template('login.html')
 
-失败响应不要区分“邮箱不存在”和“密码错误”，避免账户枚举。生产系统还应加入速率限制、登录审计与可选 MFA。
-
-安全重定向只接受同站相对路径：
-
-```python
-from urllib.parse import urljoin, urlsplit
-
-def is_safe_next_url(target: str) -> bool:
-    base = urlsplit(request.host_url)
-    candidate = urlsplit(urljoin(request.host_url, target))
-    return (
-        candidate.scheme in {"http", "https"}
-        and candidate.netloc == base.netloc
-    )
-```
-
-未经检查直接 `redirect(request.args["next"])` 会形成开放重定向。
-
-## 授权与 fresh login
-
-`login_required` 只回答“是否已登录”，不回答“能否编辑此任务”。
-
-```python
-from flask import abort
-from flask_login import current_user, fresh_login_required, login_required
-
-@tasks_bp.post("/<int:task_id>/complete")
-@login_required
-def complete_task(task_id: int):
-    task = db.get_or_404(Task, task_id)
-    if task.owner_id != current_user.id:
-        abort(403)
-    task.done = True
-    db.session.commit()
-    return {"id": task.id, "done": True}
-
-@auth_bp.post("/change-password")
-@fresh_login_required
-def change_password():
-    ...
-```
-
-remember cookie 恢复的登录可能是 non-fresh。改密码、改邮箱、绑定 MFA 等敏感操作应要求 fresh login，某些操作仍应再次校验密码。
-
-## Cookie 与会话安全
-
-<!-- figure-anchor:s08-f03 -->
-
-<!-- figure:s08-f03:start -->
-
-![普通登录、remember 恢复与 fresh_login_required 的敏感操作边界](./images/s08-f03-fresh-login-security.png)
-
-<!-- figure:s08-f03:end -->
-
-至少配置：
-
-```python
-app.config.update(
-    SECRET_KEY="from-environment",
-    SESSION_COOKIE_SECURE=True,
-    SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE="Lax",
-    REMEMBER_COOKIE_SECURE=True,
-    REMEMBER_COOKIE_HTTPONLY=True,
-    REMEMBER_COOKIE_SAMESITE="Lax",
-)
-```
-
-`Secure` 依赖 HTTPS；本地 HTTP 测试要使用测试配置。修改 `SECRET_KEY` 会使已有签名失效，应纳入密钥轮换与强制登出计划。
-
-登出端点应使用 POST 并受 CSRF 保护：
-
-```python
-from flask_login import logout_user
-
-@auth_bp.post("/logout")
+@app.route('/logout')
 @login_required
 def logout():
     logout_user()
-    return "", 204
+    flash('已退出登录', 'info')
+    return redirect(url_for('login'))
 ```
 
-## 最小行为测试
+### 4. 保护需要登录的路由
+
+使用`@login_required`装饰器保护需要登录才能访问的页面：
 
 ```python
-def test_protected_view_requires_login(client):
-    response = client.get("/tasks/")
-    assert response.status_code in {302, 401}
+@app.route('/profile')
+@login_required
+def profile():
+    return render_template('profile.html')
 
-def test_login_and_logout(client, user):
-    response = client.post(
-        "/auth/login",
-        data={"email": user.email, "password": "correct-password"},
-    )
-    assert response.status_code == 302
-
-    assert client.get("/tasks/").status_code == 200
-    assert client.post("/auth/logout").status_code == 204
-
-def test_rejects_external_next(client, user):
-    response = client.post(
-        "/auth/login?next=https://evil.example/",
-        data={"email": user.email, "password": "correct-password"},
-    )
-    assert response.headers["Location"].endswith("/tasks/")
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    return render_template('dashboard.html')
 ```
 
-真实测试需生成密码哈希，不能把明文作为模型字段。
+## 创建登录表单
 
-## 常见误区与适用边界
+使用Flask-WTF创建表单：
 
-- **把 Flask-Login 当权限系统**：`login_required` 不检查资源所有权或角色。
-- **把整个用户对象存 session**：状态会过期且暴露面增大。
-- **`user_loader` 抛异常**：失效 cookie 会变成 500。
-- **明文或可逆加密存密码**：使用专用密码哈希。
-- **信任 `next`**：会产生开放重定向。
-- **GET 登出**：第三方页面可诱导用户退出，应使用 POST + CSRF。
-- **API 盲用 Cookie 登录**：跨域 API 可能更适合独立 token/OAuth 方案，并明确 CSRF/CORS 边界。
+```python
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField, BooleanField, SubmitField
+from wtforms.validators import DataRequired, Email, Length
 
-## 自检题
+class LoginForm(FlaskForm):
+    username = StringField('用户名', validators=[DataRequired(), Length(min=3, max=20)])
+    password = PasswordField('密码', validators=[DataRequired()])
+    remember = BooleanField('记住我')
+    submit = SubmitField('登录')
+```
 
-1. 为什么后续请求仍要调用 `user_loader`？
-2. remember 登录与 fresh login 的差别是什么？
-3. `login_required` 为什么不能防止用户 A 修改用户 B 的任务？
+## 登录模板
 
-<details>
-<summary>答案</summary>
+```html
+<!-- templates/login.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>用户登录</title>
+</head>
+<body>
+    <h2>登录</h2>
 
-1. session 通常只保存用户 ID，需要从持久层恢复当前用户对象并处理失效身份。
-2. remember cookie 恢复的会话可能是 non-fresh；敏感操作应要求近期重新认证。
-3. 它只检查是否登录，不检查资源级授权。
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 
-</details>
+    <form method="POST">
+        <label>用户名:</label>
+        <input type="text" name="username" required>
 
-## 本篇总结
+        <label>密码:</label>
+        <input type="password" name="password" required>
 
-Flask-Login 管理的是“登录状态恢复”，不是完整认证授权系统。安全链必须同时包含密码哈希、稳定 user loader、资源授权、safe next、cookie 配置、CSRF 和敏感操作再认证。
+        <label>
+            <input type="checkbox" name="remember"> 记住我
+        </label>
 
-## 下一篇衔接
+        <button type="submit">登录</button>
+    </form>
+</body>
+</html>
+```
 
-登录表单已经使用 WTForms，但尚未处理 Flask 请求绑定、CSRF 和文件上传。下一篇用 Flask-WTF 把表单验证接入真实请求，并明确浏览器校验与服务端校验的边界。
+## 注册功能
 
-## 资料来源
+完整的用户系统还需要注册功能：
 
-- [Flask-Login 官方文档](https://flask-login.readthedocs.io/en/latest/)
-- [Werkzeug 官方文档：Security Helpers](https://werkzeug.palletsprojects.com/en/stable/utils/#module-werkzeug.security)
-- [Flask 官方文档：Security Considerations](https://flask.palletsprojects.com/en/stable/web-security/)
+```python
+class RegisterForm(FlaskForm):
+    username = StringField('用户名', validators=[DataRequired(), Length(min=3, max=20)])
+    email = StringField('邮箱', validators=[DataRequired(), Email()])
+    password = PasswordField('密码', validators=[DataRequired(), Length(min=6)])
+    confirm_password = PasswordField('确认密码', validators=[DataRequired()])
+    submit = SubmitField('注册')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    form = RegisterForm()
+
+    if form.validate_on_submit():
+        if form.password.data != form.confirm_password.data:
+            flash('两次密码不一致', 'error')
+            return render_template('register.html', form=form)
+
+        # 创建新用户
+        user = User(username=form.username.data, email=form.email.data)
+        user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.commit()
+
+        flash('注册成功！请登录', 'success')
+        return redirect(url_for('login'))
+
+    return render_template('register.html', form=form)
+```

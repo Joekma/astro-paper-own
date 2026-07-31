@@ -2,21 +2,17 @@
 title: 强大的Django后台管理
 author: Joekma
 pubDatetime: 2024-08-13T00:00:00.000+08:00
-modDatetime: 2026-07-11T00:00:00.000+08:00
+modDatetime: 2026-04-22T00:00:00.000+08:00
 slug: django-admin-powerful
 featured: false
 draft: false
-series: django
+series: Django
 seriesOrder: 22
 tags:
   - Python
   - Django
 description: "强大的 Django 后台管理"
 ---
-
-## 前置知识与学习目标
-
-你需要理解模型、Auth、Form 与部署。读完后应能把 Admin 定位为可信运营工具，配置 `ModelAdmin` 的列表、筛选、查询加载与只读字段，并为批量动作建立权限、事务、影响预览和审计边界。
 
 ## Django后台
 
@@ -28,15 +24,11 @@ Django的后台我们只要加少些代码，就可以实现强大的功能。�
 
 ### 新建一个名称为zqxt_admin的项目
 
-<!-- snippet: id=django-admin-powerful-01 mode=display python=3.12-3.14 deps=stdlib -->
-
 ```bash
 django-admin.py startproject zqxt_admin
 ```
 
 ### 新建一个叫做blog的app
-
-<!-- snippet: id=django-admin-powerful-02 mode=display python=3.12-3.14 deps=stdlib -->
 
 ```bash
 # 进入 zqxt_admin 文件夹
@@ -49,8 +41,6 @@ python manage.py startapp blog
 **注意：** 不同版本的Django创建project和app出来的文件会有一些不同。
 
 ### 修改blog文件夹中的models.py
-
-<!-- snippet: id=django-admin-powerful-03 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 
 ```python
 # coding:utf-8
@@ -65,8 +55,6 @@ class Article(models.Model):
 ```
 
 ### 把blog加入到settings.py中的INSTALLED_APPS中
-
-<!-- snippet: id=django-admin-powerful-04 mode=compile python=3.12-3.14 deps=stdlib -->
 
 ```python
 INSTALLED_APPS = (
@@ -85,8 +73,6 @@ INSTALLED_APPS = (
 
 ### 同步所有的数据表
 
-<!-- snippet: id=django-admin-powerful-05 mode=display python=3.12-3.14 deps=stdlib -->
-
 ```bash
 # 进入包含有 manage.py 的文件夹
 python manage.py makemigrations
@@ -97,9 +83,7 @@ python manage.py migrate
 
 可以看到：
 
-<!-- snippet: id=django-admin-powerful-06 mode=display python=3.12-3.14 deps=stdlib -->
-
-```text
+```
 Creating tables ...
 
 Creating table django_admin_log
@@ -136,8 +120,6 @@ Installed 0 object(s) from 0 fixture(s)
 
 **如果是Django不主动提示创建管理员（Django 1.9不提示）用下面的命令创建一个帐号：**
 
-<!-- snippet: id=django-admin-powerful-07 mode=display python=3.12-3.14 deps=stdlib -->
-
 ```bash
 python manage.py createsuperuser
 ```
@@ -145,8 +127,6 @@ python manage.py createsuperuser
 ### 修改admin.py文件
 
 进入blog文件夹，修改admin.py文件（如果没有新建一个），内容如下：
-
-<!-- snippet: id=django-admin-powerful-08 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 
 ```python
 from django.contrib import admin
@@ -161,8 +141,6 @@ admin.site.register(Article)
 
 ### 打开开发服务器
 
-<!-- snippet: id=django-admin-powerful-09 mode=display python=3.12-3.14 deps=stdlib -->
-
 ```bash
 python manage.py runserver
 # 如果提示 8000 端口已经被占用，可以用 python manage.py runserver 8001 以此类推
@@ -172,13 +150,11 @@ python manage.py runserver
 
 点击Articles，动手输入添加几篇文章，就可以看到。
 
-## 使用**str**方法
+## 使用__str__方法
 
 我们会发现所有的文章都是叫`Article object`，这样肯定不好，比如我们要修改，如何知道要修改哪个呢？
 
 我们修改一下blog中的models.py：
-
-<!-- snippet: id=django-admin-powerful-10 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 
 ```python
 # coding:utf-8
@@ -203,8 +179,6 @@ class Article(models.Model):
 
 示例如下：
 
-<!-- snippet: id=django-admin-powerful-11 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
-
 ```python
 from django.db import models
 
@@ -223,8 +197,6 @@ class Article(models.Model):
 
 ### 列表页显示更多字段
 
-<!-- snippet: id=django-admin-powerful-12 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
-
 ```python
 from django.contrib import admin
 from .models import Article
@@ -237,8 +209,6 @@ admin.site.register(Article, ArticleAdmin)
 
 ### 搜索功能
 
-<!-- snippet: id=django-admin-powerful-13 mode=compile python=3.12-3.14 deps=stdlib -->
-
 ```python
 class ArticleAdmin(admin.ModelAdmin):
     list_display = ('title', 'pub_date', 'update_time')
@@ -246,8 +216,6 @@ class ArticleAdmin(admin.ModelAdmin):
 ```
 
 ### 过滤功能
-
-<!-- snippet: id=django-admin-powerful-14 mode=compile python=3.12-3.14 deps=stdlib -->
 
 ```python
 class ArticleAdmin(admin.ModelAdmin):
@@ -257,16 +225,12 @@ class ArticleAdmin(admin.ModelAdmin):
 
 ### 分页功能
 
-<!-- snippet: id=django-admin-powerful-15 mode=compile python=3.12-3.14 deps=stdlib -->
-
 ```python
 class ArticleAdmin(admin.ModelAdmin):
     list_per_page = 25  # 每页显示25条记录
 ```
 
 ### 编辑功能
-
-<!-- snippet: id=django-admin-powerful-16 mode=compile python=3.12-3.14 deps=stdlib -->
 
 ```python
 class ArticleAdmin(admin.ModelAdmin):
@@ -280,16 +244,12 @@ class ArticleAdmin(admin.ModelAdmin):
 
 ### 时间选择器
 
-<!-- snippet: id=django-admin-powerful-17 mode=compile python=3.12-3.14 deps=stdlib -->
-
 ```python
 class ArticleAdmin(admin.ModelAdmin):
     date_hierarchy = 'pub_date'  # 按日期分层导航
 ```
 
 ## 完整Admin配置示例
-
-<!-- snippet: id=django-admin-powerful-18 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 
 ```python
 from django.contrib import admin
@@ -348,8 +308,6 @@ admin.site.register(Tag)
 
 ### 添加自定义操作
 
-<!-- snippet: id=django-admin-powerful-19 mode=compile python=3.12-3.14 deps=stdlib -->
-
 ```python
 class ArticleAdmin(admin.ModelAdmin):
     actions = ['make_published', 'make_draft']
@@ -365,8 +323,6 @@ class ArticleAdmin(admin.ModelAdmin):
 
 ### 内联管理
 
-<!-- snippet: id=django-admin-powerful-20 mode=compile python=3.12-3.14 deps=stdlib -->
-
 ```python
 class ArticleInline(admin.TabularInline):
     model = Tag
@@ -377,8 +333,6 @@ class ArticleAdmin(admin.ModelAdmin):
 ```
 
 ### 自定义表单验证
-
-<!-- snippet: id=django-admin-powerful-21 mode=compile python=3.12-3.14 deps=Django==6.0.7 -->
 
 ```python
 from django import forms
@@ -410,38 +364,3 @@ class ArticleAdmin(admin.ModelAdmin):
 8. 编写自定义actions处理批量操作
 9. 使用save_model自动设置相关字段
 10. 定期检查admin的访问权限
-
-## 安全运营边界
-
-<!-- figure:s22-f01:start -->
-
-![Django Admin 仅供强认证 staff，经对象权限、影响预览、事务与动作上限执行，并写入审计或转后台任务](./images/s22-f01-admin-safety-boundary.png)
-
-<!-- figure:s22-f01:end -->
-
-Admin 不是面向匿名用户的业务前台。为 staff 使用独立强认证、最小权限、HTTPS、审计和网络限制；对象级规则需要覆盖 `has_view/change/delete_permission()`。敏感字段设为只读或完全排除，错误页和日志不得泄露密钥。
-
-批量下架动作先展示影响数量，在事务中更新，设置上限并记录 actor、过滤条件、对象数量和结果。耗时导出/重算交给可重试任务，不让一个 HTTP 请求长期占用 worker。
-
-## 性能与最小验证
-
-`list_display` 中访问外键时使用 `list_select_related`；多值统计可在 `get_queryset()` 中注解，但必须验证结果基数和查询预算。搜索字段的前缀和索引由数据规模决定，不应把 Admin 搜索当全文检索引擎。
-
-测试非 staff 拒绝、只读字段不可改、对象权限、动作上限/回滚、审计记录，以及 20 行列表的查询数量。
-
-## 自检题
-
-1. 为什么 Admin 不应直接成为客户前台？2. 批量 action 为什么需要事务和上限？3. `list_display` 为何可能制造 N+1？
-
-<details><summary>答案</summary>
-
-1. 它面向可信运营且交互/授权模型不同。2. 防止部分成功和误操作扩大。3. 每行属性访问可能惰性查询关联对象。
-
-</details>
-
-## 本篇总结、衔接与资料来源
-
-Admin 的价值来自快速运营，安全来自权限、审计和受控动作。下一篇用查询证据与回归预算治理列表页和后台性能。
-
-- [Django admin](https://docs.djangoproject.com/en/6.0/ref/contrib/admin/)
-- [Admin actions](https://docs.djangoproject.com/en/6.0/ref/contrib/admin/actions/)
