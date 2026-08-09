@@ -14,5 +14,9 @@ export default [
     },
   },
   { rules: { "no-console": "error" } },
+  {
+    files: ["scripts/**/*.{js,mjs,cjs}", "update_series.js"],
+    rules: { "no-console": "off" },
+  },
   { ignores: ["dist/**", ".astro", "public/pagefind/**"] },
 ];

@@ -847,7 +847,7 @@ web01 ansible_host=192.0.2.51 app_port=8080
 
 ### Jinja2 模板
 
-```jinja2
+```jinja
 {# templates/config.j2 #}
 app:
   name: {{ app_name }}

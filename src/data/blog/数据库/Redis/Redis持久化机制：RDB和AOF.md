@@ -53,7 +53,7 @@ language: zh-CN
 
 RDB 文件紧凑、便于异地备份和快速加载，但故障时会丢失最后一次成功快照之后的写入。大数据集上的 `fork` 延迟和高写入期间的 COW 额外内存，必须纳入容量与尾延迟测试。
 
-```conf
+```ini
 save 900 1
 save 300 10
 save 60 10000
@@ -84,7 +84,7 @@ stop-writes-on-bgsave-error yes
 | `everysec`    | 通常约 1 秒量级 | 常用折中 | Redis 官方建议且常作为默认选择       |
 | `no`          | 由操作系统决定  | 较低     | RPO 不确定，不适合重要状态           |
 
-```conf
+```ini
 appendonly yes
 appenddirname "appendonlydir"
 appendfsync everysec

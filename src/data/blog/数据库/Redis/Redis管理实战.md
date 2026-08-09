@@ -130,7 +130,7 @@ Redis 不应暴露到公网。生产至少组合：私有网络/防火墙、TLS�
 
 以下是 ACL 文件示意，不要把占位 secret 原样使用：
 
-```conf
+```ini
 user default off
 user shop-api reset on >SECRET_FROM_VAULT \
   ~product:* ~stock:* ~orders:* \

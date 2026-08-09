@@ -18,10 +18,6 @@ export default defineConfig({
   site: SITE.website,
   // CI/documentation checks can isolate Astro's image cache from a running dev server.
   cacheDir: process.env.ASTRO_CACHE_DIR ?? "./node_modules/.astro",
-  redirects: {
-    "/posts/ai/langgraph/langgraph-agent-pratice":
-      "/posts/ai/langgraph/langgraph-agent-practice",
-  },
   integrations: [
     sitemap({
       filter: page => SITE.showArchives || !page.endsWith("/archives"),

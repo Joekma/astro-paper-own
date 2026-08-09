@@ -126,7 +126,7 @@ Inno Setup 是免费的安装包制作工具，功能强大且易于使用。
 
 创建 `installer.iss` 文件：
 
-```iss
+```ini
 #define MyAppName "Desktop"
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "Claw"

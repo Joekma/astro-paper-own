@@ -84,7 +84,7 @@ Cluster 不是代理层。客户端必须理解拓扑、重定向、节点故障
 
 每个节点至少启用：
 
-```conf
+```ini
 port 7000
 cluster-enabled yes
 cluster-config-file nodes-7000.conf

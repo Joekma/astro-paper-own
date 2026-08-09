@@ -57,7 +57,7 @@ backlog 太小会让短暂断线频繁退化成昂贵的全量同步。应按峰
 
 副本配置：
 
-```conf
+```ini
 replicaof 10.0.0.10 6379
 replica-read-only yes
 masteruser replica-user
@@ -113,7 +113,7 @@ redis-cli --latency
 
 Sentinel 为非 Cluster Redis 提供监控、通知、配置发现和自动故障转移。稳健部署通常至少 3 个 Sentinel，并放在相互独立的故障域。
 
-```conf
+```ini
 sentinel monitor shop-primary 10.0.0.10 6379 2
 sentinel down-after-milliseconds shop-primary 5000
 sentinel failover-timeout shop-primary 180000

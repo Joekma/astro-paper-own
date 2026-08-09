@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source not inline("[all:vars]");
 @import "katex/dist/katex.min.css";
 @import "./typography.css";
 

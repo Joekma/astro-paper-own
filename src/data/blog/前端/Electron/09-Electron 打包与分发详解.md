@@ -318,7 +318,7 @@ build/
 
 ### 脚本自定义
 
-```nsis
+```text
 ; installer.nsh
 !macro customHeader
   !include "MUI2.nsh"

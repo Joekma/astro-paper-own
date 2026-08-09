@@ -78,7 +78,7 @@ chmod 644 ~/.ssh/app01_ops.pub
 
 客户端配置：
 
-```sshconfig
+```ssh-config
 Host bastion
     HostName bastion.example.com
     User ops

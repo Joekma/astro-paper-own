@@ -279,7 +279,7 @@ python verify_selenium.py
 
 #### Gradle 依赖
 
-```gradle
+```groovy
 dependencies {
     implementation 'org.seleniumhq.selenium:selenium-java:4.15.0'
 }

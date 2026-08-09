@@ -79,7 +79,7 @@ sudo cp -a /etc/fstab /etc/fstab.bak.$(date +%F-%H%M%S)
 
 示例条目：
 
-```fstab
+```ini
 UUID=11111111-2222-3333-4444-555555555555 /srv/demo-web ext4 defaults,nofail 0 2
 ```
 
